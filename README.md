@@ -85,8 +85,8 @@ The desktop app (Tauri) updates itself from GitHub Releases.
 
 | Channel    | Branch    | Feed                                       |
 | ---------- | --------- | ------------------------------------------ |
-| `stable`   | `master`  | `releases/latest/download/latest.json`     |
-| `unstable` | `develop` | `releases/download/unstable/unstable.json` |
+| `stable`   | `main`    | `releases/latest/download/latest.json`     |
+| `unstable` | `dev`     | `releases/download/unstable/unstable.json` |
 
 The choice is persisted in `localStorage` (`playstash_update_channel`).
 
