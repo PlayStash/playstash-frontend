@@ -15,6 +15,7 @@ Status: Unreleased. This version marks the fresh PlayStash source baseline.
 - Disabled workflow jobs by default until explicitly enabled for this repository.
 - Update settings now offer only the published Stable (`main`) and Unstable (`dev`) channels.
 - Added Windows, Linux and macOS ARM/Intel installer builds, signed updater artifacts and immutable version releases with changelog notes.
+- Release retries resume existing drafts even before their version tags are published; inaccessible release data stops publication.
 - Corrected corrupted punctuation on the sign-in and registration screens.
 - Added desktop and browser SSO, refreshed download artwork and improved freeze recovery.
 - [#21](https://github.com/Phalcode/gamevault-frontend/issues/21) Kept native video controls accessible while browsing trailers.

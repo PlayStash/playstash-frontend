@@ -21,7 +21,7 @@ Related library work adds all game website links, archive passwords, Markdown sy
 
 Validation at this checkpoint:
 
-- 315 frontend tests in 49 files and 14 API-generator/release-script tests passed.
+- 315 frontend tests in 49 files and 20 API-generator/release-script tests passed, including pending draft retries and release lookup failures.
 - TypeScript, ESLint, the production build, Actionlint and whitespace checks passed; strict frozen dependency installation passed.
 - Linux native compilation and all 52 Rust library tests passed in an isolated container. A real optimized Linux `.deb` installer was built and its version, architecture and dependencies inspected.
 - Headless Chromium against the real local backend verified login, library, live lobby-message delivery, administrator folder rules, Big Picture, package extras, mobile game requests and live English/German selection with persisted reload state and document language, with no page errors. The strict chat assertion checks a newly sent message in the rendered conversation; server guard/DTO defects found during this test were corrected and the complete browser retest passed.
