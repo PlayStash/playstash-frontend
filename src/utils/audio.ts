@@ -1,5 +1,5 @@
 /**
- * Central audio system for GameVault.
+ * Central audio system for PlayStash.
  *
  * Handles the OS/webview specifics in one place:
  * - WebKitGTK on Linux (packaged Tauri app) blocks media loaded from the
@@ -9,7 +9,7 @@
  *   entirely.
  * - Autoplay restrictions are handled per-play (callers get a rejected
  *   promise on block; they can retry from a user gesture).
- * - A single persisted volume setting (`gv_audio_volume`) is shared by every
+ * - A single persisted volume setting (`playstash_audio_volume`) is shared by every
  *   sound and broadcast via `AUDIO_VOLUME_EVENT` so open UIs stay in sync.
  */
 
@@ -22,9 +22,9 @@ const SOUND_SOURCES: Record<SoundName, string> = {
 };
 
 /** `CustomEvent` fired on `window` whenever the volume changes. */
-export const AUDIO_VOLUME_EVENT = "gv:audio-volume-change";
+export const AUDIO_VOLUME_EVENT = "playstash:audio-volume-change";
 
-const VOLUME_STORAGE_KEY = "gv_audio_volume";
+const VOLUME_STORAGE_KEY = "playstash_audio_volume";
 export const DEFAULT_AUDIO_VOLUME = 0.7;
 
 function clampVolume(value: number): number {

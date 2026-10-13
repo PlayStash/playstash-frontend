@@ -23,7 +23,7 @@ export function SectionExpander({
       {({ open }) => (
         <div>
           <div className="flex items-center gap-2 py-2 select-none">
-            <DisclosureButton className="flex items-center gap-2 text-sm font-semibold text-gv-text hover:text-gv-text transition-colors cursor-pointer">
+            <DisclosureButton className="flex items-center gap-2 text-sm font-semibold text-ps-text hover:text-ps-text transition-colors cursor-pointer">
               <ChevronRightIcon
                 className={clsx(
                   "h-4 w-4 transition-transform duration-200",

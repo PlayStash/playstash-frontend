@@ -34,7 +34,7 @@ import Card from "../components/Card";
 // Legacy modals (inline styles) brought back from old-src for now
 import { RegisterUserModal } from "@/components/admin/RegisterUserModal";
 import { UserEditorModal } from "@/components/admin/UserEditorModal";
-import { GamevaultUser, GamevaultUserRoleEnum } from "../api";
+import { PlaystashUser, PlaystashUserRoleEnum } from "../api";
 import { ROLE_LABELS } from "@/utils/roles";
 import BackupRestoreDialog from "../components/admin/BackupRestoreDialog";
 import { Label } from "../components/tailwind/fieldset";
@@ -102,27 +102,27 @@ export default function Administration() {
                     {serverUrl}
                   </Link>
                 ) : (
-                  <span className="text-gv-muted">Not connected</span>
+                  <span className="text-ps-muted">Not connected</span>
                 )}
               </DescriptionDetails>
               <DescriptionTerm>Version</DescriptionTerm>
               <DescriptionDetails>
                 {version ? (
                   <Link
-                    href={`https://github.com/Phalcode/gamevault-backend/releases/tag/${version}`}
+                    href={`https://github.com/PlayStash/playstash-backend/releases/tag/${version}`}
                     target="_blank"
                   >
                     {version}
                   </Link>
                 ) : (
-                  <span className="text-gv-muted">—</span>
+                  <span className="text-ps-muted">—</span>
                 )}
               </DescriptionDetails>
               <DescriptionTerm>Users</DescriptionTerm>
               <DescriptionDetails>
                 {users.length}{" "}
                 {users.length > 0 && filteredUsers.length !== users.length && (
-                  <span className="text-gv-muted">
+                  <span className="text-ps-muted">
                     ({filteredUsers.length} shown)
                   </span>
                 )}
@@ -246,7 +246,7 @@ export default function Administration() {
                 {loading && (
                   <TableRow>
                     <TableCell colSpan={4}>
-                      <div className="flex items-center justify-center gap-2 py-6 text-sm text-gv-muted">
+                      <div className="flex items-center justify-center gap-2 py-6 text-sm text-ps-muted">
                         <svg
                           className="h-4 w-4 motion-safe:animate-spin"
                           xmlns="http://www.w3.org/2000/svg"
@@ -276,13 +276,13 @@ export default function Administration() {
                 {!loading && filteredUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4}>
-                      <div className="py-6 text-center text-sm text-gv-muted">
+                      <div className="py-6 text-center text-sm text-ps-muted">
                         No users found.
                       </div>
                     </TableCell>
                   </TableRow>
                 )}
-                {filteredUsers.map((u: GamevaultUser, i: number) => {
+                {filteredUsers.map((u: PlaystashUser, i: number) => {
                   const id = u.id;
                   const deleted = u.deleted_at;
                   const busy = opBusy[String(id)];
@@ -290,7 +290,7 @@ export default function Administration() {
                   const first_name = u.first_name;
                   const last_name = u.last_name;
                   const email = u.email;
-                  const roleNumeric = u.role ?? GamevaultUserRoleEnum._0;
+                  const roleNumeric = u.role ?? PlaystashUserRoleEnum._0;
                   return (
                     <TableRow
                       key={id}
@@ -301,7 +301,7 @@ export default function Administration() {
                         <div className="flex items-center gap-4">
                           <Link
                             href={`/community/${id}`}
-                            className="shrink-0 rounded-full outline-hidden focus:outline-2 focus:outline-offset-2 focus:outline-gv-accent-cool"
+                            className="shrink-0 rounded-full outline-hidden focus:outline-2 focus:outline-offset-2 focus:outline-ps-accent-cool"
                           >
                             <UserAvatar media={u.avatar} size={48} alt={name} />
                           </Link>
@@ -324,10 +324,10 @@ export default function Administration() {
                               )}
                             </div>
                             {email && (
-                              <div className="text-gv-muted">
+                              <div className="text-ps-muted">
                                 <a
                                   href={`mailto:${email}`}
-                                  className="hover:text-gv-text"
+                                  className="hover:text-ps-text"
                                 >
                                   {email}
                                 </a>
@@ -345,14 +345,14 @@ export default function Administration() {
                           onChange={() => toggleActivated(u)}
                         />
                       </TableCell>
-                      <TableCell className="text-gv-muted">
+                      <TableCell className="text-ps-muted">
                         <Listbox
                           name="role"
                           value={roleNumeric}
                           onChange={async (val: any) => {
                             const nextRole = String(
                               val,
-                            ) as GamevaultUserRoleEnum;
+                            ) as PlaystashUserRoleEnum;
                             if (
                               currentUser &&
                               currentUser.id === u.id &&
@@ -371,7 +371,7 @@ export default function Administration() {
                           }}
                           disabled={!!deleted || busy}
                         >
-                          {Object.values(GamevaultUserRoleEnum).map((r) => (
+                          {Object.values(PlaystashUserRoleEnum).map((r) => (
                             <ListboxOption key={r} value={r}>
                               <ListboxLabel>
                                 {ROLE_LABELS[Number(r)] ?? r}
@@ -408,7 +408,7 @@ export default function Administration() {
                             color="indigo"
                             onClick={() => setEditingUserId(Number(id))}
                             title="Edit User"
-                            className="bg-gv-accent!"
+                            className="bg-ps-accent!"
                             disabled={busy}
                           >
                             <PencilSquareIcon />{" "}

@@ -26,9 +26,9 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
-import type { GamevaultGame, GamevaultUser, Progress } from "../api";
+import type { PlaystashGame, PlaystashUser, Progress } from "../api";
 
-type UserDetailsMap = Record<number, GamevaultUser>;
+type UserDetailsMap = Record<number, PlaystashUser>;
 type ProfileProgressSort = "last" | "time" | "title" | "state";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -37,7 +37,7 @@ const PROGRESS_STATE_META: Record<
   string,
   { label: string; tone: string; chip: keyof typeof badgeTones }
 > = {
-  UNPLAYED: { label: "Unplayed", tone: "text-gv-muted", chip: "zinc" },
+  UNPLAYED: { label: "Unplayed", tone: "text-ps-muted", chip: "zinc" },
   INFINITE: { label: "Ongoing", tone: "text-sky-400", chip: "blue" },
   PLAYING: { label: "Playing", tone: "text-emerald-400", chip: "green" },
   COMPLETED: { label: "Finished", tone: "text-violet-300", chip: "indigo" },
@@ -130,7 +130,7 @@ function formatPlaytime(minutes: number) {
   return `${hours.toFixed(hours < 10 ? 1 : 0)} h`;
 }
 
-function getDisplayName(user: GamevaultUser | null | undefined) {
+function getDisplayName(user: PlaystashUser | null | undefined) {
   if (!user) return "Unknown User";
   const fullName = [user.first_name, user.last_name]
     .filter(Boolean)
@@ -139,12 +139,12 @@ function getDisplayName(user: GamevaultUser | null | undefined) {
   return fullName || user.username || `User #${user.id}`;
 }
 
-function getUserHandle(user: GamevaultUser | null | undefined) {
+function getUserHandle(user: PlaystashUser | null | undefined) {
   if (!user) return "unknown";
   return user.username || `user-${user.id}`;
 }
 
-function getAvatarFallback(user: GamevaultUser | null | undefined) {
+function getAvatarFallback(user: PlaystashUser | null | undefined) {
   const source = getDisplayName(user)
     .split(/\s+/)
     .filter(Boolean)
@@ -155,17 +155,17 @@ function getAvatarFallback(user: GamevaultUser | null | undefined) {
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,rgba(84,73,198,0.32),rgba(24,24,39,0.96))] text-sm font-bold uppercase tracking-[0.14em] text-white/90">
-      {source || "GV"}
+      {source || "PS"}
     </div>
   );
 }
 
-function getProgresses(user: GamevaultUser | null | undefined) {
+function getProgresses(user: PlaystashUser | null | undefined) {
   return Array.isArray(user?.progresses) ? user.progresses : [];
 }
 
 function getRecentProgresses(
-  user: GamevaultUser | null | undefined,
+  user: PlaystashUser | null | undefined,
   limit = 6,
 ) {
   return [...getProgresses(user)]
@@ -177,7 +177,7 @@ function getRecentProgresses(
 }
 
 function getRecentWindowProgresses(
-  user: GamevaultUser | null | undefined,
+  user: PlaystashUser | null | undefined,
   sinceMs: number,
 ) {
   return getProgresses(user)
@@ -188,11 +188,11 @@ function getRecentWindowProgresses(
     );
 }
 
-function getBookmarkedGames(user: GamevaultUser | null | undefined) {
+function getBookmarkedGames(user: PlaystashUser | null | undefined) {
   return Array.isArray(user?.bookmarked_games) ? user.bookmarked_games : [];
 }
 
-function getPrimaryBackdropMediaId(user: GamevaultUser | null | undefined) {
+function getPrimaryBackdropMediaId(user: PlaystashUser | null | undefined) {
   if (!user) return null;
   if (user.background?.id) return user.background.id;
 
@@ -204,7 +204,7 @@ function getPrimaryBackdropMediaId(user: GamevaultUser | null | undefined) {
   }
 
   const fromRecentCover = getRecentProgresses(user, 12)
-    .map((progress) => getGameCoverMediaId(progress.game as GamevaultGame))
+    .map((progress) => getGameCoverMediaId(progress.game as PlaystashGame))
     .find(Boolean);
   if (fromRecentCover) return Number(fromRecentCover);
 
@@ -214,7 +214,7 @@ function getPrimaryBackdropMediaId(user: GamevaultUser | null | undefined) {
   return bookmarkCover ? Number(bookmarkCover) : null;
 }
 
-function getUserStats(user: GamevaultUser | null | undefined) {
+function getUserStats(user: PlaystashUser | null | undefined) {
   const progresses = getProgresses(user);
   const totalMinutes = progresses.reduce(
     (sum, progress) => sum + (Number(progress.minutes_played ?? 0) || 0),
@@ -257,7 +257,7 @@ function GamePoster({
   height,
   className,
 }: {
-  game?: GamevaultGame | null;
+  game?: PlaystashGame | null;
   title: string;
   width: number;
   height: number;
@@ -269,7 +269,7 @@ function GamePoster({
   return (
     <div
       className={clsx(
-        "overflow-hidden rounded-2xl border border-gv-line/70 bg-gv-panel-soft shadow-sm",
+        "overflow-hidden rounded-2xl border border-ps-line/70 bg-ps-panel-soft shadow-sm",
         className,
       )}
       style={{ width: `${width}px`, height: `${height}px` }}
@@ -307,7 +307,7 @@ function NetworkUserCard({
   user,
   isCurrentUser,
 }: {
-  user: GamevaultUser;
+  user: PlaystashUser;
   isCurrentUser: boolean;
 }) {
   const stats = getUserStats(user);
@@ -316,12 +316,12 @@ function NetworkUserCard({
   return (
     <Link
       to={`/community/${user.id}`}
-      className="group block rounded-[1.75rem] focus:outline-none focus:ring-2 focus:ring-gv-accent-cool"
+      className="group block rounded-[1.75rem] focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
     >
       <article
         className={clsx(
           "surface-panel relative overflow-hidden rounded-[1.75rem] p-5 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)",
-          isCurrentUser && "ring-1 ring-gv-accent/35",
+          isCurrentUser && "ring-1 ring-ps-accent/35",
         )}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top_left,rgba(132,123,237,0.16),transparent_72%)]" />
@@ -333,11 +333,11 @@ function NetworkUserCard({
                 size={76}
                 alt={getDisplayName(user)}
                 fallback={getAvatarFallback(user)}
-                className="border border-gv-line/70 bg-gv-panel-soft shadow-sm"
+                className="border border-ps-line/70 bg-ps-panel-soft shadow-sm"
               />
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-gv-text">
+                  <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-ps-text">
                     {getDisplayName(user)}
                   </h3>
                   {isCurrentUser && <Badge color="indigo">You</Badge>}
@@ -345,10 +345,10 @@ function NetworkUserCard({
                     {getRoleLabel(Number(user.role))}
                   </Badge>
                 </div>
-                <div className="truncate text-sm text-gv-muted">
+                <div className="truncate text-sm text-ps-muted">
                   @{getUserHandle(user)}
                 </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gv-muted">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ps-muted">
                   <span
                     title={formatFullDateTime(stats.lastPlayed) ?? undefined}
                   >
@@ -359,7 +359,7 @@ function NetworkUserCard({
               </div>
             </div>
 
-            <ArrowRightIcon className="size-5 shrink-0 text-gv-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-gv-accent-cool" />
+            <ArrowRightIcon className="size-5 shrink-0 text-ps-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-ps-accent-cool" />
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -371,13 +371,13 @@ function NetworkUserCard({
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-gv-line/70 bg-gv-panel-soft px-3 py-2 text-center"
+                className="rounded-2xl border border-ps-line/70 bg-ps-panel-soft px-3 py-2 text-center"
               >
-                <div className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-gv-muted">
+                <div className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-ps-muted">
                   {item.label}
                 </div>
                 <div
-                  className="mt-2 text-lg font-semibold text-gv-text"
+                  className="mt-2 text-lg font-semibold text-ps-text"
                   data-numeric
                 >
                   {item.value}
@@ -387,7 +387,7 @@ function NetworkUserCard({
           </div>
 
           <div className="mt-5">
-            <div className="mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+            <div className="mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
               Recently played
             </div>
             <div className="flex gap-2 overflow-hidden">
@@ -407,7 +407,7 @@ function NetworkUserCard({
                   );
                 })
               ) : (
-                <div className="flex h-27 w-full items-center justify-center rounded-2xl border border-dashed border-gv-line bg-gv-panel-soft text-sm text-gv-muted">
+                <div className="flex h-27 w-full items-center justify-center rounded-2xl border border-dashed border-ps-line bg-ps-panel-soft text-sm text-ps-muted">
                   Fresh profile. No activity yet.
                 </div>
               )}
@@ -427,7 +427,7 @@ function ProfileProgressCard({ progress }: { progress: Progress }) {
   return (
     <Link
       to={game?.id ? `/library/${game.id}` : "/library"}
-      className="group block rounded-3xl focus:outline-none focus:ring-2 focus:ring-gv-accent-cool"
+      className="group block rounded-3xl focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
     >
       <article className="surface-panel h-full rounded-3xl p-4 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)">
         <div className="flex gap-4">
@@ -440,22 +440,22 @@ function ProfileProgressCard({ progress }: { progress: Progress }) {
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-3">
-              <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold tracking-[-0.02em] text-gv-text">
+              <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold tracking-[-0.02em] text-ps-text">
                 {title}
               </h3>
               <Badge color={meta.chip} className="shrink-0 self-start">
                 {meta.label}
               </Badge>
             </div>
-            <div className="mt-3 space-y-2 text-sm text-gv-muted">
+            <div className="mt-3 space-y-2 text-sm text-ps-muted">
               <div className="flex items-center gap-2">
-                <ClockIcon className="size-4 text-gv-accent-cool" />
+                <ClockIcon className="size-4 text-ps-accent-cool" />
                 <span>
                   {formatPlaytime(Number(progress.minutes_played ?? 0) || 0)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <SparklesIcon className="size-4 text-gv-accent-cool" />
+                <SparklesIcon className="size-4 text-ps-accent-cool" />
                 <span
                   title={
                     formatFullDateTime(progress.last_played_at) ?? undefined
@@ -465,7 +465,7 @@ function ProfileProgressCard({ progress }: { progress: Progress }) {
                 </span>
               </div>
             </div>
-            <div className="mt-4 text-xs uppercase tracking-[0.16em] text-gv-muted/80">
+            <div className="mt-4 text-xs uppercase tracking-[0.16em] text-ps-muted/80">
               Open game page
             </div>
           </div>
@@ -479,7 +479,7 @@ export default function Community() {
   const { serverUrl, authFetch, user: loggedIn } = useAuth();
   const { id } = useParams<{ id?: string }>();
 
-  const [users, setUsers] = useState<GamevaultUser[]>([]);
+  const [users, setUsers] = useState<PlaystashUser[]>([]);
   const [detailsById, setDetailsById] = useState<UserDetailsMap>({});
   const [loading, setLoading] = useState(false);
   const [detailsDone, setDetailsDone] = useState(false);
@@ -502,7 +502,7 @@ export default function Community() {
       if (!res.ok) {
         throw new Error(`Failed to load user ${userId} (${res.status})`);
       }
-      return normalizeUser<GamevaultUser>(await res.json());
+      return normalizeUser<PlaystashUser>(await res.json());
     },
     [serverUrl, authFetch],
   );
@@ -525,7 +525,7 @@ export default function Community() {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`Failed to load users (${res.status})`);
-        const rawUsers: GamevaultUser[] = await res.json();
+        const rawUsers: PlaystashUser[] = await res.json();
         if (cancelled) return;
 
         const activeUsers = rawUsers
@@ -645,8 +645,8 @@ export default function Community() {
     return (
       <div className="flex min-h-full flex-col gap-6">
         <Heading>Community</Heading>
-        <Divider className="border-gv-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+        <Divider className="border-ps-line/80" />
+        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
           Connect to a server to browse the network.
         </div>
       </div>
@@ -678,10 +678,10 @@ export default function Community() {
           </span>
         </div>
       </div>
-      <Divider className="border-gv-line/80" />
+      <Divider className="border-ps-line/80" />
 
       <div className="w-full max-w-sm">
-        <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+        <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
           Search members
         </label>
         <Input
@@ -725,7 +725,7 @@ export default function Community() {
           ))}
         </div>
       ) : (
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
           {userSearch.trim()
             ? "No members match your search."
             : "No community members found yet."}

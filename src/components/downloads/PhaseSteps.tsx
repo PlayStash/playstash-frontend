@@ -19,7 +19,7 @@ function StepIcon({ state }: { state: StepState }) {
   if (state === "done") {
     return (
       <CheckCircleIcon
-        className="size-5 shrink-0 text-gv-success"
+        className="size-5 shrink-0 text-ps-success"
         aria-hidden="true"
       />
     );
@@ -27,7 +27,7 @@ function StepIcon({ state }: { state: StepState }) {
   if (state === "error") {
     return (
       <ExclamationTriangleIcon
-        className="size-5 shrink-0 text-gv-danger"
+        className="size-5 shrink-0 text-ps-danger"
         aria-hidden="true"
       />
     );
@@ -35,7 +35,7 @@ function StepIcon({ state }: { state: StepState }) {
   if (state === "active") {
     return (
       <ClockIcon
-        className="size-5 shrink-0 text-gv-accent"
+        className="size-5 shrink-0 text-ps-accent"
         aria-hidden="true"
       />
     );
@@ -45,7 +45,7 @@ function StepIcon({ state }: { state: StepState }) {
       className="flex size-5 shrink-0 items-center justify-center"
       aria-hidden="true"
     >
-      <span className="size-2.5 rounded-full bg-gv-line" />
+      <span className="size-2.5 rounded-full bg-ps-line" />
     </span>
   );
 }
@@ -57,10 +57,10 @@ export function PhaseSteps({ steps }: { steps: PhaseStep[] }) {
         const isLast = index === steps.length - 1;
         const labelClass =
           step.state === "error"
-            ? "text-gv-danger"
+            ? "text-ps-danger"
             : step.state === "pending"
-              ? "text-gv-muted"
-              : "text-gv-text";
+              ? "text-ps-muted"
+              : "text-ps-text";
         return (
           <Fragment key={step.id}>
             <li
@@ -78,7 +78,7 @@ export function PhaseSteps({ steps }: { steps: PhaseStep[] }) {
                   {step.label}
                 </span>
                 {step.valueText && (
-                  <span className="block truncate text-[11px] tabular-nums text-gv-muted">
+                  <span className="block truncate text-[11px] tabular-nums text-ps-muted">
                     {step.valueText}
                   </span>
                 )}
@@ -89,7 +89,7 @@ export function PhaseSteps({ steps }: { steps: PhaseStep[] }) {
                 aria-hidden="true"
                 className={clsx(
                   "h-px min-w-6 flex-1 rounded-full",
-                  step.state === "done" ? "bg-gv-success/70" : "bg-gv-line",
+                  step.state === "done" ? "bg-ps-success/70" : "bg-ps-line",
                 )}
               />
             )}

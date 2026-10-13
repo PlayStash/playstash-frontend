@@ -23,8 +23,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/tailwind/button";
 import { Badge } from "../components/tailwind/badge";
-import { GamevaultGameTypeEnum } from "@/api/models/GamevaultGame";
-import type { GamevaultGame } from "@/api/models/GamevaultGame";
+import { PlaystashGameTypeEnum } from "@/api/models/PlaystashGame";
+import type { PlaystashGame } from "@/api/models/PlaystashGame";
 import { ProgressStateEnum } from "@/api/models/Progress";
 import MultiSelectFilterDialog, {
   FilterItem,
@@ -48,10 +48,10 @@ const SORT_BY: { label: string; value: string }[] = [
   { label: "Average Playtime", value: "metadata.average_playtime" },
 ];
 
-const GAME_TYPES: { label: string; value: GamevaultGameTypeEnum }[] = [
-  { label: "Windows Setup", value: GamevaultGameTypeEnum.windows_setup },
-  { label: "Windows Portable", value: GamevaultGameTypeEnum.windows_portable },
-  { label: "Linux Portable", value: GamevaultGameTypeEnum.linux_portable },
+const GAME_TYPES: { label: string; value: PlaystashGameTypeEnum }[] = [
+  { label: "Windows Setup", value: PlaystashGameTypeEnum.windows_setup },
+  { label: "Windows Portable", value: PlaystashGameTypeEnum.windows_portable },
+  { label: "Linux Portable", value: PlaystashGameTypeEnum.linux_portable },
 ];
 
 // Static items for game type filter (used in MultiSelectFilterDialog)
@@ -220,13 +220,13 @@ export default function Library() {
   // Defer search to avoid spamming requests while user types quickly
   const deferredSearch = useDeferredValue(search);
 
-  // Convert selected type FilterItems to GamevaultGameTypeEnum values for API
+  // Convert selected type FilterItems to PlaystashGameTypeEnum values for API
   const gameTypeValues = useMemo(() => {
     return selectedGameTypes
       .map((item) => String(item.id))
-      .filter((v): v is GamevaultGameTypeEnum =>
-        Object.values(GamevaultGameTypeEnum).includes(
-          v as GamevaultGameTypeEnum,
+      .filter((v): v is PlaystashGameTypeEnum =>
+        Object.values(PlaystashGameTypeEnum).includes(
+          v as PlaystashGameTypeEnum,
         ),
       );
   }, [selectedGameTypes]);
@@ -303,9 +303,9 @@ export default function Library() {
   );
 
   const isGameType = useCallback(
-    (value: string): value is GamevaultGameTypeEnum =>
-      Object.values(GamevaultGameTypeEnum).includes(
-        value as GamevaultGameTypeEnum,
+    (value: string): value is PlaystashGameTypeEnum =>
+      Object.values(PlaystashGameTypeEnum).includes(
+        value as PlaystashGameTypeEnum,
       ),
     [],
   );
@@ -413,7 +413,7 @@ export default function Library() {
         "types",
         selectedGameTypes
           .map((i) => String(i.id))
-          .filter((v): v is GamevaultGameTypeEnum => isGameType(v)),
+          .filter((v): v is PlaystashGameTypeEnum => isGameType(v)),
       );
       setParamValues(
         params,
@@ -523,8 +523,8 @@ export default function Library() {
     }
   }, []);
 
-  // Map installed games to a GamevaultGame-compatible shape for GameCard
-  const installedAsGames: GamevaultGame[] = useMemo(() => {
+  // Map installed games to a PlaystashGame-compatible shape for GameCard
+  const installedAsGames: PlaystashGame[] = useMemo(() => {
     return installedGames.map((ig) => {
       const meta = (ig.cachedMetadata || ig.gameMetadata) as any;
       const g = {
@@ -546,7 +546,7 @@ export default function Library() {
               publishers: meta.publishers ?? meta.metadata?.publishers,
             }
           : undefined,
-      } as GamevaultGame;
+      } as PlaystashGame;
       // Attach installation info for GameCard play button
       (g as any)._installedInfo = {
         installationDirectory: ig.installationDirectory,
@@ -698,13 +698,13 @@ export default function Library() {
             </Text>
           </div>
         </div>
-        <Divider className="border-gv-line/80" />
+        <Divider className="border-ps-line/80" />
       </div>
 
       <section className="surface-panel rounded-3xl p-5 sm:p-6">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto_auto] lg:items-end">
           <div className="w-full lg:col-span-1">
-            <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+            <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
               Search
             </label>
             <Input
@@ -723,7 +723,7 @@ export default function Library() {
           <div className="flex items-end gap-2 lg:contents">
             <div className="flex min-w-0 flex-1 items-end gap-2 lg:contents">
               <div className="min-w-0 flex-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Sort by
                 </label>
                 <Listbox
@@ -763,7 +763,7 @@ export default function Library() {
             <div className="shrink-0">
               <Button
                 outline
-                className={`${CONTROL_HEIGHT_CLASS} px-3 ${hasActiveFilters ? "text-gv-accent" : ""}`}
+                className={`${CONTROL_HEIGHT_CLASS} px-3 ${hasActiveFilters ? "text-ps-accent" : ""}`}
                 aria-label={
                   showFilters
                     ? "Hide filters"
@@ -775,7 +775,7 @@ export default function Library() {
                 <span>{showFilters ? "Hide filters" : "Filters"}</span>
                 {activeFilterCount > 0 && (
                   <span
-                    className="ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-gv-accent px-1 text-[0.65rem] font-bold leading-none text-white"
+                    className="ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-ps-accent px-1 text-[0.65rem] font-bold leading-none text-white"
                     aria-label={`${activeFilterCount} active filters`}
                   >
                     <span className="translate-y-[0.2em]">
@@ -794,8 +794,8 @@ export default function Library() {
             {/* Header with Clear All Filters Button */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <FunnelIcon className="h-4 w-4 text-gv-muted" />
-                <span className="text-xs text-gv-muted">
+                <FunnelIcon className="h-4 w-4 text-ps-muted" />
+                <span className="text-xs text-ps-muted">
                   {hasActiveFilters ? "Filters active" : "No filters active"}
                 </span>
               </div>
@@ -815,7 +815,7 @@ export default function Library() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {/* Types */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Type
                 </label>
                 <Button
@@ -824,7 +824,7 @@ export default function Library() {
                   className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
                 >
                   <span
-                    className={`truncate ${selectedGameTypes.length > 0 ? "text-gv-accent-cool" : ""}`}
+                    className={`truncate ${selectedGameTypes.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedGameTypes.length > 0
                       ? `${selectedGameTypes.length} selected`
@@ -835,7 +835,7 @@ export default function Library() {
 
               {/* Tags */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Tags
                 </label>
                 <Button
@@ -844,7 +844,7 @@ export default function Library() {
                   className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
                 >
                   <span
-                    className={`truncate ${selectedTags.length > 0 ? "text-gv-accent-cool" : ""}`}
+                    className={`truncate ${selectedTags.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedTags.length > 0
                       ? `${selectedTags.length} selected`
@@ -855,7 +855,7 @@ export default function Library() {
 
               {/* Genres */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Genres
                 </label>
                 <Button
@@ -864,7 +864,7 @@ export default function Library() {
                   className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
                 >
                   <span
-                    className={`truncate ${selectedGenres.length > 0 ? "text-gv-accent-cool" : ""}`}
+                    className={`truncate ${selectedGenres.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedGenres.length > 0
                       ? `${selectedGenres.length} selected`
@@ -875,7 +875,7 @@ export default function Library() {
 
               {/* Developers */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Developers
                 </label>
                 <Button
@@ -884,7 +884,7 @@ export default function Library() {
                   className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
                 >
                   <span
-                    className={`truncate ${selectedDevelopers.length > 0 ? "text-gv-accent-cool" : ""}`}
+                    className={`truncate ${selectedDevelopers.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedDevelopers.length > 0
                       ? `${selectedDevelopers.length} selected`
@@ -895,7 +895,7 @@ export default function Library() {
 
               {/* Publishers */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Publishers
                 </label>
                 <Button
@@ -904,7 +904,7 @@ export default function Library() {
                   className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
                 >
                   <span
-                    className={`truncate ${selectedPublishers.length > 0 ? "text-gv-accent-cool" : ""}`}
+                    className={`truncate ${selectedPublishers.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedPublishers.length > 0
                       ? `${selectedPublishers.length} selected`
@@ -918,7 +918,7 @@ export default function Library() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
               {/* Game State */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   State
                 </label>
                 <Listbox
@@ -942,7 +942,7 @@ export default function Library() {
 
               {/* Release Date From */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Released After
                 </label>
                 <Input
@@ -955,7 +955,7 @@ export default function Library() {
 
               {/* Release Date To */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Released Before
                 </label>
                 <Input
@@ -968,7 +968,7 @@ export default function Library() {
 
               {/* Early Access */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Early Access
                 </label>
                 <Listbox
@@ -986,7 +986,7 @@ export default function Library() {
 
               {/* Bookmarks */}
               <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                   Bookmarked
                 </label>
                 <Listbox
@@ -1010,7 +1010,7 @@ export default function Library() {
               selectedGenres.length > 0 ||
               selectedDevelopers.length > 0 ||
               selectedPublishers.length > 0) && (
-              <div className="mt-4 border-t border-gv-line pt-4">
+              <div className="mt-4 border-t border-ps-line pt-4">
                 <div className="flex flex-wrap gap-1.5">
                   {selectedGameTypes.map((item) => (
                     <Badge
@@ -1120,7 +1120,7 @@ export default function Library() {
       )}
       <div className="flex flex-col text-center">
         {!serverUrl && (
-          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
             Connect to a server to load games.
           </div>
         )}
@@ -1143,7 +1143,7 @@ export default function Library() {
             }
           >
             {filteredInstalledGames.length === 0 ? (
-              <div className="surface-panel-soft rounded-2xl p-4 text-sm text-gv-muted">
+              <div className="surface-panel-soft rounded-2xl p-4 text-sm text-ps-muted">
                 No installed games found.
               </div>
             ) : (
@@ -1171,8 +1171,8 @@ export default function Library() {
 
         {/* Server Games Section */}
         {isTauri && !isOnline ? (
-          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted text-center">
-            <p className="font-semibold text-gv-text mb-2">Offline Mode</p>
+          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted text-center">
+            <p className="font-semibold text-ps-text mb-2">Offline Mode</p>
             <p>Server games are unavailable while offline.</p>
             <p className="mt-1">Installed games remain fully playable above.</p>
           </div>
@@ -1186,14 +1186,14 @@ export default function Library() {
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-3/4 rounded-3xl bg-gv-panel-strong motion-safe:animate-pulse"
+                    className="aspect-3/4 rounded-3xl bg-ps-panel-strong motion-safe:animate-pulse"
                     aria-hidden="true"
                   />
                 ))}
               </div>
             )}
             {serverUrl && !loading && games.length === 0 && !error && (
-              <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+              <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
                 No games found.
                 {(search.trim() || hasActiveFilters) && (
                   <div className="mt-2">
@@ -1230,7 +1230,7 @@ export default function Library() {
             </div>
             {hasMore && <div ref={sentinelRef} className="h-10 -mt-10" />}
             {loading && games.length > 0 && (
-              <div className="flex items-center justify-center gap-2 p-4 text-xs text-gv-muted">
+              <div className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted">
                 <svg
                   className="h-3.5 w-3.5 motion-safe:animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
@@ -1263,14 +1263,14 @@ export default function Library() {
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-3/4 rounded-3xl bg-gv-panel-strong motion-safe:animate-pulse"
+                    className="aspect-3/4 rounded-3xl bg-ps-panel-strong motion-safe:animate-pulse"
                     aria-hidden="true"
                   />
                 ))}
               </div>
             )}
             {serverUrl && !loading && games.length === 0 && !error && (
-              <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+              <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
                 No games found.
                 {(search.trim() || hasActiveFilters) && (
                   <div className="mt-2">
@@ -1307,7 +1307,7 @@ export default function Library() {
             </div>
             {hasMore && <div ref={sentinelRef} className="h-10 -mt-10" />}
             {loading && games.length > 0 && (
-              <div className="flex items-center justify-center gap-2 p-4 text-xs text-gv-muted">
+              <div className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted">
                 <svg
                   className="h-3.5 w-3.5 motion-safe:animate-spin"
                   xmlns="http://www.w3.org/2000/svg"

@@ -18,10 +18,10 @@ import {
   pickBestImageUrl,
 } from "@/utils/droppedImage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GamevaultUser } from "../../api";
+import { PlaystashUser } from "../../api";
 
 interface Props {
-  user: GamevaultUser;
+  user: PlaystashUser;
   onClose: () => void;
   /** Optional custom save handler. If omitted, a default PUT is performed. */
   onSave?: (payload: {
@@ -32,7 +32,7 @@ interface Props {
     password?: string;
     birth_date: string | null;
   }) => Promise<{ ok: boolean; message?: string }>;
-  onUserUpdated?: (u: GamevaultUser) => void;
+  onUserUpdated?: (u: PlaystashUser) => void;
   /** If true, treat this editor as editing the current logged-in user (affects endpoints) */
   self?: boolean;
 }
@@ -502,14 +502,14 @@ export function UserEditorModal({
   return (
     <Dialog open onClose={onClose} size="3xl" className="!h-[min(85vh,850px)] flex flex-col">
       <DialogTitle>User Settings</DialogTitle>
-      <div className="px-6 mt-1 flex gap-2 border-b border-gv-line text-sm">
+      <div className="px-6 mt-1 flex gap-2 border-b border-ps-line text-sm">
         <button
           onClick={() => setActiveTab("images")}
           className={
             "px-3 py-2 border-b-2 transition-colors " +
             (activeTab === "images"
-              ? "border-gv-accent text-gv-accent"
-              : "border-transparent text-gv-muted hover:text-gv-text")
+              ? "border-ps-accent text-ps-accent"
+              : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
           Images
@@ -519,8 +519,8 @@ export function UserEditorModal({
           className={
             "px-3 py-2 border-b-2 transition-colors " +
             (activeTab === "details"
-              ? "border-gv-accent text-gv-accent"
-              : "border-transparent text-gv-muted hover:text-gv-text")
+              ? "border-ps-accent text-ps-accent"
+              : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
           Details
@@ -532,10 +532,10 @@ export function UserEditorModal({
           <div className="grid gap-8 md:grid-cols-2">
             {/* Avatar zone */}
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-gv-muted">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-ps-muted">
                 <span>Avatar</span>
                 {avatarImg.via !== "none" && (
-                  <span className="rounded-full bg-gv-panel px-2 py-0.5 text-[10px] font-semibold text-gv-muted">
+                  <span className="rounded-full bg-ps-panel px-2 py-0.5 text-[10px] font-semibold text-ps-muted">
                     {avatarImg.via}
                   </span>
                 )}
@@ -545,7 +545,7 @@ export function UserEditorModal({
                 onPaste={(e) => handlePaste(e, "avatar")}
                 onDrop={(e) => handleDrop(e, "avatar")}
                 onDragOver={(e) => handleDragOver(e, "avatar")}
-                className="relative rounded-2xl border-2 border-dashed border-gv-line bg-gv-panel-soft h-56 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:border-gv-accent/50 hover:bg-gv-panel"
+                className="relative rounded-2xl border-2 border-dashed border-ps-line bg-ps-panel-soft h-56 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:border-ps-accent/50 hover:bg-ps-panel"
                 onClick={() => avatarFileInputRef.current?.click()}
               >
                 {avatarImg.preview ? (
@@ -556,7 +556,7 @@ export function UserEditorModal({
                     draggable={false}
                   />
                 ) : (
-                  <div className="text-xs text-gv-muted text-center px-4">
+                  <div className="text-xs text-ps-muted text-center px-4">
                     {avatarMediaId ? "Loading…" : "Drag & Drop / Click / Paste"}
                   </div>
                 )}
@@ -610,10 +610,10 @@ export function UserEditorModal({
             </div>
             {/* Background zone */}
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-gv-muted">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-ps-muted">
                 <span>Background</span>
                 {bgImg.via !== "none" && (
-                  <span className="rounded-full bg-gv-panel px-2 py-0.5 text-[10px] font-semibold text-gv-muted">
+                  <span className="rounded-full bg-ps-panel px-2 py-0.5 text-[10px] font-semibold text-ps-muted">
                     {bgImg.via}
                   </span>
                 )}
@@ -623,7 +623,7 @@ export function UserEditorModal({
                 onPaste={(e) => handlePaste(e, "bg")}
                 onDrop={(e) => handleDrop(e, "bg")}
                 onDragOver={(e) => handleDragOver(e, "bg")}
-                className="relative rounded-2xl border-2 border-dashed border-gv-line bg-gv-panel-soft h-56 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:border-gv-accent/50 hover:bg-gv-panel"
+                className="relative rounded-2xl border-2 border-dashed border-ps-line bg-ps-panel-soft h-56 flex items-center justify-center cursor-pointer overflow-hidden transition-colors hover:border-ps-accent/50 hover:bg-ps-panel"
                 onClick={() => bgFileInputRef.current?.click()}
               >
                 {bgImg.preview ? (
@@ -634,7 +634,7 @@ export function UserEditorModal({
                     draggable={false}
                   />
                 ) : (
-                  <div className="text-xs text-gv-muted text-center px-4">
+                  <div className="text-xs text-ps-muted text-center px-4">
                     {backgroundMediaId
                       ? "Loading…"
                       : "Drag & Drop / Click / Paste"}

@@ -281,7 +281,7 @@ export function DownloadCard({
 
   return (
     <div
-      className="surface-panel rounded-2xl p-4 transition-colors duration-150 hover:border-gv-line-strong animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none sm:p-5"
+      className="surface-panel rounded-2xl p-4 transition-colors duration-150 hover:border-ps-line-strong animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none sm:p-5"
       style={{ animationDelay: `${Math.min(index * 0.05, 0.3)}s` }}
     >
       <div className="flex items-start gap-3 sm:gap-4">
@@ -293,7 +293,7 @@ export function DownloadCard({
               height={120}
               square
               alt={`${download.gameTitle} cover art`}
-              className="overflow-hidden rounded-lg border border-gv-line bg-gv-panel-soft shadow-sm"
+              className="overflow-hidden rounded-lg border border-ps-line bg-ps-panel-soft shadow-sm"
               gameId={download.gameId}
               mediaSlot="cover"
               fallback={
@@ -305,7 +305,7 @@ export function DownloadCard({
               }
             />
           ) : (
-            <div className="h-30 w-20 overflow-hidden rounded-lg border border-dashed border-gv-line bg-gv-panel-soft">
+            <div className="h-30 w-20 overflow-hidden rounded-lg border border-dashed border-ps-line bg-ps-panel-soft">
               <CoverPlaceholder
                 title={download.gameTitle || "Game"}
                 size="normal"
@@ -319,18 +319,18 @@ export function DownloadCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3
-                className="truncate text-sm font-semibold tracking-[-0.02em] text-gv-text"
+                className="truncate text-sm font-semibold tracking-[-0.02em] text-ps-text"
                 title={download.gameTitle || download.filename}
               >
                 {download.gameTitle || download.filename}
               </h3>
               <p
-                className="mt-0.5 truncate font-mono text-xs text-gv-muted"
+                className="mt-0.5 truncate font-mono text-xs text-ps-muted"
                 title={download.filename}
               >
                 {download.filename}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gv-muted">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ps-muted">
                 <span className="tabular-nums">
                   {formatBytes(download.received)} /{" "}
                   {download.total
@@ -373,7 +373,7 @@ export function DownloadCard({
         />
       </div>
 
-      <div className="mt-4 flex items-center justify-end gap-2 border-t border-gv-line pt-3">
+      <div className="mt-4 flex items-center justify-end gap-2 border-t border-ps-line pt-3">
         {primaryAction}
         <Dropdown>
           <DropdownButton

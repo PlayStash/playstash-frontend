@@ -69,7 +69,7 @@ const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
 const AUTO_EXTRACT_KEY = "tauri_auto_extract";
 const AUTO_INSTALL_KEY = "tauri_auto_install";
 const AUTO_DELETE_SOURCE_KEY = "tauri_auto_delete_source";
-const DEV_TOOLS_KEY = "gv_dev_tools_unlocked";
+const DEV_TOOLS_KEY = "playstash_dev_tools_unlocked";
 
 const SENSITIVE_KEY_PATTERN = /token|password|secret|auth|refresh|credential/i;
 
@@ -130,27 +130,27 @@ const CATEGORY_META: Record<
   },
   privacy: {
     label: "Privacy & Analytics",
-    description: "Decide what information GameVault shares.",
+    description: "Decide what information PlayStash shares.",
     icon: ShieldCheckIcon,
   },
   appearance: {
     label: "Appearance",
-    description: "Customize how GameVault looks on your device.",
+    description: "Customize how PlayStash looks on your device.",
     icon: SwatchIcon,
   },
   sound: {
     label: "Sound",
-    description: "Control volume and sound effects in GameVault.",
+    description: "Control volume and sound effects in PlayStash.",
     icon: SpeakerWaveIcon,
   },
   desktop: {
     label: "Startup",
-    description: "How GameVault starts and behaves at launch.",
+    description: "How PlayStash starts and behaves at launch.",
     icon: ComputerDesktopIcon,
   },
   ignore: {
     label: "Ignore List",
-    description: "Files GameVault should skip completely",
+    description: "Files PlayStash should skip completely",
     icon: EyeSlashIcon,
   },
   developer: {
@@ -183,16 +183,16 @@ function SettingsGroup({
   return (
     <div className={clsx(className)}>
       {caption && (
-        <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gv-muted">
+        <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-ps-muted">
           {caption}
         </p>
       )}
       {description && (
-        <p className="mb-2 px-1 text-xs leading-5 text-gv-muted">
+        <p className="mb-2 px-1 text-xs leading-5 text-ps-muted">
           {description}
         </p>
       )}
-      <div className="divide-y divide-gv-line overflow-hidden rounded-2xl border border-gv-line bg-gv-panel-strong shadow-sm">
+      <div className="divide-y divide-ps-line overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong shadow-sm">
         {children}
       </div>
     </div>
@@ -231,9 +231,9 @@ function SettingsLabel({
 }) {
   return (
     <div className={clsx("min-w-0 flex-1", className)}>
-      <p className="text-sm font-medium text-gv-text">{title}</p>
+      <p className="text-sm font-medium text-ps-text">{title}</p>
       {description && (
-        <p className="mt-0.5 text-xs leading-5 text-gv-muted">{description}</p>
+        <p className="mt-0.5 text-xs leading-5 text-ps-muted">{description}</p>
       )}
     </div>
   );
@@ -251,15 +251,15 @@ function SettingsSectionHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gv-panel-soft text-gv-accent ring-1 ring-gv-line">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-ps-panel-soft text-ps-accent ring-1 ring-ps-line">
         <Icon className="size-5" />
       </span>
       <div className="min-w-0 pt-0.5">
-        <h2 className="text-base font-semibold tracking-[-0.01em] text-gv-text">
+        <h2 className="text-base font-semibold tracking-[-0.01em] text-ps-text">
           {title}
         </h2>
         {description && (
-          <p className="mt-0.5 text-xs text-gv-muted sm:text-sm">
+          <p className="mt-0.5 text-xs text-ps-muted sm:text-sm">
             {description}
           </p>
         )}
@@ -283,12 +283,12 @@ function AboutLinkRow({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-gv-panel-soft"
+      className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
     >
       <SettingsLabel title={title} />
-      <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-gv-accent">
+      <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
         <span className="truncate">{value}</span>
-        <ChevronRightIcon className="size-3.5 shrink-0 text-gv-muted" />
+        <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
       </span>
     </a>
   );
@@ -420,7 +420,7 @@ export default function Settings() {
   const [licenseData, setLicenseData] = useState<LicensesData | null>(null);
   const [expandedLicense, setExpandedLicense] = useState<string | null>(null);
   const [licenseExpanded, setLicenseExpanded] = useState(false);
-  const [gameVaultLicense, setGameVaultLicense] = useState<string | null>(null);
+  const [playStashLicense, setPlayStashLicense] = useState<string | null>(null);
   const [devToolsUnlocked, setDevToolsUnlocked] = useState<boolean>(() => {
     try {
       return localStorage.getItem(DEV_TOOLS_KEY) === "1";
@@ -536,8 +536,8 @@ export default function Settings() {
         try {
           const { invoke } = await import("@tauri-apps/api/core");
           const { join } = await import("@tauri-apps/api/path");
-          const gameVaultRoot = await join(selected, "GameVault");
-          await invoke("fs_create_dir_all", { path: gameVaultRoot });
+          const playStashRoot = await join(selected, "PlayStash");
+          await invoke("fs_create_dir_all", { path: playStashRoot });
         } catch {
           // Folder creation is best-effort; settings save succeeded
         }
@@ -563,8 +563,8 @@ export default function Settings() {
         try {
           const { invoke } = await import("@tauri-apps/api/core");
           const { join } = await import("@tauri-apps/api/path");
-          const gameVaultRoot = await join(selected, "GameVault");
-          await invoke("fs_create_dir_all", { path: gameVaultRoot });
+          const playStashRoot = await join(selected, "PlayStash");
+          await invoke("fs_create_dir_all", { path: playStashRoot });
         } catch {
           // Folder creation is best-effort
         }
@@ -655,7 +655,7 @@ export default function Settings() {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
-        anchor.download = `gamevault-settings-${new Date()
+        anchor.download = `playstash-settings-${new Date()
           .toISOString()
           .slice(0, 10)}.json`;
         document.body.appendChild(anchor);
@@ -693,13 +693,13 @@ export default function Settings() {
     setLicensesOpen(true);
   };
 
-  const toggleGameVaultLicense = async () => {
-    if (!gameVaultLicense) {
+  const togglePlayStashLicense = async () => {
+    if (!playStashLicense) {
       try {
         const mod = await import("../../LICENSE?raw");
-        setGameVaultLicense(mod.default as string);
+        setPlayStashLicense(mod.default as string);
       } catch (e) {
-        console.error("Failed to load GameVault license:", e);
+        console.error("Failed to load PlayStash license:", e);
         return;
       }
     }
@@ -776,13 +776,13 @@ export default function Settings() {
           duration: 0.22,
           ease: [0.23, 1, 0.32, 1],
         }}
-        className="group flex w-full min-h-12 cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gv-panel-soft"
+        className="group flex w-full min-h-12 cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gv-panel-soft text-gv-accent ring-1 ring-gv-line transition-colors group-hover:bg-gv-accent/15">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ps-panel-soft text-ps-accent ring-1 ring-ps-line transition-colors group-hover:bg-ps-accent/15">
           <Icon className="size-4" />
         </span>
         <SettingsLabel title={meta.label} description={meta.description} />
-        <ChevronRightIcon className="size-4 shrink-0 text-gv-muted" />
+        <ChevronRightIcon className="size-4 shrink-0 text-ps-muted" />
       </motion.button>
     );
   };
@@ -800,12 +800,12 @@ export default function Settings() {
           placeholder="0"
           aria-label="Download speed limit in kilobytes per second"
         />
-        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gv-muted">
+        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-ps-muted">
           KB/s
         </span>
       </div>
       {speedLimitKB > 0 && (
-        <span className="rounded-full bg-gv-panel-soft px-2 py-0.5 text-[11px] font-medium text-gv-muted ring-1 ring-gv-line">
+        <span className="rounded-full bg-ps-panel-soft px-2 py-0.5 text-[11px] font-medium text-ps-muted ring-1 ring-ps-line">
           {formatLimit(speedLimitKB)}
         </span>
       )}
@@ -818,10 +818,10 @@ export default function Settings() {
         <div className="space-y-2">
           <Heading>Settings</Heading>
           <Text className="max-w-2xl">
-            Everything you need to customize GameVault, all in one place.
+            Everything you need to customize PlayStash, all in one place.
           </Text>
         </div>
-        <Divider className="border-gv-line/80" />
+        <Divider className="border-ps-line/80" />
 
         <div className="w-full max-w-3xl">
           <AnimatePresence mode="wait" initial={false}>
@@ -851,7 +851,7 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={() => setActiveCategory(null)}
-                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg py-1 pr-2 text-sm font-medium text-gv-accent transition-colors hover:text-gv-accent-strong"
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg py-1 pr-2 text-sm font-medium text-ps-accent transition-colors hover:text-ps-accent-strong"
                 >
                   <ChevronLeftIcon className="size-4" />
                   Settings
@@ -867,11 +867,11 @@ export default function Settings() {
                     {isTauri && (
                       <SettingsGroup
                         caption="Download locations"
-                        description="A GameVault subfolder is created inside each location automatically."
+                        description="A PlayStash subfolder is created inside each location automatically."
                       >
                         {rootPaths.length === 0 && (
                           <SettingsRow>
-                            <div className="flex items-center gap-2 text-sm text-gv-muted">
+                            <div className="flex items-center gap-2 text-sm text-ps-muted">
                               <FolderIcon className="size-4 shrink-0" />
                               No download locations yet. Add one below.
                             </div>
@@ -910,13 +910,13 @@ export default function Settings() {
                                   />
                                 ) : (
                                   <div className="flex min-w-0 items-center gap-1.5">
-                                    <span className="min-w-0 truncate text-sm font-medium text-gv-text">
+                                    <span className="min-w-0 truncate text-sm font-medium text-ps-text">
                                       {displayLabel}
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => startRenameRootPath(root)}
-                                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-gv-muted transition-colors hover:bg-gv-panel-soft hover:text-gv-text cursor-pointer"
+                                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text cursor-pointer"
                                       aria-label={`Rename ${displayLabel}`}
                                     >
                                       <PencilSquareIcon className="size-3.5" />
@@ -924,7 +924,7 @@ export default function Settings() {
                                   </div>
                                 )}
                                 <p
-                                  className="mt-0.5 truncate text-xs text-gv-muted"
+                                  className="mt-0.5 truncate text-xs text-ps-muted"
                                   title={root.path}
                                 >
                                   {root.path}
@@ -943,7 +943,7 @@ export default function Settings() {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveRootPath(root.id)}
-                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-gv-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
                                   aria-label="Remove download folder"
                                 >
                                   <XMarkIcon className="size-4" />
@@ -956,7 +956,7 @@ export default function Settings() {
                         <button
                           type="button"
                           onClick={handleAddRootPath}
-                          className="flex min-h-12 w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-gv-accent transition-colors hover:bg-gv-panel-soft cursor-pointer"
+                          className="flex min-h-12 w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-ps-accent transition-colors hover:bg-ps-panel-soft cursor-pointer"
                         >
                           <PlusIcon className="size-4" />
                           Add Download Location
@@ -1050,13 +1050,13 @@ export default function Settings() {
                     <SettingsSectionHeader
                       icon={ShieldCheckIcon}
                       title="Privacy & Analytics"
-                      description="Decide what information GameVault shares."
+                      description="Decide what information PlayStash shares."
                     />
                     <SettingsGroup>
                       <SettingsRow>
                         <SettingsLabel
                           title="Send anonymous usage analytics"
-                          description={`We collect anonymous data about how you use GameVault, like which features you use and whether errors occur. This helps us understand what to improve. No personal information is ever collected. Changes take effect after ${isTauri ? "restarting the app" : "reloading"}.`}
+                          description={`We collect anonymous data about how you use PlayStash, like which features you use and whether errors occur. This helps us understand what to improve. No personal information is ever collected. Changes take effect after ${isTauri ? "restarting the app" : "reloading"}.`}
                         />
                         <Switch
                           name="analyticsConsent"
@@ -1078,7 +1078,7 @@ export default function Settings() {
                     <SettingsSectionHeader
                       icon={SwatchIcon}
                       title="Appearance"
-                      description="Customize how GameVault looks on your device."
+                      description="Customize how PlayStash looks on your device."
                     />
                     <SettingsGroup>
                       <SettingsRow>
@@ -1108,13 +1108,13 @@ export default function Settings() {
                     <SettingsSectionHeader
                       icon={SpeakerWaveIcon}
                       title="Sound"
-                      description="Control volume for GameVault sound effects."
+                      description="Control volume for PlayStash sound effects."
                     />
                     <SettingsGroup>
                       <SettingsRow>
                         <SettingsLabel
                           title="Volume"
-                          description="Adjust the master volume of GameVault sounds. Click the speaker to mute."
+                          description="Adjust the master volume of PlayStash sounds. Click the speaker to mute."
                         />
                         <div className="w-44 shrink-0">
                           <VolumeControl />
@@ -1143,18 +1143,18 @@ export default function Settings() {
                     <SettingsSectionHeader
                       icon={ComputerDesktopIcon}
                       title="Startup"
-                      description="How GameVault starts and behaves at launch."
+                      description="How PlayStash starts and behaves at launch."
                     />
                     <SettingsGroup caption="On startup">
                       <SettingsRow>
                         <SettingsLabel
-                          title="Launch GameVault on Computer Startup"
-                          description="Automatically start GameVault when you log in to your computer."
+                          title="Launch PlayStash on Computer Startup"
+                          description="Automatically start PlayStash when you log in to your computer."
                         />
                         <Switch
                           name="autostart"
                           color="indigo"
-                          aria-label="Launch GameVault on computer startup"
+                          aria-label="Launch PlayStash on computer startup"
                           checked={autostartEnabled ?? false}
                           disabled={autostartEnabled === null}
                           onChange={async (v: boolean) => {
@@ -1178,13 +1178,13 @@ export default function Settings() {
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel
-                          title="Minimize GameVault to System Tray on Startup"
-                          description="When auto-start is enabled, GameVault will start silently in the system tray instead of opening the full window."
+                          title="Minimize PlayStash to System Tray on Startup"
+                          description="When auto-start is enabled, PlayStash will start silently in the system tray instead of opening the full window."
                         />
                         <Switch
                           name="startMinimized"
                           color="indigo"
-                          aria-label="Minimize GameVault to system tray on startup"
+                          aria-label="Minimize PlayStash to system tray on startup"
                           checked={startMinimized}
                           disabled={!autostartEnabled}
                           onChange={(v: boolean) => setStartMinimized(v)}
@@ -1199,12 +1199,12 @@ export default function Settings() {
                     <SettingsSectionHeader
                       icon={EyeSlashIcon}
                       title="Ignore List"
-                      description="Manage the list of files GameVault ignores."
+                      description="Manage the list of files PlayStash ignores."
                     />
                     <SettingsGroup caption="Hidden executables">
                       {ignoreList.length === 0 && (
                         <SettingsRow>
-                          <div className="flex items-center gap-2 text-sm text-gv-muted">
+                          <div className="flex items-center gap-2 text-sm text-ps-muted">
                             <EyeSlashIcon className="size-4 shrink-0" />
                             No files hidden yet. Add one below.
                           </div>
@@ -1227,7 +1227,7 @@ export default function Settings() {
                                 />
                               </InputGroup>
                             </div>
-                            <span className="shrink-0 whitespace-nowrap text-xs text-gv-muted">
+                            <span className="shrink-0 whitespace-nowrap text-xs text-ps-muted">
                               {filteredIgnoreList.length} of {ignoreList.length}
                             </span>
                           </div>
@@ -1236,23 +1236,23 @@ export default function Settings() {
                       {filteredIgnoreList.length === 0 &&
                         ignoreList.length > 0 && (
                           <SettingsRow>
-                            <div className="flex items-center gap-2 text-sm text-gv-muted">
+                            <div className="flex items-center gap-2 text-sm text-ps-muted">
                               <MagnifyingGlassIcon className="size-4 shrink-0" />
                               No matches for “{ignoreSearch.trim()}”.
                             </div>
                           </SettingsRow>
                         )}
                       {filteredIgnoreList.length > 0 && (
-                        <div className="max-h-80 divide-y divide-gv-line overflow-y-auto">
+                        <div className="max-h-80 divide-y divide-ps-line overflow-y-auto">
                           {filteredIgnoreList.map((name) => (
                             <SettingsRow key={name}>
-                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-gv-text">
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ps-text">
                                 {name}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveIgnore(name)}
-                                className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-gv-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+                                className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
                                 aria-label={`Remove ${name} from ignore list`}
                               >
                                 <XMarkIcon className="size-4" />
@@ -1304,7 +1304,7 @@ export default function Settings() {
                         <SettingsRow>
                           <SettingsLabel
                             title="Simulate Desktop App"
-                            description="Preview how GameVault looks and behaves as a native desktop application."
+                            description="Preview how PlayStash looks and behaves as a native desktop application."
                           />
                           <Switch
                             name="simulateDesktop"
@@ -1419,19 +1419,19 @@ export default function Settings() {
                       <SettingsGroup caption="Build Info">
                         <SettingsRow>
                           <SettingsLabel title="Version" />
-                          <span className="shrink-0 font-mono text-xs text-gv-text">
+                          <span className="shrink-0 font-mono text-xs text-ps-text">
                             {__APP_VERSION__}
                           </span>
                         </SettingsRow>
                         <SettingsRow>
                           <SettingsLabel title="Channel" />
-                          <span className="shrink-0 font-mono text-xs text-gv-muted">
+                          <span className="shrink-0 font-mono text-xs text-ps-muted">
                             {__BUILD_CHANNEL__}
                           </span>
                         </SettingsRow>
                         <SettingsRow>
                           <SettingsLabel title="Environment" />
-                          <span className="shrink-0 font-mono text-xs text-gv-muted">
+                          <span className="shrink-0 font-mono text-xs text-ps-muted">
                             {import.meta.env.MODE} · {isTauri ? "desktop" : "web"}
                           </span>
                         </SettingsRow>
@@ -1471,7 +1471,7 @@ export default function Settings() {
                           type="button"
                           onClick={handleVersionClick}
                           title="Application version"
-                          className="inline-flex shrink-0 cursor-pointer items-center rounded-md bg-gv-panel-soft px-2 py-1 font-mono text-xs text-gv-text ring-1 ring-gv-line transition-colors hover:ring-gv-line-strong"
+                          className="inline-flex shrink-0 cursor-pointer items-center rounded-md bg-ps-panel-soft px-2 py-1 font-mono text-xs text-ps-text ring-1 ring-ps-line transition-colors hover:ring-ps-line-strong"
                         >
                           v{__APP_VERSION__}
                         </button>
@@ -1484,24 +1484,24 @@ export default function Settings() {
                       <div>
                         <button
                           type="button"
-                          onClick={() => void toggleGameVaultLicense()}
+                          onClick={() => void togglePlayStashLicense()}
                           aria-expanded={licenseExpanded}
-                          className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-gv-panel-soft"
+                          className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
                         >
                           <SettingsLabel title="License" />
-                          <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-gv-accent">
+                          <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
                             <span className="truncate">CC BY-NC-SA 4.0</span>
                             <ChevronRightIcon
                               className={clsx(
-                                "size-3.5 shrink-0 text-gv-muted transition-transform",
+                                "size-3.5 shrink-0 text-ps-muted transition-transform",
                                 licenseExpanded && "rotate-90",
                               )}
                             />
                           </span>
                         </button>
-                        {licenseExpanded && gameVaultLicense && (
-                          <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-gv-line bg-gv-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-gv-muted">
-                            {gameVaultLicense}
+                        {licenseExpanded && playStashLicense && (
+                          <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-ps-line bg-ps-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-ps-muted">
+                            {playStashLicense}
                           </pre>
                         )}
                       </div>
@@ -1528,16 +1528,16 @@ export default function Settings() {
                       <button
                         type="button"
                         onClick={() => void openLicenses()}
-                        className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-gv-panel-soft"
+                        className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
                       >
                         <SettingsLabel title="Open Source Licenses" />
-                        <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-gv-accent">
+                        <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
                           <span className="truncate">
                             {licenseData
                               ? `${licenseData.packages.length} libraries`
                               : "View"}
                           </span>
-                          <ChevronRightIcon className="size-3.5 shrink-0 text-gv-muted" />
+                          <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
                         </span>
                       </button>
                     </SettingsGroup>
@@ -1545,43 +1545,43 @@ export default function Settings() {
                     <SettingsGroup caption="System">
                       <SettingsRow>
                         <SettingsLabel title="Platform" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.platform}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel title="Operating System" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.os}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel title="Architecture" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.architecture || "—"}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel title="Language" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.language}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel title="Screen" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.screen}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel title="CPU Cores" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.cores}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel title="Memory" />
-                        <span className="shrink-0 font-mono text-xs text-gv-muted">
+                        <span className="shrink-0 font-mono text-xs text-ps-muted">
                           {systemInfo.memory}
                         </span>
                       </SettingsRow>
@@ -1596,7 +1596,7 @@ export default function Settings() {
                                 title="Available update"
                                 description="A newer version is available for this channel."
                               />
-                              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-gv-accent/15 px-2 py-1 font-mono text-xs font-medium text-gv-accent-strong ring-1 ring-gv-accent/25">
+                              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-ps-accent/15 px-2 py-1 font-mono text-xs font-medium text-ps-accent-strong ring-1 ring-ps-accent/25">
                                 <SparklesIcon className="size-3.5" />v
                                 {availableVersion}
                               </span>
@@ -1652,8 +1652,8 @@ export default function Settings() {
                                 className={clsx(
                                   "size-2.5 shrink-0 rounded-full",
                                   updaterEnabled
-                                    ? "bg-gv-success"
-                                    : "bg-gv-muted/60",
+                                    ? "bg-ps-success"
+                                    : "bg-ps-muted/60",
                                 )}
                               />
                             )}
@@ -1705,18 +1705,18 @@ export default function Settings() {
             type="button"
             onClick={() => setLicensesOpen(false)}
             aria-label="Close licenses dialog"
-            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-gv-muted transition-colors hover:bg-gv-panel-soft hover:text-gv-text"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
           >
             <XMarkIcon className="size-5" />
           </button>
         </div>
         <DialogDescription>
-          GameVault is built with {licenseData?.packages.length ?? "…"} open
+          PlayStash is built with {licenseData?.packages.length ?? "…"} open
           source libraries. Tap a library to view its license.
         </DialogDescription>
         <DialogBody className="flex-1 min-h-0 overflow-y-auto">
           {licenseData ? (
-            <div className="divide-y divide-gv-line overflow-hidden rounded-2xl border border-gv-line bg-gv-panel-strong">
+            <div className="divide-y divide-ps-line overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong">
               {licenseData.packages.map((pkg) => {
                 const key = `${pkg.name}@${pkg.version}`;
                 const expanded = expandedLicense === key;
@@ -1726,30 +1726,30 @@ export default function Settings() {
                       type="button"
                       onClick={() => setExpandedLicense(expanded ? null : key)}
                       aria-expanded={expanded}
-                      className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gv-panel-soft"
+                      className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-mono text-sm text-gv-text">
+                        <span className="block truncate font-mono text-sm text-ps-text">
                           {pkg.name}
                         </span>
-                        <span className="block text-xs text-gv-muted">
+                        <span className="block text-xs text-ps-muted">
                           v{pkg.version}
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-1.5">
-                        <span className="rounded-md bg-gv-panel-soft px-2 py-0.5 text-[11px] text-gv-muted ring-1 ring-gv-line">
+                        <span className="rounded-md bg-ps-panel-soft px-2 py-0.5 text-[11px] text-ps-muted ring-1 ring-ps-line">
                           {pkg.licenses}
                         </span>
                         <ChevronRightIcon
                           className={clsx(
-                            "size-3.5 shrink-0 text-gv-muted transition-transform",
+                            "size-3.5 shrink-0 text-ps-muted transition-transform",
                             expanded && "rotate-90",
                           )}
                         />
                       </span>
                     </button>
                     {expanded && (
-                      <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-gv-line bg-gv-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-gv-muted">
+                      <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-ps-line bg-ps-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-ps-muted">
                         {pkg.licenseText ||
                           "License text not included for this package."}
                       </pre>
@@ -1759,7 +1759,7 @@ export default function Settings() {
               })}
             </div>
           ) : (
-            <Text className="text-sm text-gv-muted">Loading licenses…</Text>
+            <Text className="text-sm text-ps-muted">Loading licenses…</Text>
           )}
         </DialogBody>
       </Dialog>

@@ -51,7 +51,7 @@ export function RootPathSelectDialog({
             e.stopPropagation();
             onGoToSettings();
           }}
-          className="rounded-xl p-2 text-gv-muted hover:bg-gv-panel-soft hover:text-gv-text transition-colors cursor-pointer"
+          className="rounded-xl p-2 text-ps-muted hover:bg-ps-panel-soft hover:text-ps-text transition-colors cursor-pointer"
           aria-label="Go to download settings"
           title="Configure download locations"
         >
@@ -65,19 +65,19 @@ export function RootPathSelectDialog({
               key={root.id}
               type="button"
               onClick={() => onSelect(root.path)}
-              className="flex w-full items-center gap-3 rounded-xl border border-gv-line bg-gv-panel p-4 text-left transition-colors hover:border-gv-accent hover:bg-gv-panel-soft cursor-pointer"
+              className="flex w-full items-center gap-3 rounded-xl border border-ps-line bg-ps-panel p-4 text-left transition-colors hover:border-ps-accent hover:bg-ps-panel-soft cursor-pointer"
             >
-              <FolderIcon className="h-6 w-6 shrink-0 text-gv-accent" />
+              <FolderIcon className="h-6 w-6 shrink-0 text-ps-accent" />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-gv-text">
+                <div className="truncate text-sm font-medium text-ps-text">
                   {root.label || displayPath(root.path)}
                 </div>
-                <div className="truncate text-xs text-gv-muted">
+                <div className="truncate text-xs text-ps-muted">
                   {root.path}
                 </div>
               </div>
               {root.label && (
-                <span className="shrink-0 rounded-full bg-gv-panel-soft px-2 py-0.5 text-xs text-gv-muted">
+                <span className="shrink-0 rounded-full bg-ps-panel-soft px-2 py-0.5 text-xs text-ps-muted">
                   {root.label}
                 </span>
               )}

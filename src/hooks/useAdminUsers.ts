@@ -11,31 +11,31 @@ function normalizeUser<T>(u: T): T {
 
   return u;
 }
-import { GamevaultUser, GamevaultUserRoleEnum } from "../api";
+import { PlaystashUser, PlaystashUserRoleEnum } from "../api";
 
 export interface UseAdminUsersResult {
-  users: GamevaultUser[];
+  users: PlaystashUser[];
   loading: boolean;
   error: string | null;
   refresh: (force?: boolean) => void;
   opBusy: Record<string, boolean>;
-  toggleActivated: (u: GamevaultUser) => Promise<void>;
-  deleteUser: (u: GamevaultUser) => Promise<void>;
-  recoverUser: (u: GamevaultUser) => Promise<void>;
+  toggleActivated: (u: PlaystashUser) => Promise<void>;
+  deleteUser: (u: PlaystashUser) => Promise<void>;
+  recoverUser: (u: PlaystashUser) => Promise<void>;
   updateUser: (
-    u: GamevaultUser,
-    payload: Partial<GamevaultUser> & { password?: string | null },
+    u: PlaystashUser,
+    payload: Partial<PlaystashUser> & { password?: string | null },
   ) => Promise<{ ok: boolean; message?: string }>;
   updateUserRole: (
-    u: GamevaultUser,
-    role: GamevaultUserRoleEnum,
+    u: PlaystashUser,
+    role: PlaystashUserRoleEnum,
   ) => Promise<void>;
-  setUsers: React.Dispatch<React.SetStateAction<GamevaultUser[]>>;
+  setUsers: React.Dispatch<React.SetStateAction<PlaystashUser[]>>;
 }
 
 export function useAdminUsers(): UseAdminUsersResult {
   const { auth, serverUrl, authFetch } = useAuth();
-  const [users, setUsers] = useState<GamevaultUser[]>([]);
+  const [users, setUsers] = useState<PlaystashUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [opBusy, setOpBusy] = useState<Record<string, boolean>>({});
@@ -84,7 +84,7 @@ export function useAdminUsers(): UseAdminUsersResult {
     fetchUsers(force);
   };
 
-  const toggleActivated = async (u: GamevaultUser) => {
+  const toggleActivated = async (u: PlaystashUser) => {
     if (!safeBase) return;
     const uid = u.id;
     if (!uid || opBusy[uid]) return;
@@ -127,7 +127,7 @@ export function useAdminUsers(): UseAdminUsersResult {
     }
   };
 
-  const deleteUser = async (u: GamevaultUser) => {
+  const deleteUser = async (u: PlaystashUser) => {
     if (!safeBase) return;
     const uid = u.id;
     if (!uid || opBusy[uid]) return;
@@ -163,7 +163,7 @@ export function useAdminUsers(): UseAdminUsersResult {
     }
   };
 
-  const recoverUser = async (u: GamevaultUser) => {
+  const recoverUser = async (u: PlaystashUser) => {
     if (!safeBase) return;
     const uid = u.id;
     if (!uid || opBusy[uid]) return;
@@ -199,8 +199,8 @@ export function useAdminUsers(): UseAdminUsersResult {
   };
 
   const updateUser = async (
-    u: GamevaultUser,
-    payload: Partial<GamevaultUser> & { password?: string | null },
+    u: PlaystashUser,
+    payload: Partial<PlaystashUser> & { password?: string | null },
   ) => {
     if (!safeBase) return { ok: false, message: "No server base URL" };
     const id = u.id;
@@ -240,8 +240,8 @@ export function useAdminUsers(): UseAdminUsersResult {
   };
 
   const updateUserRole = async (
-    u: GamevaultUser,
-    newRole: GamevaultUserRoleEnum,
+    u: PlaystashUser,
+    newRole: PlaystashUserRoleEnum,
   ) => {
     if (!safeBase) return;
     const uid = u.id;

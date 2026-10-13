@@ -98,7 +98,7 @@ export function PhaseDetail({
         download.error ? (
           <ErrorNote message={download.error} />
         ) : (
-          <p className="text-xs text-gv-muted">
+          <p className="text-xs text-ps-muted">
             {download.status === "aborted"
               ? "Download was cancelled."
               : "Download failed."}
@@ -108,9 +108,9 @@ export function PhaseDetail({
         <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-gv-text">
+              <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-ps-text">
                 <ArchiveBoxIcon
-                  className="size-4 shrink-0 text-gv-accent"
+                  className="size-4 shrink-0 text-ps-accent"
                   aria-hidden="true"
                 />
                 <span className="truncate">Extraction</span>
@@ -129,7 +129,7 @@ export function PhaseDetail({
               <div className="space-y-1.5">
                 <label
                   htmlFor={`archive-password-${download.gameId}`}
-                  className="flex items-center gap-1.5 text-xs text-gv-muted"
+                  className="flex items-center gap-1.5 text-xs text-ps-muted"
                 >
                   <KeyIcon className="size-4" aria-hidden="true" />
                   Archive password
@@ -158,7 +158,7 @@ export function PhaseDetail({
             )}
 
             {download.sourceFilesDeleted && (
-              <p className="text-xs text-gv-muted">
+              <p className="text-xs text-ps-muted">
                 Source files were deleted, so this download can no longer be
                 extracted.
               </p>
@@ -166,11 +166,11 @@ export function PhaseDetail({
           </div>
 
           {download.extractionStatus === "completed" && isTauri && (
-            <div className="space-y-3 border-t border-gv-line pt-4">
+            <div className="space-y-3 border-t border-ps-line pt-4">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-gv-text">
+                <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-ps-text">
                   <ComputerDesktopIcon
-                    className="size-4 shrink-0 text-gv-accent"
+                    className="size-4 shrink-0 text-ps-accent"
                     aria-hidden="true"
                   />
                   <span className="truncate">Installation</span>
@@ -188,7 +188,7 @@ export function PhaseDetail({
                 </div>
               </div>
 
-              <p className="text-xs text-gv-muted">
+              <p className="text-xs text-ps-muted">
                 {download.installationStatus === "completed"
                   ? "The game is installed and ready to play."
                   : download.installationStatus === "copying"
@@ -221,7 +221,7 @@ export function PhaseDetail({
 
               {download.installationStatus === "completed" &&
                 download.installationDirectory && (
-                  <p className="truncate text-xs text-gv-muted" title={download.installationDirectory}>
+                  <p className="truncate text-xs text-ps-muted" title={download.installationDirectory}>
                     Installed to {download.installationDirectory}.
                   </p>
                 )}

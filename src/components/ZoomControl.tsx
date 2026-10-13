@@ -52,7 +52,7 @@ export default function ZoomControl({ className }: { className?: string }) {
         type="button"
         onClick={handleReset}
         title="Reset to 100% (Ctrl/Cmd + 0)"
-        className="min-w-12 rounded-xl px-2 py-1.5 text-center text-sm font-medium tabular-nums text-gv-muted transition-colors data-active:bg-gv-panel-soft data-hover:text-gv-text"
+        className="min-w-12 rounded-xl px-2 py-1.5 text-center text-sm font-medium tabular-nums text-ps-muted transition-colors data-active:bg-ps-panel-soft data-hover:text-ps-text"
       >
         {pct}%
       </button>

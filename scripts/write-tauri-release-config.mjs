@@ -11,11 +11,11 @@ if (!templatePath || !outputPath) {
   process.exit(1);
 }
 
-const pubkey = process.env.GV_TAURI_UPDATER_PUBKEY?.trim();
+const pubkey = process.env.PLAYSTASH_TAURI_UPDATER_PUBKEY?.trim();
 
 if (!pubkey) {
   throw new Error(
-    "GV_TAURI_UPDATER_PUBKEY is required to generate the Tauri release config.",
+    "PLAYSTASH_TAURI_UPDATER_PUBKEY is required to generate the Tauri release config.",
   );
 }
 

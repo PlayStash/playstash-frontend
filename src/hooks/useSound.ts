@@ -20,7 +20,7 @@ type UseSoundResult = {
  * per-component fetch/blob logic anywhere in the app — the hook resolves the
  * playable URL (with the Linux/WebKitGTK `tauri://` blob workaround) through
  * the shared cache, keeps the element volume in sync with the global
- * GameVault volume setting, and is safe to toggle immediately after mount.
+ * PlayStash volume setting, and is safe to toggle immediately after mount.
  *
  * ```tsx
  * const { isPlaying, toggle } = useSound("wellerman");

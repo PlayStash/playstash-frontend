@@ -13,7 +13,7 @@ use std::os::windows::process::CommandExt;
 
 #[tauri::command]
 pub(crate) fn list_installed_games(selected_root: String) -> Result<Vec<InstalledGameInfo>, String> {
-  let candidate = PathBuf::from(&selected_root).join("GameVault");
+  let candidate = PathBuf::from(&selected_root).join("PlayStash");
   let root = if candidate.exists() {
     candidate
   } else {
@@ -26,7 +26,7 @@ pub(crate) fn list_installed_games(selected_root: String) -> Result<Vec<Installe
 
   let mut results: Vec<InstalledGameInfo> = Vec::new();
 
-  let game_dirs = fs::read_dir(&root).map_err(|e| format!("Failed to read GameVault root: {e}"))?;
+  let game_dirs = fs::read_dir(&root).map_err(|e| format!("Failed to read PlayStash root: {e}"))?;
   for game_entry in game_dirs.flatten() {
     let game_path = game_entry.path();
     if !game_path.is_dir() {
@@ -35,7 +35,7 @@ pub(crate) fn list_installed_games(selected_root: String) -> Result<Vec<Installe
 
     let game_name = game_entry.file_name().to_string_lossy().to_string();
 
-    let metadata_path = game_path.join(".gamevault.metadata.json");
+    let metadata_path = game_path.join(".playstash.metadata.json");
     let game_metadata: Option<serde_json::Value> = if metadata_path.exists() {
       fs::read_to_string(&metadata_path)
         .ok()
@@ -62,7 +62,7 @@ pub(crate) fn list_installed_games(selected_root: String) -> Result<Vec<Installe
       let version_folder_name = version_entry.file_name().to_string_lossy().to_string();
       let (folder_version_id, version_name) = parse_version_folder(&version_folder_name);
 
-      let config_path = version_path.join(".gamevault.game.config.json");
+      let config_path = version_path.join(".playstash.game.config.json");
       if !config_path.exists() {
         continue;
       }
@@ -628,11 +628,11 @@ const ADMIN_LAUNCH_GRACE: Duration = Duration::from_secs(30);
 fn create_launch_logs() -> Result<(PathBuf, PathBuf, fs::File, fs::File), String> {
   let log_token = next_launch_log_token();
   let out_path = std::env::temp_dir().join(format!(
-    "gamevault-launch-{}-{log_token}.out",
+    "playstash-launch-{}-{log_token}.out",
     std::process::id()
   ));
   let err_path = std::env::temp_dir().join(format!(
-    "gamevault-launch-{}-{log_token}.err",
+    "playstash-launch-{}-{log_token}.err",
     std::process::id()
   ));
 

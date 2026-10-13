@@ -1,4 +1,4 @@
-import { GamevaultGame } from "@/api/models/GamevaultGame";
+import { PlaystashGame } from "@/api/models/PlaystashGame";
 import { Progress, ProgressStateEnum } from "@/api/models/Progress";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -63,7 +63,7 @@ export default function GameView() {
   const numericId = Number(id);
   const navigate = useNavigate();
   const { serverUrl, authFetch, user } = useAuth();
-  const [game, setGame] = useState<GamevaultGame | null>(null);
+  const [game, setGame] = useState<PlaystashGame | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
@@ -122,7 +122,7 @@ export default function GameView() {
             });
             if (cached && !cancelled) {
               const json = JSON.parse(cached);
-              setGame(json as GamevaultGame);
+              setGame(json as PlaystashGame);
               return;
             }
           } catch {
@@ -317,7 +317,7 @@ export default function GameView() {
       method: "GET",
     });
     if (!res.ok) return [];
-    const fullGame = (await res.json()) as GamevaultGame;
+    const fullGame = (await res.json()) as PlaystashGame;
     const fullVersions = Array.isArray(fullGame.versions)
       ? fullGame.versions
       : [];
@@ -344,7 +344,7 @@ export default function GameView() {
           : `${resolvedTitle}.zip`;
 
       if (action === "client") {
-        window.location.href = `gamevault://install?gameid=${game.id}&versionid=${selectedVersion.id}`;
+        window.location.href = `playstash://install?gameid=${game.id}&versionid=${selectedVersion.id}`;
         return;
       }
 
@@ -456,7 +456,7 @@ export default function GameView() {
 
         const configPath = await join(
           installedInfo.versionDirectory,
-          ".gamevault.game.config.json",
+          ".playstash.game.config.json",
         );
 
         let launchExe: string | undefined;
@@ -589,7 +589,7 @@ export default function GameView() {
     (game as any)?.metadata?.average_playtime ||
     null;
   const floatingIconButtonClassName =
-    "size-11 p-0 flex items-center justify-center border-white/35 bg-white/60 shadow-sm backdrop-blur-md hover:bg-white/78 dark:border-white/20 dark:bg-gv-panel/80 dark:hover:bg-gv-panel-strong";
+    "size-11 p-0 flex items-center justify-center border-white/35 bg-white/60 shadow-sm backdrop-blur-md hover:bg-white/78 dark:border-white/20 dark:bg-ps-panel/80 dark:hover:bg-ps-panel-strong";
 
   const gameSizeBytes = useMemo(() => {
     const sizeStr =
@@ -618,9 +618,9 @@ export default function GameView() {
   );
 
   const glassPanelClassName =
-    "border border-white/35 bg-white/[0.42] backdrop-blur-md dark:border-white/10 dark:bg-gv-panel/80 dark:backdrop-blur-md";
+    "border border-white/35 bg-white/[0.42] backdrop-blur-md dark:border-white/10 dark:bg-ps-panel/80 dark:backdrop-blur-md";
   const darkGlassInsetClassName =
-    "dark:bg-gv-panel/80 dark:backdrop-blur-md";
+    "dark:bg-ps-panel/80 dark:backdrop-blur-md";
   const progressSelectClassName = clsx(
     "rounded-lg before:bg-white/60 before:backdrop-blur-md before:shadow-sm",
     "dark:before:hidden",
@@ -658,7 +658,7 @@ export default function GameView() {
   return (
     <div className="relative isolate flex min-h-full flex-col overflow-hidden px-4 pb-4 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-y-0 left-1/2 z-0 w-screen -translate-x-1/2 animate-[media-fade-in_0.25s_ease-out] motion-reduce:animate-none">
-        <div className="absolute inset-0 bg-gv-bg" />
+        <div className="absolute inset-0 bg-ps-bg" />
 
         {backgroundUrl ? (
           <>
@@ -694,7 +694,7 @@ export default function GameView() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.09),transparent_40%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.04),transparent_40%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.06)_18%,rgba(255,255,255,0)_42%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(9,9,11,0.16)_0%,rgba(9,9,11,0.08)_18%,rgba(9,9,11,0)_42%,rgba(9,9,11,0)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(244,244,245,0.12)_0%,rgba(244,244,245,0.04)_24%,rgba(244,244,245,0)_45%,rgba(99,102,241,0.03)_100%)] dark:bg-[linear-gradient(135deg,rgba(24,24,27,0.12)_0%,rgba(24,24,27,0.05)_24%,rgba(24,24,27,0)_45%,rgba(99,102,241,0.05)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-white/10 to-transparent dark:from-gv-panel/10 dark:to-transparent sm:h-20 xl:h-24" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-white/10 to-transparent dark:from-ps-panel/10 dark:to-transparent sm:h-20 xl:h-24" />
       </div>
 
       <div className="relative z-10 flex w-full flex-1 flex-col">
@@ -703,7 +703,7 @@ export default function GameView() {
           <button
             onClick={() => navigate(-1)}
             aria-label="Go back"
-            className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-gv-muted transition-colors hover:text-gv-text"
+            className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-ps-muted transition-colors hover:text-ps-text"
           >
             <ChevronLeftIcon className="size-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
             Back
@@ -723,7 +723,7 @@ export default function GameView() {
           <div className="mx-auto grid w-full max-w-350 gap-10 px-2 pt-4 xl:grid-cols-[1fr_20rem]">
             {/* Row 1: Cover/Title/Actions spans both columns on mobile but only left column on xl */}
             <div className="flex flex-row gap-4 items-start xl:col-span-1 xl:row-span-1 min-w-0">
-              <div className="w-32 aspect-3/4 rounded-2xl overflow-hidden bg-gv-panel-strong flex items-center justify-center text-[10px] text-gv-muted">
+              <div className="w-32 aspect-3/4 rounded-2xl overflow-hidden bg-ps-panel-strong flex items-center justify-center text-[10px] text-ps-muted">
                 {coverId ? (
                   <Media
                     media={game.metadata?.cover}
@@ -816,7 +816,7 @@ export default function GameView() {
                         </DropdownItem>
                         <DropdownItem onClick={handleClientDownload}>
                           <DropdownLabel>
-                            Download via GameVault Client
+                            Download via PlayStash Client
                           </DropdownLabel>
                         </DropdownItem>
                       </DropdownMenu>
@@ -863,7 +863,7 @@ export default function GameView() {
                 (game as any)?.metadata?.early_access ? (
                   <div className="flex flex-wrap gap-1 pt-1 items-center">
                     {game?.type && game.type !== "UNDETECTABLE" && (
-                      <span className="px-2 py-0.5 rounded-full bg-gv-accent/15 text-gv-accent-strong text-[10px] font-medium">
+                      <span className="px-2 py-0.5 rounded-full bg-ps-accent/15 text-ps-accent-strong text-[10px] font-medium">
                         {game.type
                           .replace(/_/g, " ")
                           .toLowerCase()
@@ -879,7 +879,7 @@ export default function GameView() {
                     {genres.map((g: string) => (
                       <span
                         key={g}
-                        className="px-2 py-0.5 rounded-full bg-gv-panel-strong text-[10px] font-medium text-gv-muted"
+                        className="px-2 py-0.5 rounded-full bg-ps-panel-strong text-[10px] font-medium text-ps-muted"
                       >
                         {g}
                       </span>
@@ -893,27 +893,27 @@ export default function GameView() {
             <div className="flex flex-col gap-6 xl:col-start-2 xl:row-start-1 min-w-0">
               <div className="grid grid-cols-3 gap-2 animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none">
                 <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
-                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-gv-muted">
+                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
                     Playtime
                   </div>
-                  <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-gv-text">
+                  <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-ps-text">
                     {playtimeHours >= 1
                       ? `${playtimeHours.toFixed(playtimeHours < 10 ? 1 : 0)} h`
                       : `${playtimeMinutes} m`}
                   </div>
                 </div>
                 <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
-                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-gv-muted">
+                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
                     Last Played
                   </div>
                   <div
-                    className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight text-gv-text"
+                    className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight text-ps-text"
                     title={lastPlayedTime ? `${lastPlayedDay}, ${lastPlayedTime}` : lastPlayedDay}
                   >
                     {lastPlayedTime ? (
                       <>
                         <div className="tabular-nums">{lastPlayedDay}</div>
-                        <div className="tabular-nums text-gv-muted">
+                        <div className="tabular-nums text-ps-muted">
                           {lastPlayedTime}
                         </div>
                       </>
@@ -923,10 +923,10 @@ export default function GameView() {
                   </div>
                 </div>
                 <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
-                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-gv-muted">
+                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
                     Avg Time
                   </div>
-                  <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-gv-text">
+                  <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-ps-text">
                     {avgPlaytime
                       ? `${(avgPlaytime / 60).toFixed(avgPlaytime / 60 < 10 ? 1 : 0)} h`
                       : "—"}
@@ -934,7 +934,7 @@ export default function GameView() {
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gv-muted mb-1">
+                <div className="text-xs font-medium text-ps-muted mb-1">
                   Progress State
                 </div>
                 <Listbox
@@ -975,21 +975,21 @@ export default function GameView() {
                   surfaceClassName="surface-panel"
                 >
                   <LayoutGroup id="details-tabs">
-                    <div className="flex border-b border-gv-line mb-4 gap-6 text-sm">
+                    <div className="flex border-b border-ps-line mb-4 gap-6 text-sm">
                       <button
                         onClick={() => setDetailsTab("description")}
                         className={clsx(
                           "relative pb-2 -mb-px border-b-2 font-medium",
                           detailsTab === "description"
-                            ? "border-transparent text-gv-accent-strong"
-                            : "border-transparent text-gv-muted hover:text-gv-text",
+                            ? "border-transparent text-ps-accent-strong"
+                            : "border-transparent text-ps-muted hover:text-ps-text",
                         )}
                       >
                         Description
                         {detailsTab === "description" && (
                           <motion.span
                             layoutId="details-tab-underline"
-                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gv-accent"
+                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ps-accent"
                             transition={{ duration: 0.18, ease: EASE_OUT }}
                           />
                         )}
@@ -999,15 +999,15 @@ export default function GameView() {
                         className={clsx(
                           "relative pb-2 -mb-px border-b-2 font-medium",
                           detailsTab === "notes"
-                            ? "border-transparent text-gv-accent-strong"
-                            : "border-transparent text-gv-muted hover:text-gv-text",
+                            ? "border-transparent text-ps-accent-strong"
+                            : "border-transparent text-ps-muted hover:text-ps-text",
                         )}
                       >
                         Notes
                         {detailsTab === "notes" && (
                           <motion.span
                             layoutId="details-tab-underline"
-                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gv-accent"
+                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ps-accent"
                             transition={{ duration: 0.18, ease: EASE_OUT }}
                           />
                         )}
@@ -1017,15 +1017,15 @@ export default function GameView() {
                         className={clsx(
                           "relative pb-2 -mb-px border-b-2 font-medium",
                           detailsTab === "tags"
-                            ? "border-transparent text-gv-accent-strong"
-                            : "border-transparent text-gv-muted hover:text-gv-text",
+                            ? "border-transparent text-ps-accent-strong"
+                            : "border-transparent text-ps-muted hover:text-ps-text",
                         )}
                       >
                         Tags
                         {detailsTab === "tags" && (
                           <motion.span
                             layoutId="details-tab-underline"
-                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gv-accent"
+                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ps-accent"
                             transition={{ duration: 0.18, ease: EASE_OUT }}
                           />
                         )}
@@ -1037,13 +1037,13 @@ export default function GameView() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.12, ease: EASE_OUT }}
-                    className="text-sm leading-relaxed space-y-4 min-h-45 text-gv-text"
+                    className="text-sm leading-relaxed space-y-4 min-h-45 text-ps-text"
                   >
                     {detailsTab === "description" &&
                       (description ? (
                         <MarkdownContent content={description} />
                       ) : (
-                        <p className="italic text-gv-muted">
+                        <p className="italic text-ps-muted">
                           No description available.
                         </p>
                       ))}
@@ -1051,7 +1051,7 @@ export default function GameView() {
                       (notes ? (
                         <MarkdownContent content={notes} />
                       ) : (
-                        <p className="italic text-gv-muted">No notes.</p>
+                        <p className="italic text-ps-muted">No notes.</p>
                       ))}
                     {detailsTab === "tags" &&
                       (tags && tags.length ? (
@@ -1059,14 +1059,14 @@ export default function GameView() {
                           {tags.map((t) => (
                             <span
                               key={t}
-                              className="px-2 py-1 rounded-md bg-gv-panel-strong text-xs font-medium text-gv-muted"
+                              className="px-2 py-1 rounded-md bg-ps-panel-strong text-xs font-medium text-ps-muted"
                             >
                               {t}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <p className="italic text-gv-muted">No tags.</p>
+                        <p className="italic text-ps-muted">No tags.</p>
                       ))}
                   </motion.div>
                 </Card>
@@ -1080,11 +1080,11 @@ export default function GameView() {
                 className="min-h-40"
                 surfaceClassName="surface-panel"
               >
-                <ul className="space-y-4 text-sm text-gv-text">
+                <ul className="space-y-4 text-sm text-ps-text">
                   <li className="flex items-start gap-3">
-                    <CalendarDaysIcon className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <CalendarDaysIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Release Year
                       </div>
                       <div
@@ -1096,9 +1096,9 @@ export default function GameView() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <StarOutline className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <StarOutline className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Rating
                       </div>
                       <div
@@ -1110,9 +1110,9 @@ export default function GameView() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <HashtagIcon className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <HashtagIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Version
                       </div>
                       <div
@@ -1124,9 +1124,9 @@ export default function GameView() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <GlobeAltIcon className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <GlobeAltIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Website
                       </div>
                       <div
@@ -1138,7 +1138,7 @@ export default function GameView() {
                             href={primaryWebsite}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="underline hover:text-gv-accent-cool"
+                            className="underline hover:text-ps-accent-cool"
                           >
                             {primaryWebsite.replace(/^https?:\/\//, "")}
                           </a>
@@ -1149,9 +1149,9 @@ export default function GameView() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <WrenchScrewdriverIcon className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <WrenchScrewdriverIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Developer{devNames.length > 1 ? "s" : ""}
                       </div>
                       <div
@@ -1163,9 +1163,9 @@ export default function GameView() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <BuildingOffice2Icon className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <BuildingOffice2Icon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Publisher{publisherNames.length > 1 ? "s" : ""}
                       </div>
                       <div
@@ -1183,9 +1183,9 @@ export default function GameView() {
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <ShieldCheckIcon className="w-5 h-5 mt-0.5 text-gv-muted" />
+                    <ShieldCheckIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-gv-muted whitespace-nowrap">
+                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
                         Age Rating
                       </div>
                       <div
@@ -1214,7 +1214,7 @@ export default function GameView() {
                   );
                   if (!others.length) {
                     return (
-                      <div className="text-xs text-gv-muted italic">
+                      <div className="text-xs text-ps-muted italic">
                         No activity from other users.
                       </div>
                     );
@@ -1243,21 +1243,21 @@ export default function GameView() {
                               size={32}
                               alt={uname}
                               fallback={
-                                <div className="flex h-full w-full items-center justify-center rounded-[20%] bg-gv-panel-soft text-[10px] font-semibold text-gv-text">
+                                <div className="flex h-full w-full items-center justify-center rounded-[20%] bg-ps-panel-soft text-[10px] font-semibold text-ps-text">
                                   {uname.slice(0, 2).toUpperCase()}
                                 </div>
                               }
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium truncate text-gv-text">
+                                <span className="font-medium truncate text-ps-text">
                                   {uname}
                                 </span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gv-panel-soft text-gv-muted font-medium">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-ps-panel-soft text-ps-muted font-medium">
                                   {formatState(p.state)}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-gv-muted mt-0.5 flex items-center justify-between gap-4">
+                              <div className="text-[11px] text-ps-muted mt-0.5 flex items-center justify-between gap-4">
                                 <span className="truncate">
                                   Played:{" "}
                                   {hours >= 1

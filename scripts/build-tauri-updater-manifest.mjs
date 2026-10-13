@@ -6,7 +6,7 @@ const [
   version,
   metadataRoot,
   outputPath,
-  repository = "Phalcode/gamevault-frontend",
+  repository = "PlayStash/playstash-frontend",
   assetTag = version,
 ] = process.argv.slice(2);
 
@@ -90,22 +90,22 @@ const manifest = {
   platforms,
 };
 
-const notes = process.env.GV_UPDATER_NOTES?.trim();
+const notes = process.env.PLAYSTASH_UPDATER_NOTES?.trim();
 if (notes) {
   manifest.notes = notes;
 }
 
-const buildId = process.env.GV_BUILD_ID?.trim();
+const buildId = process.env.PLAYSTASH_BUILD_ID?.trim();
 if (buildId) {
   manifest.build_id = buildId;
 }
 
-const buildCommit = process.env.GV_BUILD_COMMIT?.trim();
+const buildCommit = process.env.PLAYSTASH_BUILD_COMMIT?.trim();
 if (buildCommit) {
   manifest.build_commit = buildCommit;
 }
 
-const buildChannel = process.env.GV_BUILD_CHANNEL?.trim();
+const buildChannel = process.env.PLAYSTASH_BUILD_CHANNEL?.trim();
 if (buildChannel) {
   manifest.build_channel = buildChannel;
 }

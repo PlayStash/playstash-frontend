@@ -1,15 +1,11 @@
 # Security Policy
 
-## Supported Versions
+## Release support
 
-The following Release Tags are supported by Phalcode and get regular security updates.
+This repository starts with a fresh PlayStash source baseline. No PlayStash release support matrix or regular security update schedule has been established.
 
-| Version        | Regular Updates    | Supported          |
-| -------------- | ------------------ | ------------------ |
-| `latest`       | :white_check_mark: | :white_check_mark: |
-| `unstable`     | :white_check_mark: | :x:                |
-| `early-access` | :x:                | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Check [the PlayStash frontend security page](https://github.com/PlayStash/playstash-frontend/security). If private vulnerability reporting is enabled, use its **Report a vulnerability** option. Otherwise, ask a repository maintainer for a private reporting channel before sharing sensitive details.
 
-Please report any vulnerabilities to Phalcode [via Email](mailto:contact@phalco.de).
+Do not include credentials or exploit details in public issues.

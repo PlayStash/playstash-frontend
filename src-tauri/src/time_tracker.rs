@@ -230,7 +230,7 @@ fn matches_game_file_name(game_exe: &Path, arg: &Path) -> bool {
 }
 
 fn read_configured_launch_executable(version_dir: &Path) -> Option<PathBuf> {
-  let config_path = version_dir.join(".gamevault.game.config.json");
+  let config_path = version_dir.join(".playstash.game.config.json");
   let content = fs::read_to_string(config_path).ok()?;
   let value: serde_json::Value = serde_json::from_str(&content).ok()?;
   let exe = value.get("launchexecutable")?.as_str()?;
@@ -253,7 +253,7 @@ fn save_offline_time(download_paths: &[String], user_id: i64, game_id: i64) {
     None => return,
   };
 
-  let offline_file = PathBuf::from(&target.version_directory).join(".gamevault.offline_time.json");
+  let offline_file = PathBuf::from(&target.version_directory).join(".playstash.offline_time.json");
 
   let mut current_minutes: i64 = 0;
   if offline_file.exists() {
@@ -286,7 +286,7 @@ pub(crate) struct OfflineTimeFile {
 
 #[tauri::command]
 pub(crate) fn get_offline_time_files(selected_root: String) -> Result<Vec<OfflineTimeFile>, String> {
-  let candidate = PathBuf::from(&selected_root).join("GameVault");
+  let candidate = PathBuf::from(&selected_root).join("PlayStash");
   let base = if candidate.exists() { candidate } else { PathBuf::from(&selected_root) };
 
   let mut results = Vec::new();
@@ -308,7 +308,7 @@ fn walk_offline_time_files(dir: &Path, results: &mut Vec<OfflineTimeFile>) -> st
         continue;
       }
       walk_offline_time_files(&path, results)?;
-    } else if entry.file_name() == ".gamevault.offline_time.json" {
+    } else if entry.file_name() == ".playstash.offline_time.json" {
       if let Ok(content) = fs::read_to_string(&path) {
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
           let user_id = json.get("user_id").and_then(|v| v.as_i64()).unwrap_or(0);

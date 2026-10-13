@@ -23,9 +23,9 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_updater::UpdaterExt;
 use url::Url;
 
-const STABLE_UPDATER_ENDPOINT: &str = "https://github.com/Phalcode/gamevault-frontend/releases/latest/download/latest.json";
-const UNSTABLE_UPDATER_ENDPOINT: &str = "https://github.com/Phalcode/gamevault-frontend/releases/download/unstable/unstable.json";
-const EARLY_ACCESS_UPDATER_ENDPOINT: &str = "https://github.com/Phalcode/gamevault-frontend/releases/download/early-access/early-access.json";
+const STABLE_UPDATER_ENDPOINT: &str = "https://github.com/PlayStash/playstash-frontend/releases/latest/download/latest.json";
+const UNSTABLE_UPDATER_ENDPOINT: &str = "https://github.com/PlayStash/playstash-frontend/releases/download/unstable/unstable.json";
+const EARLY_ACCESS_UPDATER_ENDPOINT: &str = "https://github.com/PlayStash/playstash-frontend/releases/download/early-access/early-access.json";
 const APP_UPDATER_EVENT: &str = "app-updater-progress";
 const UPDATER_STATE_PATH: &str = "updater-state.json";
 
@@ -69,7 +69,7 @@ struct AppUpdaterProgressEvent {
 }
 
 fn updater_public_key() -> Option<String> {
-  option_env!("GV_TAURI_UPDATER_PUBKEY").and_then(|value| {
+  option_env!("PLAYSTASH_TAURI_UPDATER_PUBKEY").and_then(|value| {
     let trimmed = value.trim();
     if trimmed.is_empty() {
       None
@@ -365,7 +365,7 @@ pub fn run() {
       // ── Conditionally hide window at startup ───────────────────────────
 
       {
-        let path = app.path().app_data_dir().unwrap().join("gamevault-settings.json");
+        let path = app.path().app_data_dir().unwrap().join("playstash-settings.json");
         let start_minimized = if path.exists() {
           std::fs::read_to_string(&path)
             .ok()

@@ -16,7 +16,7 @@ export default function ThemeSwitch({ className }: { className?: string }) {
       <SwitchField>
         <div
           data-slot="label"
-          className="flex items-center gap-2 text-sm text-gv-muted"
+          className="flex items-center gap-2 text-sm text-ps-muted"
         >
           {darkMode.value ? (
             <MoonIcon className="size-4" aria-hidden="true" />

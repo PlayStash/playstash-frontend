@@ -14,12 +14,12 @@ import { isTauriApp } from "@/utils/tauri";
 import { onGameUpdated } from "@/utils/gameUpdates";
 import { getServerNamespace, resolveApiMediaBlob } from "@/utils/mediaCache";
 import { getRootPaths } from "@/utils/rootPaths";
-import type { GameVaultConfig } from "@/models/gamevaultconfig";
+import type { PlayStashConfig } from "@/models/playstashconfig";
 import type { GameMetadata } from "@/api/models/GameMetadata";
 import type {
-  GamevaultGame,
-  GamevaultGameTypeEnum,
-} from "@/api/models/GamevaultGame";
+  PlaystashGame,
+  PlaystashGameTypeEnum,
+} from "@/api/models/PlaystashGame";
 
 type InstallationStatus =
   "idle" | "copying" | "launching" | "running" | "completed" | "error";
@@ -29,7 +29,7 @@ export interface ActiveDownload {
   versionId: number;
   gameTitle: string;
   gameMetadata?: GameMetadata;
-  gameType?: GamevaultGameTypeEnum;
+  gameType?: PlaystashGameTypeEnum;
   versionName?: string;
   filename: string;
   downloadDirectory?: string;
@@ -73,7 +73,7 @@ interface DownloadContextValue {
     versionName?: string;
     gameTitle: string;
     gameMetadata?: GameMetadata;
-    gameType?: GamevaultGameTypeEnum;
+    gameType?: PlaystashGameTypeEnum;
     filename: string;
     downloadRootPath?: string;
   }) => void;
@@ -103,7 +103,7 @@ interface DownloadContextValue {
 
 const DownloadContext = createContext<DownloadContextValue | null>(null);
 
-const DEFAULT_GAME_VAULT_CONFIG: GameVaultConfig = {
+const DEFAULT_PLAYSTASH_CONFIG: PlayStashConfig = {
   downloadfinished: false,
   extractionfinished: false,
   installationfinished: false,
@@ -311,7 +311,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
     const configPath = await join(
       d.versionDirectory,
-      ".gamevault.game.config.json",
+      ".playstash.game.config.json",
     );
 
     let current: Record<string, any> = {};
@@ -365,7 +365,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const cacheInstalledGameData = useCallback(
-    async (gameId: number, freshGame?: GamevaultGame) => {
+    async (gameId: number, freshGame?: PlaystashGame) => {
       if (!isTauriApp()) return;
       try {
         const base = serverUrl.replace(/\/+$/, "");
@@ -376,7 +376,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         if (!gameJson) {
           const gameRes = await authFetch(`${base}/api/games/${gameId}`);
           if (!gameRes.ok) return;
-          gameJson = (await gameRes.json()) as GamevaultGame;
+          gameJson = (await gameRes.json()) as PlaystashGame;
         }
 
         // Cache game data
@@ -447,7 +447,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           const base = serverUrl.replace(/\/+$/, "");
           const response = await authFetch(`${base}/api/games/${gameId}`);
           if (!response.ok) return null;
-          return (await response.json()) as GamevaultGame;
+          return (await response.json()) as PlaystashGame;
         } catch {
           return null;
         }
@@ -455,7 +455,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     ).then((games) => {
       if (cancelled) return;
       const freshGames = games.filter(
-        (game): game is GamevaultGame => game !== null,
+        (game): game is PlaystashGame => game !== null,
       );
       if (!freshGames.length) return;
 
@@ -519,33 +519,33 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   }, [cacheInstalledGameData, downloadGameIdsKey, isOnline]);
 
   const writeVersionConfig = useCallback(
-    async (versionDirectory: string, patch: Partial<GameVaultConfig>) => {
+    async (versionDirectory: string, patch: Partial<PlayStashConfig>) => {
       if (!isTauriApp() || !versionDirectory) return;
       const { join } = await import("@tauri-apps/api/path");
       const { invoke } = await import("@tauri-apps/api/core");
 
       const configPath = await join(
         versionDirectory,
-        ".gamevault.game.config.json",
+        ".playstash.game.config.json",
       );
 
-      let current: GameVaultConfig = { ...DEFAULT_GAME_VAULT_CONFIG };
+      let current: PlayStashConfig = { ...DEFAULT_PLAYSTASH_CONFIG };
       if (await invoke<boolean>("fs_path_exists", { path: configPath })) {
         try {
           const raw = await invoke<string>("fs_read_text_file", {
             path: configPath,
           });
-          const parsed = JSON.parse(raw) as Partial<GameVaultConfig>;
+          const parsed = JSON.parse(raw) as Partial<PlayStashConfig>;
           current = {
-            ...DEFAULT_GAME_VAULT_CONFIG,
+            ...DEFAULT_PLAYSTASH_CONFIG,
             ...parsed,
           };
         } catch {
-          current = { ...DEFAULT_GAME_VAULT_CONFIG };
+          current = { ...DEFAULT_PLAYSTASH_CONFIG };
         }
       }
 
-      const next: GameVaultConfig = {
+      const next: PlayStashConfig = {
         ...current,
         ...patch,
       };
@@ -572,7 +572,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
       const metadataPath = await join(
         gameFolderPath,
-        ".gamevault.metadata.json",
+        ".playstash.metadata.json",
       );
 
       let current: Record<string, string> = {};
@@ -590,7 +590,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       current[serverIdentifier] = String(gameId);
 
       // Persist installer/uninstaller preferences so the backend can read them
-      // from .gamevault.metadata.json (see read_saved_installer_preferences).
+      // from .playstash.metadata.json (see read_saved_installer_preferences).
       const installerPreferences = {
         installer_executable: gameMetadata?.installer_executable,
         installer_parameters: gameMetadata?.installer_parameters,
@@ -686,7 +686,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       versionName?: string;
       gameTitle: string;
       gameMetadata?: GameMetadata;
-      gameType?: GamevaultGameTypeEnum;
+      gameType?: PlaystashGameTypeEnum;
       filename: string;
       resumePosition?: number;
       downloadRootPath?: string;
@@ -765,14 +765,14 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             sanitizeFolderName(versionName ?? "") || "Unknown Version";
           const legacyVersionFolderName = `(${versionId}) ${resolvedVersionName}`;
 
-          const gameVaultRoot = await join(downloadPath, "GameVault");
-          const gameFolderPath = await join(gameVaultRoot, gameFolderName);
+          const playStashRoot = await join(downloadPath, "PlayStash");
+          const gameFolderPath = await join(playStashRoot, gameFolderName);
           const versionsFolder = await join(gameFolderPath, "Versions");
           const folderMatchesVersion = async (folderName: string) => {
             const folderPath = await join(versionsFolder, folderName);
             const configPath = await join(
               folderPath,
-              ".gamevault.game.config.json",
+              ".playstash.game.config.json",
             );
             if (
               !(await invoke<boolean>("fs_path_exists", {
@@ -1978,7 +1978,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               gameTitle: String(card.gameTitle || "Unknown Game"),
               gameMetadata: card.gameMetadata,
               gameType: card.gameType
-                ? (String(card.gameType) as GamevaultGameTypeEnum)
+                ? (String(card.gameType) as PlaystashGameTypeEnum)
                 : undefined,
               versionName: String(card.versionName || ""),
               filename: String(card.filename || "download.bin"),
@@ -2036,7 +2036,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             });
             if (cached && mounted) {
               const parsed = JSON.parse(cached);
-              // cache stores the full GamevaultGame; extract just the metadata for GameMetadata shape
+              // cache stores the full PlaystashGame; extract just the metadata for GameMetadata shape
               const meta = parsed?.metadata || parsed;
               setDownloads((prev) => {
                 const existing = prev[Number(idStr)];
@@ -2053,7 +2053,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.warn(
-          "Failed to recover downloads from GameVault config:",
+          "Failed to recover downloads from PlayStash config:",
           error,
         );
       }

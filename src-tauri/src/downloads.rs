@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 #[tauri::command]
 pub(crate) fn recover_download_cards(selected_root: String) -> Result<Vec<RecoveredDownloadCard>, String> {
-  let candidate = PathBuf::from(&selected_root).join("GameVault");
+  let candidate = PathBuf::from(&selected_root).join("PlayStash");
   let root = if candidate.exists() {
     candidate
   } else {
@@ -18,7 +18,7 @@ pub(crate) fn recover_download_cards(selected_root: String) -> Result<Vec<Recove
 
   let mut cards: Vec<RecoveredDownloadCard> = Vec::new();
 
-  let game_dirs = fs::read_dir(&root).map_err(|e| format!("Failed to read GameVault root: {e}"))?;
+  let game_dirs = fs::read_dir(&root).map_err(|e| format!("Failed to read PlayStash root: {e}"))?;
   for game_entry in game_dirs.flatten() {
     let game_path = game_entry.path();
     if !game_path.is_dir() {
@@ -27,7 +27,7 @@ pub(crate) fn recover_download_cards(selected_root: String) -> Result<Vec<Recove
 
     let game_name = game_entry.file_name().to_string_lossy().to_string();
 
-    let metadata_path = game_path.join(".gamevault.metadata.json");
+    let metadata_path = game_path.join(".playstash.metadata.json");
     let game_metadata: Option<serde_json::Value> = if metadata_path.exists() {
       fs::read_to_string(&metadata_path)
         .ok()
@@ -54,7 +54,7 @@ pub(crate) fn recover_download_cards(selected_root: String) -> Result<Vec<Recove
       let version_folder_name = version_entry.file_name().to_string_lossy().to_string();
       let (folder_version_id, version_name) = parse_version_folder(&version_folder_name);
 
-      let config_path = version_path.join(".gamevault.game.config.json");
+      let config_path = version_path.join(".playstash.game.config.json");
       if !config_path.exists() {
         continue;
       }

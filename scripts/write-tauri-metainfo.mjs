@@ -10,8 +10,8 @@ const tauriConfig = JSON.parse(
   await readFile(path.join(repoRoot, "src-tauri", "tauri.conf.json"), "utf8"),
 );
 
-const appId = tauriConfig.identifier || "com.phalcode.gamevault";
-const productName = tauriConfig.productName || "GameVault";
+const appId = tauriConfig.identifier || "com.playstash.playstash";
+const productName = tauriConfig.productName || "PlayStash";
 const homepage = tauriConfig.bundle?.homepage || "";
 const shortDescription =
   tauriConfig.bundle?.shortDescription || packageJson.description || "";

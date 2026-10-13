@@ -9,7 +9,7 @@ import { Strong, Text, TextLink } from "@tw/text";
 import { useCallback, useEffect, useState } from "react";
 import {
   AUTH_SERVER_STORAGE_KEY,
-  DEMO_SERVER_URL,
+  DEFAULT_SERVER_URL,
   detectBackendServedWebUi,
 } from "@/utils/authConfig";
 import { applyTheme, getStoredTheme } from "@/utils/theme";
@@ -27,7 +27,7 @@ interface FormState {
 export function Register() {
   const { serverUrl } = useAuth();
   const [serverInput, setServerInput] = useState(
-    localStorage.getItem(AUTH_SERVER_STORAGE_KEY) || DEMO_SERVER_URL,
+    localStorage.getItem(AUTH_SERVER_STORAGE_KEY) || DEFAULT_SERVER_URL,
   );
   const [confirmedServer, setConfirmedServer] = useState<string | null>(null);
   const [backendServed, setBackendServed] = useState(false);
@@ -185,7 +185,7 @@ export function Register() {
       onSubmit={confirmedServer ? handleSubmit : handleContinue}
       className="grid w-full max-w-sm grid-cols-1 gap-6"
     >
-      <Logo variant="text" className="w-full" height="h-full" />
+      <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
       <div className="space-y-3">
         <Heading>Create your account</Heading>
         <Text>
@@ -242,7 +242,7 @@ export function Register() {
           </Field>
 
           {reqLoading && (
-            <div className="flex items-center gap-2 text-gv-muted">
+            <div className="flex items-center gap-2 text-ps-muted">
               <svg className="h-4 w-4 motion-safe:animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />

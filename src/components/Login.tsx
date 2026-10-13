@@ -1,9 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import {
   AUTH_SERVER_STORAGE_KEY,
-  DEMO_PASSWORD,
-  DEMO_SERVER_URL,
-  DEMO_USERNAME,
+  DEFAULT_SERVER_URL,
   detectBackendServedWebUi,
   getDevAutologinConfig,
   normalizeServerUrl,
@@ -28,7 +26,7 @@ export function Login() {
     return (
       localStorage.getItem(AUTH_SERVER_STORAGE_KEY) ||
       devAutologin?.server ||
-      DEMO_SERVER_URL
+      DEFAULT_SERVER_URL
     );
   });
   const [confirmedServer, setConfirmedServer] = useState<string | null>(() => {
@@ -85,15 +83,6 @@ export function Login() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    // Prefill demo credentials when the demo server is selected.
-    if (!confirmedServer) return;
-    if (normalizeServerUrl(confirmedServer) === DEMO_SERVER_URL) {
-      setUsername((u) => (u ? u : DEMO_USERNAME));
-      setPassword((p) => (p ? p : DEMO_PASSWORD));
-    }
-  }, [confirmedServer]);
 
   useEffect(() => {
     if (!confirmedServer) {
@@ -264,12 +253,12 @@ export function Login() {
       className="grid w-full max-w-sm grid-cols-1 gap-6"
     >
       <div tabIndex={-1} aria-hidden="true">
-        <Logo variant="text" className="w-full" height="h-full" />
+        <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
       </div>
       <div className="space-y-3">
         <Heading tabIndex={-1}>Sign in to your account</Heading>
         <Text>
-          Connect to your GameVault node, then enter with local auth or SSO.
+          Connect to your PlayStash node, then enter with local auth or SSO.
         </Text>
       </div>
 

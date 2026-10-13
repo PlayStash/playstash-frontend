@@ -206,7 +206,7 @@ export function BackupRestoreDialog({ onClose }: BackupRestoreDialogProps) {
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gv-line text-gv-muted hover:text-gv-text hover:bg-gv-panel-soft"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
           aria-label="Close"
         >
           <svg
@@ -221,14 +221,14 @@ export function BackupRestoreDialog({ onClose }: BackupRestoreDialogProps) {
           </svg>
         </button>
       </DialogTitle>
-      <div className="px-6 mt-1 flex gap-2 border-b border-gv-line text-sm">
+      <div className="px-6 mt-1 flex gap-2 border-b border-ps-line text-sm">
         <button
           onClick={() => setTab("backup")}
           className={
             "px-3 py-2 border-b-2 transition-colors " +
             (tab === "backup"
-              ? "border-gv-accent text-gv-accent"
-              : "border-transparent text-gv-muted hover:text-gv-text")
+              ? "border-ps-accent text-ps-accent"
+              : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
           Backup
@@ -238,8 +238,8 @@ export function BackupRestoreDialog({ onClose }: BackupRestoreDialogProps) {
           className={
             "px-3 py-2 border-b-2 transition-colors " +
             (tab === "restore"
-              ? "border-gv-accent text-gv-accent"
-              : "border-transparent text-gv-muted hover:text-gv-text")
+              ? "border-ps-accent text-ps-accent"
+              : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
           Restore

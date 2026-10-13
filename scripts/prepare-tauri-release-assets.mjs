@@ -146,8 +146,8 @@ function escapeRegExp(value) {
 
 // Rebuilds a Tauri bundle filename into a clean, structured release name:
 //   <Product>-<os>-<arch>-<version><kind/extension>
-// e.g. GameVault_17.0.0_x64-setup.exe -> GameVault-windows-x64-17.0.0-setup.exe
-//      gamevault_17.0.0_amd64.AppImage -> GameVault-linux-x64-17.0.0.AppImage
+// e.g. PlayStash_17.0.0_x64-setup.exe -> PlayStash-windows-x64-17.0.0-setup.exe
+//      playstash_17.0.0_amd64.AppImage -> PlayStash-linux-x64-17.0.0.AppImage
 function toStructuredReleaseName(
   filename,
   version,
@@ -169,7 +169,7 @@ function toStructuredReleaseName(
 
   // Some bundles carry no "<name>_<version>_<arch>" prefix (e.g. the macOS
   // updater bundle is just "<ProductName>.app.tar.gz"). Strip a leading product
-  // name so we don't produce "...-GameVault.app.tar.gz" but instead
+  // name so we don't produce "...-PlayStash.app.tar.gz" but instead
   // "...-<version>.app.tar.gz".
   const stripped = filename.replace(
     new RegExp(`^${escapeRegExp(productName)}`, "i"),
@@ -182,7 +182,7 @@ function toStructuredReleaseName(
 const tauriConfig = JSON.parse(
   await readFile(path.join(repoRoot, "src-tauri", "tauri.conf.json"), "utf8"),
 );
-const productName = tauriConfig.productName || "GameVault";
+const productName = tauriConfig.productName || "PlayStash";
 const archLabel = ARCH_LABELS[resolveArchKey()] || resolveArchKey();
 
 const updaters = [];

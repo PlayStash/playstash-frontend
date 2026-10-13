@@ -2,10 +2,10 @@
 
 use std::path::Path;
 
-fn is_gamevault_metadata_file(path: &Path) -> bool {
+fn is_playstash_metadata_file(path: &Path) -> bool {
   matches!(
     path.file_name().and_then(|name| name.to_str()),
-    Some(".gamevault.game.config.json" | ".gamevault.metadata.json")
+    Some(".playstash.game.config.json" | ".playstash.metadata.json")
   )
 }
 
@@ -56,7 +56,7 @@ pub(crate) fn fs_write_text_file(path: String, content: String) -> Result<(), St
   std::fs::write(file_path, content)
     .map_err(|e| format!("fs_write_text_file failed for '{}': {}", path, e))?;
 
-  if is_gamevault_metadata_file(file_path) {
+  if is_playstash_metadata_file(file_path) {
     mark_hidden(file_path)?;
   }
 
@@ -90,14 +90,14 @@ pub(crate) fn fs_remove(path: String, recursive: bool) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-  use super::{fs_write_text_file, is_gamevault_metadata_file};
+  use super::{fs_write_text_file, is_playstash_metadata_file};
   use std::fs;
   use std::path::{Path, PathBuf};
   use std::time::{SystemTime, UNIX_EPOCH};
 
   fn test_directory() -> PathBuf {
     let unique_name = format!(
-      "gamevault-fs-command-test-{}",
+      "playstash-fs-command-test-{}",
       SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system clock before Unix epoch")
@@ -122,24 +122,24 @@ mod tests {
   }
 
   #[test]
-  fn identifies_only_gamevault_metadata_files() {
-    assert!(is_gamevault_metadata_file(Path::new(
-      ".gamevault.game.config.json"
+  fn identifies_only_playstash_metadata_files() {
+    assert!(is_playstash_metadata_file(Path::new(
+      ".playstash.game.config.json"
     )));
-    assert!(is_gamevault_metadata_file(Path::new(
-      ".gamevault.metadata.json"
+    assert!(is_playstash_metadata_file(Path::new(
+      ".playstash.metadata.json"
     )));
-    assert!(!is_gamevault_metadata_file(Path::new("config.json")));
+    assert!(!is_playstash_metadata_file(Path::new("config.json")));
   }
 
   #[test]
-  fn writes_gamevault_metadata_files() {
+  fn writes_playstash_metadata_files() {
     let directory = test_directory();
     fs::create_dir_all(&directory).expect("create test directory");
 
     for file_name in [
-      ".gamevault.game.config.json",
-      ".gamevault.metadata.json",
+      ".playstash.game.config.json",
+      ".playstash.metadata.json",
     ] {
       let path = directory.join(file_name);
       fs_write_text_file(path.to_string_lossy().into_owned(), "{}".to_string())

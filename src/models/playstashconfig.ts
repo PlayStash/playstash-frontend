@@ -1,4 +1,4 @@
-export interface GameVaultConfig {
+export interface PlayStashConfig {
   gameid?: number;
   versionid?: number;
   gametype?: string;

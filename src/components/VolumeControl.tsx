@@ -37,7 +37,7 @@ export function VolumeControl({ className }: { className?: string }) {
         onClick={() => handleChange(muted ? 1 : 0)}
         aria-label={muted ? "Unmute" : "Mute"}
         title={muted ? "Unmute" : "Mute"}
-        className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gv-muted transition-colors hover:bg-gv-panel-soft hover:text-gv-text focus:outline-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gv-accent-cool"
+        className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text focus:outline-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
       >
         {muted ? (
           <SpeakerXMarkIcon className="size-5" aria-hidden="true" />
@@ -55,10 +55,10 @@ export function VolumeControl({ className }: { className?: string }) {
         onChange={(event) => handleChange(Number(event.target.value))}
         aria-label="Sound volume"
         aria-valuetext={`${Math.round(volume * 100)}%`}
-        className="h-1.5 w-full min-w-0 cursor-pointer appearance-none rounded-full bg-gv-line accent-gv-accent"
+        className="h-1.5 w-full min-w-0 cursor-pointer appearance-none rounded-full bg-ps-line accent-ps-accent"
       />
 
-      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gv-muted">
+      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-ps-muted">
         {Math.round(volume * 100)}%
       </span>
     </div>

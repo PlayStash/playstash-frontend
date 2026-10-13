@@ -1,7 +1,7 @@
 import { DBSchema, IDBPDatabase, openDB } from "idb";
 import { isTauriApp } from "./tauri";
 
-const DATABASE_NAME = "gamevault-media-cache";
+const DATABASE_NAME = "playstash-media-cache";
 const DATABASE_VERSION = 1;
 const UNUSED_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;

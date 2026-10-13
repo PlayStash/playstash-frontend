@@ -4,7 +4,7 @@ import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
 import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { ProgressBar } from "@/components/tailwind/progress";
-import type { GamevaultGameTypeEnum as GameType } from "@/api/models/GamevaultGame";
+import type { PlaystashGameTypeEnum as GameType } from "@/api/models/PlaystashGame";
 import {
   ClipboardDocumentIcon,
   ComputerDesktopIcon,
@@ -68,10 +68,10 @@ export function InstallFlow({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <ComputerDesktopIcon
-            className="size-5 shrink-0 text-gv-accent"
+            className="size-5 shrink-0 text-ps-accent"
             aria-hidden="true"
           />
-          <span className="truncate text-sm font-semibold text-gv-text">
+          <span className="truncate text-sm font-semibold text-ps-text">
             Installation
           </span>
         </div>
@@ -92,9 +92,9 @@ export function InstallFlow({
 
       {installState.mode === "portable" && (
         <div className="space-y-4">
-          <p className="text-sm text-gv-muted">
+          <p className="text-sm text-ps-muted">
             This is a portable game, so there is no setup to run. Just press
-            "Install" and GameVault will copy the game files to the game's
+            "Install" and PlayStash will copy the game files to the game's
             installation folder.
           </p>
 
@@ -111,7 +111,7 @@ export function InstallFlow({
 
       {installState.mode === "setup" && (
         <div className="space-y-4">
-          <ol className="list-decimal space-y-1.5 pl-4 text-sm text-gv-muted marker:text-gv-muted">
+          <ol className="list-decimal space-y-1.5 pl-4 text-sm text-ps-muted marker:text-ps-muted">
             <li>Pick the correct installer from the dropdown menu below.</li>
             <li>Hit the 'Install' button to launch the game's installer.</li>
             <li>Go through the game's setup process.</li>
@@ -143,7 +143,7 @@ export function InstallFlow({
           <div className="surface-panel-soft rounded-xl p-3">
             <div className="flex items-center justify-between gap-3">
               <p
-                className="min-w-0 flex-1 truncate font-mono text-xs text-gv-muted"
+                className="min-w-0 flex-1 truncate font-mono text-xs text-ps-muted"
                 title={download.installationDirectory}
               >
                 {download.installationDirectory ||
@@ -175,7 +175,7 @@ export function InstallFlow({
 
       {installState.mode === "undetected" && (
         <div className="space-y-4">
-          <p className="text-sm text-gv-muted">
+          <p className="text-sm text-ps-muted">
             Unable to detect game type. You can try forcing an installation
             procedure by selecting it from the options below.
           </p>
@@ -209,7 +209,7 @@ export function InstallFlow({
 
         <div className="flex items-center gap-2">
           {download.installationStatus === "running" && (
-            <span className="text-xs font-medium text-gv-accent">
+            <span className="text-xs font-medium text-ps-accent">
               Running
             </span>
           )}

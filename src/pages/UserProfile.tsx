@@ -14,7 +14,7 @@ import { useAlertDialog } from "@/context/AlertDialogContext";
 import { useAuthMediaUrl } from "@/hooks/useAuthMediaUrl";
 import { getGameCoverMediaId } from "@/hooks/useGames";
 import { getRoleLabel } from "@/utils/roles";
-import { GamevaultUserRoleEnum } from "@/api";
+import { PlaystashUserRoleEnum } from "@/api";
 import clsx from "clsx";
 import {
   ChevronLeftIcon,
@@ -29,7 +29,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import type { GamevaultGame, GamevaultUser, Progress } from "../api";
+import type { PlaystashGame, PlaystashUser, Progress } from "../api";
 
 type ProfileProgressSort = "last" | "time" | "title" | "state";
 
@@ -39,7 +39,7 @@ const PROGRESS_STATE_META: Record<
   string,
   { label: string; tone: string; chip: keyof typeof badgeTones }
 > = {
-  UNPLAYED: { label: "Unplayed", tone: "text-gv-muted", chip: "zinc" },
+  UNPLAYED: { label: "Unplayed", tone: "text-ps-muted", chip: "zinc" },
   INFINITE: { label: "Ongoing", tone: "text-sky-400", chip: "blue" },
   PLAYING: { label: "Playing", tone: "text-emerald-400", chip: "green" },
   COMPLETED: { label: "Finished", tone: "text-violet-300", chip: "indigo" },
@@ -119,7 +119,7 @@ function formatPlaytime(minutes: number) {
   return `${hours.toFixed(hours < 10 ? 1 : 0)} h`;
 }
 
-function getDisplayName(user: GamevaultUser | null | undefined) {
+function getDisplayName(user: PlaystashUser | null | undefined) {
   if (!user) return "Unknown User";
   const fullName = [user.first_name, user.last_name]
     .filter(Boolean)
@@ -128,12 +128,12 @@ function getDisplayName(user: GamevaultUser | null | undefined) {
   return fullName || user.username || `User #${user.id}`;
 }
 
-function getUserHandle(user: GamevaultUser | null | undefined) {
+function getUserHandle(user: PlaystashUser | null | undefined) {
   if (!user) return "unknown";
   return user.username || `user-${user.id}`;
 }
 
-function getAvatarFallback(user: GamevaultUser | null | undefined) {
+function getAvatarFallback(user: PlaystashUser | null | undefined) {
   const source = getDisplayName(user)
     .split(/\s+/)
     .filter(Boolean)
@@ -143,17 +143,17 @@ function getAvatarFallback(user: GamevaultUser | null | undefined) {
     .toUpperCase();
   return (
     <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,rgba(84,73,198,0.32),rgba(24,24,39,0.96))] text-sm font-bold uppercase tracking-[0.14em] text-white/90">
-      {source || "GV"}
+      {source || "PS"}
     </div>
   );
 }
 
-function getProgresses(user: GamevaultUser | null | undefined) {
+function getProgresses(user: PlaystashUser | null | undefined) {
   return Array.isArray(user?.progresses) ? user.progresses : [];
 }
 
 function getRecentProgresses(
-  user: GamevaultUser | null | undefined,
+  user: PlaystashUser | null | undefined,
   limit = 6,
 ) {
   return [...getProgresses(user)]
@@ -165,7 +165,7 @@ function getRecentProgresses(
 }
 
 function getRecentWindowProgresses(
-  user: GamevaultUser | null | undefined,
+  user: PlaystashUser | null | undefined,
   sinceMs: number,
 ) {
   return getProgresses(user)
@@ -176,11 +176,11 @@ function getRecentWindowProgresses(
     );
 }
 
-function getBookmarkedGames(user: GamevaultUser | null | undefined) {
+function getBookmarkedGames(user: PlaystashUser | null | undefined) {
   return Array.isArray(user?.bookmarked_games) ? user.bookmarked_games : [];
 }
 
-function getPrimaryBackdropMediaId(user: GamevaultUser | null | undefined) {
+function getPrimaryBackdropMediaId(user: PlaystashUser | null | undefined) {
   if (!user) return null;
   if (user.background?.id) return user.background.id;
   const fromRecentBackground = getRecentProgresses(user, 12).find(
@@ -190,7 +190,7 @@ function getPrimaryBackdropMediaId(user: GamevaultUser | null | undefined) {
     return fromRecentBackground.game.metadata.background.id;
   }
   const fromRecentCover = getRecentProgresses(user, 12)
-    .map((progress) => getGameCoverMediaId(progress.game as GamevaultGame))
+    .map((progress) => getGameCoverMediaId(progress.game as PlaystashGame))
     .find(Boolean);
   if (fromRecentCover) return Number(fromRecentCover);
   const bookmarkCover = getBookmarkedGames(user)
@@ -199,7 +199,7 @@ function getPrimaryBackdropMediaId(user: GamevaultUser | null | undefined) {
   return bookmarkCover ? Number(bookmarkCover) : null;
 }
 
-function getUserStats(user: GamevaultUser | null | undefined) {
+function getUserStats(user: PlaystashUser | null | undefined) {
   const progresses = getProgresses(user);
   const totalMinutes = progresses.reduce(
     (sum, progress) => sum + (Number(progress.minutes_played ?? 0) || 0),
@@ -241,7 +241,7 @@ function GamePoster({
   height,
   className,
 }: {
-  game?: GamevaultGame | null;
+  game?: PlaystashGame | null;
   title: string;
   width: number;
   height: number;
@@ -252,7 +252,7 @@ function GamePoster({
   return (
     <div
       className={clsx(
-        "overflow-hidden rounded-2xl border border-gv-line/70 bg-gv-panel-soft shadow-sm",
+        "overflow-hidden rounded-2xl border border-ps-line/70 bg-ps-panel-soft shadow-sm",
         className,
       )}
       style={{ width: `${width}px`, height: `${height}px` }}
@@ -291,7 +291,7 @@ function BackButton({ navigate }: { navigate: (delta: number) => void }) {
     <button
       onClick={() => navigate(-1)}
       aria-label="Go back"
-      className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-gv-muted transition-colors hover:text-gv-text"
+      className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-ps-muted transition-colors hover:text-ps-text"
     >
       <ChevronLeftIcon className="size-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
       Back
@@ -312,7 +312,7 @@ function ProfileProgressCard({
   return (
     <Link
       to={game?.id ? `/library/${game.id}` : "/library"}
-      className="group relative block rounded-3xl focus:outline-none focus:ring-2 focus:ring-gv-accent-cool"
+      className="group relative block rounded-3xl focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
     >
       <article className="surface-panel h-full rounded-3xl p-4 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)">
         <div className="flex gap-4">
@@ -325,22 +325,22 @@ function ProfileProgressCard({
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-3">
-              <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold tracking-[-0.02em] text-gv-text">
+              <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold tracking-[-0.02em] text-ps-text">
                 {title}
               </h3>
               <Badge color={meta.chip} className="shrink-0 self-start">
                 {meta.label}
               </Badge>
             </div>
-            <div className="mt-3 min-w-0 space-y-2 text-sm text-gv-muted">
+            <div className="mt-3 min-w-0 space-y-2 text-sm text-ps-muted">
               <div className="flex min-w-0 items-center gap-2">
-                <ClockIcon className="size-4 shrink-0 text-gv-accent-cool" />
+                <ClockIcon className="size-4 shrink-0 text-ps-accent-cool" />
                 <span className="truncate">
                   {formatPlaytime(Number(progress.minutes_played ?? 0) || 0)}
                 </span>
               </div>
               <div className="flex min-w-0 items-center gap-2">
-                <SparklesIcon className="size-4 shrink-0 text-gv-accent-cool" />
+                <SparklesIcon className="size-4 shrink-0 text-ps-accent-cool" />
                 <span
                   className="truncate"
                   title={
@@ -362,7 +362,7 @@ function ProfileProgressCard({
               const gid = (progress.game as any)?.id ?? (game as any)?.id ?? 0;
               onDelete(progress.id, gid);
             }}
-            className="absolute bottom-3 right-3 rounded-xl p-2 text-gv-muted hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer"
+            className="absolute bottom-3 right-3 rounded-xl p-2 text-ps-muted hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer"
             aria-label="Delete progress entry"
             title="Delete progress entry"
           >
@@ -379,7 +379,7 @@ export default function UserProfile() {
   const { showAlert } = useAlertDialog();
   const { id } = useParams<{ id?: string }>();
 
-  const [user, setUser] = useState<GamevaultUser | null>(null);
+  const [user, setUser] = useState<PlaystashUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -392,7 +392,7 @@ export default function UserProfile() {
   const currentUserId = (loggedIn as any)?.id ?? (loggedIn as any)?.ID ?? null;
   const currentUserRole = Number((loggedIn as any)?.role ?? 0);
   const isOwnProfile = userId === currentUserId;
-  const isAdmin = currentUserRole >= Number(GamevaultUserRoleEnum._3);
+  const isAdmin = currentUserRole >= Number(PlaystashUserRoleEnum._3);
   const canEdit = isOwnProfile || isAdmin;
 
   const recentCutoff = useMemo(() => Date.now() - TWO_WEEKS_MS, []);
@@ -520,8 +520,8 @@ export default function UserProfile() {
     return (
       <div className="flex min-h-full flex-col gap-6">
         <Heading>Community</Heading>
-        <Divider className="border-gv-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+        <Divider className="border-ps-line/80" />
+        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
           Connect to a server to browse the network.
         </div>
       </div>
@@ -535,8 +535,8 @@ export default function UserProfile() {
           <Heading>Community</Heading>
           <BackButton navigate={navigate} />
         </div>
-        <Divider className="border-gv-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+        <Divider className="border-ps-line/80" />
+        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
           Invalid user ID.
         </div>
       </div>
@@ -550,7 +550,7 @@ export default function UserProfile() {
           <Heading>Community</Heading>
           <BackButton navigate={navigate} />
         </div>
-        <Divider className="border-gv-line/80" />
+        <Divider className="border-ps-line/80" />
         <div className="surface-panel h-96 animate-pulse rounded-[1.75rem]" />
       </div>
     );
@@ -563,8 +563,8 @@ export default function UserProfile() {
           <Heading>Community</Heading>
           <BackButton navigate={navigate} />
         </div>
-        <Divider className="border-gv-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-gv-muted">
+        <Divider className="border-ps-line/80" />
+        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
           {error || "User not found in this network."}
         </div>
       </div>
@@ -590,7 +590,7 @@ export default function UserProfile() {
           <BackButton navigate={navigate} />
         </div>
       </div>
-      <Divider className="border-gv-line/80" />
+      <Divider className="border-ps-line/80" />
 
       <section className="surface-panel relative min-h-80 overflow-hidden rounded-4xl">
         <div className="absolute inset-0">
@@ -622,7 +622,7 @@ export default function UserProfile() {
                 size={110}
                 alt={getDisplayName(user)}
                 fallback={getAvatarFallback(user)}
-                className="border-4 border-white/20 bg-gv-panel-soft/50 shadow-lg backdrop-blur-xl"
+                className="border-4 border-white/20 bg-ps-panel-soft/50 shadow-lg backdrop-blur-xl"
               />
               <div className="min-w-0 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -710,7 +710,7 @@ export default function UserProfile() {
                 <ProfileProgressCard key={progress.id} progress={progress} />
               ))
             ) : (
-              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-gv-muted">
+              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted">
                 No recent activity in the last 2 weeks.
               </div>
             )}
@@ -732,7 +732,7 @@ export default function UserProfile() {
           </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
             <div className="w-full">
-              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                 Search games
               </label>
               <Input
@@ -745,7 +745,7 @@ export default function UserProfile() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                 Filter by state
               </label>
               <Listbox
@@ -761,7 +761,7 @@ export default function UserProfile() {
               </Listbox>
             </div>
             <div>
-              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-gv-muted">
+              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
                 Sort by
               </label>
               <Listbox
@@ -794,7 +794,7 @@ export default function UserProfile() {
                 </div>
               ))
             ) : (
-              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-gv-muted md:col-span-2">
+              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted md:col-span-2">
                 No games match this filter combination.
               </div>
             )}
@@ -819,7 +819,7 @@ export default function UserProfile() {
                   <Link
                     key={game.id}
                     to={`/library/${game.id}`}
-                    className="group block w-37.5 shrink-0 rounded-3xl focus:outline-none focus:ring-2 focus:ring-gv-accent-cool"
+                    className="group block w-37.5 shrink-0 rounded-3xl focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
                   >
                     <div className="surface-panel rounded-3xl p-3 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)">
                       <GamePoster
@@ -828,7 +828,7 @@ export default function UserProfile() {
                         width={126}
                         height={170}
                       />
-                      <div className="mt-3 line-clamp-2 text-sm font-medium text-gv-text">
+                      <div className="mt-3 line-clamp-2 text-sm font-medium text-ps-text">
                         {title}
                       </div>
                     </div>
@@ -836,7 +836,7 @@ export default function UserProfile() {
                 );
               })
             ) : (
-              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-gv-muted">
+              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted">
                 No bookmarks shared yet.
               </div>
             )}
@@ -849,7 +849,7 @@ export default function UserProfile() {
           key={user.id}
           user={user}
           onClose={() => setShowEditProfile(false)}
-          onUserUpdated={(updatedUser: GamevaultUser) => {
+          onUserUpdated={(updatedUser: PlaystashUser) => {
             setUser(updatedUser);
             setShowEditProfile(false);
           }}

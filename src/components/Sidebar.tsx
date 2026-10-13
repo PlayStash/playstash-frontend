@@ -4,11 +4,10 @@ import { useOnlineStatus } from "@/context/OfflineContext";
 import { Logo } from "@components/Logo";
 import {
   ArrowRightStartOnRectangleIcon,
-  ChatBubbleLeftRightIcon,
+  BookOpenIcon,
   ChevronUpIcon,
   LifebuoyIcon,
   NewspaperIcon,
-  RocketLaunchIcon,
   ShieldExclamationIcon,
   Squares2X2Icon,
   UserGroupIcon,
@@ -38,7 +37,7 @@ import {
 } from "@tw/sidebar";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { GamevaultUserRoleEnum } from "../api";
+import { PlaystashUserRoleEnum } from "../api";
 import { useNews } from "../hooks/useNews";
 import { UserEditorModal } from "./admin/UserEditorModal";
 import { NewsDialog } from "./news/NewsDialog";
@@ -71,7 +70,7 @@ export function Sidebar() {
   };
 
   const roleVal = user?.role;
-  const isAdmin = Number(roleVal) >= Number(GamevaultUserRoleEnum._3);
+  const isAdmin = Number(roleVal) >= Number(PlaystashUserRoleEnum._3);
   const isTauri = isTauriApp();
   const { isOnline } = useOnlineStatus();
   const isCurrentPath = (path: string) => {
@@ -83,8 +82,7 @@ export function Sidebar() {
     }
 
     return (
-      location.pathname === path ||
-      location.pathname.startsWith(`${path}/`)
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
     );
   };
 
@@ -121,7 +119,9 @@ export function Sidebar() {
                   ? (e: React.MouseEvent) => e.preventDefault()
                   : undefined
               }
-              className={isTauri && !isOnline ? "opacity-40 cursor-not-allowed" : ""}
+              className={
+                isTauri && !isOnline ? "opacity-40 cursor-not-allowed" : ""
+              }
             >
               <UserGroupIcon />
               <SidebarLabel className="flex justify-between w-full">
@@ -143,7 +143,9 @@ export function Sidebar() {
                     ? (e: React.MouseEvent) => e.preventDefault()
                     : undefined
                 }
-                className={isTauri && !isOnline ? "opacity-40 cursor-not-allowed" : ""}
+                className={
+                  isTauri && !isOnline ? "opacity-40 cursor-not-allowed" : ""
+                }
               >
                 <ShieldExclamationIcon />
                 <SidebarLabel>Administration</SidebarLabel>
@@ -163,18 +165,18 @@ export function Sidebar() {
           <SidebarSpacer />
           <SidebarSection>
             <SidebarItem
-              href="https://gamevau.lt/docs/intro"
+              href="https://github.com/PlayStash/playstash-frontend#readme"
               target="_blank"
             >
-              <LifebuoyIcon />
+              <BookOpenIcon />
               <SidebarLabel>Documentation</SidebarLabel>
             </SidebarItem>
             <SidebarItem
-              href="https://discord.gg/NEdNen2dSu"
+              href="https://github.com/PlayStash/playstash-frontend/issues"
               target="_blank"
             >
-              <ChatBubbleLeftRightIcon />
-              <SidebarLabel>Discord</SidebarLabel>
+              <LifebuoyIcon />
+              <SidebarLabel>Support</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               onClick={(e: any) => {
@@ -186,18 +188,14 @@ export function Sidebar() {
               <SidebarLabel className="flex justify-between w-full items-center">
                 News
                 {badgeVisible && (
-                  <Badge color="amber" className="ml-2 motion-safe:animate-pulse">
+                  <Badge
+                    color="amber"
+                    className="ml-2 motion-safe:animate-pulse"
+                  >
                     New
                   </Badge>
                 )}
               </SidebarLabel>
-            </SidebarItem>
-            <SidebarItem
-              href="https://gamevau.lt/gamevault-plus"
-              target="_blank"
-            >
-              <RocketLaunchIcon />
-              <SidebarLabel>GameVault+</SidebarLabel>
             </SidebarItem>
           </SidebarSection>
         </SidebarBody>
@@ -205,17 +203,13 @@ export function Sidebar() {
           <Dropdown>
             <DropdownButton as={SidebarItem}>
               <span className="flex min-w-0 items-center gap-3">
-                <UserAvatar
-                  media={avatar}
-                  size={40}
-                  alt={username}
-                />
+                <UserAvatar media={avatar} size={40} alt={username} />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm/5 font-medium text-gv-text">
+                  <span className="block truncate text-sm/5 font-medium text-ps-text">
                     {username}
                   </span>
                   {email && (
-                    <span className="block truncate text-xs/5 font-normal text-gv-muted">
+                    <span className="block truncate text-xs/5 font-normal text-ps-muted">
                       {email}
                     </span>
                   )}
@@ -235,7 +229,9 @@ export function Sidebar() {
                 <DropdownLabel>Edit profile</DropdownLabel>
               </DropdownItem>
               <DropdownDivider />
-              <DropdownItem href={user?.id ? `/community/${user.id}` : "/community"}>
+              <DropdownItem
+                href={user?.id ? `/community/${user.id}` : "/community"}
+              >
                 <UserIcon />
                 <DropdownLabel>My profile</DropdownLabel>
               </DropdownItem>

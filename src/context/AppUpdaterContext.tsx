@@ -9,24 +9,24 @@ import {
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { isTauriApp } from "@/utils/tauri";
 
-const SKIPPED_UPDATE_KEY = "gv_skipped_update_version";
-const UPDATE_CHANNEL_KEY = "gv_update_channel";
+const SKIPPED_UPDATE_KEY = "playstash_skipped_update_version";
+const UPDATE_CHANNEL_KEY = "playstash_update_channel";
 const AUTO_CHECK_DELAY_MS = 1500;
 const APP_UPDATER_EVENT = "app-updater-progress";
 const GITHUB_RELEASE_API_URLS: Record<UpdateChannel, string> = {
   stable:
-    "https://api.github.com/repos/Phalcode/gamevault-frontend/releases/latest",
+    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/latest",
   "early-access":
-    "https://api.github.com/repos/Phalcode/gamevault-frontend/releases/tags/early-access",
+    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/tags/early-access",
   unstable:
-    "https://api.github.com/repos/Phalcode/gamevault-frontend/releases/tags/unstable",
+    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/tags/unstable",
 };
 const GITHUB_RELEASE_PAGE_URLS: Record<UpdateChannel, string> = {
-  stable: "https://github.com/Phalcode/gamevault-frontend/releases/latest",
+  stable: "https://github.com/PlayStash/playstash-frontend/releases/latest",
   "early-access":
-    "https://github.com/Phalcode/gamevault-frontend/releases/tag/early-access",
+    "https://github.com/PlayStash/playstash-frontend/releases/tag/early-access",
   unstable:
-    "https://github.com/Phalcode/gamevault-frontend/releases/tag/unstable",
+    "https://github.com/PlayStash/playstash-frontend/releases/tag/unstable",
 };
 
 export type UpdateChannel = "stable" | "early-access" | "unstable";
@@ -157,8 +157,8 @@ function formatUpdatePrompt(
 ): string {
   const releaseNotes = formatReleaseNotes(notes);
   const parts = [
-    `You are running GameVault v${__APP_VERSION__}.`,
-    `GameVault v${version} is available on the ${channelLabel(channel)} channel and can be downloaded from GitHub now.`,
+    `You are running PlayStash v${__APP_VERSION__}.`,
+    `PlayStash v${version} is available on the ${channelLabel(channel)} channel and can be downloaded from GitHub now.`,
   ];
 
   if (releaseNotes) {
@@ -178,7 +178,7 @@ function formatUpdateError(error: unknown): string {
     return error.trim();
   }
 
-  return "GameVault could not complete the update check.";
+  return "PlayStash could not complete the update check.";
 }
 
 function normalizeVersion(version: string): string {
@@ -314,7 +314,7 @@ export function AppUpdaterProvider({
           await showAlert({
             title: "Desktop updates unavailable",
             description:
-              "Auto-updates are only available in the GameVault desktop app.",
+              "Auto-updates are only available in the PlayStash desktop app.",
             affirmativeText: "OK",
           });
         }
@@ -470,12 +470,12 @@ export function AppUpdaterProvider({
         if (!update) {
           setAvailableVersion(null);
           setStatusText(
-            `GameVault is up to date on the ${channelLabel(updateChannel)} channel.`,
+            `PlayStash is up to date on the ${channelLabel(updateChannel)} channel.`,
           );
 
           if (manual) {
             await showAlert({
-              title: "GameVault is up to date",
+              title: "PlayStash is up to date",
               description: `You are already running the latest ${channelLabel(updateChannel)} desktop release (v${__APP_VERSION__}).`,
               affirmativeText: "OK",
             });
@@ -549,7 +549,7 @@ export function AppUpdaterProvider({
                 void showAlert({ title: "Installing update..." });
                 break;
               case "Finished":
-                setStatusText("Update installed. Restart GameVault to finish.");
+                setStatusText("Update installed. Restart PlayStash to finish.");
                 break;
             }
           },
@@ -560,12 +560,12 @@ export function AppUpdaterProvider({
         });
 
         setAvailableVersion(null);
-        setStatusText("Update installed. Restart GameVault to finish.");
+        setStatusText("Update installed. Restart PlayStash to finish.");
 
         await showAlert({
           title: "Update installed",
           description:
-            "GameVault has been updated. Restart the app to finish loading the new version.",
+            "PlayStash has been updated. Restart the app to finish loading the new version.",
           affirmativeText: "OK",
         });
       } catch (error) {

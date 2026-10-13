@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { GamevaultUser } from "../api";
+import { PlaystashUser } from "../api";
 import { AuthTokens } from "../types/AuthTokens";
 import {
   AUTH_REFRESH_STORAGE_KEY,
@@ -29,7 +29,7 @@ interface LoginArgs {
 interface AuthContextValue {
   serverUrl: string;
   auth: AuthTokens | null;
-  user: GamevaultUser | null;
+  user: PlaystashUser | null;
   error: string | null;
   loading: boolean;
   bootstrapping: boolean;
@@ -37,15 +37,15 @@ interface AuthContextValue {
   offlineBootstrap: boolean;
   loginBasic: (
     args: LoginArgs,
-  ) => Promise<{ auth: AuthTokens; user: GamevaultUser }>;
+  ) => Promise<{ auth: AuthTokens; user: PlaystashUser }>;
   /** Directly initialize auth state from already obtained tokens (e.g. SSO redirect). */
   loginWithTokens: (
     server: string,
     tokens: AuthTokens,
-  ) => Promise<{ auth: AuthTokens; user: GamevaultUser }>;
+  ) => Promise<{ auth: AuthTokens; user: PlaystashUser }>;
   logout: () => void;
   authFetch: (input: string, init?: RequestInit) => Promise<Response>;
-  refreshCurrentUser: () => Promise<GamevaultUser | null>;
+  refreshCurrentUser: () => Promise<PlaystashUser | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -108,7 +108,7 @@ function computeNextTokenRefresh(token: string): Date {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [serverUrl, setServerUrl] = useState("");
   const [auth, setAuth] = useState<AuthTokens | null>(null);
-  const [user, setUser] = useState<GamevaultUser | null>(null);
+  const [user, setUser] = useState<PlaystashUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [offlineBootstrap, setOfflineBootstrap] = useState(false);
@@ -162,13 +162,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
     return res.json();
   }
-  async function fetchCurrentUser(): Promise<GamevaultUser> {
+  async function fetchCurrentUser(): Promise<PlaystashUser> {
     const res = await authFetch(`${serverRef.current}/api/users/me`);
     if (!res.ok)
       throw new Error(
         `GET /api/users/me failed (${res.status}): ${(await res.text()) || res.statusText}`,
       );
-    const me: GamevaultUser = await res.json();
+    const me: PlaystashUser = await res.json();
     // Always cache user for offline bootstrap (Tauri only)
     if (isTauriApp()) {
       try {
@@ -423,7 +423,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log("[bootstrap] safety: cachedUser exists:", !!cachedUserRaw);
             if (cachedUserRaw) {
               try {
-                const cachedUser: GamevaultUser = JSON.parse(cachedUserRaw);
+                const cachedUser: PlaystashUser = JSON.parse(cachedUserRaw);
                 offlineModeRef.current = true;
                 authRef.current = { access_token: storedRefresh, refresh_token: storedRefresh };
                 nextTokenRefreshRef.current = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -467,7 +467,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("[bootstrap] cachedUser exists:", !!cachedUserRaw);
           if (cachedUserRaw) {
             try {
-              const cachedUser: GamevaultUser = JSON.parse(cachedUserRaw);
+              const cachedUser: PlaystashUser = JSON.parse(cachedUserRaw);
               console.log("[bootstrap] entering OFFLINE MODE with cached user:", cachedUser.username);
               // Reconstruct minimal auth from stored refresh token
               offlineModeRef.current = true;

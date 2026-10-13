@@ -1,7 +1,7 @@
 import {
-  GamevaultGameTypeEnum,
-  type GamevaultGameTypeEnum as GameType,
-} from "@/api/models/GamevaultGame";
+  PlaystashGameTypeEnum,
+  type PlaystashGameTypeEnum as GameType,
+} from "@/api/models/PlaystashGame";
 
 export type InstallViewMode = "portable" | "setup" | "undetected";
 
@@ -15,9 +15,9 @@ export type InstallCardState = {
 };
 
 export const FORCE_INSTALL_TYPES: { label: string; value: GameType }[] = [
-  { label: "Windows Setup", value: GamevaultGameTypeEnum.windows_setup },
-  { label: "Windows Portable", value: GamevaultGameTypeEnum.windows_portable },
-  { label: "Linux Portable", value: GamevaultGameTypeEnum.linux_portable },
+  { label: "Windows Setup", value: PlaystashGameTypeEnum.windows_setup },
+  { label: "Windows Portable", value: PlaystashGameTypeEnum.windows_portable },
+  { label: "Linux Portable", value: PlaystashGameTypeEnum.linux_portable },
 ];
 
 export function formatGameTypeLabel(gameType?: string) {
@@ -29,15 +29,15 @@ export function formatGameTypeLabel(gameType?: string) {
 }
 
 export function resolveInstallMode(gameType?: string): InstallViewMode {
-  if (gameType === GamevaultGameTypeEnum.windows_setup) {
+  if (gameType === PlaystashGameTypeEnum.windows_setup) {
     return "setup";
   }
 
   if (
-    gameType === GamevaultGameTypeEnum.windows_portable ||
-    gameType === GamevaultGameTypeEnum.linux_portable ||
-    gameType === GamevaultGameTypeEnum.windows_software ||
-    gameType === GamevaultGameTypeEnum.linux_software
+    gameType === PlaystashGameTypeEnum.windows_portable ||
+    gameType === PlaystashGameTypeEnum.linux_portable ||
+    gameType === PlaystashGameTypeEnum.windows_software ||
+    gameType === PlaystashGameTypeEnum.linux_software
   ) {
     return "portable";
   }

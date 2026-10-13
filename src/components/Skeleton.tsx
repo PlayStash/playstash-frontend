@@ -11,7 +11,7 @@ export function Skeleton({ className }: SkeletonProps) {
     <div
       aria-hidden="true"
       className={clsx(
-        "rounded-lg bg-gv-panel-strong motion-safe:animate-pulse",
+        "rounded-lg bg-ps-panel-strong motion-safe:animate-pulse",
         className,
       )}
     />

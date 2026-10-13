@@ -1,9 +1,9 @@
 import { isTauriApp } from "./tauri";
 
-const STORAGE_KEY = "gv_zoom_level";
+const STORAGE_KEY = "playstash_zoom_level";
 
 /** Fired on window whenever the zoom level changes (buttons or hotkeys). */
-export const ZOOM_CHANGE_EVENT = "gv:zoom-change";
+export const ZOOM_CHANGE_EVENT = "playstash:zoom-change";
 
 export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 2;

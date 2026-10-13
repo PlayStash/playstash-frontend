@@ -22,7 +22,7 @@ const colors = {
   sky: "bg-sky-500/15 text-sky-700 group-data-hover:bg-sky-500/25 dark:bg-sky-500/10 dark:text-sky-300 dark:group-data-hover:bg-sky-500/20",
   blue: "bg-blue-500/15 text-blue-700 group-data-hover:bg-blue-500/25 dark:text-blue-400 dark:group-data-hover:bg-blue-500/25",
   indigo:
-    "bg-gv-accent/15 text-gv-accent-strong group-data-hover:bg-gv-accent/25 dark:text-gv-accent-strong",
+    "bg-ps-accent/15 text-ps-accent-strong group-data-hover:bg-ps-accent/25 dark:text-ps-accent-strong",
   violet:
     "bg-violet-500/15 text-violet-700 group-data-hover:bg-violet-500/25 dark:text-violet-400 dark:group-data-hover:bg-violet-500/20",
   purple:
@@ -31,7 +31,7 @@ const colors = {
     "bg-fuchsia-400/15 text-fuchsia-700 group-data-hover:bg-fuchsia-400/25 dark:bg-fuchsia-400/10 dark:text-fuchsia-400 dark:group-data-hover:bg-fuchsia-400/20",
   pink: "bg-pink-400/15 text-pink-700 group-data-hover:bg-pink-400/25 dark:bg-pink-400/10 dark:text-pink-400 dark:group-data-hover:bg-pink-400/20",
   rose: "bg-rose-400/15 text-rose-700 group-data-hover:bg-rose-400/25 dark:bg-rose-400/10 dark:text-rose-400 dark:group-data-hover:bg-rose-400/20",
-  zinc: "border border-gv-line bg-gv-panel-soft text-gv-muted group-data-hover:bg-gv-panel",
+  zinc: "border border-ps-line bg-ps-panel-soft text-ps-muted group-data-hover:bg-ps-panel",
 };
 
 type BadgeProps = { color?: keyof typeof colors };
@@ -70,7 +70,7 @@ export const BadgeButton = forwardRef(function BadgeButton(
 ) {
   let classes = clsx(
     className,
-    "group relative inline-flex rounded-full focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-gv-accent-cool",
+    "group relative inline-flex rounded-full focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-ps-accent-cool",
   );
 
   return typeof props.href === "string" ? (

@@ -18,7 +18,7 @@ export default function Downloads() {
           Track active, queued, and completed game downloads.
         </Text>
       </div>
-      <Divider className="border-gv-line/80" />
+      <Divider className="border-ps-line/80" />
 
       {downloadArray.length > 0 && (
         <div className="space-y-4">
@@ -30,13 +30,13 @@ export default function Downloads() {
 
       {downloadArray.length === 0 && (
         <div className="surface-panel-soft rounded-3xl px-6 py-16 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-gv-line bg-gv-panel">
-            <ArrowDownTrayIcon className="size-7 text-gv-muted" aria-hidden="true" />
+          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-ps-line bg-ps-panel">
+            <ArrowDownTrayIcon className="size-7 text-ps-muted" aria-hidden="true" />
           </div>
-          <h3 className="mt-4 text-sm font-semibold text-gv-text">
+          <h3 className="mt-4 text-sm font-semibold text-ps-text">
             No downloads
           </h3>
-          <p className="mt-1 text-sm text-gv-muted">
+          <p className="mt-1 text-sm text-ps-muted">
             Start downloading games from your library
           </p>
         </div>

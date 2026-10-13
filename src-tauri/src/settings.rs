@@ -20,7 +20,7 @@ pub(crate) struct IgnoreListState {
 }
 
 pub(crate) fn settings_path(app: &tauri::AppHandle) -> PathBuf {
-  app.path().app_data_dir().unwrap().join("gamevault-settings.json")
+  app.path().app_data_dir().unwrap().join("playstash-settings.json")
 }
 
 pub(crate) fn load_settings(app: &tauri::AppHandle) -> AppSettings {

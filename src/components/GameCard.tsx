@@ -1,4 +1,4 @@
-import { GamevaultGame } from "@/api/models/GamevaultGame";
+import { PlaystashGame } from "@/api/models/PlaystashGame";
 import { Media } from "@/components/Media";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
 import { useAuth } from "@/context/AuthContext";
@@ -40,7 +40,7 @@ const GameCard = memo(function GameCard({
   game,
   sortBy,
 }: {
-  game: GamevaultGame;
+  game: PlaystashGame;
   sortBy?: string;
 }) {
   const { serverUrl, user, authFetch } = useAuth();
@@ -68,7 +68,7 @@ const GameCard = memo(function GameCard({
   const [bookmarked, setBookmarked] = useState<boolean>(initialBookmarked);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [localGame, setLocalGame] = useState<GamevaultGame>(game);
+  const [localGame, setLocalGame] = useState<PlaystashGame>(game);
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [selectableVersions, setSelectableVersions] = useState<GameVersion[]>(
     [],
@@ -174,7 +174,7 @@ const GameCard = memo(function GameCard({
       method: "GET",
     });
     if (!res.ok) return [];
-    const fullGame = (await res.json()) as GamevaultGame;
+    const fullGame = (await res.json()) as PlaystashGame;
     const fullVersions = Array.isArray(fullGame.versions)
       ? fullGame.versions
       : [];
@@ -200,7 +200,7 @@ const GameCard = memo(function GameCard({
           : `${resolvedTitle}.zip`;
 
       if (action === "client") {
-        const url = `gamevault://install?gameid=${game.id}&versionid=${selectedVersion.id}`;
+        const url = `playstash://install?gameid=${game.id}&versionid=${selectedVersion.id}`;
         window.location.href = url;
         return;
       }
@@ -318,7 +318,7 @@ const GameCard = memo(function GameCard({
 
         const configPath = await join(
           installedInfo.versionDirectory,
-          ".gamevault.game.config.json",
+          ".playstash.game.config.json",
         );
 
         let launchExe: string | undefined;
@@ -413,9 +413,9 @@ const GameCard = memo(function GameCard({
           // No own layer here — rasterize into the wrapper's single composited
           // layer so content + shadow move as one texture (a second layer
           // misaligns 1px at the bottom during the transform move).
-          "relative flex flex-col overflow-hidden rounded-3xl bg-[linear-gradient(180deg,var(--color-gv-panel-strong)_0%,var(--color-gv-panel)_100%)]",
+          "relative flex flex-col overflow-hidden rounded-3xl bg-[linear-gradient(180deg,var(--color-ps-panel-strong)_0%,var(--color-ps-panel)_100%)]",
           "cursor-pointer select-none",
-          "focus:outline-none focus:ring-2 focus:ring-gv-accent-cool",
+          "focus:outline-none focus:ring-2 focus:ring-ps-accent-cool",
         )}
       >
         {/* Cover art container. NO overflow-hidden here: the oversized Media is
@@ -470,7 +470,7 @@ const GameCard = memo(function GameCard({
               extended 1px below the cover bottom (`-bottom-px`) and NOT inside
               the Media clip wrapper, so it bleeds 1px into the footer and the
               bottom of the artwork never shows a 1px open line in Chromium. */}
-          <div className="pointer-events-none absolute inset-x-0 -bottom-px h-24 bg-[linear-gradient(transparent,var(--color-gv-panel)_90%)] opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!" />
+          <div className="pointer-events-none absolute inset-x-0 -bottom-px h-24 bg-[linear-gradient(transparent,var(--color-ps-panel)_90%)] opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!" />
 
           {/* Corner action buttons - hidden until hover */}
           {/* Bookmark */}
@@ -485,15 +485,15 @@ const GameCard = memo(function GameCard({
               "opacity-0 translate-y-1 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
               "disabled:cursor-not-allowed disabled:opacity-50",
               bookmarked
-                ? "border-gv-warning/40 bg-gv-warning/15"
-                : "border-gv-line bg-gv-panel-soft/80 hover:border-gv-line-strong hover:bg-gv-panel",
+                ? "border-ps-warning/40 bg-ps-warning/15"
+                : "border-ps-line bg-ps-panel-soft/80 hover:border-ps-line-strong hover:bg-ps-panel",
               "active:scale-95",
             )}
           >
             {bookmarked ? (
-              <StarSolid className="h-5 w-5 text-gv-warning" />
+              <StarSolid className="h-5 w-5 text-ps-warning" />
             ) : (
-              <StarOutline className="h-5 w-5 text-gv-muted" />
+              <StarOutline className="h-5 w-5 text-ps-muted" />
             )}
           </button>
 
@@ -503,9 +503,9 @@ const GameCard = memo(function GameCard({
             onClick={handleOpenSettings}
             aria-label="Settings"
             className={clsx(
-              "absolute top-2 left-2 flex size-11 cursor-pointer items-center justify-center rounded-lg border border-gv-line bg-gv-panel-soft/80 text-gv-muted backdrop-blur-xl transition-all duration-200",
+              "absolute top-2 left-2 flex size-11 cursor-pointer items-center justify-center rounded-lg border border-ps-line bg-ps-panel-soft/80 text-ps-muted backdrop-blur-xl transition-all duration-200",
               "opacity-0 translate-y-1 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
-              "hover:border-gv-line-strong hover:bg-gv-panel hover:text-gv-text",
+              "hover:border-ps-line-strong hover:bg-ps-panel hover:text-ps-text",
               "active:scale-95",
             )}
             title="Settings"
@@ -601,7 +601,7 @@ const GameCard = memo(function GameCard({
                       }}
                     >
                       <DropdownLabel>
-                        Download via GameVault Client
+                        Download via PlayStash Client
                       </DropdownLabel>
                     </DropdownItem>
                   </DropdownMenu>
@@ -614,13 +614,13 @@ const GameCard = memo(function GameCard({
         {/* Metadata footer */}
         <div className="flex flex-col gap-0.5 px-3 pb-3 pt-2.5">
           <h3
-            className="truncate text-sm font-semibold tracking-[-0.02em] text-gv-text"
+            className="truncate text-sm font-semibold tracking-[-0.02em] text-ps-text"
             title={localGame.metadata?.title || localGame.title}
           >
             {localGame.metadata?.title || localGame.title}
           </h3>
           {sortMetric && (
-            <p className="truncate text-xs text-gv-muted">{sortMetric}</p>
+            <p className="truncate text-xs text-ps-muted">{sortMetric}</p>
           )}
         </div>
       </Link>

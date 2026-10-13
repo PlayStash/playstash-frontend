@@ -27,7 +27,7 @@ export function Legend({
       {...props}
       className={clsx(
         className,
-        "text-base/6 font-semibold text-gv-text data-disabled:opacity-50 sm:text-sm/6",
+        "text-base/6 font-semibold text-ps-text data-disabled:opacity-50 sm:text-sm/6",
       )}
     />
   );
@@ -76,7 +76,7 @@ export function Label({
       {...props}
       className={clsx(
         className,
-        "text-base/6 text-gv-text select-none cursor-pointer data-disabled:opacity-50 sm:text-sm/6",
+        "text-base/6 text-ps-text select-none cursor-pointer data-disabled:opacity-50 sm:text-sm/6",
       )}
     />
   );
@@ -95,7 +95,7 @@ export function Description({
       {...props}
       className={clsx(
         className,
-        "text-base/6 text-gv-muted data-disabled:opacity-50 sm:text-sm/6",
+        "text-base/6 text-ps-muted data-disabled:opacity-50 sm:text-sm/6",
       )}
     />
   );

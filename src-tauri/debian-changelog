@@ -1,8 +1,6 @@
-gamevault (17.0.0) unstable; urgency=medium
+playstash (17.0.0) UNRELEASED; urgency=medium
 
-  * Implemented Gamepad support for UI.
-  * Support for multiple game versions and version selection in the library.
-  * New installed games section in the library for tauri builds.
-  * Game time tracker.
+  * Establish the fresh PlayStash frontend source baseline.
+  * Use PlayStash branding, identifiers and bundled API schema.
 
- -- Phalcode <support@gamevau.lt>  Mon, 25 Aug 2026 00:00:00 +0000
+ -- PlayStash Maintainers <maintainers@playstash.invalid>  Tue, 13 Oct 2026 00:00:00 +0000

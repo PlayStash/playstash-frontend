@@ -1,7 +1,7 @@
 import {
-  GamevaultGame,
-  GamevaultGameTypeEnum,
-} from "@/api/models/GamevaultGame";
+  PlaystashGame,
+  PlaystashGameTypeEnum,
+} from "@/api/models/PlaystashGame";
 import { ProgressStateEnum } from "@/api/models/Progress";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -25,7 +25,7 @@ export interface UseGamesOptions {
   // Bookmark filter: "all", "mine" (my bookmarks), "others" (bookmarked by others)
   bookmarkFilter?: BookmarkFilter;
   // Game type filter (e.g. WINDOWS_SETUP, WINDOWS_PORTABLE, LINUX_PORTABLE)
-  gameTypes?: GamevaultGameTypeEnum[];
+  gameTypes?: PlaystashGameTypeEnum[];
   // Tag names to filter by
   tags?: string[];
   // Genre names to filter by
@@ -45,7 +45,7 @@ export interface UseGamesOptions {
 
 interface CachedGamesState {
   count: number;
-  games: GamevaultGame[];
+  games: PlaystashGame[];
   next: string | null;
   loadedPages: number;
 }
@@ -125,7 +125,7 @@ export function useGames({
   const cached = gamesCache.get(cacheKey);
 
   const [count, setCount] = useState(cached?.count ?? 0);
-  const [games, setGames] = useState<GamevaultGame[]>(cached?.games ?? []);
+  const [games, setGames] = useState<PlaystashGame[]>(cached?.games ?? []);
   const [next, setNext] = useState<string | null>(cached?.next ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -254,7 +254,7 @@ export function useGames({
       const url = `${base}/api/games?${params.toString()}`;
       const res = await authFetch(url, { method: "GET", signal: ac.signal });
       if (!res.ok) throw new Error(`Games fetch failed (${res.status})`);
-      const json: PaginatedData<GamevaultGame> = await res.json();
+      const json: PaginatedData<PlaystashGame> = await res.json();
       setCount(json.meta.totalItems);
       setGames(json.data || []);
       setNext(json.links?.next || null);
@@ -310,7 +310,7 @@ export function useGames({
       }
       const res = await authFetch(url, { method: "GET" });
       if (!res.ok) throw new Error(`Games fetch failed (${res.status})`);
-      const json: PaginatedData<GamevaultGame> = await res.json();
+      const json: PaginatedData<PlaystashGame> = await res.json();
       setGames((prev) => {
         const merged = [...prev, ...(json.data || [])];
         loadedPagesRef.current += 1;
@@ -349,7 +349,7 @@ export function useGames({
 }
 
 export function getGameCoverMediaId(
-  game: GamevaultGame,
+  game: PlaystashGame,
 ): number | string | null {
   const id = game.metadata?.cover?.id;
   return id ?? null;
