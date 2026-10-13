@@ -19,7 +19,7 @@ export interface LaunchDefaults {
   umuProtonPath?: string;
 }
 
-/** Local `.gamevault.game.config.json` shape (only the launch-related keys). */
+/** Local `.playstash.game.config.json` shape (only the launch-related keys). */
 export type LocalLaunchConfig = Record<string, unknown> & {
   launchexecutable?: string;
   launchparameters?: string;

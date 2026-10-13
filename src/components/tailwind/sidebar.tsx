@@ -32,7 +32,7 @@ export function SidebarHeader({
       {...props}
       className={clsx(
         className,
-        "flex flex-col border-b border-gv-line p-5 [&>[data-slot=section]+[data-slot=section]]:mt-3",
+        "flex flex-col border-b border-ps-line p-5 [&>[data-slot=section]+[data-slot=section]]:mt-3",
       )}
     />
   );
@@ -62,7 +62,7 @@ export function SidebarFooter({
       {...props}
       className={clsx(
         className,
-        "flex flex-col border-t border-gv-line p-5 [&>[data-slot=section]+[data-slot=section]]:mt-3",
+        "flex flex-col border-t border-ps-line p-5 [&>[data-slot=section]+[data-slot=section]]:mt-3",
       )}
     />
   );
@@ -94,7 +94,7 @@ export function SidebarDivider({
       {...props}
       className={clsx(
         className,
-        "my-4 border-t border-gv-line lg:-mx-4",
+        "my-4 border-t border-ps-line lg:-mx-4",
       )}
     />
   );
@@ -122,7 +122,7 @@ export function SidebarHeading({
       {...props}
       className={clsx(
         className,
-        "mb-1 px-3 text-[0.72rem]/6 font-semibold uppercase tracking-[0.16em] text-gv-muted",
+        "mb-1 px-3 text-[0.72rem]/6 font-semibold uppercase tracking-[0.16em] text-ps-muted",
       )}
     />
   );
@@ -145,21 +145,21 @@ export const SidebarItem = forwardRef(function SidebarItem(
 ) {
   let classes = clsx(
     // Base
-    "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[0.95rem]/6 font-medium tracking-[-0.01em] text-gv-text sm:py-2.5 sm:text-sm/6",
+    "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[0.95rem]/6 font-medium tracking-[-0.01em] text-ps-text sm:py-2.5 sm:text-sm/6",
     // Transition
     "transition-colors duration-150",
     // Leading icon/icon-only
-    "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 *:data-[slot=icon]:fill-gv-muted *:data-[slot=icon]:text-gv-muted sm:*:data-[slot=icon]:size-5",
+    "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 *:data-[slot=icon]:fill-ps-muted *:data-[slot=icon]:text-ps-muted sm:*:data-[slot=icon]:size-5",
     // Trailing icon (down chevron or similar)
     "*:last:data-[slot=icon]:ml-auto *:last:data-[slot=icon]:size-5 sm:*:last:data-[slot=icon]:size-4",
     // Avatar
     "*:data-[slot=avatar]:-m-0.5 *:data-[slot=avatar]:size-7 sm:*:data-[slot=avatar]:size-6",
     // Hover
-    "data-hover:bg-gv-panel-soft data-hover:*:data-[slot=icon]:fill-gv-accent-cool data-hover:*:data-[slot=icon]:text-gv-accent-cool",
+    "data-hover:bg-ps-panel-soft data-hover:*:data-[slot=icon]:fill-ps-accent-cool data-hover:*:data-[slot=icon]:text-ps-accent-cool",
     // Active
-    "data-active:bg-gv-panel-soft data-active:*:data-[slot=icon]:fill-gv-accent-cool data-active:*:data-[slot=icon]:text-gv-accent-cool",
+    "data-active:bg-ps-panel-soft data-active:*:data-[slot=icon]:fill-ps-accent-cool data-active:*:data-[slot=icon]:text-ps-accent-cool",
     // Current
-    "data-current:bg-gv-panel-soft data-current:*:data-[slot=icon]:fill-gv-accent data-current:*:data-[slot=icon]:text-gv-accent",
+    "data-current:bg-ps-panel-soft data-current:*:data-[slot=icon]:fill-ps-accent data-current:*:data-[slot=icon]:text-ps-accent",
   );
 
   return (
@@ -175,7 +175,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
             duration: DURATION_BASE,
             ease: EASE_OUT,
           }}
-          className="absolute inset-y-2 left-0 w-1 rounded-full bg-gv-accent"
+          className="absolute inset-y-2 left-0 w-1 rounded-full bg-ps-accent"
         />
       )}
       {typeof props.href === "string" ? (

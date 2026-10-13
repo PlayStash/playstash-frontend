@@ -121,10 +121,10 @@ export function VersionSelectDialog({
         Choose which version of {gameTitle} you want to download.
       </DialogDescription>
       <DialogBody className="pt-3">
-        <Table className="[--gutter:--spacing(3)] max-h-[55vh] overflow-y-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gv-panel [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-color:var(--color-gv-line)_transparent]">
+        <Table className="[--gutter:--spacing(3)] max-h-[55vh] overflow-y-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-ps-panel [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-color:var(--color-ps-line)_transparent]">
           <TableHead>
             <TableRow>
-              <TableHeader className="sticky top-0 z-10 bg-gv-panel">
+              <TableHeader className="sticky top-0 z-10 bg-ps-panel">
                 <button
                   type="button"
                   onClick={() => handleSort("version")}
@@ -133,7 +133,7 @@ export function VersionSelectDialog({
                   Version {sortIndicator("version")}
                 </button>
               </TableHeader>
-              <TableHeader className="sticky top-0 z-10 bg-gv-panel">
+              <TableHeader className="sticky top-0 z-10 bg-ps-panel">
                 <button
                   type="button"
                   onClick={() => handleSort("indexed_at")}
@@ -142,7 +142,7 @@ export function VersionSelectDialog({
                   Date Added {sortIndicator("indexed_at")}
                 </button>
               </TableHeader>
-              <TableHeader className="sticky top-0 z-10 bg-gv-panel">
+              <TableHeader className="sticky top-0 z-10 bg-ps-panel">
                 <button
                   type="button"
                   onClick={() => handleSort("type")}
@@ -151,7 +151,7 @@ export function VersionSelectDialog({
                   Game Type {sortIndicator("type")}
                 </button>
               </TableHeader>
-              <TableHeader className="sticky top-0 z-10 bg-gv-panel text-center">
+              <TableHeader className="sticky top-0 z-10 bg-ps-panel text-center">
                 <button
                   type="button"
                   onClick={() => handleSort("early_access")}
@@ -160,7 +160,7 @@ export function VersionSelectDialog({
                   Early Access {sortIndicator("early_access")}
                 </button>
               </TableHeader>
-              <TableHeader className="sticky top-0 z-10 bg-gv-panel">
+              <TableHeader className="sticky top-0 z-10 bg-ps-panel">
                 <button
                   type="button"
                   onClick={() => handleSort("size")}
@@ -175,7 +175,7 @@ export function VersionSelectDialog({
             {sortedVersions.map((version) => (
               <TableRow
                 key={version.id}
-                className="cursor-pointer hover:bg-gv-panel-soft"
+                className="cursor-pointer hover:bg-ps-panel-soft"
                 onClick={() => onSelect(version)}
               >
                 <TableCell>

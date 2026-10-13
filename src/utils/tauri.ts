@@ -1,4 +1,4 @@
-const DEBUG_OVERRIDE_KEY = "gv_debug_tauri_mode";
+const DEBUG_OVERRIDE_KEY = "playstash_debug_tauri_mode";
 
 /**
  * Check if the debug Tauri override is active (development-only).

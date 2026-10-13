@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import type { GameMetadata } from "@/api/models/GameMetadata";
 import {
-  GamevaultGameTypeEnum,
-  type GamevaultGameTypeEnum as GameType,
-} from "@/api/models/GamevaultGame";
+  PlaystashGameTypeEnum,
+  type PlaystashGameTypeEnum as GameType,
+} from "@/api/models/PlaystashGame";
 import {
   FORCE_INSTALL_TYPES,
   pickPreferredInstaller,
@@ -37,7 +37,7 @@ export function useInstallFlow(download: ActiveDownload) {
       forcedType:
         FORCE_INSTALL_TYPES.find(
           (option) => option.value === download.gameType,
-        )?.value || GamevaultGameTypeEnum.windows_setup,
+        )?.value || PlaystashGameTypeEnum.windows_setup,
       installerOptions: [],
       selectedInstaller: "",
       loadingInstallers: false,
@@ -55,7 +55,7 @@ export function useInstallFlow(download: ActiveDownload) {
       if (mode === "setup") {
         setInstallState({
           mode,
-          forcedType: effectiveType || GamevaultGameTypeEnum.windows_setup,
+          forcedType: effectiveType || PlaystashGameTypeEnum.windows_setup,
           installerOptions: [],
           selectedInstaller: "",
           loadingInstallers: true,
@@ -73,7 +73,7 @@ export function useInstallFlow(download: ActiveDownload) {
           );
           setInstallState({
             mode,
-            forcedType: effectiveType || GamevaultGameTypeEnum.windows_setup,
+            forcedType: effectiveType || PlaystashGameTypeEnum.windows_setup,
             installerOptions,
             selectedInstaller: preferredInstaller,
             loadingInstallers: false,
@@ -84,7 +84,7 @@ export function useInstallFlow(download: ActiveDownload) {
         } catch (error) {
           setInstallState({
             mode,
-            forcedType: effectiveType || GamevaultGameTypeEnum.windows_setup,
+            forcedType: effectiveType || PlaystashGameTypeEnum.windows_setup,
             installerOptions: [],
             selectedInstaller: "",
             loadingInstallers: false,
@@ -96,7 +96,7 @@ export function useInstallFlow(download: ActiveDownload) {
 
       setInstallState({
         mode,
-        forcedType: effectiveType || GamevaultGameTypeEnum.windows_setup,
+        forcedType: effectiveType || PlaystashGameTypeEnum.windows_setup,
         installerOptions: [],
         selectedInstaller: "",
         loadingInstallers: false,

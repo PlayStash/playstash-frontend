@@ -395,7 +395,7 @@ pub(crate) fn open_or_focus_log_window(app: &AppHandle) -> Result<(), String> {
     WINDOW_LABEL,
     WebviewUrl::App("index.html#launch-log".into()),
   )
-  .title("GameVault — Launch log")
+  .title("PlayStash — Launch log")
   .inner_size(1100.0, 700.0)
   .min_inner_size(600.0, 400.0)
   .build()
@@ -495,7 +495,7 @@ mod tests {
 
   #[test]
   fn rotates_log_files_to_the_newest_ones() {
-    let dir = std::env::temp_dir().join(format!("gv-log-rotation-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("ps-log-rotation-{}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).unwrap();
 
@@ -513,7 +513,7 @@ mod tests {
 
   #[test]
   fn reads_the_tail_of_a_log_file() {
-    let path = std::env::temp_dir().join(format!("gv-log-tail-{}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("ps-log-tail-{}", std::process::id()));
     fs::write(&path, "first\nsecond\nthird\n").unwrap();
 
     assert_eq!(read_log_tail(&path, 1024).unwrap(), "first\nsecond\nthird\n");

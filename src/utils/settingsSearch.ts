@@ -73,5 +73,5 @@ export function rowHighlight(
   highlightedId: string | null,
   searchableId: string,
 ): string {
-  return highlightedId === searchableId ? "bg-gv-accent/10" : "";
+  return highlightedId === searchableId ? "bg-ps-accent/10" : "";
 }

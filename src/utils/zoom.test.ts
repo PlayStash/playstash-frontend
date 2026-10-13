@@ -11,7 +11,7 @@ import {
   zoomPercent,
 } from "./zoom";
 
-const STORAGE_KEY = "gv_zoom_level";
+const STORAGE_KEY = "playstash_zoom_level";
 
 describe("zoom", () => {
   beforeEach(() => {

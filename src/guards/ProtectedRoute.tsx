@@ -1,6 +1,6 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
-import { GamevaultUserRoleEnum } from "../api";
+import { PlaystashUserRoleEnum } from "../api";
 import { Spinner } from "@/components/Spinner";
 
 export default function ProtectedRoute({
@@ -10,7 +10,7 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactElement;
   guarded: boolean;
-  requiredRole?: GamevaultUserRoleEnum;
+  requiredRole?: PlaystashUserRoleEnum;
 }) {
   const { auth, bootstrapping, user } = useAuth();
 

@@ -46,7 +46,7 @@ export default function DiskUsageChart({
         color: COLORS.current,
       },
       {
-        label: "Other installed GameVault Games",
+        label: "Other installed PlayStash Games",
         value: data.otherGamesSize,
         color: COLORS.other,
       },
@@ -67,16 +67,16 @@ export default function DiskUsageChart({
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gv-line bg-gv-panel-soft p-4">
-        <p className="text-sm text-gv-muted">Loading disk usage…</p>
+      <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
+        <p className="text-sm text-ps-muted">Loading disk usage…</p>
       </div>
     );
   }
 
   if (!data || total <= 0) {
     return (
-      <div className="rounded-xl border border-gv-line bg-gv-panel-soft p-4">
-        <p className="text-sm text-gv-muted">Disk usage is not available.</p>
+      <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
+        <p className="text-sm text-ps-muted">Disk usage is not available.</p>
       </div>
     );
   }
@@ -108,10 +108,10 @@ export default function DiskUsageChart({
   });
 
   return (
-    <div className="rounded-xl border border-gv-line bg-gv-panel-soft p-4">
-      <div className="text-sm font-semibold text-gv-text">Disk Usage</div>
+    <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
+      <div className="text-sm font-semibold text-ps-text">Disk Usage</div>
       {rootPath && (
-        <div className="mt-0.5 font-mono text-xs text-gv-muted">{rootPath}</div>
+        <div className="mt-0.5 font-mono text-xs text-ps-muted">{rootPath}</div>
       )}
 
       <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row">
@@ -128,7 +128,7 @@ export default function DiskUsageChart({
             textAnchor="middle"
             dominantBaseline="central"
             fill="currentColor"
-            className="text-gv-muted text-[11px]"
+            className="text-ps-muted text-[11px]"
           >
             {formatBytes(total)}
           </text>
@@ -144,8 +144,8 @@ export default function DiskUsageChart({
                 className="inline-block size-3 shrink-0 rounded-full"
                 style={{ backgroundColor: segment.color }}
               />
-              <span className="flex-1 text-gv-text">{segment.label}</span>
-              <span className="text-gv-muted">
+              <span className="flex-1 text-ps-text">{segment.label}</span>
+              <span className="text-ps-muted">
                 {formatBytes(segment.value)}
               </span>
             </li>

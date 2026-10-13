@@ -1,4 +1,4 @@
-import { GamevaultUserRoleEnum } from "@/api/models/GamevaultUser";
+import { PlaystashUserRoleEnum } from "@/api/models/PlaystashUser";
 import {
   Dialog,
   DialogActions,
@@ -16,23 +16,24 @@ interface NewsDialogProps {
   onClose: () => void;
 }
 
-type TabKey = "gv" | "server";
+type TabKey = "playstash" | "server";
 
 export function NewsDialog({ onClose }: NewsDialogProps) {
-  const [tab, setTab] = useState<TabKey>("gv");
+  const [tab, setTab] = useState<TabKey>("playstash");
   const [isEditingServerNews, setIsEditingServerNews] = useState(false);
   const [draftContent, setDraftContent] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { user, serverUrl } = useAuth();
-  const { gvNews, serverNews, markNewsAsRead, updateServerNews } = useNews();
-  const hasErr = tab === "gv" ? gvNews?.error : serverNews?.error;
+  const { playStashNews, serverNews, markNewsAsRead, updateServerNews } =
+    useNews();
+  const hasErr = tab === "playstash" ? playStashNews?.error : serverNews?.error;
   const content =
-    tab === "gv"
-      ? (gvNews?.content ?? "*Loading GameVault News...*")
+    tab === "playstash"
+      ? (playStashNews?.content ?? "*Loading PlayStash News...*")
       : (serverNews?.content ?? "*Loading Server News...*");
-  const isAdmin = Number(user?.role) >= Number(GamevaultUserRoleEnum._3);
+  const isAdmin = Number(user?.role) >= Number(PlaystashUserRoleEnum._3);
   const canEditServerNews = Boolean(serverUrl) && isAdmin && tab === "server";
   const showEditor = canEditServerNews && isEditingServerNews;
 
@@ -80,13 +81,18 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
   };
 
   return (
-    <Dialog open onClose={onClose} size="3xl" className="!h-[min(85vh,850px)] flex flex-col">
+    <Dialog
+      open
+      onClose={onClose}
+      size="3xl"
+      className="!h-[min(85vh,850px)] flex flex-col"
+    >
       <DialogTitle className="flex items-center justify-between gap-4 pb-1">
         <span>News</span>
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gv-line text-gv-muted hover:text-gv-text hover:bg-gv-panel-soft"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
           aria-label="Close"
         >
           <svg
@@ -101,26 +107,26 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
           </svg>
         </button>
       </DialogTitle>
-      <div className="px-6 mt-1 flex items-center gap-3 border-b border-gv-line text-sm">
+      <div className="px-6 mt-1 flex items-center gap-3 border-b border-ps-line text-sm">
         <div className="flex gap-2">
           <button
-            onClick={() => setTab("gv")}
+            onClick={() => setTab("playstash")}
             className={
               "px-3 py-2 border-b-2 transition-colors " +
-              (tab === "gv"
-                ? "border-gv-accent text-gv-accent"
-                : "border-transparent text-gv-muted hover:text-gv-text")
+              (tab === "playstash"
+                ? "border-ps-accent text-ps-accent"
+                : "border-transparent text-ps-muted hover:text-ps-text")
             }
           >
-            GameVault News
+            PlayStash News
           </button>
           <button
             onClick={() => setTab("server")}
             className={
               "px-3 py-2 border-b-2 transition-colors " +
               (tab === "server"
-                ? "border-gv-accent text-gv-accent"
-                : "border-transparent text-gv-muted hover:text-gv-text")
+                ? "border-ps-accent text-ps-accent"
+                : "border-transparent text-ps-muted hover:text-ps-text")
             }
           >
             Server News
@@ -134,7 +140,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
 
         {showEditor ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-gv-line bg-gv-panel-soft px-4 py-3 text-xs text-gv-muted">
+            <div className="rounded-xl border border-ps-line bg-ps-panel-soft px-4 py-3 text-xs text-ps-muted">
               Markdown supported. Changes save to server `news.md` file.
             </div>
 

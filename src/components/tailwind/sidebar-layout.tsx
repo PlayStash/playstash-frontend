@@ -79,7 +79,7 @@ export function SidebarLayout({
     : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 lg:px-8 lg:py-8";
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col bg-gv-bg text-gv-text">
+    <div className="flex h-full min-h-0 w-full flex-col bg-ps-bg text-ps-text">
       <WindowTitlebar />
       <div className="relative isolate mx-auto flex min-h-0 flex-1 w-full max-w-[2560px] max-lg:flex-col">
         {/* Sidebar on desktop */}
@@ -98,7 +98,7 @@ export function SidebarLayout({
         </MobileSidebar>
 
         {/* Navbar on mobile — hamburger only; full nav (incl. logo) is in the slide-out sidebar */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 bg-gv-shell/90 px-3 backdrop-blur-xl lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 bg-ps-shell/90 px-3 backdrop-blur-xl lg:hidden">
           <div className="py-3">
             <NavbarItem
               onClick={() => setShowSidebar(true)}

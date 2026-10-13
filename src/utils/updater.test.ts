@@ -60,8 +60,8 @@ describe("formatReleaseNotes", () => {
 describe("formatUpdatePrompt", () => {
   it("includes version, channel, and confirmation question", () => {
     const prompt = formatUpdatePrompt("2.0.0", "stable");
-    expect(prompt).toContain("You are running GameVault v");
-    expect(prompt).toContain("GameVault v2.0.0 is available on the stable channel");
+    expect(prompt).toContain("You are running PlayStash v");
+    expect(prompt).toContain("PlayStash v2.0.0 is available on the stable channel");
     expect(prompt).toContain("Do you want to download and install this update now?");
   });
 
@@ -75,8 +75,8 @@ describe("formatUpdateError", () => {
   it("unwraps messages or falls back", () => {
     expect(formatUpdateError(new Error("boom"))).toBe("boom");
     expect(formatUpdateError("oops")).toBe("oops");
-    expect(formatUpdateError("")).toBe("GameVault could not complete the update check.");
-    expect(formatUpdateError(null)).toBe("GameVault could not complete the update check.");
+    expect(formatUpdateError("")).toBe("PlayStash could not complete the update check.");
+    expect(formatUpdateError(null)).toBe("PlayStash could not complete the update check.");
   });
 });
 
@@ -101,7 +101,7 @@ describe("update channel persistence", () => {
   it("falls back to the build default when unset or invalid", () => {
     expect(defaultChannelForBuild()).toBe("stable");
     expect(readUpdateChannel()).toBe("stable");
-    localStorage.setItem("gv_update_channel", "bogus");
+    localStorage.setItem("playstash_update_channel", "bogus");
     expect(readUpdateChannel()).toBe("stable");
   });
 

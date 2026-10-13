@@ -15,7 +15,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 
-const GAMEPAD_FOCUS_CLASS = "gv-gamepad-focus";
+const GAMEPAD_FOCUS_CLASS = "ps-gamepad-focus";
 const SCROLL_PX_PER_FRAME = 28;
 const PAGE_SCROLL_FRACTION = 0.8;
 

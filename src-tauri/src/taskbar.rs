@@ -1,7 +1,7 @@
 //! OS taskbar / dock progress and attention indicators.
 //!
 //! Mirrors the Windows taskbar progress behaviour of the legacy WPF
-//! gamevault-app, but for the Tauri frontend and across all desktop platforms:
+//! playstash-app, but for the Tauri frontend and across all desktop platforms:
 //!
 //! - **Windows** – fills the taskbar button with a progress bar and flashes
 //!   the button / window when the user needs to act.

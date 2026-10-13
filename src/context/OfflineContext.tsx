@@ -48,7 +48,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [forceOffline, setForceOfflineState] = useState<boolean>(() => {
     try {
-      return localStorage.getItem("gv_force_offline") === "1";
+      return localStorage.getItem("playstash_force_offline") === "1";
     } catch {
       return false;
     }
@@ -57,9 +57,9 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const setForceOffline = useCallback((enabled: boolean) => {
     try {
       if (enabled) {
-        localStorage.setItem("gv_force_offline", "1");
+        localStorage.setItem("playstash_force_offline", "1");
       } else {
-        localStorage.removeItem("gv_force_offline");
+        localStorage.removeItem("playstash_force_offline");
       }
     } catch {
       // localStorage unavailable

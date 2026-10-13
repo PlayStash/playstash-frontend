@@ -1,7 +1,7 @@
 /**
  * Shared, locale-aware date formatting helpers.
  *
- * All GameVault date display should go through these so the output is
+ * All PlayStash date display should go through these so the output is
  * uniform and follows the locale the computer uses (e.g. `dd.mm.yyyy` for
  * German, `mm/dd/yyyy` for US English) — rather than a hard-coded `en-US`
  * format or a cached `Intl.DateTimeFormat` built once at module load.

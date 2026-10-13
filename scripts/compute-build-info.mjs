@@ -32,7 +32,7 @@ async function writeGithubOutput(values) {
 
 const pkg = JSON.parse(await readFile(packageJsonPath, "utf8"));
 const baseVersion = String(pkg.version || "").trim();
-const rawBuildChannel = String(process.env.GV_BUILD_CHANNEL || "")
+const rawBuildChannel = String(process.env.PLAYSTASH_BUILD_CHANNEL || "")
   .trim()
   .toLowerCase();
 const buildChannel = ["stable", "unstable", "early-access"].includes(
@@ -41,13 +41,13 @@ const buildChannel = ["stable", "unstable", "early-access"].includes(
   ? rawBuildChannel
   : "stable";
 const runNumber = String(
-  process.env.GITHUB_RUN_NUMBER || process.env.GV_BUILD_RUN_NUMBER || "0",
+  process.env.GITHUB_RUN_NUMBER || process.env.PLAYSTASH_BUILD_RUN_NUMBER || "0",
 ).trim();
 const runAttempt = String(
-  process.env.GITHUB_RUN_ATTEMPT || process.env.GV_BUILD_RUN_ATTEMPT || "1",
+  process.env.GITHUB_RUN_ATTEMPT || process.env.PLAYSTASH_BUILD_RUN_ATTEMPT || "1",
 ).trim();
 const buildCommit = String(
-  process.env.GITHUB_SHA || process.env.GV_BUILD_COMMIT || "",
+  process.env.GITHUB_SHA || process.env.PLAYSTASH_BUILD_COMMIT || "",
 )
   .trim()
   .slice(0, 7);

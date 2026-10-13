@@ -32,7 +32,7 @@ export default function BackButton({ onClick }: BackButtonProps) {
       type="button"
       onClick={handleClick}
       aria-label="Go back"
-      className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-gv-muted transition-colors hover:text-gv-text"
+      className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-ps-muted transition-colors hover:text-ps-text"
     >
       <ChevronLeftIcon className="size-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
       Back

@@ -28,7 +28,7 @@ describe("getAudioVolume / setAudioVolume", () => {
     expect(getAudioVolume()).toBe(0);
     setAudioVolume(0.4);
     expect(getAudioVolume()).toBe(0.4);
-    expect(localStorage.getItem("gv_audio_volume")).toBe("0.4");
+    expect(localStorage.getItem("playstash_audio_volume")).toBe("0.4");
   });
 
   it("broadcasts a volume change event", () => {

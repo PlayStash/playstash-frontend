@@ -129,13 +129,13 @@ export function LaunchLogWindow() {
   const statusText = snapshot ? formatExitCode(snapshot) : "no launch yet";
 
   return (
-    <div className="flex h-screen flex-col bg-gv-bg text-gv-text">
-      <header className="flex flex-wrap items-center gap-3 border-b border-gv-line px-4 py-3">
+    <div className="flex h-screen flex-col bg-ps-bg text-ps-text">
+      <header className="flex flex-wrap items-center gap-3 border-b border-ps-line px-4 py-3">
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-semibold">
             {snapshot ? snapshot.title : "Launch log"}
           </h1>
-          <p className="truncate text-xs text-gv-muted">
+          <p className="truncate text-xs text-ps-muted">
             {statusText}
             {snapshot?.path ? ` — ${snapshot.path}` : ""}
             {snapshot?.truncated ? " — older lines were dropped" : ""}
@@ -143,7 +143,7 @@ export function LaunchLogWindow() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1 text-xs text-gv-muted">
+          <label className="flex items-center gap-1 text-xs text-ps-muted">
             <input
               type="checkbox"
               checked={follow}
@@ -153,21 +153,21 @@ export function LaunchLogWindow() {
           </label>
           <button
             type="button"
-            className="rounded border border-gv-line px-2 py-1 text-xs hover:bg-gv-panel"
+            className="rounded border border-ps-line px-2 py-1 text-xs hover:bg-ps-panel"
             onClick={() => void navigator.clipboard.writeText(shownText)}
           >
             Copy
           </button>
           <button
             type="button"
-            className="rounded border border-gv-line px-2 py-1 text-xs hover:bg-gv-panel"
+            className="rounded border border-ps-line px-2 py-1 text-xs hover:bg-ps-panel"
             onClick={() => void openLaunchLogFolder()}
           >
             Open folder
           </button>
           <button
             type="button"
-            className="rounded border border-gv-line px-2 py-1 text-xs hover:bg-gv-panel"
+            className="rounded border border-ps-line px-2 py-1 text-xs hover:bg-ps-panel"
             onClick={async () => {
               await clearLaunchLogs();
               setHistory(null);
@@ -183,7 +183,7 @@ export function LaunchLogWindow() {
           </button>
           <button
             type="button"
-            className="rounded border border-gv-line px-2 py-1 text-xs hover:bg-gv-panel"
+            className="rounded border border-ps-line px-2 py-1 text-xs hover:bg-ps-panel"
             onClick={() =>
               void import("@tauri-apps/api/window").then(
                 ({ getCurrentWindow }) => getCurrentWindow().close(),
@@ -196,10 +196,10 @@ export function LaunchLogWindow() {
       </header>
 
       {entries.length > 1 && (
-        <div className="flex items-center gap-2 border-b border-gv-line px-4 py-2 text-xs text-gv-muted">
+        <div className="flex items-center gap-2 border-b border-ps-line px-4 py-2 text-xs text-ps-muted">
           <span>Recent launches:</span>
           <select
-            className="rounded border border-gv-line bg-gv-panel px-2 py-1 text-xs"
+            className="rounded border border-ps-line bg-ps-panel px-2 py-1 text-xs"
             value={history !== null ? "history" : "current"}
             onChange={async (event) => {
               const value = event.target.value;
@@ -237,7 +237,7 @@ export function LaunchLogWindow() {
           {history !== null && (
             <button
               type="button"
-              className="underline decoration-dotted hover:text-gv-text"
+              className="underline decoration-dotted hover:text-ps-text"
               onClick={() => setHistory(null)}
             >
               back to live log

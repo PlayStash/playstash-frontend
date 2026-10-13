@@ -24,7 +24,7 @@ interface VaultHandle {
 }
 
 const VAULT_PATH = "vault.hold";
-const CLIENT_NAME = "gamevault";
+const CLIENT_NAME = "playstash";
 
 let cachedRefreshToken: string | null = null;
 let cacheLoaded = false;

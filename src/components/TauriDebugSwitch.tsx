@@ -26,7 +26,7 @@ export default function TauriDebugSwitch({
       <SwitchField>
         <div
           data-slot="label"
-          className="flex items-center gap-2 text-sm text-gv-muted"
+          className="flex items-center gap-2 text-sm text-ps-muted"
         >
           <ComputerDesktopIcon className="size-4" aria-hidden="true" />
           <span>Simulate Desktop</span>

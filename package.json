@@ -1,8 +1,8 @@
 {
-  "name": "gamevault-frontend",
+  "name": "playstash-frontend",
   "version": "17.1.0",
   "description": "the self-hosted gaming platform for drm-free games",
-  "author": "Alkan Alper, Schäfer Philip GbR / Phalcode",
+  "author": "Alkan Alper, SchÃ¤fer Philip GbR / Phalcode",
   "private": true,
   "license": "CC BY-NC-SA 4.0",
   "type": "module",
@@ -13,11 +13,13 @@
     "debug": "vite dev server",
     "tauridev": "tauri dev",
     "build": "vite build",
-    "test": "vitest run",
-    "test:cov": "vitest run --coverage",
+    "test": "vitest run src && node --test scripts/ensure-api-client.test.mjs",
+    "test:cov": "vitest run src --coverage && node --test scripts/ensure-api-client.test.mjs",
     "lint": "prettier --write . && eslint .",
     "licenses": "node scripts/generate-third-party-licenses.mjs",
-    "postinstall": "node scripts/ensure-api-client.mjs"
+    "postinstall": "node scripts/ensure-api-client.mjs",
+    "typecheck": "tsc --noEmit",
+    "api:generate": "node scripts/ensure-api-client.mjs"
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",

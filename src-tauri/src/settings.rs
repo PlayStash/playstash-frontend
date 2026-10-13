@@ -15,7 +15,7 @@ pub(crate) struct AppSettings {
   pub ignored_executables: Vec<String>,
   #[serde(default)]
   pub ignore_list_initialized: bool,
-  /// Base directory for Wine/Proton prefixes. When set, GameVault creates an
+  /// Base directory for Wine/Proton prefixes. When set, PlayStash creates an
   /// isolated `<base>/<slug>` prefix per game/installer so the OS root drive
   /// stays clean. Empty/None falls back to umu's built-in default location.
   #[serde(default)]
@@ -48,7 +48,7 @@ pub(crate) struct IgnoreListState {
 }
 
 pub(crate) fn settings_path(app: &tauri::AppHandle) -> PathBuf {
-  app.path().app_data_dir().unwrap().join("gamevault-settings.json")
+  app.path().app_data_dir().unwrap().join("playstash-settings.json")
 }
 
 /// Last parsed settings, keyed by the file's modification time.

@@ -11,6 +11,7 @@ concurrency:
 
 jobs:
   test:
+    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -19,10 +20,16 @@ jobs:
 
       - name: Resolve API spec hash
         id: api-spec
+        env:
+          PLAYSTASH_API_SPEC_URL: ${{ vars.PLAYSTASH_API_SPEC_URL }}
         shell: bash
         run: |
           SPEC_FILE="$RUNNER_TEMP/api-spec.yaml"
-          curl -fsSL "${{ vars.GV_API_SPEC_URL || 'https://gamevault.alfagun74.de/api/docs-yaml' }}" -o "$SPEC_FILE"
+          if [ -n "$PLAYSTASH_API_SPEC_URL" ]; then
+            curl -fsSL "$PLAYSTASH_API_SPEC_URL" -o "$SPEC_FILE"
+          else
+            cp api-spec/playstash.openapi.json "$SPEC_FILE"
+          fi
           echo "hash=$(sha256sum "$SPEC_FILE" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           echo "file=$SPEC_FILE" >> "$GITHUB_OUTPUT"
 
@@ -30,7 +37,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: src/api
-          key: api-${{ steps.api-spec.outputs.hash }}
+          key: playstash-api-v1-${{ steps.api-spec.outputs.hash }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -43,7 +50,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          GV_API_SPEC_PATH: ${{ steps.api-spec.outputs.file }}
+          PLAYSTASH_API_SPEC_PATH: ${{ steps.api-spec.outputs.file }}
         run: pnpm install --frozen-lockfile --strict-peer-dependencies
 
       - name: Run tests with coverage
@@ -58,6 +65,7 @@ jobs:
           retention-days: 14
 
   rust:
+    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' }}
     name: Rust tests (Linux)
     runs-on: ubuntu-latest
 

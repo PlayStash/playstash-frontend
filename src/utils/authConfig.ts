@@ -2,9 +2,7 @@ import { isTauriApp } from "./tauri";
 
 export const AUTH_REFRESH_STORAGE_KEY = "app_refresh_token";
 export const AUTH_SERVER_STORAGE_KEY = "app_server_url";
-export const DEMO_SERVER_URL = "https://demo.gamevau.lt";
-export const DEMO_USERNAME = "demo";
-export const DEMO_PASSWORD = "demodemo";
+export const DEFAULT_SERVER_URL = "http://localhost:8080";
 
 export interface DevAutologinConfig {
   server: string;
@@ -43,7 +41,7 @@ export function getDevAutologinConfig(): DevAutologinConfig | null {
 let backendServedCache: boolean | null = null;
 
 /**
- * Detect whether the Web UI is being served by the GameVault backend it is
+ * Detect whether the Web UI is being served by the PlayStash backend it is
  * running inside of (same-origin). Used to lock the server to the backend and
  * hide the server selector entirely.
  */

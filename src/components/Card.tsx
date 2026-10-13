@@ -17,11 +17,11 @@ export default function Card({
   return (
     <div
       className={
-        "overflow-hidden rounded-[1.5rem] border border-gv-line " +
+        "overflow-hidden rounded-[1.5rem] border border-ps-line " +
         surfaceClassName
       }
     >
-      <div className="border-b border-gv-line px-5 py-4 sm:px-6">
+      <div className="border-b border-ps-line px-5 py-4 sm:px-6">
         <Subheading>{title}</Subheading>
       </div>
       <div className={"px-5 py-5 sm:p-6 flex flex-col " + className}>

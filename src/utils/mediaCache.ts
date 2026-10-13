@@ -1,7 +1,7 @@
 import { DBSchema, IDBPDatabase, openDB } from "idb";
 import { isTauriApp } from "./tauri";
 
-const DATABASE_NAME = "gamevault-media-cache";
+const DATABASE_NAME = "playstash-media-cache";
 const DATABASE_VERSION = 1;
 const UNUSED_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -512,7 +512,7 @@ export async function startMediaCacheMaintenance(): Promise<void> {
 /**
  * Clears all cached images and their media bindings.
  *
- * In a browser this wipes the IndexedDB `gamevault-media-cache` database. On
+ * In a browser this wipes the IndexedDB `playstash-media-cache` database. On
  * the Tauri desktop app it also removes the native offline image cache for all
  * servers. Returns the number of cached media records removed.
  */

@@ -22,7 +22,7 @@ if (!token) {
 
 // Assets that must always survive a prerelease cleanup.
 const ALWAYS_KEEP = new Set([
-  "gamevault-frontend.zip",
+  "playstash-frontend.zip",
   "unstable.json",
   "early-access.json",
   "latest.json",

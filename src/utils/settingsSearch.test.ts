@@ -102,7 +102,7 @@ describe("searchResultCategories", () => {
 
 describe("rowHighlight", () => {
   it("returns the highlight class only for the highlighted id", () => {
-    expect(rowHighlight("a-theme", "a-theme")).toBe("bg-gv-accent/10");
+    expect(rowHighlight("a-theme", "a-theme")).toBe("bg-ps-accent/10");
     expect(rowHighlight("a-theme", "other")).toBe("");
     expect(rowHighlight(null, "a-theme")).toBe("");
   });

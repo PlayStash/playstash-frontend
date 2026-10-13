@@ -1,4 +1,4 @@
-import { GamevaultGameTypeEnum } from "@/api/models/GamevaultGame";
+import { PlaystashGameTypeEnum } from "@/api/models/PlaystashGame";
 import { ProgressStateEnum } from "@/api/models/Progress";
 import { BookmarkFilter, EarlyAccessFilter } from "@/utils/gamesQuery";
 
@@ -79,9 +79,9 @@ export function isProgressState(value: string): value is ProgressStateEnum {
   return Object.values(ProgressStateEnum).includes(value as ProgressStateEnum);
 }
 
-export function isGameType(value: string): value is GamevaultGameTypeEnum {
-  return Object.values(GamevaultGameTypeEnum).includes(
-    value as GamevaultGameTypeEnum,
+export function isGameType(value: string): value is PlaystashGameTypeEnum {
+  return Object.values(PlaystashGameTypeEnum).includes(
+    value as PlaystashGameTypeEnum,
   );
 }
 

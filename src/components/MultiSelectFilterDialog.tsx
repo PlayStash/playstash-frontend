@@ -113,9 +113,9 @@ const colorClasses: Record<
     check: "text-blue-500",
   },
   indigo: {
-    bg: "bg-gv-accent/10",
-    text: "text-gv-accent-strong",
-    check: "text-gv-accent",
+    bg: "bg-ps-accent/10",
+    text: "text-ps-accent-strong",
+    check: "text-ps-accent",
   },
   violet: {
     bg: "bg-violet-50 dark:bg-violet-900/20",
@@ -143,9 +143,9 @@ const colorClasses: Record<
     check: "text-rose-500",
   },
   zinc: {
-    bg: "bg-gv-panel-soft",
-    text: "text-gv-text",
-    check: "text-gv-muted",
+    bg: "bg-ps-panel-soft",
+    text: "text-ps-text",
+    check: "text-ps-muted",
   },
 };
 
@@ -280,22 +280,22 @@ export default function MultiSelectFilterDialog({
         {loading && <div className="text-sm text-fg-muted">Loading...</div>}
         {error && <div className="text-sm text-red-500">{error}</div>}
         {!loading && !error && (
-          <div className="border border-gv-line rounded-lg">
+          <div className="border border-ps-line rounded-lg">
             {filteredItems.length === 0 ? (
-              <div className="p-4 text-sm text-gv-muted text-center">
+              <div className="p-4 text-sm text-ps-muted text-center">
                 No {title.toLowerCase()} found
               </div>
             ) : (
-              <div className="divide-y divide-gv-line">
+              <div className="divide-y divide-ps-line">
                 {filteredItems.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => toggleItem(item)}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gv-panel-soft transition-colors ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-ps-panel-soft transition-colors ${
                       isSelected(item)
                         ? `${colors.bg} ${colors.text}`
-                        : "text-gv-text"
+                        : "text-ps-text"
                     }`}
                   >
                     <span className="flex items-center justify-between">

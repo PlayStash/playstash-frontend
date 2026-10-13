@@ -1,4 +1,4 @@
-# GameVault Design System
+# PlayStash Design System
 
 ## Product Frame
 
@@ -18,21 +18,21 @@
 
 ### Color
 
-- `gv-bg`: app canvas
-- `gv-shell`: outer shell / sidebar body
-- `gv-panel`: default content panel
-- `gv-panel-strong`: raised card / modal surface
-- `gv-panel-soft`: inline control well / muted panel
-- `gv-text`: primary foreground
-- `gv-muted`: secondary copy
-- `gv-line`: default border/divider
-- `gv-line-strong`: emphasized border/hover edge
-- `gv-accent`: primary accent
-- `gv-accent-strong`: pressed / active accent edge
-- `gv-accent-cool`: focus / active UI highlight
-- `gv-success`: installed / ready state
-- `gv-warning`: news / caution state
-- `gv-danger`: destructive / failure state
+- `ps-bg`: app canvas
+- `ps-shell`: outer shell / sidebar body
+- `ps-panel`: default content panel
+- `ps-panel-strong`: raised card / modal surface
+- `ps-panel-soft`: inline control well / muted panel
+- `ps-text`: primary foreground
+- `ps-muted`: secondary copy
+- `ps-line`: default border/divider
+- `ps-line-strong`: emphasized border/hover edge
+- `ps-accent`: primary accent
+- `ps-accent-strong`: pressed / active accent edge
+- `ps-accent-cool`: focus / active UI highlight
+- `ps-success`: installed / ready state
+- `ps-warning`: news / caution state
+- `ps-danger`: destructive / failure state
 
 ### Typography
 
@@ -80,7 +80,7 @@
 ### Inputs and Filters
 
 - Filters live inside panel wells, not white form fields
-- Focus ring uses `gv-accent-cool`
+- Focus ring uses `ps-accent-cool`
 - Labels use uppercase metadata style for scan speed
 
 ### Cards

@@ -31,18 +31,18 @@ export function Listbox<T>({
           // Hide default focus styles
           "focus:outline-hidden",
           // Focus ring — inherits the box radius so it always matches
-          "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-transparent after:ring-inset data-focus:after:ring-2 data-focus:after:ring-gv-accent-cool",
+          "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-transparent after:ring-inset data-focus:after:ring-2 data-focus:after:ring-ps-accent-cool",
           // Visible box: radius, border, background and shadow all live on the
           // SAME element so the border's corner radius always matches the box.
-          "rounded-2xl border border-gv-line bg-gv-panel-strong shadow-sm",
+          "rounded-2xl border border-ps-line bg-ps-panel-strong shadow-sm",
           "py-[calc(--spacing(2.5)-1px)] sm:py-1.5",
           "min-h-11 sm:min-h-9",
           "pr-[calc(--spacing(7)-1px)] pl-[calc(--spacing(3.5)-1px)] sm:pl-[calc(--spacing(3)-1px)]",
-          "text-left text-base/6 text-gv-text placeholder:text-gv-muted sm:text-sm/6 forced-colors:text-[CanvasText]",
+          "text-left text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6 forced-colors:text-[CanvasText]",
           // Invalid state
           "data-invalid:border-red-500 data-hover:data-invalid:border-red-500 dark:data-invalid:border-red-600 dark:data-hover:data-invalid:border-red-600",
           // Disabled state
-          "data-disabled:opacity-50 data-disabled:bg-gv-panel-soft data-disabled:shadow-none",
+          "data-disabled:opacity-50 data-disabled:bg-ps-panel-soft data-disabled:shadow-none",
         ])}
       >
         <Headless.ListboxSelectedOption
@@ -50,7 +50,7 @@ export function Listbox<T>({
           options={options}
           placeholder={
             placeholder && (
-              <span className="block truncate text-gv-muted">
+              <span className="block truncate text-ps-muted">
                 {placeholder}
               </span>
             )
@@ -59,7 +59,7 @@ export function Listbox<T>({
         />
         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
           <svg
-            className="size-5 stroke-gv-muted group-data-disabled:stroke-gv-muted sm:size-4 forced-colors:stroke-[CanvasText]"
+            className="size-5 stroke-ps-muted group-data-disabled:stroke-ps-muted sm:size-4 forced-colors:stroke-[CanvasText]"
             viewBox="0 0 16 16"
             aria-hidden="true"
             fill="none"
@@ -94,7 +94,7 @@ export function Listbox<T>({
           // Popover background
           "surface-panel",
           // Shadows
-          "shadow-[var(--shadow-shell)] ring-1 ring-gv-line",
+          "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
           // Transitions
           "transition-opacity duration-100 ease-in data-closed:data-leave:opacity-0 data-transition:pointer-events-none",
         )}
@@ -118,7 +118,7 @@ export function ListboxOption<T>({
     "cursor-pointer flex min-w-0 items-center",
     // Icons
     "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-gv-muted group-data-focus/option:*:data-[slot=icon]:text-gv-text",
+    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-text",
     "forced-colors:*:data-[slot=icon]:text-[CanvasText] forced-colors:group-data-focus/option:*:data-[slot=icon]:text-[Canvas]",
     // Avatars
     "*:data-[slot=avatar]:-mx-0.5 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:size-5",
@@ -139,9 +139,9 @@ export function ListboxOption<T>({
               // Basic layout
               "group/option grid cursor-pointer grid-cols-[--spacing(5)_1fr] items-baseline gap-x-2 rounded-xl py-2.5 pr-3.5 pl-2.5 sm:grid-cols-[--spacing(4)_1fr] sm:py-1.5 sm:pr-3 sm:pl-2",
               // Typography
-              "text-base/6 text-gv-text sm:text-sm/6 forced-colors:text-[CanvasText]",
+              "text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
               // Focus
-              "outline-hidden data-focus:bg-gv-accent data-focus:text-white transition-colors duration-150",
+              "outline-hidden data-focus:bg-ps-accent data-focus:text-white transition-colors duration-150",
               // Forced colors mode
               "forced-color-adjust-none forced-colors:data-focus:bg-[Highlight] forced-colors:data-focus:text-[HighlightText]",
               // Disabled
@@ -196,7 +196,7 @@ export function ListboxDescription({
       {...props}
       className={clsx(
         className,
-        "flex flex-1 overflow-hidden text-gv-muted group-data-focus/option:text-white before:w-2 before:min-w-0 before:shrink",
+        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-white before:w-2 before:min-w-0 before:shrink",
       )}
     >
       <span className="flex-1 truncate">{children}</span>

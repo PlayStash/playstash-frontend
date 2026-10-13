@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useState } from "react";
+import releaseNotes from "../../CHANGELOG.md?raw";
 
 function hashText(text: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -19,7 +20,7 @@ interface NewsResult {
 
 export function useNews() {
   const { authFetch, serverUrl } = useAuth();
-  const [gvNews, setGvNews] = useState<NewsResult | null>(null);
+  const [playStashNews, setPlayStashNews] = useState<NewsResult | null>(null);
   const [serverNews, setServerNews] = useState<NewsResult | null>(null);
 
   const checkNews = useCallback(
@@ -40,16 +41,13 @@ export function useNews() {
     [],
   );
 
-  const fetchGvNews = useCallback(async () => {
+  const fetchPlayStashNews = useCallback(async () => {
     try {
-      const res = await fetch("https://gamevau.lt/news.md?_=" + Date.now());
-      if (!res.ok) throw new Error(res.status + " " + res.statusText);
-      const text = await res.text();
-      await checkNews("hash_gv_news", text, setGvNews);
+      await checkNews("hash_playstash_news", releaseNotes, setPlayStashNews);
     } catch (error: any) {
-      setGvNews({
+      setPlayStashNews({
         content: "",
-        error: error.message || "Failed to load GameVault news",
+        error: error.message || "Failed to load PlayStash news",
         isNew: false,
       });
     }
@@ -80,9 +78,9 @@ export function useNews() {
   }, [authFetch, serverUrl, checkNews]);
 
   const fetchAllNews = useCallback(() => {
-    fetchGvNews();
+    fetchPlayStashNews();
     fetchServerNews();
-  }, [fetchGvNews, fetchServerNews]);
+  }, [fetchPlayStashNews, fetchServerNews]);
 
   const updateServerNews = useCallback(
     async (content: string) => {
@@ -98,7 +96,9 @@ export function useNews() {
       });
 
       if (!res.ok) {
-        throw new Error((await res.text()) || `${res.status} ${res.statusText}`);
+        throw new Error(
+          (await res.text()) || `${res.status} ${res.statusText}`,
+        );
       }
 
       const hash = content.trim() ? await hashText(content) : "";
@@ -112,13 +112,14 @@ export function useNews() {
     fetchAllNews();
   }, [fetchAllNews]);
 
-  const hasNewNews = (gvNews?.isNew ?? false) || (serverNews?.isNew ?? false);
+  const hasNewNews =
+    (playStashNews?.isNew ?? false) || (serverNews?.isNew ?? false);
   const markNewsAsRead = useCallback(() => {
-    if (gvNews?.content) localStorage.setItem("hash_gv_news", "");
+    if (playStashNews?.content) localStorage.setItem("hash_playstash_news", "");
     if (serverNews?.content) localStorage.setItem("hash_server_news", "");
-    if (gvNews?.content) {
-      hashText(gvNews.content).then((hash) =>
-        localStorage.setItem("hash_gv_news", hash),
+    if (playStashNews?.content) {
+      hashText(playStashNews.content).then((hash) =>
+        localStorage.setItem("hash_playstash_news", hash),
       );
     }
     if (serverNews?.content) {
@@ -126,10 +127,10 @@ export function useNews() {
         localStorage.setItem("hash_server_news", hash),
       );
     }
-  }, [gvNews, serverNews]);
+  }, [playStashNews, serverNews]);
 
   return {
-    gvNews,
+    playStashNews,
     serverNews,
     fetchAllNews,
     hasNewNews,

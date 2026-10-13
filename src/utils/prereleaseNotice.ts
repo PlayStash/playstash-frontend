@@ -9,12 +9,12 @@ export type PrereleaseChannel = "early-access" | "unstable";
  * the warning is only shown once per channel.
  *
  * Desktop builds keep the acknowledgement in the app's settings file
- * (`gamevault-settings.json`), which survives app updates. The webview's
+ * (`playstash-settings.json`), which survives app updates. The webview's
  * localStorage does not survive them, so older desktop builds showed the
  * warning again after every update. The localStorage key is still used by the
  * web build, as a fallback, and to migrate existing acknowledgements.
  */
-export const PRERELEASE_NOTICE_KEY = "gv_prerelease_notice_channel";
+export const PRERELEASE_NOTICE_KEY = "playstash_prerelease_notice_channel";
 
 export function isPrereleaseChannel(
   channel: UpdateChannel,
@@ -124,7 +124,7 @@ export function prereleaseNoticeContent(
     return {
       title: "You are running an unstable build",
       description:
-        `You are using GameVault v${version}, an unstable development build that tracks the development branch. ` +
+        `You are using PlayStash v${version}, an unstable development build that tracks the development branch. ` +
         "It is meant for developers and testers who are comfortable troubleshooting, not for everyday use: " +
         "additional setup steps may be necessary, features can change or disappear at any time, and crashes, " +
         `broken downloads or lost settings/progress are expected rather than rare. ${SHARED_ADVICE}`,
@@ -134,7 +134,7 @@ export function prereleaseNoticeContent(
   return {
     title: "You are running an Early Access build",
     description:
-      `You are using GameVault v${version}, an Early Access build that is still being worked on. ` +
+      `You are using PlayStash v${version}, an Early Access build that is still being worked on. ` +
       "It is meant for members of the early access program and other testers who are comfortable troubleshooting, " +
       "not for everyday use: additional setup steps may be necessary, parts of the app can behave unexpectedly, " +
       `and you will run into issues more often than on a stable release. ${SHARED_ADVICE}`,

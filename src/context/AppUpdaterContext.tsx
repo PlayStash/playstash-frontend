@@ -27,18 +27,18 @@ const AUTO_CHECK_DELAY_MS = 1500;
 const APP_UPDATER_EVENT = "app-updater-progress";
 const GITHUB_RELEASE_API_URLS: Record<UpdateChannel, string> = {
   stable:
-    "https://api.github.com/repos/Phalcode/gamevault-frontend/releases/latest",
+    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/latest",
   "early-access":
-    "https://api.github.com/repos/Phalcode/gamevault-frontend/releases/tags/early-access",
+    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/tags/early-access",
   unstable:
-    "https://api.github.com/repos/Phalcode/gamevault-frontend/releases/tags/unstable",
+    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/tags/unstable",
 };
 const GITHUB_RELEASE_PAGE_URLS: Record<UpdateChannel, string> = {
-  stable: "https://github.com/Phalcode/gamevault-frontend/releases/latest",
+  stable: "https://github.com/PlayStash/playstash-frontend/releases/latest",
   "early-access":
-    "https://github.com/Phalcode/gamevault-frontend/releases/tag/early-access",
+    "https://github.com/PlayStash/playstash-frontend/releases/tag/early-access",
   unstable:
-    "https://github.com/Phalcode/gamevault-frontend/releases/tag/unstable",
+    "https://github.com/PlayStash/playstash-frontend/releases/tag/unstable",
 };
 
 type UpdateDownloadEvent =
@@ -228,7 +228,7 @@ export function AppUpdaterProvider({
                 case "Finished":
                   setIsInstalling(false);
                   setStatusText(
-                    "Update installed. Restart GameVault to finish.",
+                    "Update installed. Restart PlayStash to finish.",
                   );
                   break;
                 default:
@@ -239,7 +239,7 @@ export function AppUpdaterProvider({
           if (cancelled) unlisten();
         } else if (snapshot.status === "finished") {
           setAvailableVersion(null);
-          setStatusText("Update installed. Restart GameVault to finish.");
+          setStatusText("Update installed. Restart PlayStash to finish.");
         } else if (snapshot.status === "error" && snapshot.error) {
           setErrorText(snapshot.error);
         }
@@ -264,7 +264,7 @@ export function AppUpdaterProvider({
           await showAlert({
             title: "Desktop updates unavailable",
             description:
-              "Auto-updates are only available in the GameVault desktop app.",
+              "Auto-updates are only available in the PlayStash desktop app.",
             affirmativeText: "OK",
           });
         }
@@ -420,12 +420,12 @@ export function AppUpdaterProvider({
         if (!update) {
           setAvailableVersion(null);
           setStatusText(
-            `GameVault is up to date on the ${channelLabel(updateChannel)} channel.`,
+            `PlayStash is up to date on the ${channelLabel(updateChannel)} channel.`,
           );
 
           if (manual) {
             await showAlert({
-              title: "GameVault is up to date",
+              title: "PlayStash is up to date",
               description: `You are already running the latest ${channelLabel(updateChannel)} desktop release (v${__APP_VERSION__}).`,
               affirmativeText: "OK",
             });
@@ -499,7 +499,7 @@ export function AppUpdaterProvider({
                 void showAlert({ title: "Installing update..." });
                 break;
               case "Finished":
-                setStatusText("Update installed. Restart GameVault to finish.");
+                setStatusText("Update installed. Restart PlayStash to finish.");
                 break;
             }
           },
@@ -510,12 +510,12 @@ export function AppUpdaterProvider({
         });
 
         setAvailableVersion(null);
-        setStatusText("Update installed. Restart GameVault to finish.");
+        setStatusText("Update installed. Restart PlayStash to finish.");
 
         await showAlert({
           title: "Update installed",
           description:
-            "GameVault has been updated. Restart the app to finish loading the new version.",
+            "PlayStash has been updated. Restart the app to finish loading the new version.",
           affirmativeText: "OK",
         });
       } catch (error) {

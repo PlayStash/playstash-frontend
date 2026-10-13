@@ -1,9 +1,273 @@
 {
-  "generatedAt": "2026-08-23T14:50:45.012Z",
+  "generatedAt": "2026-10-13T14:34:38.449Z",
   "packages": [
     {
+      "name": "@dicebear/adventurer",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Adventurer (https://www.figma.com/community/file/1184595184137881796)\nDesigner: Lisa Wischofsky (https://www.instagram.com/lischi_art/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/adventurer-neutral",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Adventurer Neutral (https://www.figma.com/community/file/1184595184137881796)\nDesigner: Lisa Wischofsky (https://www.instagram.com/lischi_art/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/avataaars",
+      "version": "9.4.2",
+      "licenses": "MIT*",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Avataaars (https://avataaars.com/)\nDesigner: Pablo Stanley (https://twitter.com/pablostanley)\nLicense: Free for personal and commercial use (https://avataaars.com/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/avataaars-neutral",
+      "version": "9.4.2",
+      "licenses": "MIT*",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Avataaars (https://avataaars.com/)\nDesigner: Pablo Stanley (https://twitter.com/pablostanley)\nLicense: Free for personal and commercial use. (https://avataaars.com/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/big-ears",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Face Generator (https://www.figma.com/community/file/986078800058673824)\nDesigner: The Visual Team (https://thevisual.team/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/big-ears-neutral",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Face Generator (https://www.figma.com/community/file/986078800058673824)\nDesigner: The Visual Team (https://thevisual.team/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/big-smile",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Custom Avatar (https://www.figma.com/community/file/881358461963645496)\nDesigner: Ashley Seo (http://www.ashleyseo.com/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/bottts",
+      "version": "9.4.2",
+      "licenses": "MIT*",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Bottts (https://bottts.com/)\nDesigner: Pablo Stanley (https://twitter.com/pablostanley)\nLicense: Free for personal and commercial use (https://bottts.com/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/bottts-neutral",
+      "version": "9.4.2",
+      "licenses": "MIT*",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Bottts (https://bottts.com/)\nDesigner: Pablo Stanley (https://twitter.com/pablostanley)\nLicense: Free for personal and commercial use (https://bottts.com/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/collection",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "MIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/core",
+      "version": "9.4.3",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "MIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/croodles",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Croodles - Doodle your face (https://www.figma.com/community/file/966199982810283152)\nDesigner: vijay verma (https://vjy.me/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/croodles-neutral",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Croodles - Doodle your face (https://www.figma.com/community/file/966199982810283152)\nDesigner: vijay verma (https://vjy.me/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/dylan",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Dylan! The Avatar Generator (https://www.figma.com/community/file/1356575240759683500)\nDesigner: Natalia Spivak (https://nataspvk.tilda.ws/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/fun-emoji",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Fun Emoji Set (https://www.figma.com/community/file/968125295144990435)\nDesigner: Davis Uche (https://www.instagram.com/davedirect3/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/glass",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Glass (https://www.dicebear.com)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/icons",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "MIT License\n\nCopyright (c) 2024 Florian Körner\nCopyright (c) 2019-2024 The Bootstrap Authors\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/identicon",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Identicon (https://www.dicebear.com)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/initials",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "MIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/lorelei",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Lorelei (https://www.figma.com/community/file/1198749693280469639)\nDesigner: Lisa Wischofsky (https://www.instagram.com/lischi_art/)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/lorelei-neutral",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Lorelei Neutral (https://www.figma.com/community/file/1198749693280469639)\nDesigner: Lisa Wischofsky (https://www.instagram.com/lischi_art/)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/micah",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Avatar Illustration System (https://www.figma.com/community/file/829741575478342595)\nDesigner: Micah Lanier (https://dribbble.com/micahlanier)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/miniavs",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Miniavs - Free Avatar Creator (https://www.figma.com/community/file/923211396597067458)\nDesigner: Webpixels (https://webpixels.io/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/notionists",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Notionists (https://heyzoish.gumroad.com/l/notionists)\nDesigner: Zoish (https://bio.link/heyzoish)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/notionists-neutral",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Notionists (https://heyzoish.gumroad.com/l/notionists)\nDesigner: Zoish (https://bio.link/heyzoish)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/open-peeps",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Open Peeps (https://www.openpeeps.com/)\nDesigner: Pablo Stanley (https://twitter.com/pablostanley)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/personas",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Personas by Draftbit (https://personas.draftbit.com/)\nDesigner: Draftbit - draftbit.com (https://draftbit.com/)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/pixel-art",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Pixel Art (https://www.figma.com/community/file/1198754108850888330)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/pixel-art-neutral",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Pixel Art Neutral (https://www.figma.com/community/file/1198754108850888330)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/rings",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Rings (https://www.dicebear.com)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/shapes",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Shapes (https://www.dicebear.com)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/thumbs",
+      "version": "9.4.2",
+      "licenses": "MIT",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: Thumbs (https://www.dicebear.com)\nDesigner: DiceBear (https://www.dicebear.com)\nLicense: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2024 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
+      "name": "@dicebear/toon-head",
+      "version": "9.4.2",
+      "licenses": "(MIT AND CC-BY-4.0)",
+      "repository": "https://github.com/dicebear/dicebear",
+      "url": null,
+      "licenseText": "Licenses\n--------\n\n# Design\nApplies to all design files in this package.\n\nSource: ToonHead (https://www.figma.com/community/file/1589627891082866389)\nDesigner: Johan Melin (https://www.johanmelin.com)\nLicense: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)\n\n# Code\nApplies to all non-design files in this package.\n\nMIT License\n\nCopyright (c) 2026 Florian Körner\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
       "name": "@floating-ui/core",
-      "version": "1.7.5",
+      "version": "1.8.0",
       "licenses": "MIT",
       "repository": "https://github.com/floating-ui/floating-ui",
       "url": null,
@@ -11,7 +275,7 @@
     },
     {
       "name": "@floating-ui/dom",
-      "version": "1.7.6",
+      "version": "1.8.0",
       "licenses": "MIT",
       "repository": "https://github.com/floating-ui/floating-ui",
       "url": null,
@@ -27,7 +291,7 @@
     },
     {
       "name": "@floating-ui/react-dom",
-      "version": "2.1.8",
+      "version": "2.1.9",
       "licenses": "MIT",
       "repository": "https://github.com/floating-ui/floating-ui",
       "url": null,
@@ -35,7 +299,7 @@
     },
     {
       "name": "@floating-ui/utils",
-      "version": "0.2.11",
+      "version": "0.2.12",
       "licenses": "MIT",
       "repository": "https://github.com/floating-ui/floating-ui",
       "url": null,
@@ -59,7 +323,7 @@
     },
     {
       "name": "@internationalized/date",
-      "version": "3.12.1",
+      "version": "3.12.4",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum.git#main",
       "url": null,
@@ -67,7 +331,7 @@
     },
     {
       "name": "@internationalized/number",
-      "version": "3.6.6",
+      "version": "3.6.8",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -75,7 +339,7 @@
     },
     {
       "name": "@internationalized/string",
-      "version": "3.2.8",
+      "version": "3.2.10",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -107,7 +371,7 @@
     },
     {
       "name": "@jridgewell/sourcemap-codec",
-      "version": "1.5.5",
+      "version": "1.6.0",
       "licenses": "MIT",
       "repository": "https://github.com/jridgewell/sourcemaps",
       "url": null,
@@ -123,7 +387,7 @@
     },
     {
       "name": "@oxc-project/types",
-      "version": "0.146.0",
+      "version": "0.148.0",
       "licenses": "MIT",
       "repository": "https://github.com/oxc-project/oxc",
       "url": null,
@@ -131,7 +395,7 @@
     },
     {
       "name": "@react-aria/focus",
-      "version": "3.22.0",
+      "version": "3.22.1",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -139,7 +403,7 @@
     },
     {
       "name": "@react-aria/interactions",
-      "version": "3.28.0",
+      "version": "3.28.1",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -147,7 +411,7 @@
     },
     {
       "name": "@react-types/shared",
-      "version": "3.34.0",
+      "version": "3.36.1",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -187,7 +451,7 @@
     },
     {
       "name": "@swc/helpers",
-      "version": "0.5.21",
+      "version": "0.5.23",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/swc-project/swc",
       "url": null,
@@ -219,7 +483,7 @@
     },
     {
       "name": "@tanstack/react-virtual",
-      "version": "3.13.24",
+      "version": "3.14.10",
       "licenses": "MIT",
       "repository": "https://github.com/TanStack/virtual",
       "url": null,
@@ -227,7 +491,7 @@
     },
     {
       "name": "@tanstack/virtual-core",
-      "version": "3.14.0",
+      "version": "3.17.8",
       "licenses": "MIT",
       "repository": "https://github.com/TanStack/virtual",
       "url": null,
@@ -251,7 +515,7 @@
     },
     {
       "name": "@tauri-apps/plugin-dialog",
-      "version": "2.7.2",
+      "version": "2.7.3",
       "licenses": "MIT OR Apache-2.0",
       "repository": "https://github.com/tauri-apps/plugins-workspace",
       "url": null,
@@ -259,7 +523,15 @@
     },
     {
       "name": "@tauri-apps/plugin-fs",
-      "version": "2.5.1",
+      "version": "2.5.2",
+      "licenses": "MIT OR Apache-2.0",
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "url": null,
+      "licenseText": "SPDXVersion: SPDX-2.1\nDataLicense: CC0-1.0\nPackageName: tauri\nDataFormat: SPDXRef-1\nPackageSupplier: Organization: The Tauri Programme in the Commons Conservancy\nPackageHomePage: https://tauri.app\nPackageLicenseDeclared: Apache-2.0\nPackageLicenseDeclared: MIT\nPackageCopyrightText: 2019-2022, The Tauri Programme in the Commons Conservancy\nPackageSummary: <text>Tauri is a rust project that enables developers to make secure\nand small desktop applications using a web frontend.\n                </text>\nPackageComment: <text>The package includes the following libraries; see\nRelationship information.\n                </text>\nCreated: 2019-05-20T09:00:00Z\nPackageDownloadLocation: git://github.com/tauri-apps/tauri\nPackageDownloadLocation: git+https://github.com/tauri-apps/tauri.git\nPackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git\nCreator: Person: Daniel Thompson-Yvetot"
+    },
+    {
+      "name": "@tauri-apps/plugin-stronghold",
+      "version": "2.3.2",
       "licenses": "MIT OR Apache-2.0",
       "repository": "https://github.com/tauri-apps/plugins-workspace",
       "url": null,
@@ -267,7 +539,7 @@
     },
     {
       "name": "@tauri-apps/plugin-updater",
-      "version": "2.10.1",
+      "version": "2.11.0",
       "licenses": "MIT OR Apache-2.0",
       "repository": "https://github.com/tauri-apps/plugins-workspace",
       "url": null,
@@ -291,7 +563,7 @@
     },
     {
       "name": "@types/estree",
-      "version": "1.0.8",
+      "version": "1.0.9",
       "licenses": "MIT",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "url": null,
@@ -307,7 +579,15 @@
     },
     {
       "name": "@types/hast",
-      "version": "3.0.4",
+      "version": "3.0.5",
+      "licenses": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "url": null,
+      "licenseText": "    MIT License\n\n    Copyright (c) Microsoft Corporation.\n\n    Permission is hereby granted, free of charge, to any person obtaining a copy\n    of this software and associated documentation files (the \"Software\"), to deal\n    in the Software without restriction, including without limitation the rights\n    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n    copies of the Software, and to permit persons to whom the Software is\n    furnished to do so, subject to the following conditions:\n\n    The above copyright notice and this permission notice shall be included in all\n    copies or substantial portions of the Software.\n\n    THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n    SOFTWARE\n"
+    },
+    {
+      "name": "@types/json-schema",
+      "version": "7.0.15",
       "licenses": "MIT",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "url": null,
@@ -331,7 +611,7 @@
     },
     {
       "name": "@types/node",
-      "version": "20.19.39",
+      "version": "20.19.43",
       "licenses": "MIT",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
       "url": null,
@@ -363,7 +643,7 @@
     },
     {
       "name": "@ungap/structured-clone",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "licenses": "ISC",
       "repository": "https://github.com/ungap/structured-clone",
       "url": null,
@@ -563,19 +843,11 @@
     },
     {
       "name": "framer-motion",
-      "version": "13.1.1",
+      "version": "13.2.0",
       "licenses": "MIT",
       "repository": "https://github.com/motiondivision/motion",
       "url": null,
       "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2018 Framer B.V.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
-    },
-    {
-      "name": "gamevault-frontend",
-      "version": "17.0.0",
-      "licenses": "UNLICENSED",
-      "repository": null,
-      "url": null,
-      "licenseText": "Attribution-NonCommercial-ShareAlike 4.0 International\n\n=======================================================================\n\nCreative Commons Corporation (\"Creative Commons\") is not a law firm and\ndoes not provide legal services or legal advice. Distribution of\nCreative Commons public licenses does not create a lawyer-client or\nother relationship. Creative Commons makes its licenses and related\ninformation available on an \"as-is\" basis. Creative Commons gives no\nwarranties regarding its licenses, any material licensed under their\nterms and conditions, or any related information. Creative Commons\ndisclaims all liability for damages resulting from their use to the\nfullest extent possible.\n\nUsing Creative Commons Public Licenses\n\nCreative Commons public licenses provide a standard set of terms and\nconditions that creators and other rights holders may use to share\noriginal works of authorship and other material subject to copyright\nand certain other rights specified in the public license below. The\nfollowing considerations are for informational purposes only, are not\nexhaustive, and do not form part of our licenses.\n\n     Considerations for licensors: Our public licenses are\n     intended for use by those authorized to give the public\n     permission to use material in ways otherwise restricted by\n     copyright and certain other rights. Our licenses are\n     irrevocable. Licensors should read and understand the terms\n     and conditions of the license they choose before applying it.\n     Licensors should also secure all rights necessary before\n     applying our licenses so that the public can reuse the\n     material as expected. Licensors should clearly mark any\n     material not subject to the license. This includes other CC-\n     licensed material, or material used under an exception or\n     limitation to copyright. More considerations for licensors:\n    wiki.creativecommons.org/Considerations_for_licensors\n\n     Considerations for the public: By using one of our public\n     licenses, a licensor grants the public permission to use the\n     licensed material under specified terms and conditions. If\n     the licensor's permission is not necessary for any reason--for\n     example, because of any applicable exception or limitation to\n     copyright--then that use is not regulated by the license. Our\n     licenses grant only permissions under copyright and certain\n     other rights that a licensor has authority to grant. Use of\n     the licensed material may still be restricted for other\n     reasons, including because others have copyright or other\n     rights in the material. A licensor may make special requests,\n     such as asking that all changes be marked or described.\n     Although not required by our licenses, you are encouraged to\n     respect those requests where reasonable. More considerations\n     for the public:\n    wiki.creativecommons.org/Considerations_for_licensees\n\n=======================================================================\n\nCreative Commons Attribution-NonCommercial-ShareAlike 4.0 International\nPublic License\n\nBy exercising the Licensed Rights (defined below), You accept and agree\nto be bound by the terms and conditions of this Creative Commons\nAttribution-NonCommercial-ShareAlike 4.0 International Public License\n(\"Public License\"). To the extent this Public License may be\ninterpreted as a contract, You are granted the Licensed Rights in\nconsideration of Your acceptance of these terms and conditions, and the\nLicensor grants You such rights in consideration of benefits the\nLicensor receives from making the Licensed Material available under\nthese terms and conditions.\n\n\nSection 1 -- Definitions.\n\n  a. Adapted Material means material subject to Copyright and Similar\n     Rights that is derived from or based upon the Licensed Material\n     and in which the Licensed Material is translated, altered,\n     arranged, transformed, or otherwise modified in a manner requiring\n     permission under the Copyright and Similar Rights held by the\n     Licensor. For purposes of this Public License, where the Licensed\n     Material is a musical work, performance, or sound recording,\n     Adapted Material is always produced where the Licensed Material is\n     synched in timed relation with a moving image.\n\n  b. Adapter's License means the license You apply to Your Copyright\n     and Similar Rights in Your contributions to Adapted Material in\n     accordance with the terms and conditions of this Public License.\n\n  c. BY-NC-SA Compatible License means a license listed at\n     creativecommons.org/compatiblelicenses, approved by Creative\n     Commons as essentially the equivalent of this Public License.\n\n  d. Copyright and Similar Rights means copyright and/or similar rights\n     closely related to copyright including, without limitation,\n     performance, broadcast, sound recording, and Sui Generis Database\n     Rights, without regard to how the rights are labeled or\n     categorized. For purposes of this Public License, the rights\n     specified in Section 2(b)(1)-(2) are not Copyright and Similar\n     Rights.\n\n  e. Effective Technological Measures means those measures that, in the\n     absence of proper authority, may not be circumvented under laws\n     fulfilling obligations under Article 11 of the WIPO Copyright\n     Treaty adopted on December 20, 1996, and/or similar international\n     agreements.\n\n  f. Exceptions and Limitations means fair use, fair dealing, and/or\n     any other exception or limitation to Copyright and Similar Rights\n     that applies to Your use of the Licensed Material.\n\n  g. License Elements means the license attributes listed in the name\n     of a Creative Commons Public License. The License Elements of this\n     Public License are Attribution, NonCommercial, and ShareAlike.\n\n  h. Licensed Material means the artistic or literary work, database,\n     or other material to which the Licensor applied this Public\n     License.\n\n  i. Licensed Rights means the rights granted to You subject to the\n     terms and conditions of this Public License, which are limited to\n     all Copyright and Similar Rights that apply to Your use of the\n     Licensed Material and that the Licensor has authority to license.\n\n  j. Licensor means the individual(s) or entity(ies) granting rights\n     under this Public License.\n\n  k. NonCommercial means not primarily intended for or directed towards\n     commercial advantage or monetary compensation. For purposes of\n     this Public License, the exchange of the Licensed Material for\n     other material subject to Copyright and Similar Rights by digital\n     file-sharing or similar means is NonCommercial provided there is\n     no payment of monetary compensation in connection with the\n     exchange.\n\n  l. Share means to provide material to the public by any means or\n     process that requires permission under the Licensed Rights, such\n     as reproduction, public display, public performance, distribution,\n     dissemination, communication, or importation, and to make material\n     available to the public including in ways that members of the\n     public may access the material from a place and at a time\n     individually chosen by them.\n\n  m. Sui Generis Database Rights means rights other than copyright\n     resulting from Directive 96/9/EC of the European Parliament and of\n     the Council of 11 March 1996 on the legal protection of databases,\n     as amended and/or succeeded, as well as other essentially\n     equivalent rights anywhere in the world.\n\n  n. You means the individual or entity exercising the Licensed Rights\n     under this Public License. Your has a corresponding meaning.\n\n\nSection 2 -- Scope.\n\n  a. License grant.\n\n       1. Subject to the terms and conditions of this Public License,\n          the Licensor hereby grants You a worldwide, royalty-free,\n          non-sublicensable, non-exclusive, irrevocable license to\n          exercise the Licensed Rights in the Licensed Material to:\n\n            a. reproduce and Share the Licensed Material, in whole or\n               in part, for NonCommercial purposes only; and\n\n            b. produce, reproduce, and Share Adapted Material for\n               NonCommercial purposes only.\n\n       2. Exceptions and Limitations. For the avoidance of doubt, where\n          Exceptions and Limitations apply to Your use, this Public\n          License does not apply, and You do not need to comply with\n          its terms and conditions.\n\n       3. Term. The term of this Public License is specified in Section\n          6(a).\n\n       4. Media and formats; technical modifications allowed. The\n          Licensor authorizes You to exercise the Licensed Rights in\n          all media and formats whether now known or hereafter created,\n          and to make technical modifications necessary to do so. The\n          Licensor waives and/or agrees not to assert any right or\n          authority to forbid You from making technical modifications\n          necessary to exercise the Licensed Rights, including\n          technical modifications necessary to circumvent Effective\n          Technological Measures. For purposes of this Public License,\n          simply making modifications authorized by this Section 2(a)\n          (4) never produces Adapted Material.\n\n       5. Downstream recipients.\n\n            a. Offer from the Licensor -- Licensed Material. Every\n               recipient of the Licensed Material automatically\n               receives an offer from the Licensor to exercise the\n               Licensed Rights under the terms and conditions of this\n               Public License.\n\n            b. Additional offer from the Licensor -- Adapted Material.\n               Every recipient of Adapted Material from You\n               automatically receives an offer from the Licensor to\n               exercise the Licensed Rights in the Adapted Material\n               under the conditions of the Adapter's License You apply.\n\n            c. No downstream restrictions. You may not offer or impose\n               any additional or different terms or conditions on, or\n               apply any Effective Technological Measures to, the\n               Licensed Material if doing so restricts exercise of the\n               Licensed Rights by any recipient of the Licensed\n               Material.\n\n       6. No endorsement. Nothing in this Public License constitutes or\n          may be construed as permission to assert or imply that You\n          are, or that Your use of the Licensed Material is, connected\n          with, or sponsored, endorsed, or granted official status by,\n          the Licensor or others designated to receive attribution as\n          provided in Section 3(a)(1)(A)(i).\n\n  b. Other rights.\n\n       1. Moral rights, such as the right of integrity, are not\n          licensed under this Public License, nor are publicity,\n          privacy, and/or other similar personality rights; however, to\n          the extent possible, the Licensor waives and/or agrees not to\n          assert any such rights held by the Licensor to the limited\n          extent necessary to allow You to exercise the Licensed\n          Rights, but not otherwise.\n\n       2. Patent and trademark rights are not licensed under this\n          Public License.\n\n       3. To the extent possible, the Licensor waives any right to\n          collect royalties from You for the exercise of the Licensed\n          Rights, whether directly or through a collecting society\n          under any voluntary or waivable statutory or compulsory\n          licensing scheme. In all other cases the Licensor expressly\n          reserves any right to collect such royalties, including when\n          the Licensed Material is used other than for NonCommercial\n          purposes.\n\n\nSection 3 -- License Conditions.\n\nYour exercise of the Licensed Rights is expressly made subject to the\nfollowing conditions.\n\n  a. Attribution.\n\n       1. If You Share the Licensed Material (including in modified\n          form), You must:\n\n            a. retain the following if it is supplied by the Licensor\n               with the Licensed Material:\n\n                 i. identification of the creator(s) of the Licensed\n                    Material and any others designated to receive\n                    attribution, in any reasonable manner requested by\n                    the Licensor (including by pseudonym if\n                    designated);\n\n                ii. a copyright notice;\n\n               iii. a notice that refers to this Public License;\n\n                iv. a notice that refers to the disclaimer of\n                    warranties;\n\n                 v. a URI or hyperlink to the Licensed Material to the\n                    extent reasonably practicable;\n\n            b. indicate if You modified the Licensed Material and\n               retain an indication of any previous modifications; and\n\n            c. indicate the Licensed Material is licensed under this\n               Public License, and include the text of, or the URI or\n               hyperlink to, this Public License.\n\n       2. You may satisfy the conditions in Section 3(a)(1) in any\n          reasonable manner based on the medium, means, and context in\n          which You Share the Licensed Material. For example, it may be\n          reasonable to satisfy the conditions by providing a URI or\n          hyperlink to a resource that includes the required\n          information.\n       3. If requested by the Licensor, You must remove any of the\n          information required by Section 3(a)(1)(A) to the extent\n          reasonably practicable.\n\n  b. ShareAlike.\n\n     In addition to the conditions in Section 3(a), if You Share\n     Adapted Material You produce, the following conditions also apply.\n\n       1. The Adapter's License You apply must be a Creative Commons\n          license with the same License Elements, this version or\n          later, or a BY-NC-SA Compatible License.\n\n       2. You must include the text of, or the URI or hyperlink to, the\n          Adapter's License You apply. You may satisfy this condition\n          in any reasonable manner based on the medium, means, and\n          context in which You Share Adapted Material.\n\n       3. You may not offer or impose any additional or different terms\n          or conditions on, or apply any Effective Technological\n          Measures to, Adapted Material that restrict exercise of the\n          rights granted under the Adapter's License You apply.\n\n\nSection 4 -- Sui Generis Database Rights.\n\nWhere the Licensed Rights include Sui Generis Database Rights that\napply to Your use of the Licensed Material:\n\n  a. for the avoidance of doubt, Section 2(a)(1) grants You the right\n     to extract, reuse, reproduce, and Share all or a substantial\n     portion of the contents of the database for NonCommercial purposes\n     only;\n\n  b. if You include all or a substantial portion of the database\n     contents in a database in which You have Sui Generis Database\n     Rights, then the database in which You have Sui Generis Database\n     Rights (but not its individual contents) is Adapted Material,\n     including for purposes of Section 3(b); and\n\n  c. You must comply with the conditions in Section 3(a) if You Share\n     all or a substantial portion of the contents of the database.\n\nFor the avoidance of doubt, this Section 4 supplements and does not\nreplace Your obligations under this Public License where the Licensed\nRights include other Copyright and Similar Rights.\n\n\nSection 5 -- Disclaimer of Warranties and Limitation of Liability.\n\n  a. UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY THE LICENSOR, TO THE\n     EXTENT POSSIBLE, THE LICENSOR OFFERS THE LICENSED MATERIAL AS-IS\n     AND AS-AVAILABLE, AND MAKES NO REPRESENTATIONS OR WARRANTIES OF\n     ANY KIND CONCERNING THE LICENSED MATERIAL, WHETHER EXPRESS,\n     IMPLIED, STATUTORY, OR OTHER. THIS INCLUDES, WITHOUT LIMITATION,\n     WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR\n     PURPOSE, NON-INFRINGEMENT, ABSENCE OF LATENT OR OTHER DEFECTS,\n     ACCURACY, OR THE PRESENCE OR ABSENCE OF ERRORS, WHETHER OR NOT\n     KNOWN OR DISCOVERABLE. WHERE DISCLAIMERS OF WARRANTIES ARE NOT\n     ALLOWED IN FULL OR IN PART, THIS DISCLAIMER MAY NOT APPLY TO YOU.\n\n  b. TO THE EXTENT POSSIBLE, IN NO EVENT WILL THE LICENSOR BE LIABLE\n     TO YOU ON ANY LEGAL THEORY (INCLUDING, WITHOUT LIMITATION,\n     NEGLIGENCE) OR OTHERWISE FOR ANY DIRECT, SPECIAL, INDIRECT,\n     INCIDENTAL, CONSEQUENTIAL, PUNITIVE, EXEMPLARY, OR OTHER LOSSES,\n     COSTS, EXPENSES, OR DAMAGES ARISING OUT OF THIS PUBLIC LICENSE OR\n     USE OF THE LICENSED MATERIAL, EVEN IF THE LICENSOR HAS BEEN\n     ADVISED OF THE POSSIBILITY OF SUCH LOSSES, COSTS, EXPENSES, OR\n     DAMAGES. WHERE A LIMITATION OF LIABILITY IS NOT ALLOWED IN FULL OR\n     IN PART, THIS LIMITATION MAY NOT APPLY TO YOU.\n\n  c. The disclaimer of warranties and limitation of liability provided\n     above shall be interpreted in a manner that, to the extent\n     possible, most closely approximates an absolute disclaimer and\n     waiver of all liability.\n\n\nSection 6 -- Term and Termination.\n\n  a. This Public License applies for the term of the Copyright and\n     Similar Rights licensed here. However, if You fail to comply with\n     this Public License, then Your rights under this Public License\n     terminate automatically.\n\n  b. Where Your right to use the Licensed Material has terminated under\n     Section 6(a), it reinstates:\n\n       1. automatically as of the date the violation is cured, provided\n          it is cured within 30 days of Your discovery of the\n          violation; or\n\n       2. upon express reinstatement by the Licensor.\n\n     For the avoidance of doubt, this Section 6(b) does not affect any\n     right the Licensor may have to seek remedies for Your violations\n     of this Public License.\n\n  c. For the avoidance of doubt, the Licensor may also offer the\n     Licensed Material under separate terms or conditions or stop\n     distributing the Licensed Material at any time; however, doing so\n     will not terminate this Public License.\n\n  d. Sections 1, 5, 6, 7, and 8 survive termination of this Public\n     License.\n\n\nSection 7 -- Other Terms and Conditions.\n\n  a. The Licensor shall not be bound by any additional or different\n     terms or conditions communicated by You unless expressly agreed.\n\n  b. Any arrangements, understandings, or agreements regarding the\n     Licensed Material not stated herein are separate from and\n     independent of the terms and conditions of this Public License.\n\n\nSection 8 -- Interpretation.\n\n  a. For the avoidance of doubt, this Public License does not, and\n     shall not be interpreted to, reduce, limit, restrict, or impose\n     conditions on any use of the Licensed Material that could lawfully\n     be made without permission under this Public License.\n\n  b. To the extent possible, if any provision of this Public License is\n     deemed unenforceable, it shall be automatically reformed to the\n     minimum extent necessary to make it enforceable. If the provision\n     cannot be reformed, it shall be severed from this Public License\n     without affecting the enforceability of the remaining terms and\n     conditions.\n\n  c. No term or condition of this Public License will be waived and no\n     failure to comply consented to unless expressly agreed to by the\n     Licensor.\n\n  d. Nothing in this Public License constitutes or may be interpreted\n     as a limitation upon, or waiver of, any privileges and immunities\n     that apply to the Licensor or You, including from the legal\n     processes of any jurisdiction or authority.\n\n=======================================================================\n\nCreative Commons is not a party to its public\nlicenses. Notwithstanding, Creative Commons may elect to apply one of\nits public licenses to material it publishes and in those instances\nwill be considered the “Licensor.” The text of the Creative Commons\npublic licenses is dedicated to the public domain under the CC0 Public\nDomain Dedication. Except for the limited purpose of indicating that\nmaterial is shared under a Creative Commons public license or as\notherwise permitted by the Creative Commons policies published at\ncreativecommons.org/policies, Creative Commons does not authorize the\nuse of the trademark \"Creative Commons\" or any other trademark or logo\nof Creative Commons without its prior written consent including,\nwithout limitation, in connection with any unauthorized modifications\nto any of its public licenses or any other arrangements,\nunderstandings, or agreements concerning use of licensed material. For\nthe avoidance of doubt, this paragraph does not form part of the\npublic licenses.\n\nCreative Commons may be contacted at creativecommons.org.\n"
     },
     {
       "name": "graceful-fs",
@@ -947,7 +1219,7 @@
     },
     {
       "name": "motion",
-      "version": "13.1.1",
+      "version": "13.2.0",
       "licenses": "MIT",
       "repository": "https://github.com/motiondivision/motion",
       "url": null,
@@ -955,7 +1227,7 @@
     },
     {
       "name": "motion-dom",
-      "version": "13.1.1",
+      "version": "13.2.0",
       "licenses": "MIT",
       "repository": "https://github.com/motiondivision/motion",
       "url": null,
@@ -976,14 +1248,6 @@
       "repository": "https://github.com/vercel/ms",
       "url": null,
       "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2020 Vercel, Inc.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
-    },
-    {
-      "name": "nanoid",
-      "version": "3.3.12",
-      "licenses": "MIT",
-      "repository": "https://github.com/ai/nanoid",
-      "url": null,
-      "licenseText": "The MIT License (MIT)\n\nCopyright 2017 Andrey Sitnik <andrey@sitnik.ru>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in\nthe Software without restriction, including without limitation the rights to\nuse, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of\nthe Software, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER\nIN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
     },
     {
       "name": "nanoid",
@@ -1011,23 +1275,23 @@
     },
     {
       "name": "picomatch",
-      "version": "4.0.5",
+      "version": "4.0.7",
       "licenses": "MIT",
       "repository": "https://github.com/micromatch/picomatch",
       "url": null,
       "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2017-present, Jon Schlinkert.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n"
     },
     {
-      "name": "postcss",
-      "version": "8.5.13",
-      "licenses": "MIT",
-      "repository": "https://github.com/postcss/postcss",
+      "name": "playstash-frontend",
+      "version": "17.1.0",
+      "licenses": "UNLICENSED",
+      "repository": null,
       "url": null,
-      "licenseText": "The MIT License (MIT)\n\nCopyright 2013 Andrey Sitnik <andrey@sitnik.es>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in\nthe Software without restriction, including without limitation the rights to\nuse, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of\nthe Software, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER\nIN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
+      "licenseText": "Attribution-NonCommercial-ShareAlike 4.0 International\r\n\r\n=======================================================================\r\n\r\nCreative Commons Corporation (\"Creative Commons\") is not a law firm and\r\ndoes not provide legal services or legal advice. Distribution of\r\nCreative Commons public licenses does not create a lawyer-client or\r\nother relationship. Creative Commons makes its licenses and related\r\ninformation available on an \"as-is\" basis. Creative Commons gives no\r\nwarranties regarding its licenses, any material licensed under their\r\nterms and conditions, or any related information. Creative Commons\r\ndisclaims all liability for damages resulting from their use to the\r\nfullest extent possible.\r\n\r\nUsing Creative Commons Public Licenses\r\n\r\nCreative Commons public licenses provide a standard set of terms and\r\nconditions that creators and other rights holders may use to share\r\noriginal works of authorship and other material subject to copyright\r\nand certain other rights specified in the public license below. The\r\nfollowing considerations are for informational purposes only, are not\r\nexhaustive, and do not form part of our licenses.\r\n\r\n     Considerations for licensors: Our public licenses are\r\n     intended for use by those authorized to give the public\r\n     permission to use material in ways otherwise restricted by\r\n     copyright and certain other rights. Our licenses are\r\n     irrevocable. Licensors should read and understand the terms\r\n     and conditions of the license they choose before applying it.\r\n     Licensors should also secure all rights necessary before\r\n     applying our licenses so that the public can reuse the\r\n     material as expected. Licensors should clearly mark any\r\n     material not subject to the license. This includes other CC-\r\n     licensed material, or material used under an exception or\r\n     limitation to copyright. More considerations for licensors:\r\n    wiki.creativecommons.org/Considerations_for_licensors\r\n\r\n     Considerations for the public: By using one of our public\r\n     licenses, a licensor grants the public permission to use the\r\n     licensed material under specified terms and conditions. If\r\n     the licensor's permission is not necessary for any reason--for\r\n     example, because of any applicable exception or limitation to\r\n     copyright--then that use is not regulated by the license. Our\r\n     licenses grant only permissions under copyright and certain\r\n     other rights that a licensor has authority to grant. Use of\r\n     the licensed material may still be restricted for other\r\n     reasons, including because others have copyright or other\r\n     rights in the material. A licensor may make special requests,\r\n     such as asking that all changes be marked or described.\r\n     Although not required by our licenses, you are encouraged to\r\n     respect those requests where reasonable. More considerations\r\n     for the public:\r\n    wiki.creativecommons.org/Considerations_for_licensees\r\n\r\n=======================================================================\r\n\r\nCreative Commons Attribution-NonCommercial-ShareAlike 4.0 International\r\nPublic License\r\n\r\nBy exercising the Licensed Rights (defined below), You accept and agree\r\nto be bound by the terms and conditions of this Creative Commons\r\nAttribution-NonCommercial-ShareAlike 4.0 International Public License\r\n(\"Public License\"). To the extent this Public License may be\r\ninterpreted as a contract, You are granted the Licensed Rights in\r\nconsideration of Your acceptance of these terms and conditions, and the\r\nLicensor grants You such rights in consideration of benefits the\r\nLicensor receives from making the Licensed Material available under\r\nthese terms and conditions.\r\n\r\n\r\nSection 1 -- Definitions.\r\n\r\n  a. Adapted Material means material subject to Copyright and Similar\r\n     Rights that is derived from or based upon the Licensed Material\r\n     and in which the Licensed Material is translated, altered,\r\n     arranged, transformed, or otherwise modified in a manner requiring\r\n     permission under the Copyright and Similar Rights held by the\r\n     Licensor. For purposes of this Public License, where the Licensed\r\n     Material is a musical work, performance, or sound recording,\r\n     Adapted Material is always produced where the Licensed Material is\r\n     synched in timed relation with a moving image.\r\n\r\n  b. Adapter's License means the license You apply to Your Copyright\r\n     and Similar Rights in Your contributions to Adapted Material in\r\n     accordance with the terms and conditions of this Public License.\r\n\r\n  c. BY-NC-SA Compatible License means a license listed at\r\n     creativecommons.org/compatiblelicenses, approved by Creative\r\n     Commons as essentially the equivalent of this Public License.\r\n\r\n  d. Copyright and Similar Rights means copyright and/or similar rights\r\n     closely related to copyright including, without limitation,\r\n     performance, broadcast, sound recording, and Sui Generis Database\r\n     Rights, without regard to how the rights are labeled or\r\n     categorized. For purposes of this Public License, the rights\r\n     specified in Section 2(b)(1)-(2) are not Copyright and Similar\r\n     Rights.\r\n\r\n  e. Effective Technological Measures means those measures that, in the\r\n     absence of proper authority, may not be circumvented under laws\r\n     fulfilling obligations under Article 11 of the WIPO Copyright\r\n     Treaty adopted on December 20, 1996, and/or similar international\r\n     agreements.\r\n\r\n  f. Exceptions and Limitations means fair use, fair dealing, and/or\r\n     any other exception or limitation to Copyright and Similar Rights\r\n     that applies to Your use of the Licensed Material.\r\n\r\n  g. License Elements means the license attributes listed in the name\r\n     of a Creative Commons Public License. The License Elements of this\r\n     Public License are Attribution, NonCommercial, and ShareAlike.\r\n\r\n  h. Licensed Material means the artistic or literary work, database,\r\n     or other material to which the Licensor applied this Public\r\n     License.\r\n\r\n  i. Licensed Rights means the rights granted to You subject to the\r\n     terms and conditions of this Public License, which are limited to\r\n     all Copyright and Similar Rights that apply to Your use of the\r\n     Licensed Material and that the Licensor has authority to license.\r\n\r\n  j. Licensor means the individual(s) or entity(ies) granting rights\r\n     under this Public License.\r\n\r\n  k. NonCommercial means not primarily intended for or directed towards\r\n     commercial advantage or monetary compensation. For purposes of\r\n     this Public License, the exchange of the Licensed Material for\r\n     other material subject to Copyright and Similar Rights by digital\r\n     file-sharing or similar means is NonCommercial provided there is\r\n     no payment of monetary compensation in connection with the\r\n     exchange.\r\n\r\n  l. Share means to provide material to the public by any means or\r\n     process that requires permission under the Licensed Rights, such\r\n     as reproduction, public display, public performance, distribution,\r\n     dissemination, communication, or importation, and to make material\r\n     available to the public including in ways that members of the\r\n     public may access the material from a place and at a time\r\n     individually chosen by them.\r\n\r\n  m. Sui Generis Database Rights means rights other than copyright\r\n     resulting from Directive 96/9/EC of the European Parliament and of\r\n     the Council of 11 March 1996 on the legal protection of databases,\r\n     as amended and/or succeeded, as well as other essentially\r\n     equivalent rights anywhere in the world.\r\n\r\n  n. You means the individual or entity exercising the Licensed Rights\r\n     under this Public License. Your has a corresponding meaning.\r\n\r\n\r\nSection 2 -- Scope.\r\n\r\n  a. License grant.\r\n\r\n       1. Subject to the terms and conditions of this Public License,\r\n          the Licensor hereby grants You a worldwide, royalty-free,\r\n          non-sublicensable, non-exclusive, irrevocable license to\r\n          exercise the Licensed Rights in the Licensed Material to:\r\n\r\n            a. reproduce and Share the Licensed Material, in whole or\r\n               in part, for NonCommercial purposes only; and\r\n\r\n            b. produce, reproduce, and Share Adapted Material for\r\n               NonCommercial purposes only.\r\n\r\n       2. Exceptions and Limitations. For the avoidance of doubt, where\r\n          Exceptions and Limitations apply to Your use, this Public\r\n          License does not apply, and You do not need to comply with\r\n          its terms and conditions.\r\n\r\n       3. Term. The term of this Public License is specified in Section\r\n          6(a).\r\n\r\n       4. Media and formats; technical modifications allowed. The\r\n          Licensor authorizes You to exercise the Licensed Rights in\r\n          all media and formats whether now known or hereafter created,\r\n          and to make technical modifications necessary to do so. The\r\n          Licensor waives and/or agrees not to assert any right or\r\n          authority to forbid You from making technical modifications\r\n          necessary to exercise the Licensed Rights, including\r\n          technical modifications necessary to circumvent Effective\r\n          Technological Measures. For purposes of this Public License,\r\n          simply making modifications authorized by this Section 2(a)\r\n          (4) never produces Adapted Material.\r\n\r\n       5. Downstream recipients.\r\n\r\n            a. Offer from the Licensor -- Licensed Material. Every\r\n               recipient of the Licensed Material automatically\r\n               receives an offer from the Licensor to exercise the\r\n               Licensed Rights under the terms and conditions of this\r\n               Public License.\r\n\r\n            b. Additional offer from the Licensor -- Adapted Material.\r\n               Every recipient of Adapted Material from You\r\n               automatically receives an offer from the Licensor to\r\n               exercise the Licensed Rights in the Adapted Material\r\n               under the conditions of the Adapter's License You apply.\r\n\r\n            c. No downstream restrictions. You may not offer or impose\r\n               any additional or different terms or conditions on, or\r\n               apply any Effective Technological Measures to, the\r\n               Licensed Material if doing so restricts exercise of the\r\n               Licensed Rights by any recipient of the Licensed\r\n               Material.\r\n\r\n       6. No endorsement. Nothing in this Public License constitutes or\r\n          may be construed as permission to assert or imply that You\r\n          are, or that Your use of the Licensed Material is, connected\r\n          with, or sponsored, endorsed, or granted official status by,\r\n          the Licensor or others designated to receive attribution as\r\n          provided in Section 3(a)(1)(A)(i).\r\n\r\n  b. Other rights.\r\n\r\n       1. Moral rights, such as the right of integrity, are not\r\n          licensed under this Public License, nor are publicity,\r\n          privacy, and/or other similar personality rights; however, to\r\n          the extent possible, the Licensor waives and/or agrees not to\r\n          assert any such rights held by the Licensor to the limited\r\n          extent necessary to allow You to exercise the Licensed\r\n          Rights, but not otherwise.\r\n\r\n       2. Patent and trademark rights are not licensed under this\r\n          Public License.\r\n\r\n       3. To the extent possible, the Licensor waives any right to\r\n          collect royalties from You for the exercise of the Licensed\r\n          Rights, whether directly or through a collecting society\r\n          under any voluntary or waivable statutory or compulsory\r\n          licensing scheme. In all other cases the Licensor expressly\r\n          reserves any right to collect such royalties, including when\r\n          the Licensed Material is used other than for NonCommercial\r\n          purposes.\r\n\r\n\r\nSection 3 -- License Conditions.\r\n\r\nYour exercise of the Licensed Rights is expressly made subject to the\r\nfollowing conditions.\r\n\r\n  a. Attribution.\r\n\r\n       1. If You Share the Licensed Material (including in modified\r\n          form), You must:\r\n\r\n            a. retain the following if it is supplied by the Licensor\r\n               with the Licensed Material:\r\n\r\n                 i. identification of the creator(s) of the Licensed\r\n                    Material and any others designated to receive\r\n                    attribution, in any reasonable manner requested by\r\n                    the Licensor (including by pseudonym if\r\n                    designated);\r\n\r\n                ii. a copyright notice;\r\n\r\n               iii. a notice that refers to this Public License;\r\n\r\n                iv. a notice that refers to the disclaimer of\r\n                    warranties;\r\n\r\n                 v. a URI or hyperlink to the Licensed Material to the\r\n                    extent reasonably practicable;\r\n\r\n            b. indicate if You modified the Licensed Material and\r\n               retain an indication of any previous modifications; and\r\n\r\n            c. indicate the Licensed Material is licensed under this\r\n               Public License, and include the text of, or the URI or\r\n               hyperlink to, this Public License.\r\n\r\n       2. You may satisfy the conditions in Section 3(a)(1) in any\r\n          reasonable manner based on the medium, means, and context in\r\n          which You Share the Licensed Material. For example, it may be\r\n          reasonable to satisfy the conditions by providing a URI or\r\n          hyperlink to a resource that includes the required\r\n          information.\r\n       3. If requested by the Licensor, You must remove any of the\r\n          information required by Section 3(a)(1)(A) to the extent\r\n          reasonably practicable.\r\n\r\n  b. ShareAlike.\r\n\r\n     In addition to the conditions in Section 3(a), if You Share\r\n     Adapted Material You produce, the following conditions also apply.\r\n\r\n       1. The Adapter's License You apply must be a Creative Commons\r\n          license with the same License Elements, this version or\r\n          later, or a BY-NC-SA Compatible License.\r\n\r\n       2. You must include the text of, or the URI or hyperlink to, the\r\n          Adapter's License You apply. You may satisfy this condition\r\n          in any reasonable manner based on the medium, means, and\r\n          context in which You Share Adapted Material.\r\n\r\n       3. You may not offer or impose any additional or different terms\r\n          or conditions on, or apply any Effective Technological\r\n          Measures to, Adapted Material that restrict exercise of the\r\n          rights granted under the Adapter's License You apply.\r\n\r\n\r\nSection 4 -- Sui Generis Database Rights.\r\n\r\nWhere the Licensed Rights include Sui Generis Database Rights that\r\napply to Your use of the Licensed Material:\r\n\r\n  a. for the avoidance of doubt, Section 2(a)(1) grants You the right\r\n     to extract, reuse, reproduce, and Share all or a substantial\r\n     portion of the contents of the database for NonCommercial purposes\r\n     only;\r\n\r\n  b. if You include all or a substantial portion of the database\r\n     contents in a database in which You have Sui Generis Database\r\n     Rights, then the database in which You have Sui Generis Database\r\n     Rights (but not its individual contents) is Adapted Material,\r\n     including for purposes of Section 3(b); and\r\n\r\n  c. You must comply with the conditions in Section 3(a) if You Share\r\n     all or a substantial portion of the contents of the database.\r\n\r\nFor the avoidance of doubt, this Section 4 supplements and does not\r\nreplace Your obligations under this Public License where the Licensed\r\nRights include other Copyright and Similar Rights.\r\n\r\n\r\nSection 5 -- Disclaimer of Warranties and Limitation of Liability.\r\n\r\n  a. UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY THE LICENSOR, TO THE\r\n     EXTENT POSSIBLE, THE LICENSOR OFFERS THE LICENSED MATERIAL AS-IS\r\n     AND AS-AVAILABLE, AND MAKES NO REPRESENTATIONS OR WARRANTIES OF\r\n     ANY KIND CONCERNING THE LICENSED MATERIAL, WHETHER EXPRESS,\r\n     IMPLIED, STATUTORY, OR OTHER. THIS INCLUDES, WITHOUT LIMITATION,\r\n     WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR\r\n     PURPOSE, NON-INFRINGEMENT, ABSENCE OF LATENT OR OTHER DEFECTS,\r\n     ACCURACY, OR THE PRESENCE OR ABSENCE OF ERRORS, WHETHER OR NOT\r\n     KNOWN OR DISCOVERABLE. WHERE DISCLAIMERS OF WARRANTIES ARE NOT\r\n     ALLOWED IN FULL OR IN PART, THIS DISCLAIMER MAY NOT APPLY TO YOU.\r\n\r\n  b. TO THE EXTENT POSSIBLE, IN NO EVENT WILL THE LICENSOR BE LIABLE\r\n     TO YOU ON ANY LEGAL THEORY (INCLUDING, WITHOUT LIMITATION,\r\n     NEGLIGENCE) OR OTHERWISE FOR ANY DIRECT, SPECIAL, INDIRECT,\r\n     INCIDENTAL, CONSEQUENTIAL, PUNITIVE, EXEMPLARY, OR OTHER LOSSES,\r\n     COSTS, EXPENSES, OR DAMAGES ARISING OUT OF THIS PUBLIC LICENSE OR\r\n     USE OF THE LICENSED MATERIAL, EVEN IF THE LICENSOR HAS BEEN\r\n     ADVISED OF THE POSSIBILITY OF SUCH LOSSES, COSTS, EXPENSES, OR\r\n     DAMAGES. WHERE A LIMITATION OF LIABILITY IS NOT ALLOWED IN FULL OR\r\n     IN PART, THIS LIMITATION MAY NOT APPLY TO YOU.\r\n\r\n  c. The disclaimer of warranties and limitation of liability provided\r\n     above shall be interpreted in a manner that, to the extent\r\n     possible, most closely approximates an absolute disclaimer and\r\n     waiver of all liability.\r\n\r\n\r\nSection 6 -- Term and Termination.\r\n\r\n  a. This Public License applies for the term of the Copyright and\r\n     Similar Rights licensed here. However, if You fail to comply with\r\n     this Public License, then Your rights under this Public License\r\n     terminate automatically.\r\n\r\n  b. Where Your right to use the Licensed Material has terminated under\r\n     Section 6(a), it reinstates:\r\n\r\n       1. automatically as of the date the violation is cured, provided\r\n          it is cured within 30 days of Your discovery of the\r\n          violation; or\r\n\r\n       2. upon express reinstatement by the Licensor.\r\n\r\n     For the avoidance of doubt, this Section 6(b) does not affect any\r\n     right the Licensor may have to seek remedies for Your violations\r\n     of this Public License.\r\n\r\n  c. For the avoidance of doubt, the Licensor may also offer the\r\n     Licensed Material under separate terms or conditions or stop\r\n     distributing the Licensed Material at any time; however, doing so\r\n     will not terminate this Public License.\r\n\r\n  d. Sections 1, 5, 6, 7, and 8 survive termination of this Public\r\n     License.\r\n\r\n\r\nSection 7 -- Other Terms and Conditions.\r\n\r\n  a. The Licensor shall not be bound by any additional or different\r\n     terms or conditions communicated by You unless expressly agreed.\r\n\r\n  b. Any arrangements, understandings, or agreements regarding the\r\n     Licensed Material not stated herein are separate from and\r\n     independent of the terms and conditions of this Public License.\r\n\r\n\r\nSection 8 -- Interpretation.\r\n\r\n  a. For the avoidance of doubt, this Public License does not, and\r\n     shall not be interpreted to, reduce, limit, restrict, or impose\r\n     conditions on any use of the Licensed Material that could lawfully\r\n     be made without permission under this Public License.\r\n\r\n  b. To the extent possible, if any provision of this Public License is\r\n     deemed unenforceable, it shall be automatically reformed to the\r\n     minimum extent necessary to make it enforceable. If the provision\r\n     cannot be reformed, it shall be severed from this Public License\r\n     without affecting the enforceability of the remaining terms and\r\n     conditions.\r\n\r\n  c. No term or condition of this Public License will be waived and no\r\n     failure to comply consented to unless expressly agreed to by the\r\n     Licensor.\r\n\r\n  d. Nothing in this Public License constitutes or may be interpreted\r\n     as a limitation upon, or waiver of, any privileges and immunities\r\n     that apply to the Licensor or You, including from the legal\r\n     processes of any jurisdiction or authority.\r\n\r\n=======================================================================\r\n\r\nCreative Commons is not a party to its public\r\nlicenses. Notwithstanding, Creative Commons may elect to apply one of\r\nits public licenses to material it publishes and in those instances\r\nwill be considered the “Licensor.” The text of the Creative Commons\r\npublic licenses is dedicated to the public domain under the CC0 Public\r\nDomain Dedication. Except for the limited purpose of indicating that\r\nmaterial is shared under a Creative Commons public license or as\r\notherwise permitted by the Creative Commons policies published at\r\ncreativecommons.org/policies, Creative Commons does not authorize the\r\nuse of the trademark \"Creative Commons\" or any other trademark or logo\r\nof Creative Commons without its prior written consent including,\r\nwithout limitation, in connection with any unauthorized modifications\r\nto any of its public licenses or any other arrangements,\r\nunderstandings, or agreements concerning use of licensed material. For\r\nthe avoidance of doubt, this paragraph does not form part of the\r\npublic licenses.\r\n\r\nCreative Commons may be contacted at creativecommons.org.\r\n"
     },
     {
       "name": "postcss",
-      "version": "8.5.26",
+      "version": "8.5.28",
       "licenses": "MIT",
       "repository": "https://github.com/postcss/postcss",
       "url": null,
@@ -1035,7 +1299,7 @@
     },
     {
       "name": "property-information",
-      "version": "7.1.0",
+      "version": "7.2.0",
       "licenses": "MIT",
       "repository": "https://github.com/wooorm/property-information",
       "url": null,
@@ -1051,7 +1315,7 @@
     },
     {
       "name": "react-aria",
-      "version": "3.48.0",
+      "version": "3.52.1",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -1075,7 +1339,7 @@
     },
     {
       "name": "react-router",
-      "version": "8.3.0",
+      "version": "8.3.1",
       "licenses": "MIT",
       "repository": "https://github.com/remix-run/react-router",
       "url": null,
@@ -1083,7 +1347,7 @@
     },
     {
       "name": "react-stately",
-      "version": "3.46.0",
+      "version": "3.50.0",
       "licenses": "Apache-2.0",
       "repository": "https://github.com/adobe/react-spectrum",
       "url": null,
@@ -1107,7 +1371,7 @@
     },
     {
       "name": "rolldown",
-      "version": "1.2.5",
+      "version": "1.2.7",
       "licenses": "MIT",
       "repository": "https://github.com/rolldown/rolldown",
       "url": null,
@@ -1187,7 +1451,7 @@
     },
     {
       "name": "swetrix",
-      "version": "4.5.0",
+      "version": "4.6.1",
       "licenses": "MIT",
       "repository": "https://github.com/Swetrix/swetrix",
       "url": null,
@@ -1195,7 +1459,7 @@
     },
     {
       "name": "tabbable",
-      "version": "6.4.0",
+      "version": "6.5.0",
       "licenses": "MIT",
       "repository": "https://github.com/focus-trap/tabbable",
       "url": null,
@@ -1264,6 +1528,14 @@
       "repository": "https://github.com/unifiedjs/unified",
       "url": null,
       "licenseText": "(The MIT License)\n\nCopyright (c) 2015 Titus Wormer <tituswormer@gmail.com>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n"
+    },
+    {
+      "name": "unique-names-generator",
+      "version": "4.7.1",
+      "licenses": "MIT",
+      "repository": "https://github.com/andreasonny83/unique-names-generator",
+      "url": null,
+      "licenseText": "MIT License\n\nCopyright (c) 2018-2022 AndreaSonny <andreasonny83@gmail.com> (https://github.com/andreasonny83)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
     },
     {
       "name": "unist-util-is",

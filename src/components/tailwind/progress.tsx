@@ -27,7 +27,7 @@ export function ProgressBar({
   return (
     <div className={clsx("space-y-1.5", className)}>
       {(label || valueText) && (
-        <div className="flex items-center justify-between gap-3 text-xs text-gv-muted">
+        <div className="flex items-center justify-between gap-3 text-xs text-ps-muted">
           <span className="truncate">{label}</span>
           {valueText && (
             <span className="shrink-0 tabular-nums">{valueText}</span>
@@ -38,10 +38,10 @@ export function ProgressBar({
         value={Math.round(percent)}
         max={100}
         aria-label={label}
-        className="block h-2 w-full overflow-hidden rounded-full bg-gv-line text-gv-accent [&::-webkit-progress-bar]:bg-gv-line [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-gv-accent [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-gv-accent"
+        className="block h-2 w-full overflow-hidden rounded-full bg-ps-line text-ps-accent [&::-webkit-progress-bar]:bg-ps-line [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-ps-accent [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-ps-accent"
       />
       {currentFile && (
-        <p className="truncate text-xs text-gv-muted" title={currentFile}>
+        <p className="truncate text-xs text-ps-muted" title={currentFile}>
           {currentFile}
         </p>
       )}

@@ -14,21 +14,21 @@
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
   --font-sans--font-feature-settings: "cv11";
 
-  --color-gv-bg: #0b1017;
-  --color-gv-shell: #121925;
-  --color-gv-panel: #18202c;
-  --color-gv-panel-strong: #202b39;
-  --color-gv-panel-soft: rgba(24, 32, 44, 0.78);
-  --color-gv-text: #f3f7fe;
-  --color-gv-muted: #9aa8bd;
-  --color-gv-line: rgba(255, 255, 255, 0.08);
-  --color-gv-line-strong: rgba(126, 154, 255, 0.24);
-  --color-gv-accent: #6d7cff;
-  --color-gv-accent-strong: #8ea5ff;
-  --color-gv-accent-cool: #4dbdff;
-  --color-gv-success: #56d692;
-  --color-gv-warning: #f1c56c;
-  --color-gv-danger: #ef7373;
+  --color-ps-bg: #0b1017;
+  --color-ps-shell: #121925;
+  --color-ps-panel: #18202c;
+  --color-ps-panel-strong: #202b39;
+  --color-ps-panel-soft: rgba(24, 32, 44, 0.78);
+  --color-ps-text: #f3f7fe;
+  --color-ps-muted: #9aa8bd;
+  --color-ps-line: rgba(255, 255, 255, 0.08);
+  --color-ps-line-strong: rgba(126, 154, 255, 0.24);
+  --color-ps-accent: #6d7cff;
+  --color-ps-accent-strong: #8ea5ff;
+  --color-ps-accent-cool: #4dbdff;
+  --color-ps-success: #56d692;
+  --color-ps-warning: #f1c56c;
+  --color-ps-danger: #ef7373;
 
   --color-rose-50: #fcf4f4;
   --color-rose-100: #f9e7e7;
@@ -93,21 +93,21 @@
 @layer base {
   :root {
     color-scheme: light;
-    --color-gv-bg: #e2e1ef;
-    --color-gv-shell: rgba(245, 243, 250, 0.94);
-    --color-gv-panel: rgba(255, 255, 255, 0.92);
-    --color-gv-panel-strong: #ffffff;
-    --color-gv-panel-soft: rgba(230, 227, 244, 0.94);
-    --color-gv-text: #1c1e21;
-    --color-gv-muted: #4a4b5a;
-    --color-gv-line: rgba(28, 30, 33, 0.1);
-    --color-gv-line-strong: rgba(65, 58, 146, 0.2);
-    --color-gv-accent: #5449c6;
-    --color-gv-accent-strong: #413a92;
-    --color-gv-accent-cool: #7468eb;
-    --color-gv-success: #188f5c;
-    --color-gv-warning: #b17d19;
-    --color-gv-danger: #d24747;
+    --color-ps-bg: #e2e1ef;
+    --color-ps-shell: rgba(245, 243, 250, 0.94);
+    --color-ps-panel: rgba(255, 255, 255, 0.92);
+    --color-ps-panel-strong: #ffffff;
+    --color-ps-panel-soft: rgba(230, 227, 244, 0.94);
+    --color-ps-text: #1c1e21;
+    --color-ps-muted: #4a4b5a;
+    --color-ps-line: rgba(28, 30, 33, 0.1);
+    --color-ps-line-strong: rgba(65, 58, 146, 0.2);
+    --color-ps-accent: #5449c6;
+    --color-ps-accent-strong: #413a92;
+    --color-ps-accent-cool: #7468eb;
+    --color-ps-success: #188f5c;
+    --color-ps-warning: #b17d19;
+    --color-ps-danger: #d24747;
     --shadow-shell:
       0 18px 40px rgba(43, 38, 86, 0.14), 0 4px 12px rgba(43, 38, 86, 0.06);
     --shadow-card:
@@ -118,21 +118,21 @@
 
   .dark {
     color-scheme: dark;
-    --color-gv-bg: #11101e;
-    --color-gv-shell: #161427;
-    --color-gv-panel: #1b1a27;
-    --color-gv-panel-strong: #232230;
-    --color-gv-panel-soft: rgba(35, 34, 48, 0.84);
-    --color-gv-text: #f5f6fa;
-    --color-gv-muted: #b2b4c7;
-    --color-gv-line: rgba(255, 255, 255, 0.08);
-    --color-gv-line-strong: rgba(100, 89, 223, 0.28);
-    --color-gv-accent: #6459df;
-    --color-gv-accent-strong: #847bed;
-    --color-gv-accent-cool: #8d84ff;
-    --color-gv-success: #56d692;
-    --color-gv-warning: #f1c56c;
-    --color-gv-danger: #ef7373;
+    --color-ps-bg: #11101e;
+    --color-ps-shell: #161427;
+    --color-ps-panel: #1b1a27;
+    --color-ps-panel-strong: #232230;
+    --color-ps-panel-soft: rgba(35, 34, 48, 0.84);
+    --color-ps-text: #f5f6fa;
+    --color-ps-muted: #b2b4c7;
+    --color-ps-line: rgba(255, 255, 255, 0.08);
+    --color-ps-line-strong: rgba(100, 89, 223, 0.28);
+    --color-ps-accent: #6459df;
+    --color-ps-accent-strong: #847bed;
+    --color-ps-accent-cool: #8d84ff;
+    --color-ps-success: #56d692;
+    --color-ps-warning: #f1c56c;
+    --color-ps-danger: #ef7373;
     --shadow-shell:
       0 22px 48px rgba(4, 4, 12, 0.36), 0 6px 14px rgba(4, 4, 12, 0.24);
     --shadow-card:
@@ -142,8 +142,8 @@
   html {
     height: 100%;
     overflow: hidden;
-    background: var(--color-gv-bg);
-    color: var(--color-gv-text);
+    background: var(--color-ps-bg);
+    color: var(--color-ps-text);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -166,10 +166,10 @@
       ),
       linear-gradient(
         180deg,
-        var(--color-gv-bg) 0%,
-        color-mix(in srgb, var(--color-gv-bg) 88%, black) 100%
+        var(--color-ps-bg) 0%,
+        color-mix(in srgb, var(--color-ps-bg) 88%, black) 100%
       );
-    color: var(--color-gv-text);
+    color: var(--color-ps-text);
   }
 
   body::before {
@@ -223,20 +223,20 @@
     @apply rounded-[1.5rem] p-8 mb-4;
     background: linear-gradient(
       180deg,
-      var(--color-gv-panel-strong) 0%,
-      var(--color-gv-panel) 100%
+      var(--color-ps-panel-strong) 0%,
+      var(--color-ps-panel) 100%
     );
-    border: 1px solid var(--color-gv-line);
+    border: 1px solid var(--color-ps-line);
     box-shadow: var(--shadow-card);
   }
 
   a {
     @apply font-medium;
-    color: var(--color-gv-accent-cool);
+    color: var(--color-ps-accent-cool);
   }
 
   a:hover {
-    color: var(--color-gv-accent);
+    color: var(--color-ps-accent);
   }
 
   button,
@@ -251,21 +251,21 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-gv-accent-cool);
+    outline: 2px solid var(--color-ps-accent-cool);
     outline-offset: 2px;
   }
 
   /* Gamepad-driven focus ring. Unlayered + important so it wins over any
      component utility class (e.g. focus:outline-none, focus:outline-hidden)
      — without it the ring silently disappears on cards and buttons. */
-  .gv-gamepad-focus {
-    outline: 2px solid var(--color-gv-accent) !important;
+  .ps-gamepad-focus {
+    outline: 2px solid var(--color-ps-accent) !important;
     outline-offset: 2px !important;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-gv-accent) 30%, transparent);
-    color: var(--color-gv-text);
+    background: color-mix(in srgb, var(--color-ps-accent) 30%, transparent);
+    color: var(--color-ps-text);
   }
 
   ::-webkit-scrollbar {
@@ -280,8 +280,8 @@
   ::-webkit-scrollbar-thumb {
     background: color-mix(
       in srgb,
-      var(--color-gv-accent) 26%,
-      var(--color-gv-line)
+      var(--color-ps-accent) 26%,
+      var(--color-ps-line)
     );
     border: 2px solid transparent;
     border-radius: 999px;
@@ -291,10 +291,10 @@
   .surface-shell {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-gv-shell) 94%, white) 0%,
-      var(--color-gv-shell) 100%
+      color-mix(in srgb, var(--color-ps-shell) 94%, white) 0%,
+      var(--color-ps-shell) 100%
     );
-    border: 1px solid var(--color-gv-line);
+    border: 1px solid var(--color-ps-line);
     box-shadow: var(--shadow-shell);
     backdrop-filter: blur(20px);
   }
@@ -302,17 +302,17 @@
   .surface-panel {
     background: linear-gradient(
       180deg,
-      var(--color-gv-panel-strong) 0%,
-      var(--color-gv-panel) 100%
+      var(--color-ps-panel-strong) 0%,
+      var(--color-ps-panel) 100%
     );
-    border: 1px solid var(--color-gv-line);
+    border: 1px solid var(--color-ps-line);
     box-shadow: var(--shadow-card);
     backdrop-filter: blur(18px);
   }
 
   .surface-panel-soft {
-    background: var(--color-gv-panel-soft);
-    border: 1px solid var(--color-gv-line);
+    background: var(--color-ps-panel-soft);
+    border: 1px solid var(--color-ps-line);
     backdrop-filter: blur(18px);
   }
 
@@ -324,7 +324,7 @@
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--color-gv-muted);
+    color: var(--color-ps-muted);
   }
 
   .eyebrow::before {
@@ -334,7 +334,7 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      var(--color-gv-accent-cool) 100%
+      var(--color-ps-accent-cool) 100%
     );
   }
 
@@ -344,15 +344,15 @@
     gap: 0.45rem;
     padding: 0.55rem 0.85rem;
     border-radius: 999px;
-    border: 1px solid var(--color-gv-line);
-    background: var(--color-gv-panel-soft);
-    color: var(--color-gv-muted);
+    border: 1px solid var(--color-ps-line);
+    background: var(--color-ps-panel-soft);
+    color: var(--color-ps-muted);
     font-size: 0.82rem;
     line-height: 1;
   }
 
   .data-chip strong {
-    color: var(--color-gv-text);
+    color: var(--color-ps-text);
     font-weight: 700;
   }
 

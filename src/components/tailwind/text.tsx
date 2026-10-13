@@ -11,7 +11,7 @@ export function Text({
       {...props}
       className={clsx(
         className,
-        "text-base/7 text-gv-muted sm:text-sm/6",
+        "text-base/7 text-ps-muted sm:text-sm/6",
       )}
     />
   );
@@ -26,7 +26,7 @@ export function TextLink({
       {...props}
       className={clsx(
         className,
-        "underline decoration-gv-line-strong underline-offset-4 hover:decoration-gv-accent-cool",
+        "underline decoration-ps-line-strong underline-offset-4 hover:decoration-ps-accent-cool",
       )}
     />
   );
@@ -48,7 +48,7 @@ export function Code({
       {...props}
       className={clsx(
         className,
-        "rounded-md border border-gv-line bg-gv-panel-soft px-1.5 py-0.5 font-mono text-sm font-medium text-gv-text sm:text-[0.8125rem]",
+        "rounded-md border border-ps-line bg-ps-panel-soft px-1.5 py-0.5 font-mono text-sm font-medium text-ps-text sm:text-[0.8125rem]",
       )}
     />
   );

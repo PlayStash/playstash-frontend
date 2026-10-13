@@ -19,7 +19,7 @@ function StepIcon({ state }: Readonly<{ state: StepState }>) {
   if (state === "done") {
     return (
       <CheckCircleIcon
-        className="size-5 shrink-0 text-gv-success"
+        className="size-5 shrink-0 text-ps-success"
         aria-hidden="true"
       />
     );
@@ -27,7 +27,7 @@ function StepIcon({ state }: Readonly<{ state: StepState }>) {
   if (state === "error") {
     return (
       <ExclamationTriangleIcon
-        className="size-5 shrink-0 text-gv-danger"
+        className="size-5 shrink-0 text-ps-danger"
         aria-hidden="true"
       />
     );
@@ -35,7 +35,7 @@ function StepIcon({ state }: Readonly<{ state: StepState }>) {
   if (state === "active") {
     return (
       <ClockIcon
-        className="size-5 shrink-0 text-gv-accent"
+        className="size-5 shrink-0 text-ps-accent"
         aria-hidden="true"
       />
     );
@@ -45,7 +45,7 @@ function StepIcon({ state }: Readonly<{ state: StepState }>) {
       className="flex size-5 shrink-0 items-center justify-center"
       aria-hidden="true"
     >
-      <span className="size-2.5 rounded-full bg-gv-line" />
+      <span className="size-2.5 rounded-full bg-ps-line" />
     </span>
   );
 }
@@ -55,11 +55,11 @@ export function PhaseSteps({ steps }: Readonly<{ steps: PhaseStep[] }>) {
     <ol className="flex items-center gap-2 sm:gap-3" aria-label="Download phases">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
-        let labelClass = "text-gv-text";
+        let labelClass = "text-ps-text";
         if (step.state === "error") {
-          labelClass = "text-gv-danger";
+          labelClass = "text-ps-danger";
         } else if (step.state === "pending") {
-          labelClass = "text-gv-muted";
+          labelClass = "text-ps-muted";
         }
         return (
           <Fragment key={step.id}>
@@ -78,7 +78,7 @@ export function PhaseSteps({ steps }: Readonly<{ steps: PhaseStep[] }>) {
                   {step.label}
                 </span>
                 {step.valueText && (
-                  <span className="block truncate text-[11px] tabular-nums text-gv-muted">
+                  <span className="block truncate text-[11px] tabular-nums text-ps-muted">
                     {step.valueText}
                   </span>
                 )}
@@ -89,7 +89,7 @@ export function PhaseSteps({ steps }: Readonly<{ steps: PhaseStep[] }>) {
                 aria-hidden="true"
                 className={clsx(
                   "h-px min-w-6 flex-1 rounded-full",
-                  step.state === "done" ? "bg-gv-success/70" : "bg-gv-line",
+                  step.state === "done" ? "bg-ps-success/70" : "bg-ps-line",
                 )}
               />
             )}

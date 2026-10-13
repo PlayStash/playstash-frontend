@@ -287,7 +287,7 @@ async fn install_umu_launcher_inner(app: &tauri::AppHandle, game_title: Option<&
   let release_url = "https://api.github.com/repos/Open-Wine-Components/umu-launcher/releases/latest";
   let response = client
     .get(release_url)
-    .header("User-Agent", "GameVault")
+    .header("User-Agent", "PlayStash")
     .header("Accept", "application/vnd.github+json")
     .send()
     .await
@@ -318,13 +318,13 @@ async fn install_umu_launcher_inner(app: &tauri::AppHandle, game_title: Option<&
 
   emit_umu_status(app, game_title, "installing", Some("Downloading umu-launcher…".to_string()), None);
 
-  let temp_dir = std::env::temp_dir().join(format!("gamevault-umu-{}", std::process::id()));
+  let temp_dir = std::env::temp_dir().join(format!("playstash-umu-{}", std::process::id()));
   fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create temporary directory: {e}"))?;
   let tar_path = temp_dir.join("umu-launcher.zipapp.tar");
 
   let bytes = client
     .get(&asset_url)
-    .header("User-Agent", "GameVault")
+    .header("User-Agent", "PlayStash")
     .send()
     .await
     .map_err(|e| format!("Failed to download umu-launcher: {e}"))?
@@ -708,10 +708,10 @@ pub(crate) fn list_proton_builds() -> Vec<ProtonBuild> {
 pub(crate) struct PrefixContext<'a> {
   /// Per-game override from the game settings dialog (wins verbatim).
   pub per_game_prefix: Option<&'a str>,
-  /// Version directory (`<root>/GameVault/<Game Title>/Versions/<Version>`),
+  /// Version directory (`<root>/PlayStash/<Game Title>/Versions/<Version>`),
   /// used to derive the per-game prefix folder name.
   pub version_directory: Option<&'a str>,
-  /// Numeric GameVault game id, used to adopt the legacy `game-<id>` prefix.
+  /// Numeric PlayStash game id, used to adopt the legacy `game-<id>` prefix.
   pub game_id: Option<i64>,
   /// umu GAMEID, used to adopt umu's own default prefix location.
   pub umu_game_id: Option<&'a str>,
@@ -743,8 +743,8 @@ pub(crate) fn game_folder_name(version_directory: &Path) -> Option<String> {
   }
 }
 
-/// Base directory for GameVault-managed prefixes: the configured setting, or
-/// `$XDG_DATA_HOME/GameVault/prefixes` when it is empty.
+/// Base directory for PlayStash-managed prefixes: the configured setting, or
+/// `$XDG_DATA_HOME/PlayStash/prefixes` when it is empty.
 #[cfg(target_os = "linux")]
 pub(crate) fn prefix_base_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
   use tauri::Manager;
@@ -761,7 +761,7 @@ pub(crate) fn prefix_base_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
     .path()
     .data_dir()
     .ok()
-    .map(|dir| dir.join("GameVault").join("prefixes"))
+    .map(|dir| dir.join("PlayStash").join("prefixes"))
 }
 
 /// The prefix candidate paths of a game, most preferred first.
@@ -804,7 +804,7 @@ fn prefix_candidates(base: &Path, context: &PrefixContext<'_>) -> Vec<PathBuf> {
 /// installed into.
 ///
 /// Precedence: per-game override > an existing prefix of a legacy layout (so
-/// nothing has to be migrated and no save games are lost) > GameVault's
+/// nothing has to be migrated and no save games are lost) > PlayStash's
 /// canonical `<base>/<game folder name>`. Returns `None` only when no base
 /// directory can be resolved at all (then umu's own default applies).
 #[cfg(target_os = "linux")]
@@ -846,7 +846,7 @@ pub(crate) struct WinePrefixInfo {
   pub path: Option<String>,
   pub exists: bool,
   pub is_prefix: bool,
-  /// True when the prefix lives inside GameVault's prefix base directory.
+  /// True when the prefix lives inside PlayStash's prefix base directory.
   pub managed: bool,
   /// Size on disk in bytes (only computed for existing prefixes).
   pub size_bytes: Option<u64>,
@@ -923,7 +923,7 @@ pub(crate) fn resolve_game_wine_prefix(
   }
 }
 
-/// True when `path` is a prefix GameVault manages, i.e. it lives inside the
+/// True when `path` is a prefix PlayStash manages, i.e. it lives inside the
 /// configured prefix base directory (or is exactly the per-game override).
 #[cfg(target_os = "linux")]
 fn is_managed_prefix_path(app: &tauri::AppHandle, path: &Path) -> bool {
@@ -933,7 +933,7 @@ fn is_managed_prefix_path(app: &tauri::AppHandle, path: &Path) -> bool {
 }
 
 /// Validates that a Wine/Proton prefix may be deleted: the path must be
-/// absolute, must be inside GameVault's prefix base directory (never the base
+/// absolute, must be inside PlayStash's prefix base directory (never the base
 /// itself) or exactly the per-game override, and must look like a prefix.
 #[cfg(target_os = "linux")]
 pub(crate) fn check_deletable_prefix(
@@ -951,7 +951,7 @@ pub(crate) fn check_deletable_prefix(
   let is_override = per_game_override == Some(target);
   if !inside_base && !is_override {
     return Err(format!(
-      "Refusing to delete '{}': it is not managed by GameVault.",
+      "Refusing to delete '{}': it is not managed by PlayStash.",
       target.display()
     ));
   }
@@ -966,7 +966,7 @@ pub(crate) fn check_deletable_prefix(
   Ok(())
 }
 
-/// Deletes a Wine/Proton prefix. Only prefixes GameVault manages are accepted:
+/// Deletes a Wine/Proton prefix. Only prefixes PlayStash manages are accepted:
 /// the path must live inside the prefix base directory or be exactly the
 /// per-game override, and it must actually look like a Wine prefix.
 #[cfg(target_os = "linux")]
@@ -1158,7 +1158,7 @@ pub(crate) fn spawn_umu_launch_monitor(
       .join("\n");
 
     // Restore the window regardless of the outcome so the user is never left
-    // with a hidden gamevault window.
+    // with a hidden playstash window.
     restore_main_window(&app);
 
     let exit_code = status.and_then(|s| s.code());
@@ -1191,9 +1191,9 @@ mod tests {
   #[test]
   fn removes_only_appimage_libraries_from_child_library_path() {
     let filtered = library_path_without_appimage_dirs(
-      OsStr::new("/tmp/.mount_GameVault"),
+      OsStr::new("/tmp/.mount_PlayStash"),
       OsStr::new(
-        "/tmp/.mount_GameVault/usr/lib:/usr/lib:/opt/custom/lib:/tmp/.mount_GameVault-other/lib",
+        "/tmp/.mount_PlayStash/usr/lib:/usr/lib:/opt/custom/lib:/tmp/.mount_PlayStash-other/lib",
       ),
     )
     .unwrap();
@@ -1203,7 +1203,7 @@ mod tests {
       vec![
         PathBuf::from("/usr/lib"),
         PathBuf::from("/opt/custom/lib"),
-        PathBuf::from("/tmp/.mount_GameVault-other/lib"),
+        PathBuf::from("/tmp/.mount_PlayStash-other/lib"),
       ]
     );
   }
@@ -1213,8 +1213,8 @@ mod tests {
   fn removes_library_path_when_it_contains_only_appimage_libraries() {
     assert_eq!(
       library_path_without_appimage_dirs(
-        OsStr::new("/tmp/.mount_GameVault"),
-        OsStr::new("/tmp/.mount_GameVault/usr/lib"),
+        OsStr::new("/tmp/.mount_PlayStash"),
+        OsStr::new("/tmp/.mount_PlayStash/usr/lib"),
       ),
       None
     );
@@ -1237,10 +1237,10 @@ mod tests {
     let home = Path::new("/home/yelo");
     assert_eq!(
       to_windows_install_path_with_home(
-        "/home/yelo/Games/GameVault/ReStory - Chill Electronics Repairs/Versions/Unspecified/Installation",
+        "/home/yelo/Games/PlayStash/ReStory - Chill Electronics Repairs/Versions/Unspecified/Installation",
         Some(home),
       ),
-      "X:\\Games\\GameVault\\ReStory - Chill Electronics Repairs\\Versions\\Unspecified\\Installation"
+      "X:\\Games\\PlayStash\\ReStory - Chill Electronics Repairs\\Versions\\Unspecified\\Installation"
     );
     assert_eq!(
       to_windows_install_path_with_home("/home/yelo/foo/bar.exe", Some(home)),
@@ -1267,7 +1267,7 @@ mod tests {
   fn derives_the_game_folder_name_from_the_install_tree() {
     assert_eq!(
       game_folder_name(Path::new(
-        "/games/GameVault/ReStory - Chill Electronics Repairs/Versions/1.0"
+        "/games/PlayStash/ReStory - Chill Electronics Repairs/Versions/1.0"
       )),
       Some("ReStory - Chill Electronics Repairs".to_string())
     );
@@ -1284,7 +1284,7 @@ mod tests {
     let base = Path::new("/prefixes");
     let context = PrefixContext {
       per_game_prefix: None,
-      version_directory: Some("/root/GameVault/Foo/Versions/1.0"),
+      version_directory: Some("/root/PlayStash/Foo/Versions/1.0"),
       game_id: Some(42),
       umu_game_id: Some("umu-9000"),
     };
@@ -1309,7 +1309,7 @@ mod tests {
   fn does_not_adopt_umus_shared_default_prefix() {
     let context = PrefixContext {
       per_game_prefix: None,
-      version_directory: Some("/root/GameVault/Foo/Versions/1.0"),
+      version_directory: Some("/root/PlayStash/Foo/Versions/1.0"),
       game_id: None,
       umu_game_id: None,
     };
@@ -1323,9 +1323,9 @@ mod tests {
   #[cfg(target_os = "linux")]
   #[test]
   fn guards_prefix_deletion() {
-    let base = std::env::temp_dir().join(format!("gv-test-base-{}", std::process::id()));
+    let base = std::env::temp_dir().join(format!("ps-test-base-{}", std::process::id()));
     let prefix = base.join("Foo");
-    let outside = std::env::temp_dir().join(format!("gv-test-outside-{}", std::process::id()));
+    let outside = std::env::temp_dir().join(format!("ps-test-outside-{}", std::process::id()));
     let _ = fs::remove_dir_all(&base);
     let _ = fs::remove_dir_all(&outside);
     fs::create_dir_all(prefix.join("drive_c")).unwrap();

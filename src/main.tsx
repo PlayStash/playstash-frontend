@@ -21,7 +21,7 @@ import "./index.css";
 import DashboardLayout from "./layouts/DashboardLayout";
 import FullscreenLayout from "./layouts/FullscreenLayout";
 import ProtectedRoute from "./guards/ProtectedRoute";
-import { GamevaultUserRoleEnum } from "./api";
+import { PlaystashUserRoleEnum } from "./api";
 
 // Route-level code splitting keeps the initial bundle small. Pages that are
 // only reached after login (library, game view, settings, downloads, ...) are
@@ -67,11 +67,10 @@ if (isLaunchLogWindow) {
 
   (window as any).global = window;
 
-  if (isAnalyticsEnabled()) {
-    Swetrix.init("dBl2xaaJ9x3M", {
-      preloadSessionReplay: true,
-      apiURL: "https://analytics.platform.phalco.de/log",
-    });
+  const analyticsProjectId = import.meta.env.VITE_PLAYSTASH_ANALYTICS_PROJECT_ID;
+  const analyticsApiUrl = import.meta.env.VITE_PLAYSTASH_ANALYTICS_API_URL;
+  if (analyticsProjectId && analyticsApiUrl && isAnalyticsEnabled()) {
+    Swetrix.init(analyticsProjectId, { apiURL: analyticsApiUrl });
     Swetrix.trackViews();
     Swetrix.trackErrors();
   }
@@ -139,7 +138,7 @@ if (isLaunchLogWindow) {
                                   element={
                                     <ProtectedRoute
                                       guarded
-                                      requiredRole={GamevaultUserRoleEnum._3}
+                                      requiredRole={PlaystashUserRoleEnum._3}
                                     >
                                       <Administration />
                                     </ProtectedRoute>

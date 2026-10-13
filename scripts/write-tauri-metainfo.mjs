@@ -10,13 +10,12 @@ const tauriConfig = JSON.parse(
   await readFile(path.join(repoRoot, "src-tauri", "tauri.conf.json"), "utf8"),
 );
 
-const appId = tauriConfig.identifier || "com.phalcode.gamevault";
-const productName = tauriConfig.productName || "GameVault";
+const appId = tauriConfig.identifier || "com.playstash.playstash";
+const productName = tauriConfig.productName || "PlayStash";
 const homepage = tauriConfig.bundle?.homepage || "";
 const shortDescription =
   tauriConfig.bundle?.shortDescription || packageJson.description || "";
 const longDescription = tauriConfig.bundle?.longDescription || shortDescription;
-const author = packageJson.author || "Phalcode";
 // package.json uses human-readable license names, AppStream expects SPDX ids.
 const license = (packageJson.license || "Unknown").replace(
   /[^A-Za-z0-9.+-]/g,
@@ -50,8 +49,8 @@ const metainfo = `<?xml version="1.0" encoding="UTF-8"?>
     <binary>${escapeXml(linuxName)}</binary>
   </provides>
   <url type="homepage">${escapeXml(homepage)}</url>
-  <developer id="com.phalcode">
-    <name>${escapeXml(author)}</name>
+  <developer id="${escapeXml(appId)}">
+    <name>${escapeXml(productName)}</name>
   </developer>
 </component>
 `;

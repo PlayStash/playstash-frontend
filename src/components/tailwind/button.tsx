@@ -12,7 +12,7 @@ const styles = {
     // Motion
     "transition-[transform,translate,scale,background-color,border-color,box-shadow,color] duration-150 ease-out active:scale-[0.98]",
     // Focus
-    "focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-gv-accent-cool",
+    "focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-ps-accent-cool",
     // Disabled
     "data-disabled:cursor-not-allowed data-disabled:opacity-50",
     // Icon
@@ -30,7 +30,7 @@ const styles = {
     // Background color is moved to control and shadow is removed in dark mode so hide `before` pseudo
     "dark:before:hidden",
     // Dark mode: Subtle white outline is applied using a border
-    "dark:border-gv-line",
+    "dark:border-ps-line",
     // Shim/overlay, inset to match button foreground and used for hover state + highlight shadow
     "after:absolute after:inset-0 after:-z-10 after:rounded-[calc(1rem-1px)]",
     // Inner highlight shadow
@@ -44,49 +44,49 @@ const styles = {
   ],
   outline: [
     // Base
-    "border-gv-line-strong bg-gv-panel-strong text-gv-text shadow-sm data-active:bg-gv-panel data-active:translate-y-px data-hover:border-gv-accent/50 data-hover:bg-gv-panel data-hover:shadow-md",
+    "border-ps-line-strong bg-ps-panel-strong text-ps-text shadow-sm data-active:bg-ps-panel data-active:translate-y-px data-hover:border-ps-accent/50 data-hover:bg-ps-panel data-hover:shadow-md",
     // Icon
-    "[--btn-icon:var(--color-gv-muted)] data-active:[--btn-icon:var(--color-gv-accent-cool)] data-hover:[--btn-icon:var(--color-gv-accent-cool)]",
+    "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
   ],
   plain: [
     // Base
-    "border-transparent text-gv-text data-active:bg-gv-panel-soft data-hover:bg-gv-panel-soft",
+    "border-transparent text-ps-text data-active:bg-ps-panel-soft data-hover:bg-ps-panel-soft",
     // Icon
-    "[--btn-icon:var(--color-gv-muted)] data-active:[--btn-icon:var(--color-gv-accent-cool)] data-hover:[--btn-icon:var(--color-gv-accent-cool)]",
+    "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
   ],
   colors: {
     "dark/zinc": [
-      "text-white [--btn-bg:var(--color-gv-accent)] [--btn-border:var(--color-gv-accent-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.14)]",
-      "dark:text-white dark:[--btn-bg:var(--color-gv-accent)] dark:[--btn-hover-overlay:rgb(255_255_255_/_0.1)]",
+      "text-white [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.14)]",
+      "dark:text-white dark:[--btn-bg:var(--color-ps-accent)] dark:[--btn-hover-overlay:rgb(255_255_255_/_0.1)]",
       "[--btn-icon:var(--color-white)]/80 data-active:[--btn-icon:var(--color-white)] data-hover:[--btn-icon:var(--color-white)]",
     ],
     light: [
-      "text-gv-text [--btn-bg:var(--color-gv-panel-strong)] [--btn-border:var(--color-gv-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)] data-active:[--btn-border:var(--color-gv-accent-cool)] data-hover:[--btn-border:var(--color-gv-accent-cool)]",
-      "dark:text-gv-text dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)] dark:[--btn-bg:var(--color-gv-panel-strong)]",
-      "[--btn-icon:var(--color-gv-muted)] data-active:[--btn-icon:var(--color-gv-accent-cool)] data-hover:[--btn-icon:var(--color-gv-accent-cool)]",
+      "text-ps-text [--btn-bg:var(--color-ps-panel-strong)] [--btn-border:var(--color-ps-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)] data-active:[--btn-border:var(--color-ps-accent-cool)] data-hover:[--btn-border:var(--color-ps-accent-cool)]",
+      "dark:text-ps-text dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)] dark:[--btn-bg:var(--color-ps-panel-strong)]",
+      "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
     ],
     "dark/white": [
-      "text-gv-text [--btn-bg:var(--color-gv-panel-strong)] [--btn-border:var(--color-gv-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)]",
-      "dark:text-gv-text dark:[--btn-bg:var(--color-gv-panel-strong)] dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)]",
-      "[--btn-icon:var(--color-gv-muted)] data-active:[--btn-icon:var(--color-gv-accent-cool)] data-hover:[--btn-icon:var(--color-gv-accent-cool)]",
+      "text-ps-text [--btn-bg:var(--color-ps-panel-strong)] [--btn-border:var(--color-ps-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)]",
+      "dark:text-ps-text dark:[--btn-bg:var(--color-ps-panel-strong)] dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)]",
+      "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
     ],
     dark: [
-      "text-gv-text [--btn-bg:var(--color-gv-panel-strong)] [--btn-border:var(--color-gv-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)]",
-      "dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)] dark:[--btn-bg:var(--color-gv-panel-strong)]",
-      "[--btn-icon:var(--color-gv-muted)] data-active:[--btn-icon:var(--color-gv-accent-cool)] data-hover:[--btn-icon:var(--color-gv-accent-cool)]",
+      "text-ps-text [--btn-bg:var(--color-ps-panel-strong)] [--btn-border:var(--color-ps-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)]",
+      "dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)] dark:[--btn-bg:var(--color-ps-panel-strong)]",
+      "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
     ],
     white: [
-      "text-gv-text [--btn-bg:var(--color-gv-panel-strong)] [--btn-border:var(--color-gv-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)] data-active:[--btn-border:var(--color-gv-accent-cool)] data-hover:[--btn-border:var(--color-gv-accent-cool)]",
+      "text-ps-text [--btn-bg:var(--color-ps-panel-strong)] [--btn-border:var(--color-ps-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)] data-active:[--btn-border:var(--color-ps-accent-cool)] data-hover:[--btn-border:var(--color-ps-accent-cool)]",
       "dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)]",
-      "[--btn-icon:var(--color-gv-muted)] data-active:[--btn-icon:var(--color-gv-accent-cool)] data-hover:[--btn-icon:var(--color-gv-accent-cool)]",
+      "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
     ],
     zinc: [
-      "text-gv-text [--btn-hover-overlay:rgb(255_255_255_/_0.08)] [--btn-bg:var(--color-gv-panel-strong)] [--btn-border:var(--color-gv-line-strong)]",
+      "text-ps-text [--btn-hover-overlay:rgb(255_255_255_/_0.08)] [--btn-bg:var(--color-ps-panel-strong)] [--btn-border:var(--color-ps-line-strong)]",
       "dark:[--btn-hover-overlay:rgb(255_255_255_/_0.05)]",
-      "[--btn-icon:var(--color-gv-accent-cool)] data-active:[--btn-icon:var(--color-gv-accent)] data-hover:[--btn-icon:var(--color-gv-accent)]",
+      "[--btn-icon:var(--color-ps-accent-cool)] data-active:[--btn-icon:var(--color-ps-accent)] data-hover:[--btn-icon:var(--color-ps-accent)]",
     ],
     indigo: [
-      "text-white [--btn-hover-overlay:rgb(255_255_255_/_0.14)] [--btn-bg:var(--color-gv-accent)] [--btn-border:var(--color-gv-accent-strong)]",
+      "text-white [--btn-hover-overlay:rgb(255_255_255_/_0.14)] [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)]",
       "[--btn-icon:var(--color-white)]/80 data-active:[--btn-icon:var(--color-white)] data-hover:[--btn-icon:var(--color-white)]",
     ],
     cyan: [

@@ -1,5 +1,5 @@
 /**
- * Shared motion presets for GameVault's subtle, site-wide animation language.
+ * Shared motion presets for PlayStash's subtle, site-wide animation language.
  *
  * Rules (design system):
  * - Durations stay in the 120–220ms window.

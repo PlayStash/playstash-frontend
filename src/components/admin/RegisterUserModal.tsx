@@ -11,11 +11,11 @@ import { Text } from "@/components/tailwind/text";
 import { useAuth } from "@/context/AuthContext";
 import { useRegistrationRequirements } from "@/hooks/useRegistrationRequirements";
 import { useCallback, useState } from "react";
-import { GamevaultUser } from "../../api";
+import { PlaystashUser } from "../../api";
 
 interface Props {
   onClose: () => void;
-  onRegistered: (u: GamevaultUser) => void;
+  onRegistered: (u: PlaystashUser) => void;
 }
 
 export function RegisterUserModal({ onClose, onRegistered }: Props) {
@@ -111,7 +111,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
             `Register failed (${res.status}): ${txt || res.statusText}`,
           );
         }
-        const createdUser: GamevaultUser = await res.json();
+        const createdUser: PlaystashUser = await res.json();
         onRegistered(createdUser);
         setSuccess(true);
         setMsg("User registered successfully");
@@ -132,7 +132,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gv-line text-gv-muted hover:text-gv-text hover:bg-gv-panel-soft"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
           disabled={submitting}
           aria-label="Close"
         >
@@ -327,7 +327,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="bg-transparent border border-gv-line hover:bg-gv-panel-soft text-gv-text"
+              className="bg-transparent border border-ps-line hover:bg-ps-panel-soft text-ps-text"
             >
               Cancel
             </Button>

@@ -4,11 +4,10 @@ import { useOnlineStatus } from "@/context/OfflineContext";
 import { Logo } from "@components/Logo";
 import {
   ArrowRightStartOnRectangleIcon,
-  ChatBubbleLeftRightIcon,
+  BookOpenIcon,
   ChevronUpIcon,
   LifebuoyIcon,
   NewspaperIcon,
-  RocketLaunchIcon,
   ShieldExclamationIcon,
   Squares2X2Icon,
   UserGroupIcon,
@@ -38,7 +37,7 @@ import {
 } from "@tw/sidebar";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { GamevaultUserRoleEnum } from "../api";
+import { PlaystashUserRoleEnum } from "../api";
 import { useNews } from "../hooks/useNews";
 import { UserEditorModal } from "./admin/UserEditorModal";
 import { NewsDialog } from "./news/NewsDialog";
@@ -75,7 +74,7 @@ export function Sidebar() {
   };
 
   const roleVal = user?.role;
-  const isAdmin = Number(roleVal) >= Number(GamevaultUserRoleEnum._3);
+  const isAdmin = Number(roleVal) >= Number(PlaystashUserRoleEnum._3);
   const isTauri = isTauriApp();
   const { isOnline } = useOnlineStatus();
   const isCurrentPath = (path: string) => {
@@ -169,13 +168,13 @@ export function Sidebar() {
 
           <SidebarSpacer />
           <SidebarSection>
-            <SidebarItem href="https://gamevau.lt/docs/intro" target="_blank">
-              <LifebuoyIcon />
+            <SidebarItem href="https://github.com/PlayStash/playstash-frontend#readme" target="_blank">
+              <BookOpenIcon />
               <SidebarLabel>Documentation</SidebarLabel>
             </SidebarItem>
-            <SidebarItem href="https://discord.gg/NEdNen2dSu" target="_blank">
-              <ChatBubbleLeftRightIcon />
-              <SidebarLabel>Discord</SidebarLabel>
+            <SidebarItem href="https://github.com/PlayStash/playstash-frontend/issues" target="_blank">
+              <LifebuoyIcon />
+              <SidebarLabel>Support</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               onClick={(e: any) => {
@@ -196,13 +195,6 @@ export function Sidebar() {
                 )}
               </SidebarLabel>
             </SidebarItem>
-            <SidebarItem
-              href="https://gamevau.lt/gamevault-plus"
-              target="_blank"
-            >
-              <RocketLaunchIcon />
-              <SidebarLabel>GameVault+</SidebarLabel>
-            </SidebarItem>
           </SidebarSection>
         </SidebarBody>
         <SidebarFooter>
@@ -216,11 +208,11 @@ export function Sidebar() {
                   seed={userAvatarSeed}
                 />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm/5 font-medium text-gv-text">
+                  <span className="block truncate text-sm/5 font-medium text-ps-text">
                     {username}
                   </span>
                   {email && (
-                    <span className="block truncate text-xs/5 font-normal text-gv-muted">
+                    <span className="block truncate text-xs/5 font-normal text-ps-muted">
                       {email}
                     </span>
                   )}

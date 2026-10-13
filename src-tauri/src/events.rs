@@ -278,7 +278,7 @@ pub(crate) fn emit_umu_status(
   );
 }
 
-/// The exact program + arguments GameVault hands to an installer (used for
+/// The exact program + arguments PlayStash hands to an installer (used for
 /// debugging installer launches on Linux via umu-launcher).
 #[cfg(target_os = "linux")]
 #[derive(Serialize, Clone)]

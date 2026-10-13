@@ -1,6 +1,7 @@
 # Stage 1
 FROM guergeiro/pnpm:lts-latest-alpine AS build
 WORKDIR /build
+RUN apk add --no-cache openjdk21-jre-headless
 COPY . .
 RUN pnpm i && pnpm build
 

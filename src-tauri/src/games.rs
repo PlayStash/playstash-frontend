@@ -39,7 +39,7 @@ pub(crate) async fn list_installed_games(
 pub(crate) fn list_installed_games_blocking(
     selected_root: String,
 ) -> Result<Vec<InstalledGameInfo>, String> {
-    let candidate = PathBuf::from(&selected_root).join("GameVault");
+    let candidate = PathBuf::from(&selected_root).join("PlayStash");
     let root = if candidate.exists() {
         candidate
     } else {
@@ -52,7 +52,7 @@ pub(crate) fn list_installed_games_blocking(
     let mut results: Vec<InstalledGameInfo> = Vec::new();
 
     let game_dirs =
-        fs::read_dir(&root).map_err(|e| format!("Failed to read GameVault root: {e}"))?;
+        fs::read_dir(&root).map_err(|e| format!("Failed to read PlayStash root: {e}"))?;
     for game_entry in game_dirs.flatten() {
         let game_path = game_entry.path();
         if !game_path.is_dir() {
@@ -61,7 +61,7 @@ pub(crate) fn list_installed_games_blocking(
 
         let game_name = game_entry.file_name().to_string_lossy().to_string();
 
-        let metadata_path = game_path.join(".gamevault.metadata.json");
+        let metadata_path = game_path.join(".playstash.metadata.json");
         let game_metadata: Option<serde_json::Value> = if metadata_path.exists() {
             fs::read_to_string(&metadata_path)
                 .ok()
@@ -88,7 +88,7 @@ pub(crate) fn list_installed_games_blocking(
             let version_folder_name = version_entry.file_name().to_string_lossy().to_string();
             let (folder_version_id, version_name) = parse_version_folder(&version_folder_name);
 
-            let config_path = version_path.join(".gamevault.game.config.json");
+            let config_path = version_path.join(".playstash.game.config.json");
             if !config_path.exists() {
                 continue;
             }
@@ -201,7 +201,7 @@ fn get_disk_usage_blocking(
     selected_root: String,
     current_version_dir: Option<String>,
 ) -> Result<DiskUsage, String> {
-    let candidate = PathBuf::from(&selected_root).join("GameVault");
+    let candidate = PathBuf::from(&selected_root).join("PlayStash");
     let root = if candidate.exists() {
         candidate
     } else {
@@ -211,7 +211,7 @@ fn get_disk_usage_blocking(
     let (total, free) = crate::util::disk_space(Path::new(&selected_root))
         .ok_or_else(|| "Could not determine disk space for the selected root.".to_string())?;
 
-    // Sum the on-disk size of every installed GameVault version under this root.
+    // Sum the on-disk size of every installed PlayStash version under this root.
     let mut all_games_size: u64 = 0;
     if root.exists() && root.is_dir() {
         if let Ok(game_dirs) = fs::read_dir(&root) {
@@ -233,7 +233,7 @@ fn get_disk_usage_blocking(
                             continue;
                         }
 
-                        let config_path = version_path.join(".gamevault.game.config.json");
+                        let config_path = version_path.join(".playstash.game.config.json");
                         if !config_path.exists() {
                             continue;
                         }
@@ -912,11 +912,11 @@ const ADMIN_LAUNCH_GRACE: Duration = Duration::from_secs(30);
 fn create_launch_logs() -> Result<(PathBuf, PathBuf, fs::File, fs::File), String> {
     let log_token = next_launch_log_token();
     let out_path = std::env::temp_dir().join(format!(
-        "gamevault-launch-{}-{log_token}.out",
+        "playstash-launch-{}-{log_token}.out",
         std::process::id()
     ));
     let err_path = std::env::temp_dir().join(format!(
-        "gamevault-launch-{}-{log_token}.err",
+        "playstash-launch-{}-{log_token}.err",
         std::process::id()
     ));
 
@@ -964,7 +964,7 @@ pub(crate) fn restore_main_window(app: &tauri::AppHandle) {
 }
 
 /// Watches an elevated Windows game process (launched via UAC) so we can
-/// restore the gamevault window once the game quits. `ShellExecuteExW` with
+/// restore the playstash window once the game quits. `ShellExecuteExW` with
 /// `SEE_MASK_NOCLOSEPROCESS` hands us a handle to the elevated process that we
 /// can wait on even across the UAC elevation boundary.
 #[cfg(windows)]
@@ -1003,7 +1003,7 @@ fn spawn_admin_launch_monitor(app: tauri::AppHandle, handle: winapi::um::winnt::
 }
 
 /// Launches a game elevated on Windows via UAC and, when the "minimize on
-/// launch" setting is enabled, keeps a handle to the process so the gamevault
+/// launch" setting is enabled, keeps a handle to the process so the playstash
 /// window can be restored when the game quits.
 #[cfg(windows)]
 fn launch_windows_admin(
@@ -1074,7 +1074,7 @@ fn spawn_launch_monitor(
     log: std::sync::Arc<crate::launch_log::LaunchLog>,
 ) {
     thread::spawn(move || {
-        // When the user has enabled "minimize on launch", tuck the gamevault
+        // When the user has enabled "minimize on launch", tuck the playstash
         // window away while the game runs and bring it back once it quits.
         if restore_on_exit {
             hide_main_window(&app);
@@ -1119,7 +1119,7 @@ fn spawn_launch_monitor(
         clean_up_launch_logs(&out_path, &err_path);
 
         // Restore the window regardless of whether the game exited cleanly, so
-        // the user is never left with a hidden gamevault window.
+        // the user is never left with a hidden playstash window.
         restore_main_window(&app);
 
         // A process that exits before the grace window (launched_running == false)

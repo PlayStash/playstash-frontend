@@ -39,7 +39,7 @@ export function UmuSetupOverlay({
       <div className="p-6">
         <div className="flex items-start gap-4">
           <svg
-            className="mt-1 h-8 w-8 shrink-0 text-gv-accent motion-safe:animate-spin"
+            className="mt-1 h-8 w-8 shrink-0 text-ps-accent motion-safe:animate-spin"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -63,7 +63,7 @@ export function UmuSetupOverlay({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
               {installing
-                ? "umu-launcher lets GameVault run Windows games on Linux. Downloading and setting it up — this can take a moment."
+                ? "umu-launcher lets PlayStash run Windows games on Linux. Downloading and setting it up — this can take a moment."
                 : gameTitle
                   ? `Preparing the Wine/Proton environment for ${gameTitle}. The first launch downloads UMU-Proton and the Steam runtime, which can take a few minutes.`
                   : "Preparing the Wine/Proton environment. The first launch downloads UMU-Proton and the Steam runtime, which can take a few minutes."}

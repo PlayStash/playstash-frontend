@@ -20,7 +20,7 @@ use tauri::Manager;
 
 /// Log file name (without extension) written by `tauri_plugin_log` in the app
 /// log directory. Kept here so the reported path matches what the logger uses.
-pub(crate) const LOG_FILE_NAME: &str = "gamevault-frontend";
+pub(crate) const LOG_FILE_NAME: &str = "playstash-frontend";
 
 /// How often the frontend is expected to check in.
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(2);

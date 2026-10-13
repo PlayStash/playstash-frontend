@@ -22,32 +22,32 @@ const tones: Record<
   }
 > = {
   info: {
-    rail: "bg-gv-accent",
-    icon: "bg-gv-accent/15 text-gv-accent",
+    rail: "bg-ps-accent",
+    icon: "bg-ps-accent/15 text-ps-accent",
     Icon: InformationCircleIcon,
   },
   success: {
-    rail: "bg-gv-success",
-    icon: "bg-gv-success/15 text-gv-success",
+    rail: "bg-ps-success",
+    icon: "bg-ps-success/15 text-ps-success",
     Icon: CheckCircleIcon,
   },
   warning: {
-    rail: "bg-gv-warning",
-    icon: "bg-gv-warning/15 text-gv-warning",
+    rail: "bg-ps-warning",
+    icon: "bg-ps-warning/15 text-ps-warning",
     Icon: ExclamationTriangleIcon,
   },
   danger: {
-    rail: "bg-gv-danger",
-    icon: "bg-gv-danger/15 text-gv-danger",
+    rail: "bg-ps-danger",
+    icon: "bg-ps-danger/15 text-ps-danger",
     Icon: XCircleIcon,
   },
 };
 
 /**
- * Non-blocking floating toast, aligned to GameVault's design language.
+ * Non-blocking floating toast, aligned to PlayStash's design language.
  *
- * - Raised panel surface (`gv-panel-strong`) with a 1px cool border and the
- *   shared shell shadow, instead of a flat `bg-gv-panel` + generic `shadow-lg`.
+ * - Raised panel surface (`ps-panel-strong`) with a 1px cool border and the
+ *   shared shell shadow, instead of a flat `bg-ps-panel` + generic `shadow-lg`.
  * - A left accent rail + tinted icon tile carry the semantic tone without
  *   relying on color alone (accessibility requirement).
  * - 16px surface radius and the project-wide easing curve / durations.
@@ -79,7 +79,7 @@ export function Toast({
       {...props}
       className={clsx(
         className,
-        "pointer-events-auto fixed right-4 z-50 flex w-[min(90vw,360px)] items-start gap-2.5 overflow-hidden rounded-2xl border border-gv-line bg-gv-panel-strong py-3 pr-2 pl-4 shadow-(--shadow-shell)",
+        "pointer-events-auto fixed right-4 z-50 flex w-[min(90vw,360px)] items-start gap-2.5 overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong py-3 pr-2 pl-4 shadow-(--shadow-shell)",
         // In the desktop app the custom window titlebar (36px) owns the top
         // right corner, so keep toasts below it instead of covering the
         // window controls.
@@ -99,11 +99,11 @@ export function Toast({
       </span>
 
       <div className="min-w-0 flex-1 py-0.5">
-        <p className="text-sm font-semibold tracking-[-0.01em] text-gv-text">
+        <p className="text-sm font-semibold tracking-[-0.01em] text-ps-text">
           {title}
         </p>
         {description && (
-          <p className="mt-0.5 text-sm text-gv-muted">{description}</p>
+          <p className="mt-0.5 text-sm text-ps-muted">{description}</p>
         )}
       </div>
 
@@ -111,7 +111,7 @@ export function Toast({
         <button
           type="button"
           onClick={onDismiss}
-          className="flex size-9 shrink-0 items-center justify-center rounded-xl text-gv-muted transition-colors hover:bg-gv-panel-soft hover:text-gv-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gv-accent-cool"
+          className="flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
         >
           <XMarkIcon className="size-4" />
           <span className="sr-only">Dismiss</span>

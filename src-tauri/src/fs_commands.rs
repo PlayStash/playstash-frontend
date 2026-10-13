@@ -2,10 +2,10 @@
 
 use std::path::Path;
 
-fn is_gamevault_metadata_file(path: &Path) -> bool {
+fn is_playstash_metadata_file(path: &Path) -> bool {
   matches!(
     path.file_name().and_then(|name| name.to_str()),
-    Some(".gamevault.game.config.json" | ".gamevault.metadata.json")
+    Some(".playstash.game.config.json" | ".playstash.metadata.json")
   )
 }
 
@@ -56,7 +56,7 @@ pub(crate) fn fs_write_text_file(path: String, content: String) -> Result<(), St
   std::fs::write(file_path, content)
     .map_err(|e| format!("fs_write_text_file failed for '{}': {}", path, e))?;
 
-  if is_gamevault_metadata_file(file_path) {
+  if is_playstash_metadata_file(file_path) {
     mark_hidden(file_path)?;
   }
 
@@ -73,8 +73,8 @@ pub(crate) fn fs_path_exists(path: String) -> Result<bool, String> {
   Ok(std::path::Path::new(&path).exists())
 }
 
-/// Returns true if `path` contains leftover content that is not just GameVault
-/// metadata (`.gamevault.game.config.json` / `.gamevault.metadata.json`).
+/// Returns true if `path` contains leftover content that is not just PlayStash
+/// metadata (`.playstash.game.config.json` / `.playstash.metadata.json`).
 ///
 /// Used after an uninstall to detect files/folders that were not removed, so
 /// the UI can offer to delete the remains.
@@ -88,7 +88,7 @@ fn dir_has_leftover_content(path: &std::path::Path) -> bool {
       if dir_has_leftover_content(&entry_path) {
         return true;
       }
-    } else if !is_gamevault_metadata_file(&entry_path) {
+    } else if !is_playstash_metadata_file(&entry_path) {
       return true;
     }
   }
@@ -106,7 +106,7 @@ pub(crate) async fn fs_has_leftover_content(path: String) -> Result<bool, String
     if p.is_dir() {
       Ok(dir_has_leftover_content(&p))
     } else {
-      Ok(!is_gamevault_metadata_file(&p))
+      Ok(!is_playstash_metadata_file(&p))
     }
   })
   .await
@@ -135,7 +135,7 @@ pub(crate) async fn fs_remove(path: String, recursive: bool) -> Result<(), Strin
 }
 
 /// Returns true if `path` contains no real content: no files other than
-/// GameVault metadata files, and all subdirectories are themselves effectively
+/// PlayStash metadata files, and all subdirectories are themselves effectively
 /// empty. A completely empty directory also qualifies.
 fn dir_is_effectively_empty(path: &Path) -> bool {
   let entries = match std::fs::read_dir(path) {
@@ -149,7 +149,7 @@ fn dir_is_effectively_empty(path: &Path) -> bool {
       if !dir_is_effectively_empty(&entry_path) {
         return false;
       }
-    } else if !is_gamevault_metadata_file(&entry_path) {
+    } else if !is_playstash_metadata_file(&entry_path) {
       return false;
     }
   }
@@ -157,7 +157,7 @@ fn dir_is_effectively_empty(path: &Path) -> bool {
   true
 }
 
-/// Removes GameVault metadata files and effectively-empty subdirectories within
+/// Removes PlayStash metadata files and effectively-empty subdirectories within
 /// `path`, leaving real content untouched. Used to clean up leftover empty
 /// folders (e.g. an `Installation` directory for a game that was downloaded but
 /// never installed). Only call on a directory already known to be effectively
@@ -172,7 +172,7 @@ fn remove_effectively_empty_contents(path: &Path) {
     if entry_path.is_dir() {
       remove_effectively_empty_contents(&entry_path);
       let _ = std::fs::remove_dir(&entry_path);
-    } else if is_gamevault_metadata_file(&entry_path) {
+    } else if is_playstash_metadata_file(&entry_path) {
       let _ = std::fs::remove_file(&entry_path);
     }
   }
@@ -184,10 +184,10 @@ fn remove_effectively_empty_contents(path: &Path) {
 /// uninstalled.
 ///
 /// A directory is considered removable when it is empty, OR only contains
-/// GameVault metadata files, OR only contains effectively-empty subdirectories
+/// PlayStash metadata files, OR only contains effectively-empty subdirectories
 /// (e.g. a leftover empty `Installation` folder for a game that was downloaded
-/// but never installed). This keeps the hidden `.gamevault.game.config.json` /
-/// `.gamevault.metadata.json` files and empty folders from blocking cleanup.
+/// but never installed). This keeps the hidden `.playstash.game.config.json` /
+/// `.playstash.metadata.json` files and empty folders from blocking cleanup.
 /// Pruning stops at the first directory that still has real content.
 #[tauri::command]
 pub(crate) fn remove_empty_directories(path: String, stop_at: String) -> Result<(), String> {
@@ -220,14 +220,14 @@ pub(crate) fn remove_empty_directories(path: String, stop_at: String) -> Result<
 
 #[cfg(test)]
 mod tests {
-  use super::{dir_is_effectively_empty, fs_write_text_file, is_gamevault_metadata_file, remove_empty_directories};
+  use super::{dir_is_effectively_empty, fs_write_text_file, is_playstash_metadata_file, remove_empty_directories};
   use std::fs;
   use std::path::{Path, PathBuf};
   use std::time::{SystemTime, UNIX_EPOCH};
 
   fn test_directory() -> PathBuf {
     let unique_name = format!(
-      "gamevault-fs-command-test-{}",
+      "playstash-fs-command-test-{}",
       SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system clock before Unix epoch")
@@ -252,24 +252,24 @@ mod tests {
   }
 
   #[test]
-  fn identifies_only_gamevault_metadata_files() {
-    assert!(is_gamevault_metadata_file(Path::new(
-      ".gamevault.game.config.json"
+  fn identifies_only_playstash_metadata_files() {
+    assert!(is_playstash_metadata_file(Path::new(
+      ".playstash.game.config.json"
     )));
-    assert!(is_gamevault_metadata_file(Path::new(
-      ".gamevault.metadata.json"
+    assert!(is_playstash_metadata_file(Path::new(
+      ".playstash.metadata.json"
     )));
-    assert!(!is_gamevault_metadata_file(Path::new("config.json")));
+    assert!(!is_playstash_metadata_file(Path::new("config.json")));
   }
 
   #[test]
-  fn writes_gamevault_metadata_files() {
+  fn writes_playstash_metadata_files() {
     let directory = test_directory();
     fs::create_dir_all(&directory).expect("create test directory");
 
     for file_name in [
-      ".gamevault.game.config.json",
-      ".gamevault.metadata.json",
+      ".playstash.game.config.json",
+      ".playstash.metadata.json",
     ] {
       let path = directory.join(file_name);
       fs_write_text_file(path.to_string_lossy().into_owned(), "{}".to_string())
@@ -289,10 +289,10 @@ mod tests {
     let version_dir = directory.join("Versions").join("v1");
     fs::create_dir_all(&version_dir).expect("create version dir");
 
-    // Only GameVault metadata files remain.
+    // Only PlayStash metadata files remain.
     fs_write_text_file(
       version_dir
-        .join(".gamevault.game.config.json")
+        .join(".playstash.game.config.json")
         .to_string_lossy()
         .into_owned(),
       "{}".to_string(),
@@ -326,7 +326,7 @@ mod tests {
     fs::write(version_dir.join("game.exe"), b"data").expect("write real file");
     fs_write_text_file(
       version_dir
-        .join(".gamevault.game.config.json")
+        .join(".playstash.game.config.json")
         .to_string_lossy()
         .into_owned(),
       "{}".to_string(),

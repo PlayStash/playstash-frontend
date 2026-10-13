@@ -1,5 +1,8 @@
+packages:
+  - "."
+
 allowBuilds:
-  '@openapitools/openapi-generator-cli': true
+  "@openapitools/openapi-generator-cli": true
   esbuild: true
 minimumReleaseAgeExclude:
   - globals@17.12.0

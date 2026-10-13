@@ -28,15 +28,15 @@ export default function MarkdownContent({
   return (
     <div
       className={clsx(
-        "prose prose-sm max-w-none text-gv-text",
-        "prose-headings:font-semibold prose-headings:text-gv-text",
-        "prose-p:leading-7 prose-p:text-gv-text",
-        "prose-a:text-gv-accent prose-a:no-underline hover:prose-a:text-gv-accent-strong",
-        "prose-strong:text-gv-text",
-        "prose-code:rounded prose-code:bg-gv-panel-soft prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.9em] prose-code:text-gv-text",
-        "prose-pre:rounded-xl prose-pre:border prose-pre:border-gv-line prose-pre:bg-gv-panel-strong prose-pre:shadow-sm",
-        "prose-blockquote:border-l-gv-line prose-blockquote:text-gv-muted",
-        "prose-li:text-gv-text prose-li:marker:text-gv-muted",
+        "prose prose-sm max-w-none text-ps-text",
+        "prose-headings:font-semibold prose-headings:text-ps-text",
+        "prose-p:leading-7 prose-p:text-ps-text",
+        "prose-a:text-ps-accent prose-a:no-underline hover:prose-a:text-ps-accent-strong",
+        "prose-strong:text-ps-text",
+        "prose-code:rounded prose-code:bg-ps-panel-soft prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.9em] prose-code:text-ps-text",
+        "prose-pre:rounded-xl prose-pre:border prose-pre:border-ps-line prose-pre:bg-ps-panel-strong prose-pre:shadow-sm",
+        "prose-blockquote:border-l-ps-line prose-blockquote:text-ps-muted",
+        "prose-li:text-ps-text prose-li:marker:text-ps-muted",
         className,
       )}
     >

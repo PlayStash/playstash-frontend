@@ -540,7 +540,7 @@ fn run_installer_via_umu(
 
   // Surface the exact command in the web console + terminal for debugging.
   crate::events::emit_installer_command(&app, &umu_run.to_string_lossy(), &installer_args);
-  println!("GV_INSTALLER: {} {:?}", umu_run.display(), installer_args);
+  println!("PLAYSTASH_INSTALLER: {} {:?}", umu_run.display(), installer_args);
 
   command.stdout(Stdio::piped()).stderr(Stdio::piped());
 
@@ -1122,12 +1122,12 @@ mod tests {
     // stays one token.
     assert_eq!(
       split_installer_params(
-        "/D=\"X:\\Games\\GameVault\\ReStory - Chill Electronics Repairs\\Installation\" /S /DIR=\"X:\\Games\\GameVault\\ReStory - Chill Electronics Repairs\\Installation\" /SILENT /COMPONENTS=text"
+        "/D=\"X:\\Games\\PlayStash\\ReStory - Chill Electronics Repairs\\Installation\" /S /DIR=\"X:\\Games\\PlayStash\\ReStory - Chill Electronics Repairs\\Installation\" /SILENT /COMPONENTS=text"
       ),
       vec![
-        "/D=X:\\Games\\GameVault\\ReStory - Chill Electronics Repairs\\Installation",
+        "/D=X:\\Games\\PlayStash\\ReStory - Chill Electronics Repairs\\Installation",
         "/S",
-        "/DIR=X:\\Games\\GameVault\\ReStory - Chill Electronics Repairs\\Installation",
+        "/DIR=X:\\Games\\PlayStash\\ReStory - Chill Electronics Repairs\\Installation",
         "/SILENT",
         "/COMPONENTS=text",
       ]

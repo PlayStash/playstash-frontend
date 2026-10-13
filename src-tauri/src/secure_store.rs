@@ -33,7 +33,7 @@ fn generate_random_password() -> String {
       .duration_since(std::time::UNIX_EPOCH)
       .map(|d| d.as_nanos())
       .unwrap_or(0);
-    return format!("gv-{:x}-{:x}", now, std::process::id());
+    return format!("ps-{:x}-{:x}", now, std::process::id());
   }
   bytes.iter().map(|b| format!("{:02x}", b)).collect()
 }

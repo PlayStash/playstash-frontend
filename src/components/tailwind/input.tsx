@@ -55,7 +55,7 @@ export const Input = forwardRef(function Input(
         // Basic layout
         "relative block w-full",
         // Focus ring
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-2xl after:ring-transparent after:ring-inset sm:focus-within:after:ring-2 sm:focus-within:after:ring-gv-accent-cool",
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-2xl after:ring-transparent after:ring-inset sm:focus-within:after:ring-2 sm:focus-within:after:ring-ps-accent-cool",
         // Disabled state
         "has-data-disabled:opacity-50",
       ])}
@@ -83,17 +83,17 @@ export const Input = forwardRef(function Input(
           // Basic layout
           "relative block w-full appearance-none rounded-2xl px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)]",
           // Typography
-          "text-base/6 text-gv-text placeholder:text-gv-muted sm:text-sm/6",
+          "text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6",
           // Border (transparent by default — no visible gray outline)
           "border border-transparent",
           // Background color
-          "bg-gv-panel-strong shadow-sm",
+          "bg-ps-panel-strong shadow-sm",
           // Hide default focus styles
           "focus:outline-hidden",
           // Invalid state
           "data-invalid:border-red-500 data-invalid:data-hover:border-red-500 dark:data-invalid:border-red-600 dark:data-invalid:data-hover:border-red-600",
           // Disabled state
-          "data-disabled:border-transparent data-disabled:bg-gv-panel-soft data-disabled:shadow-none",
+          "data-disabled:border-transparent data-disabled:bg-ps-panel-soft data-disabled:shadow-none",
           // System icons
           "dark:scheme-dark",
         ])}
@@ -104,7 +104,7 @@ export const Input = forwardRef(function Input(
           onClick={onClear}
           className={clsx([
             "absolute inset-y-0 right-0 flex items-center pr-2",
-            "text-gv-muted hover:text-gv-text",
+            "text-ps-muted hover:text-ps-text",
             "focus:outline-hidden",
           ])}
           aria-label="Clear input"

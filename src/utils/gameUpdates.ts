@@ -1,19 +1,19 @@
-import type { GamevaultGame } from "@/api/models/GamevaultGame";
+import type { PlaystashGame } from "@/api/models/PlaystashGame";
 
-const GAME_UPDATED_EVENT = "gamevault:game-updated";
-const GAME_DELETED_EVENT = "gamevault:game-deleted";
+const GAME_UPDATED_EVENT = "playstash:game-updated";
+const GAME_DELETED_EVENT = "playstash:game-deleted";
 
-export function emitGameUpdated(game: GamevaultGame): void {
+export function emitGameUpdated(game: PlaystashGame): void {
   window.dispatchEvent(
-    new CustomEvent<GamevaultGame>(GAME_UPDATED_EVENT, { detail: game }),
+    new CustomEvent<PlaystashGame>(GAME_UPDATED_EVENT, { detail: game }),
   );
 }
 
 export function onGameUpdated(
-  callback: (game: GamevaultGame) => void,
+  callback: (game: PlaystashGame) => void,
 ): () => void {
   const listener = (event: Event) => {
-    callback((event as CustomEvent<GamevaultGame>).detail);
+    callback((event as CustomEvent<PlaystashGame>).detail);
   };
   window.addEventListener(GAME_UPDATED_EVENT, listener);
   return () => window.removeEventListener(GAME_UPDATED_EVENT, listener);

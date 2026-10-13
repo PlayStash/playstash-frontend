@@ -12,8 +12,8 @@
 import { useEffect, useState } from "react";
 import { adjectives, animals, uniqueNamesGenerator } from "unique-names-generator";
 
-const STREAMER_MODE_KEY = "gv_streamer_mode";
-const STREAMER_MODE_EVENT = "gv:streamer-mode-change";
+const STREAMER_MODE_KEY = "playstash_streamer_mode";
+const STREAMER_MODE_EVENT = "playstash:streamer-mode-change";
 
 const FAKE_SERVER_URL = "https://my.secret.server";
 const FAKE_EMAIL_DOMAIN = "masked.example";

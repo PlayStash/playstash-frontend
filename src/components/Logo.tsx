@@ -1,7 +1,7 @@
 import { useIsDark } from "@/utils/theme";
 import { SidebarItem } from "./tailwind/sidebar";
 
-type LogoVariant = "logo" | "plus" | "text" | "sidebar";
+type LogoVariant = "logo" | "text" | "brand" | "sidebar";
 
 interface LogoProps {
   variant?: LogoVariant;
@@ -14,7 +14,7 @@ interface LogoProps {
 
 export function Logo({
   variant = "logo",
-  alt = "Logo",
+  alt = "PlayStash",
   className = "",
   wrapperClassName = "",
   height = "h-8",
@@ -24,19 +24,37 @@ export function Logo({
 
   const srcText = `/logo-text-${isDark ? "dark" : "light"}.svg`;
 
+  if (variant === "brand") {
+    return (
+      <div className={`flex min-w-0 items-center ${gap} ${wrapperClassName}`}>
+        <img
+          src="/playstash-logo.png"
+          alt=""
+          className={`ps-logo-image aspect-square w-auto shrink-0 object-contain ${height} ${className}`}
+        />
+        <img
+          key={srcText}
+          src={srcText}
+          alt={alt}
+          className={`ps-logo-image min-w-0 flex-1 object-contain object-left ${height} ${className}`}
+        />
+      </div>
+    );
+  }
+
   if (variant === "sidebar") {
     return (
       <SidebarItem href="/">
         <img
-          src="/logo.svg"
+          src="/playstash-logo.png"
           alt={alt}
-          className={`gv-logo-image ${height} ${className}`}
+          className={`ps-logo-image ${height} ${className}`}
         />
         <img
           key={srcText}
           src={srcText}
           alt={`${alt} text`}
-          className={`gv-logo-image ${height} ${className}`}
+          className={`ps-logo-image ${height} ${className}`}
         />
       </SidebarItem>
     );
@@ -44,14 +62,11 @@ export function Logo({
 
   let src = "";
   switch (variant) {
-    case "plus":
-      src = "/logo-plus.svg";
-      break;
     case "text":
       src = srcText;
       break;
     default:
-      src = "/logo.svg";
+      src = "/playstash-logo.png";
   }
 
   return (
@@ -59,7 +74,7 @@ export function Logo({
       key={src}
       src={src}
       alt={alt}
-      className={`gv-logo-image ${height} ${className}`}
+      className={`ps-logo-image ${height} ${className}`}
     />
   );
 }

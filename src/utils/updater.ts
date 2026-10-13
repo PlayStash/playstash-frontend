@@ -1,7 +1,7 @@
 export type UpdateChannel = "stable" | "early-access" | "unstable";
 
-export const SKIPPED_UPDATE_KEY = "gv_skipped_update_version";
-export const UPDATE_CHANNEL_KEY = "gv_update_channel";
+export const SKIPPED_UPDATE_KEY = "playstash_skipped_update_version";
+export const UPDATE_CHANNEL_KEY = "playstash_update_channel";
 
 export function channelLabel(channel: UpdateChannel): string {
   return channel;
@@ -82,8 +82,8 @@ export function formatUpdatePrompt(
 ): string {
   const releaseNotes = formatReleaseNotes(notes);
   const parts = [
-    `You are running GameVault v${__APP_VERSION__}.`,
-    `GameVault v${version} is available on the ${channelLabel(channel)} channel and can be downloaded from GitHub now.`,
+    `You are running PlayStash v${__APP_VERSION__}.`,
+    `PlayStash v${version} is available on the ${channelLabel(channel)} channel and can be downloaded from GitHub now.`,
   ];
 
   if (releaseNotes) {
@@ -103,7 +103,7 @@ export function formatUpdateError(error: unknown): string {
     return error.trim();
   }
 
-  return "GameVault could not complete the update check.";
+  return "PlayStash could not complete the update check.";
 }
 
 export function normalizeVersion(version: string): string {

@@ -48,8 +48,8 @@ export function SwitchField({
 
 const colors = {
   "dark/zinc": [
-    "[--switch-bg-ring:var(--color-gv-accent-strong)] [--switch-bg:var(--color-gv-accent)] dark:[--switch-bg-ring:var(--color-gv-accent-strong)] dark:[--switch-bg:var(--color-gv-accent)]",
-    "[--switch-ring:var(--color-gv-accent-strong)] [--switch-shadow:var(--color-black)]/10 [--switch:white] dark:[--switch-ring:var(--color-gv-accent-strong)]",
+    "[--switch-bg-ring:var(--color-ps-accent-strong)] [--switch-bg:var(--color-ps-accent)] dark:[--switch-bg-ring:var(--color-ps-accent-strong)] dark:[--switch-bg:var(--color-ps-accent)]",
+    "[--switch-ring:var(--color-ps-accent-strong)] [--switch-shadow:var(--color-black)]/10 [--switch:white] dark:[--switch-ring:var(--color-ps-accent-strong)]",
   ],
   "dark/white": [
     "[--switch-bg-ring:var(--color-zinc-950)]/90 [--switch-bg:var(--color-zinc-900)] dark:[--switch-bg-ring:transparent] dark:[--switch-bg:var(--color-white)]",
@@ -160,11 +160,11 @@ export function Switch({
         // Outline and background color in forced-colors mode so switch is still visible
         "forced-colors:outline forced-colors:[--switch-bg:Highlight] dark:forced-colors:[--switch-bg:Highlight]",
         // Unchecked
-        "bg-gv-panel-soft ring-1 ring-gv-line ring-inset",
+        "bg-ps-panel-soft ring-1 ring-ps-line ring-inset",
         // Checked
         "data-checked:bg-(--switch-bg) data-checked:ring-(--switch-bg-ring) dark:data-checked:bg-(--switch-bg) dark:data-checked:ring-(--switch-bg-ring)",
         // Focus
-        "focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-gv-accent-cool",
+        "focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-ps-accent-cool",
         // Hover
         "data-hover:ring-black/15 data-hover:data-checked:ring-(--switch-bg-ring)",
         "dark:data-hover:ring-white/25 dark:data-hover:data-checked:ring-(--switch-bg-ring)",

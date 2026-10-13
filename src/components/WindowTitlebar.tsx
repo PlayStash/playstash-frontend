@@ -22,7 +22,7 @@ function reloadWindow() {
 }
 
 const controlButtonClassName =
-  "flex w-11 cursor-pointer items-center justify-center text-gv-muted transition-colors hover:bg-white/5 hover:text-gv-text focus:outline-none";
+  "flex w-11 cursor-pointer items-center justify-center text-ps-muted transition-colors hover:bg-white/5 hover:text-ps-text focus:outline-none";
 
 export default function WindowTitlebar() {
   // Only rendered inside the Tauri desktop shell; hidden in plain browser mode.
@@ -33,7 +33,7 @@ export default function WindowTitlebar() {
   return (
     <header
       data-tauri-drag-region
-      className="relative z-40 flex h-9 shrink-0 select-none items-stretch justify-end bg-gv-bg"
+      className="relative z-40 flex h-9 shrink-0 select-none items-stretch justify-end bg-ps-bg"
     >
       <div className="flex items-stretch">
         <button
@@ -44,7 +44,7 @@ export default function WindowTitlebar() {
         >
           <ArrowPathIcon className="size-4" />
         </button>
-        <div className="my-2 w-px bg-gv-line" aria-hidden="true" />
+        <div className="my-2 w-px bg-ps-line" aria-hidden="true" />
         <button
           type="button"
           aria-label="Minimize"

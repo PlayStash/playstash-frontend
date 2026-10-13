@@ -1,4 +1,4 @@
-# GameVault Frontend — Changelog Workflow
+# PlayStash Frontend — Changelog Workflow
 
 When you change code in this repository, you MUST keep `CHANGELOG.md` up to date.
 
@@ -12,7 +12,7 @@ When you change code in this repository, you MUST keep `CHANGELOG.md` up to date
 
 3. **Write it for users.**
    Describe the user-visible effect, not the implementation. Keep it to one line when possible. Add issue links when known:
-   `- [#123](https://github.com/Phalcode/gamevault-frontend/issues/123) Fixed ...`
+   `- [#123](https://github.com/PlayStash/playstash-frontend/issues/123) Fixed ...`
 
 4. **Breaking changes → `### Breaking Changes & Migration`.**
    If a change breaks existing behavior, config, data, or API compatibility, put the entry under a `### Breaking Changes & Migration` heading in the current version section (create the heading if it does not exist).

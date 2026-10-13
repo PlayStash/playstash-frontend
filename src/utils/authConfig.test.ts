@@ -24,8 +24,8 @@ describe("normalizeServerUrl", () => {
 
   it("keeps an existing http/https scheme and strips trailing slashes", () => {
     expect(normalizeServerUrl("http://example.com/")).toBe("http://example.com");
-    expect(normalizeServerUrl("https://demo.gamevau.lt///")).toBe(
-      "https://demo.gamevau.lt",
+    expect(normalizeServerUrl("https://example.com///")).toBe(
+      "https://example.com",
     );
   });
 

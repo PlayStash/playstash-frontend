@@ -9,7 +9,7 @@ import { Strong, Text, TextLink } from "@tw/text";
 import { useCallback, useEffect, useState } from "react";
 import {
   AUTH_SERVER_STORAGE_KEY,
-  DEMO_SERVER_URL,
+  DEFAULT_SERVER_URL,
   detectBackendServedWebUi,
 } from "@/utils/authConfig";
 import { applyTheme, getStoredTheme } from "@/utils/theme";
@@ -27,7 +27,7 @@ interface FormState {
 export function Register() {
   const { serverUrl } = useAuth();
   const [serverInput, setServerInput] = useState(
-    localStorage.getItem(AUTH_SERVER_STORAGE_KEY) || DEMO_SERVER_URL,
+    localStorage.getItem(AUTH_SERVER_STORAGE_KEY) || DEFAULT_SERVER_URL,
   );
   const [confirmedServer, setConfirmedServer] = useState<string | null>(null);
   const [backendServed, setBackendServed] = useState(false);
@@ -48,7 +48,7 @@ export function Register() {
   const basicAuthAvailable = availableAuthenticationMethods.includes("basic");
   const ssoAvailable = availableAuthenticationMethods.includes("sso");
 
-  // Force device theme on register page (visual only — never persisted, so a
+  // Force device theme on register page (visual only â€” never persisted, so a
   // reload here can't wipe the user's saved theme); restore the stored
   // preference on leave.
   useEffect(() => {
@@ -187,7 +187,7 @@ export function Register() {
       onSubmit={confirmedServer ? handleSubmit : handleContinue}
       className="grid w-full max-w-sm grid-cols-1 gap-6"
     >
-      <Logo variant="text" className="w-full" height="h-full" />
+      <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
       <div className="space-y-3">
         <Heading>Create your account</Heading>
         <Text>
@@ -244,7 +244,7 @@ export function Register() {
           </Field>
 
           {reqLoading && (
-            <div className="flex items-center gap-2 text-gv-muted">
+            <div className="flex items-center gap-2 text-ps-muted">
               <svg
                 className="h-4 w-4 motion-safe:animate-spin"
                 xmlns="http://www.w3.org/2000/svg"
@@ -478,7 +478,7 @@ export function Register() {
                   className="w-full"
                   disabled={!canSubmit() || submitting}
                 >
-                  {submitting ? "Creating account…" : "Create account"}
+                  {submitting ? "Creating accountâ€¦" : "Create account"}
                 </Button>
               )}
             </>

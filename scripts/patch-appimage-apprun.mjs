@@ -37,7 +37,7 @@ import path from "node:path";
 const exec = promisify(execFile);
 
 const APPRUN_WRAPPER = `#!/usr/bin/env bash
-# GameVault Wayland launcher.
+# PlayStash Wayland launcher.
 #
 # The AppImage bundles its own libwayland-client, which can mismatch the host
 # compositor and cause:
@@ -69,7 +69,7 @@ if [ -x "$APPDIR/AppRun.real" ]; then
 elif [ -x "$(dirname "$0")/AppRun.real" ]; then
   exec "$(dirname "$0")/AppRun.real" "$@"
 else
-  echo "GameVault: AppRun.real not found" >&2
+  echo "PlayStash: AppRun.real not found" >&2
   exit 1
 fi
 `;
@@ -160,7 +160,7 @@ async function main() {
 
   log(`Patching ${path.basename(appImagePath)}`);
 
-  const workDir = await mkdtemp(path.join(tmpdir(), "gamevault-appimage-"));
+  const workDir = await mkdtemp(path.join(tmpdir(), "playstash-appimage-"));
   try {
     // 1. Extract the AppImage into a squashfs-root directory.
     log("Extracting AppImage...");

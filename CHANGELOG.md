@@ -1,148 +1,16 @@
-# GameVault Frontend Changelog
+# PlayStash Frontend Changelog
 
 ## 17.1.0
 
-### Changes
-
-- Fixed playtime briefly landing in the offline file every time the session was refreshed: the tracker now retries with the fresh session immediately, and the session is refreshed earlier so a token never expires in the middle of a tick.
-- Fixed playtime stopping to count while a game was running: the tracker now asks for a fresh session as soon as the server rejects an increment, pauses its requests instead of retrying every minute, and credits the minutes it stored offline as soon as the session works again.
-- Fixed playtime that was stored offline being stranded until an app restart: offline minutes are now synced in the background and immediately when the connection or the session returns.
-- Fixed the time tracker re-scanning every installed game's folder every minute, which could delay ticks on large installations.
-- Fixed playtime being lost when a game's launcher briefly restarts the game process: tracking now continues for a short grace period instead of ending the session.
-- Added a Refresh button to the window title bar that reloads the current page.
-- Auto-install on Linux now makes extracted shell scripts (`.sh`/`.bash`/`.run`/etc.) executable automatically.
-- Fixed "Open Folder" doing nothing on Linux: folder and URL opening now use the official `tauri-plugin-opener`, with WSL support preserved.
-- Added an "Open" button to each download location in Settings to open the folder in your file manager.
-- Installed games are now detected even when the `installationfinished` flag was never written (e.g. self-extracting installers), by verifying the installation directory has content.
-- Fixed recovered download cards incorrectly showing an already-installed game as "not installed" after a restart: a version is now treated as installed when its installation directory has content, matching the installed-games list.
-- Fixed GOG/self-extracting installers being reported as failed: a non-zero wrapper exit code no longer counts as failure if the installation directory actually got populated.
-- After installation the launch executable is now auto-detected (falling back to the first available one) when none is configured.
-- Uninstalling a game or deleting a download now cleans up the empty leftover folder structure.
-- Fixed the game settings staying open after an uninstall; they now close once the game is uninstalled, and the installed game card refreshes/disappears correctly.
-- After an uninstall, any leftover files/folders the uninstaller failed to remove are detected and the user is asked whether to delete them.
-- Fixed the Wayland startup crash on the Linux AppImage (`Could not create default EGL display: EGL_BAD_PARAMETER`) by preloading the host's `libwayland-client` through a patched AppImage `AppRun` wrapper. The `.deb` build already uses the system library and is unaffected.
-- Administrators can delete progress entries of other users
-- Added a native OS taskbar/dock download progress indicator for desktop builds (Windows taskbar, macOS dock, Linux launcher)
-- Fixed the Windows taskbar progress bar staying stuck at 100% after a download, extraction or installation had finished. It now disappears as soon as there is nothing left to do, instead of only disappearing when you delete the download.
-- Added an "Installed" badge to server game cards so already-installed games are easy to spot at a glance.
-- The download button on a game's page now collapses into a compact icon-only button when the game is already installed.
-- Downloads interrupted by the app quitting are now automatically resumed on the next launch; downloads you intentionally paused or cancelled stay paused.
-- Fixed resuming a download not preserving its configured download location (root path).
-- Added a disk-usage breakdown for each download location in the installed-game settings, showing total and free space plus how much is used by the current game, other games, and unmanaged files.
-- Windows executables on Linux can now run through umu-launcher: GameVault automatically installs umu-launcher, launches the game through it (showing a setup overlay while UMU-Proton and the Steam runtime download), and tracks playtime.
-- Added optional per-game umu-launcher overrides in the game settings (umu-database ID, store, Proton path, and Wine prefix).
-- Improved the widescreen layout so library content sits flush against the sidebar instead of being awkwardly re-centered on large monitors.
-- Debounced the library game search so the server is no longer hit on every keystroke.
-- Pressing Escape now exits a drilled-in Settings category back to the settings list, and returns from a game page to the library. Open dialogs/popovers and inline editors keep handling Escape first.
-- Renamed the unnamed-version placeholder from "Unknown Version" to "Unspecified". Existing installs that still use the old folder name continue to work (both the old and new names are supported, with no on-disk folder rename).
-- Fixed regional date formatting: dates now follow the locale the computer uses (e.g. `dd.mm.yyyy` for German) everywhere instead of a fixed `en-US` format, keeping release dates, filters and "last played" timestamps consistent. Date-only values are parsed as local dates so they no longer shift a day/year in timezones west of UTC, and the "Last Played" box keeps its compact two-line layout.
-- Numbers are now formatted with the locale's decimal and thousands separators (e.g. `1,5 GB` for German instead of `1.5 GB`), covering file sizes, download speeds/limits, playtime and progress percentages.
-- Fixed the login session not surviving an app restart and the title-bar "Refresh" button logging you out with "Session expired": the app no longer destroys a recoverable session during startup.
-- Fixed "Minimize GameVault when launching a game" showing a false "exited with an error" dialog: a game that runs and then closes cleanly (even if it prints engine warnings such as Godot's shutdown messages) is no longer reported as a failed launch. The failure alert is only shown when a game actually fails to start.
-- Fixed being unable to remove a bookmark from a game that was deleted on the server. Deleted games now keep their bookmark (so it returns if the game is restored) but are hidden from your bookmarked lists, and a failed bookmark toggle now shows an alert instead of silently doing nothing.
-- Added an "Open DevTools" button to the Developer Tools settings menu (desktop builds).
-- Fixed Windows games not launching through umu-launcher on Linux: it now installs to the correct folder and clears `PYTHONHOME`/`PYTHONPATH` before launching, so its bundled Python runs correctly.
-- Installed games are now sorted by most recently installed, and each install records its timestamp.
-- Installed games now always show their download size in the desktop build, even after the source files are cleaned up.
-- Extracted source files are now removed automatically after a successful install, and download file names are sanitized to avoid characters that are invalid on some file systems.
-- Running an installer as administrator now passes file paths literally, so installation folders containing `[`, `]`, or spaces no longer fail.
-- Added a dedicated "Rendering & System" section to the Developer Tools settings (desktop builds) showing OS, GPU/WebGL, WebGPU, display/monitor and live WebKitGTK details, along with controls for WebKitGTK smooth scrolling and the hardware-acceleration policy. The same diagnostics are included when you copy the settings dump for bug reports.
-- Gate Wine Base Path/Prefix settings to appear to linux users only.
-- Added a Streamer / OPSEC mode (Settings → Appearance) that masks user names, emails and the server URL with funny placeholder text across the sidebar, community, profiles, administration and game activity, so a stream capture doesn't leak real identities or your server address.
-- Fixed "Open Folder" still doing nothing on Linux for KDE Plasma (Dolphin) users running the AppImage: the AppImage's bundled `xdg-open` no longer intercepts the request — folders and URLs are now opened with the host system's launchers instead.
-- Deleting a download card for a game that was downloaded but never installed now also removes the leftover empty Installation folder and its empty parent folder.
-- Moved the "Smooth Scrolling" toggle out of the Developer Tools menu and into Settings → Appearance (Linux desktop builds), so it's easier to find.
-- Fixed the WebKitGTK hardware-acceleration policy setting not sticking on Linux: it no longer reverts to "Never" when you leave the settings page or restart the app, and the value you choose is now remembered.
-- Fixed a flash when switching between tabs: the outgoing page no longer briefly shows the incoming tab's content or loading state, so the main content now switches smoothly.
-- Smoothed the sidebar's active-tab indicator so it slides evenly in both directions instead of jumping when moving upward.
-- Fixed switching between the stable, early-access and unstable update channels: the selected channel's latest release is now offered reliably, including a downgrade when switching back from a newer prerelease channel (e.g. unstable → early-access or → stable).
-- OPSEC mode now gives every user a unique, consistent placeholder name, handle and email (seeded by their user id instead of their real name), and fully masks the email domain so no real address is revealed on stream.
-- OPSEC mode now hides profile pictures behind a deterministic DiceBear "fun-emoji" avatar for each user, and any user without a profile picture gets a DiceBear avatar by default instead of a blank box.
-- Fixed downloads aborting with a 401 error when you refresh (F5) mid-download: auto-resumed downloads now wait for a valid session token instead of firing before login has finished.
-- Added a keyboard shortcut (Ctrl/Cmd+Shift+O) to toggle Streamer/OPSEC mode from anywhere in the app.
-- Cleaned up the Community Page UI
-- Administrators can now view a game's files (their paths, sizes and other metadata) in the game settings and delete individual game files from the server.
-- Made the game settings and user settings dialogs more responsive and easier to use on tablets and phones, and removed the release date from the game files list.
-- Deleting a game's last version file now closes the settings, removes the game from the library, and returns you to the library if you were viewing that game.
-- Settings → About now shows the full system diagnostics (operating system, display and monitors, GPU/WebGL, WebGPU, CPU/memory, platform, language and user agent) that previously only lived in the Developer Tools menu, replacing the shorter system info list there.
-- Moved the Hardware Acceleration setting from the Developer Tools menu into Settings → Appearance (Linux desktop builds), where it now sits next to Smooth Scrolling.
-- Fixed the Linux AppImage failing to play sound effects and trailers with `GStreamer element appsink not found. Please install it.` (followed by `fakevideosink` and WebVTT encoder errors): the full GStreamer plugin set WebKitGTK needs — base, good and bad, including H.264/AAC decoding, MSE support and the WebVTT encoder — is now bundled into the AppImage, so no GStreamer packages have to be installed on the system.
-- Fixed the system information under Settings → About not matching the machine it runs on
-- [#36](https://github.com/Phalcode/gamevault-frontend/issues/36) Fixed disc images that only contain a UDF filesystem (e.g. UDF-only DVD/Blu-ray ISOs) failing to extract with an error. Disc images are now read by a combined ISO 9660 and UDF reader.
-
-- Added a one-time warning on the first launch of an Early Access or unstable build, explaining that these builds are meant for the early access program/developers and testers, that extra setup steps may be needed, and that more issues are to be expected than on a stable release.
-- Refreshing the app (F5) or using the window's Refresh button no longer interrupts work in progress: downloads, extractions, installations, umu-launcher setup and app updates keep running in the background, their progress is picked back up instead of starting over, and a refresh can no longer start a second download, extraction, installation or update over the one that is still running.
-- Fixed the app freezing while uninstalling a game, while launching a Windows game that still needs umu-launcher set up, and while deleting or scanning large game folders.
-- The Early Access/unstable warning is now shown only once per installation instead of again after every app update.
-- Linux/umu-launcher defaults (GAMEID, STORE and Proton version) can now be defined once per game as custom metadata on the server: the game settings dialog has matching fields, and newly downloaded games inherit them automatically instead of needing per-client setup.
-- Fixed Linux/umu-launcher Wine/Proton prefixes: installing, launching and uninstalling a game now all use the same prefix per game (named like the game's install folder). Previously a game could run in a different prefix than it was installed into, and without a GAMEID every game shared umu's default prefix. Existing prefixes are reused, so nothing has to be moved and no save games are lost.
-- Uninstalling a game now offers to also delete its Wine/Proton prefix, showing the folder path and keeping it by default (local saves and game settings can live inside it). Only prefixes GameVault manages are offered.
-- The per-game Wine Prefix field now shows the path that is actually used (with a click-to-copy) instead of a path GameVault never used, and the prefix settings explain the real default location.
-- Fixed uninstalling a game silently dropping the per-game umu-launcher overrides (GAMEID, STORE, Proton version, Wine prefix) and the "run as administrator" flag from the game's configuration.
-- Added launch logs: the complete output of every game start (Proton/Wine/umu output included) is written to rotating log files and shown in a dedicated log window. A new setting ("Always show launch logs") opens that window automatically while a game starts, a failed launch opens it regardless, and earlier logs can be browsed or cleared from the window. Installer runs are logged too.
-- The per-game Proton (PROTONPATH) field now offers a dropdown with the Proton builds already installed in `compatibilitytools.d` (Steam and Flatpak Steam), so version names don't have to be typed by hand.
-- Fix multiple time tracking issues
----
-- Fixed Windows games failing to start from the Linux AppImage when its bundled OpenSSL libraries conflicted with umu-launcher's system Python.
-- Fixed the app occasionally freezing after being left open for a while (so it had to be force-closed): covers that are still off-screen no longer run an endless loading animation, the gamepad input loop no longer keeps the main thread busy in the background, and background status checks no longer redraw the whole interface every few seconds.
-- The desktop app now keeps a rotating log file (release builds previously wrote no log at all) and records a periodic snapshot of the interface state — current page, memory use and DOM size. If the interface ever stops responding, the state right before the freeze is logged automatically, and the log file path is included in "Copy Settings Dump" so a hang can be diagnosed instead of leaving no trace.
-
-## 17.0.0
+Status: Unreleased. This version marks the fresh PlayStash source baseline.
 
 ### Changes
 
-- Implemented Gamepad support for UI
-- Support for multiple game versions and version selection in the library. (Legacy Client always downloads the latest version)
-- New installed games section in the library for tauri builds
-- Game time tracker
-- Fixed a bug where only the first 1000 Tags would be loaded in the library, now all tags are loaded
-- [#22](https://github.com/Phalcode/gamevault-frontend/issues/22) - Added support for markdown in game descriptions and notes.
-- [#32](https://github.com/Phalcode/gamevault-frontend/issues/32) - Redesigned the game settings page a bit.
-- [#19](https://github.com/Phalcode/gamevault-frontend/issues/19) - Added News Editor for admins to edit server news with markdown support.
-- Added an Early Access update channel, published from the `early-access` branch, alongside the existing stable and unstable channels.
-- The desktop update channel now defaults to the channel the build was created for; users can still switch between stable, early-access, and unstable.
-- Early Access and Unstable channels are only offered in the Settings update-channel picker after unlocking Developer Tools (tap the version number 5×). Developer Tools can be toggled off again the same way.
-- Polished Linux and macOS packaging: the Debian package and binary are now `gamevault`, with proper license, homepage and description, a dedicated `.desktop` entry, and a bundled Debian changelog.
-- Release assets on the `unstable` and `early-access` releases are now cleaned up by a dedicated, manifest-aware CI job that also runs after aborted or partially-failed builds, and are named consistently.
-- Improved startup and loading performance via route-level code splitting, vendor bundle splitting, memoized game cards, lazy/async media loading, and deferred session-replay analytics.
-- Fixed the download button not working on Linux when no root path is set.
-- Surface immediate game launch failures to users.
-- Fixed playtime tracking on Linux.
-- Removed the debug media ID hover tooltip.
-- Redesigned toast notifications to match the design system.
-- Fixed library cards shrinking when pressing buttons inside them.
-- Prefill demo credentials when the demo server is selected.
-- Default and lock the server URL when the web UI is served by the backend.
-- The logo now switches its text variant with the theme.
-- Surface and fix non-executable shell scripts in launch options, added a sudo fallback for Linux, and allow running games as root on Linux.
-- Stabilized popup heights so they no longer resize with content.
+- Introduced PlayStash branding, application identifiers and the new logo.
+- Clearly identified original authors and removed unrelated provider policy links from About.
+- Made the frontend features available without a subscription.
+- Bundled the PlayStash API schema for reproducible client generation.
+- Preserved current desktop capabilities, including launch logs, streamer mode and protected credential storage.
+- Disabled workflow jobs by default until explicitly enabled for this repository.
 
-## 16.2.1
-
-### Changes
-
-- [#5](https://github.com/Phalcode/gamevault-frontend/issues/5) - Dynamically show and hide Basic Auth and SSO options on Login and Register pages based on server configuration
-- [#6](https://github.com/Phalcode/gamevault-frontend/issues/6) - Use proper href links on game cards and community progress list for better accessibility (middle-click/right-click to open in new tab)
-- [#9](https://github.com/Phalcode/gamevault-frontend/issues/9) - Fix search with special characters (apostrophes) causing blank page due to excessive history API calls (added debounce and duplicate URL check)
-
-## 16.2.0
-
-### Changes
-
-- Added GameSettings
-- Extended library filters
-- Bug fix: Youtube player error 153
-
-## 16.1.0
-
-### Changes
-
-- Added GameView Layout
-- Added Support for SSO
-- Added Sorting + Filtering
-
-## 16.0.0
-
-### Changes
-
-- Initial release
+This changelog begins with PlayStash. It does not claim earlier releases or carry issue history from another project.

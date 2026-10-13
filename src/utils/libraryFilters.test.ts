@@ -12,7 +12,7 @@ import {
   setParamValues,
   type LibraryFilterState,
 } from "./libraryFilters";
-import { GamevaultGameTypeEnum } from "@/api/models/GamevaultGame";
+import { PlaystashGameTypeEnum } from "@/api/models/PlaystashGame";
 import { ProgressStateEnum } from "@/api/models/Progress";
 
 const defaults = (): LibraryFilterState => ({
@@ -83,7 +83,7 @@ describe("type guards", () => {
   });
 
   it("isGameType / isProgressState", () => {
-    expect(isGameType(GamevaultGameTypeEnum.windows_setup)).toBe(true);
+    expect(isGameType(PlaystashGameTypeEnum.windows_setup)).toBe(true);
     expect(isGameType("NOPE")).toBe(false);
     expect(isProgressState(ProgressStateEnum.completed)).toBe(true);
     expect(isProgressState("NOPE")).toBe(false);
@@ -107,7 +107,7 @@ describe("filterAndSortInstalledGames", () => {
     id: 1,
     title: "Game",
     sort_title: "game",
-    type: GamevaultGameTypeEnum.windows_setup,
+    type: PlaystashGameTypeEnum.windows_setup,
     metadata: {},
     _installedInfo: { installedAt: 100, lastPlayedAt: 0 },
     ...over,
@@ -134,14 +134,14 @@ describe("filterAndSortInstalledGames", () => {
     const games = [
       base({
         id: 1,
-        type: GamevaultGameTypeEnum.windows_setup,
+        type: PlaystashGameTypeEnum.windows_setup,
         metadata: { tags: [{ name: "horror" }] },
       }),
-      base({ id: 2, type: GamevaultGameTypeEnum.linux_portable }),
+      base({ id: 2, type: PlaystashGameTypeEnum.linux_portable }),
     ];
     const result = filterAndSortInstalledGames(games, {
       search: "",
-      gameTypes: [GamevaultGameTypeEnum.windows_setup],
+      gameTypes: [PlaystashGameTypeEnum.windows_setup],
       tags: ["horror"],
       genres: [],
       developers: [],

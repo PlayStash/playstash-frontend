@@ -17,7 +17,7 @@ export function Spinner({ label, className }: SpinnerProps) {
       aria-label={label || "Loading"}
     >
       <svg
-        className="h-8 w-8 text-gv-accent motion-safe:animate-spin"
+        className="h-8 w-8 text-ps-accent motion-safe:animate-spin"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -38,7 +38,7 @@ export function Spinner({ label, className }: SpinnerProps) {
         />
       </svg>
       {label && (
-        <span className="text-sm text-gv-muted">{label}</span>
+        <span className="text-sm text-ps-muted">{label}</span>
       )}
     </div>
   );

@@ -151,7 +151,7 @@ mod tests {
 
 pub(crate) fn read_saved_game_metadata(start_path: &Path) -> Option<serde_json::Value> {
   for ancestor in start_path.ancestors() {
-    let metadata_path = ancestor.join(".gamevault.metadata.json");
+    let metadata_path = ancestor.join(".playstash.metadata.json");
     if !metadata_path.exists() {
       continue;
     }
