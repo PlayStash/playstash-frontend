@@ -358,7 +358,7 @@
             "name": "Range",
             "required": false,
             "in": "header",
-            "description": "This header lets you control the range of bytes to download. If the header is not present or not valid the entire file will be downloaded.",
+            "description": "A valid single byte range returns HTTP 206; an invalid or unavailable range returns HTTP 416. Without this header the entire file is downloaded.",
             "examples": {
               "bytes=0-1023": {
                 "description": "Download the first 1024 bytes",
@@ -478,7 +478,7 @@
             "name": "Range",
             "required": false,
             "in": "header",
-            "description": "This header lets you control the range of bytes to download. If the header is not present or not valid the entire file will be downloaded.",
+            "description": "A valid single byte range returns HTTP 206; an invalid or unavailable range returns HTTP 416. Without this header the entire file is downloaded.",
             "schema": {
               "type": "string"
             }
@@ -968,6 +968,116 @@
         "summary": "recover a deleted user",
         "tags": [
           "user"
+        ]
+      }
+    },
+    "/api/config/folder-tag-rules": {
+      "get": {
+        "operationId": "getFolderTagRules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderTagRulesResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read persistent folder-based automatic tag rules.",
+        "tags": [
+          "config"
+        ]
+      },
+      "put": {
+        "operationId": "putFolderTagRules",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FolderTagRulesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FolderTagRulesResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save automatic tag rules and refresh all existing games.",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/api/metadata/recache": {
+      "post": {
+        "operationId": "postMetadataRecache",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "queued_games": {
+                      "type": "integer"
+                    },
+                    "processing": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "queued_games",
+                    "processing"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Queue a complete metadata refresh, bypassing provider cache TTL",
+        "tags": [
+          "metadata"
         ]
       }
     },
@@ -1927,75 +2037,6 @@
         ]
       }
     },
-    "/api/auth/basic/login": {
-      "get": {
-        "description": "Initiates a login process by validating the user and issuing a bearer token.",
-        "operationId": "getAuthBasicLogin",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenPairDto"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "User is not activated. Contact an Administrator to activate the User."
-          }
-        },
-        "security": [
-          {
-            "basic": []
-          }
-        ],
-        "summary": "Performs a basic auth login using the provided user credentials",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
-    "/api/auth/basic/register": {
-      "post": {
-        "description": "The user may has to be activated afterwards to be active. This endpoint only works if registration is enabled",
-        "operationId": "postAuthBasicRegister",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterUserDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlaystashUser"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "basic": []
-          }
-        ],
-        "summary": "register a new user",
-        "tags": [
-          "auth"
-        ]
-      }
-    },
     "/api/auth/refresh": {
       "post": {
         "description": "This endpoint takes a valid refresh token and issues new access and refresh tokens. The existing session is updated with the new refresh token hash and extended expiration time. The refresh token must be sent in the Authorization header.",
@@ -2116,6 +2157,230 @@
         "summary": "Revoke all active sessions for the current user",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/auth/basic/login": {
+      "get": {
+        "description": "Initiates a login process by validating the user and issuing a bearer token.",
+        "operationId": "getAuthBasicLogin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "User is not activated. Contact an Administrator to activate the User."
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          }
+        ],
+        "summary": "Performs a basic auth login using the provided user credentials",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/basic/register": {
+      "post": {
+        "description": "The user may has to be activated afterwards to be active. This endpoint only works if registration is enabled",
+        "operationId": "postAuthBasicRegister",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaystashUser"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          }
+        ],
+        "summary": "register a new user",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/savefiles/user/{user_id}/game/{game_id}/versions": {
+      "get": {
+        "operationId": "getSavefileVersions",
+        "parameters": [
+          {
+            "name": "user_id",
+            "required": true,
+            "in": "path",
+            "description": "id of the user",
+            "schema": {
+              "example": "1",
+              "type": "number"
+            }
+          },
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "description": "id of the game",
+            "schema": {
+              "example": "1",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavefileDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List save archive versions for their owner or an administrator",
+        "tags": [
+          "savefile"
+        ]
+      }
+    },
+    "/api/savefiles/user/{user_id}/game/{game_id}/versions/{filename}": {
+      "get": {
+        "operationId": "getSavefileVersion",
+        "parameters": [
+          {
+            "name": "user_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamableFile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download a selected save archive version",
+        "tags": [
+          "savefile"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteSavefileVersion",
+        "parameters": [
+          {
+            "name": "user_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a selected save archive version",
+        "tags": [
+          "savefile"
         ]
       }
     },
@@ -2282,6 +2547,192 @@
         ]
       }
     },
+    "/api/game/{game_id}/events": {
+      "post": {
+        "operationId": "postGameClientEvent",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameClientEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameClientEventAcceptedDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record your completed client lifecycle event; retries use the same UUID",
+        "tags": [
+          "metrics"
+        ]
+      },
+      "get": {
+        "operationId": "getGameClientEvents",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "user_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "before_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "1–500; defaults to 100",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameClientEventDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Inspect per-user lifecycle events (administrators only)",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/game/{game_id}/metrics": {
+      "get": {
+        "operationId": "getGameMetrics",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameMetricsSummaryDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Inspect lifecycle totals (administrators only)",
+        "tags": [
+          "metrics"
+        ]
+      }
+    },
+    "/api/admin/logs": {
+      "get": {
+        "operationId": "getAdminLogs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminLogRecordDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read a bounded, sanitized tail of server file logs",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/admin/database/backup": {
       "get": {
         "operationId": "getAdminDatabaseBackup",
@@ -2394,12 +2845,464 @@
           "status"
         ]
       }
+    },
+    "/api/game/{game_id}/package": {
+      "get": {
+        "operationId": "getGamePackage",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageDescriptorDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a game's installation manifest, extras, and optional addons.",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/api/game/{game_id}/package/assets/{asset_id}": {
+      "get": {
+        "operationId": "downloadGamePackageAsset",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "asset_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Download-Speed-Limit",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download an authorized extra or addon from a game's package.",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/api/requests": {
+      "get": {
+        "operationId": "getGameRequests",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "mine",
+            "required": false,
+            "in": "query",
+            "description": "Show only your own requests, including when you are an administrator.",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRequestsViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List your requests, or all requests for administrators.",
+        "tags": [
+          "requests"
+        ]
+      },
+      "post": {
+        "operationId": "postGameRequest",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRequestViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request a game from your server administrator.",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{id}": {
+      "patch": {
+        "operationId": "patchGameRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGameRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRequestViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change a request's status and optionally attach the game fulfilling it.",
+        "tags": [
+          "requests"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteGameRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel your own open game request.",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/requests/{id}/seen": {
+      "put": {
+        "operationId": "putGameRequestSeen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRequestViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Acknowledge an update to your own request.",
+        "tags": [
+          "requests"
+        ]
+      }
+    },
+    "/api/games/{game_id}/reviews": {
+      "get": {
+        "operationId": "getGameReviews",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameReviewsViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read reviews and the community's average rating for an accessible game.",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/games/{game_id}/reviews/me": {
+      "put": {
+        "operationId": "putMyGameReview",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutGameReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameReviewViewDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish or replace your rating and review of a game.",
+        "tags": [
+          "reviews"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteMyGameReview",
+        "parameters": [
+          {
+            "name": "game_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete your own rating and review.",
+        "tags": [
+          "reviews"
+        ]
+      }
     }
   },
   "info": {
     "title": "PlayStash Backend Server",
     "description": "Backend for PlayStash, the self-hosted gaming platform for drm-free games",
-    "version": "17.0.1",
+    "version": "17.1.0",
     "contact": {
       "name": "PlayStash",
       "url": "https://github.com/PlayStash/playstash-backend",
@@ -2688,6 +3591,16 @@
             "description": "indicates if the user is activated",
             "example": false
           },
+          "share_restricted_activity": {
+            "type": "boolean",
+            "description": "Share activity/progress for restricted games with other users who can access them",
+            "default": false
+          },
+          "report_game_metrics": {
+            "type": "boolean",
+            "description": "Allow this client to report download/install/uninstall/session events",
+            "default": true
+          },
           "progresses": {
             "description": "progresses of the user",
             "type": "array",
@@ -2799,6 +3712,30 @@
           "id",
           "created_at",
           "entity_version"
+        ]
+      },
+      "LaunchProfileDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name of the launch profile.",
+            "example": "Single player"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Executable path relative to the game installation.",
+            "example": "gzdoom/gzdoom.exe"
+          },
+          "parameters": {
+            "type": "string",
+            "description": "Arguments passed to the executable.",
+            "example": "-iwad DOOM2/DOOM2.WAD"
+          }
+        },
+        "required": [
+          "name",
+          "executable"
         ]
       },
       "PublisherMetadata": {
@@ -3202,6 +4139,26 @@
             "description": "Predefined launch executable for the game.",
             "example": "ShooterGame.exe"
           },
+          "launch_profiles": {
+            "description": "Named launch defaults shared with clients. An empty array clears the defaults.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LaunchProfileDto"
+            }
+          },
+          "archive_password": {
+            "type": "string",
+            "description": "Default archive extraction password for this game. Empty means no password.",
+            "example": "archive-password"
+          },
+          "system_requirements_minimum": {
+            "type": "string",
+            "description": "Minimum system requirements. Markdown supported."
+          },
+          "system_requirements_recommended": {
+            "type": "string",
+            "description": "Recommended system requirements. Markdown supported."
+          },
           "installer_parameters": {
             "type": "string",
             "description": "Predefined installer parameters for the game. You can use %INSTALLDIR% as a placeholder for the installation directory.",
@@ -3305,6 +4262,18 @@
             "type": "number",
             "description": "incremental version number of the entity",
             "example": 1
+          },
+          "access_restricted": {
+            "type": "boolean",
+            "description": "Only administrators and explicitly allowed users can access this game",
+            "default": false
+          },
+          "allowed_user_ids": {
+            "description": "IDs of users explicitly allowed to access a restricted game",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
           },
           "file_path": {
             "type": "string",
@@ -3733,6 +4702,26 @@
             "description": "Predefined launch executable for the game.",
             "example": "ShooterGame.exe"
           },
+          "launch_profiles": {
+            "description": "Named launch defaults shared with clients. An empty array clears the defaults.",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LaunchProfileDto"
+            }
+          },
+          "archive_password": {
+            "type": "string",
+            "description": "Default archive extraction password for this game. Empty means no password."
+          },
+          "system_requirements_minimum": {
+            "type": "string",
+            "description": "Minimum system requirements. Markdown supported."
+          },
+          "system_requirements_recommended": {
+            "type": "string",
+            "description": "Recommended system requirements. Markdown supported."
+          },
           "installer_parameters": {
             "type": "string",
             "description": "Predefined installer parameters for the game. You can use %INSTALLDIR% as a placeholder for the installation directory.",
@@ -3830,6 +4819,17 @@
       "UpdateGameDto": {
         "type": "object",
         "properties": {
+          "access_restricted": {
+            "type": "boolean",
+            "description": "Restrict access to administrators and allowed users (administrators only)"
+          },
+          "allowed_user_ids": {
+            "description": "Replace allowed users; an empty array allows administrators only (administrators only)",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
           "mapping_requests": {
             "description": "The mapping requests. If not provided, the game will not be remapped or unmapped.",
             "type": "array",
@@ -3854,6 +4854,16 @@
       "UpdateUserDto": {
         "type": "object",
         "properties": {
+          "report_game_metrics": {
+            "type": "boolean",
+            "description": "Allow clients to report lifecycle events",
+            "default": true
+          },
+          "share_restricted_activity": {
+            "type": "boolean",
+            "description": "Share restricted-game activity/progress with other permitted users",
+            "default": false
+          },
           "username": {
             "type": "string",
             "example": "JohnDoe",
@@ -3912,6 +4922,70 @@
             "description": "The role determines the set of permissions and access rights for a user in the system."
           }
         }
+      },
+      "FolderTagRuleDto": {
+        "type": "object",
+        "properties": {
+          "folder_prefix": {
+            "type": "string",
+            "description": "Folder prefix relative to the game library; matches the folder itself and its descendants."
+          },
+          "tags": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "folder_prefix",
+          "tags"
+        ]
+      },
+      "FolderTagRulesResultDto": {
+        "type": "object",
+        "properties": {
+          "rules": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolderTagRuleDto"
+            }
+          },
+          "applied_games": {
+            "type": "number",
+            "description": "Games refreshed by this update; zero when reading the rules."
+          },
+          "failed_games": {
+            "type": "number",
+            "description": "Games that could not be refreshed. A later reindex retries them."
+          }
+        },
+        "required": [
+          "rules",
+          "applied_games",
+          "failed_games"
+        ]
+      },
+      "FolderTagRulesDto": {
+        "type": "object",
+        "properties": {
+          "rules": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolderTagRuleDto"
+            }
+          }
+        },
+        "required": [
+          "rules"
+        ]
       },
       "MetadataProviderDto": {
         "type": "object",
@@ -4153,6 +5227,19 @@
           "refresh_token"
         ]
       },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "description": "JWT refresh token that can be used to obtain a new access token"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ]
+      },
       "RegisterUserDto": {
         "type": "object",
         "properties": {
@@ -4192,17 +5279,604 @@
           "password"
         ]
       },
-      "RefreshTokenDto": {
+      "SavefileDto": {
         "type": "object",
         "properties": {
-          "refresh_token": {
+          "filename": {
             "type": "string",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-            "description": "JWT refresh token that can be used to obtain a new access token"
+            "description": "Save archive filename; use it when downloading or deleting this version."
+          },
+          "size": {
+            "type": "number",
+            "description": "Archive size in bytes."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "Archive creation time.",
+            "format": "date-time"
+          },
+          "installation_id": {
+            "type": "string",
+            "description": "Installation UUID associated with this save archive."
           }
         },
         "required": [
-          "refresh_token"
+          "filename",
+          "size",
+          "created_at"
+        ]
+      },
+      "CreateGameClientEventDto": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "description": "Client-generated UUID v4; reuse it when retrying the same event"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "downloaded",
+              "installed",
+              "uninstalled",
+              "played"
+            ]
+          },
+          "version_id": {
+            "type": "number",
+            "description": "The exact game version, when known"
+          },
+          "installation_id": {
+            "type": "string",
+            "description": "Device installation UUID, when available"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Client occurrence time; defaults to server time"
+          },
+          "minutes_played": {
+            "type": "number",
+            "description": "Completed session duration in minutes, only for a played event"
+          }
+        },
+        "required": [
+          "event_id",
+          "type"
+        ]
+      },
+      "GameClientEventAcceptedDto": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": "boolean",
+            "description": "False when reporting is disabled or the event is outside retention"
+          }
+        },
+        "required": [
+          "event_id",
+          "accepted"
+        ]
+      },
+      "GameClientEventDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "downloaded",
+              "installed",
+              "uninstalled",
+              "played"
+            ]
+          },
+          "user_id": {
+            "type": "number"
+          },
+          "game_id": {
+            "type": "number"
+          },
+          "version_id": {
+            "type": "number"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minutes_played": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "event_id",
+          "type",
+          "user_id",
+          "game_id",
+          "occurred_at",
+          "minutes_played"
+        ]
+      },
+      "GameMetricsSummaryDto": {
+        "type": "object",
+        "properties": {
+          "downloaded": {
+            "type": "number"
+          },
+          "installed": {
+            "type": "number"
+          },
+          "uninstalled": {
+            "type": "number"
+          },
+          "played": {
+            "type": "number"
+          },
+          "minutes_played": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "downloaded",
+          "installed",
+          "uninstalled",
+          "played",
+          "minutes_played"
+        ]
+      },
+      "AdminLogRecordDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "message"
+        ]
+      },
+      "PackageAssetDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Opaque asset ID used to download this extra or addon."
+          },
+          "path": {
+            "type": "string",
+            "description": "Relative path inside the game's folder."
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "extra",
+              "manual",
+              "soundtrack",
+              "mod",
+              "dlc",
+              "patch"
+            ]
+          },
+          "size": {
+            "type": "string",
+            "description": "File size in bytes."
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "title",
+          "kind",
+          "size"
+        ]
+      },
+      "PackageDescriptorDto": {
+        "type": "object",
+        "properties": {
+          "manifest": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Validated schema_version 1 package manifest; recipes require local user consent."
+          },
+          "extras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageAssetDto"
+            }
+          },
+          "addons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageAssetDto"
+            }
+          }
+        },
+        "required": [
+          "extras",
+          "addons"
+        ]
+      },
+      "GameRequestViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "anonymous": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "approved",
+              "fulfilled",
+              "rejected"
+            ]
+          },
+          "game_id": {
+            "type": "number",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "description": "Omitted for anonymous requests."
+          },
+          "user_id": {
+            "type": "number",
+            "description": "Omitted for anonymous requests."
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "unread": {
+            "type": "boolean",
+            "description": "An administrator changed this request since you last acknowledged it."
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "note",
+          "anonymous",
+          "status",
+          "mine",
+          "unread",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "GameRequestsViewDto": {
+        "type": "object",
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameRequestViewDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "unread_count": {
+            "type": "number",
+            "description": "Total unread updates to your own requests, across all pages."
+          },
+          "open_count": {
+            "type": "number",
+            "description": "Open requests visible in the current scope, across all pages."
+          }
+        },
+        "required": [
+          "requests",
+          "total",
+          "page",
+          "limit",
+          "unread_count",
+          "open_count"
+        ]
+      },
+      "CreateGameRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 4000,
+            "default": ""
+          },
+          "anonymous": {
+            "type": "boolean",
+            "default": false,
+            "description": "Hide the requester's identity from the administrator."
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "UpdateGameRequestDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "approved",
+              "fulfilled",
+              "rejected"
+            ]
+          },
+          "game_id": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Optional game fulfilling the request; it must be accessible to the requester."
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "GameReviewViewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "user_id": {
+            "type": "number"
+          },
+          "username": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "username",
+          "rating",
+          "comment",
+          "mine",
+          "updated_at"
+        ]
+      },
+      "GameReviewsViewDto": {
+        "type": "object",
+        "properties": {
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameReviewViewDto"
+            }
+          },
+          "my_review": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GameReviewViewDto"
+              }
+            ]
+          },
+          "average_rating": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average rating in stars; null if there are no reviews."
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "reviews",
+          "total",
+          "page",
+          "limit"
+        ]
+      },
+      "PutGameReviewDto": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Rating in stars."
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 4000,
+            "default": ""
+          }
+        },
+        "required": [
+          "rating"
+        ]
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "number",
+            "description": "The id of the user this activity belongs to."
+          },
+          "socket_id": {
+            "type": "string",
+            "description": "The socket id of the user this activity belongs to."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "BUSY",
+              "INVISIBLE",
+              "PLAYING"
+            ],
+            "example": "PLAYING",
+            "description": "The online-state to set the user to"
+          },
+          "game_id": {
+            "type": "number",
+            "description": "The game's id. Only required if the state is 'PLAYING'."
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "ChatSendDto": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "example": "lobby",
+            "description": "lobby or game:<positive game ID>; defaults to lobby. Mutually exclusive with recipient_user_id."
+          },
+          "recipient_user_id": {
+            "type": "number",
+            "description": "User ID for a direct conversation."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Plain text; clients must render it as text, never HTML."
+          },
+          "client_message_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional UUID v4 for retry-safe delivery within retained history."
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "ChatHistoryDto": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "example": "lobby",
+            "description": "lobby or game:<positive game ID>; defaults to lobby. Mutually exclusive with recipient_user_id."
+          },
+          "recipient_user_id": {
+            "type": "number",
+            "description": "User ID for a direct conversation."
+          },
+          "limit": {
+            "type": "number",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "ChatMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "client_message_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "number"
+          },
+          "username": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "recipient_user_id": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "username",
+          "text",
+          "created_at"
         ]
       }
     }

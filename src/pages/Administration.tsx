@@ -38,6 +38,8 @@ import { PlaystashUser, PlaystashUserRoleEnum } from "../api";
 import { ROLE_LABELS } from "@/utils/roles";
 import BackupRestoreDialog from "../components/admin/BackupRestoreDialog";
 import { Label } from "../components/tailwind/fieldset";
+import { FolderTagRules } from "@/components/admin/FolderTagRules";
+import { ServerDiagnostics } from "@/components/admin/ServerDiagnostics";
 
 export default function Administration() {
   const streamerMode = useStreamerMode();
@@ -113,7 +115,7 @@ export default function Administration() {
               <DescriptionDetails>
                 {version ? (
                   <Link
-                    href={`https://github.com/PlayStash/playstash-backend/releases/tag/${version}`}
+                    href={`https://github.com/PlayStash/playstash-backend/releases/tag/v${version}`}
                     target="_blank"
                   >
                     {version}
@@ -211,6 +213,12 @@ export default function Administration() {
               )}
             </Card>
           )}
+          <Card title="Automatic folder tags">
+            <FolderTagRules />
+          </Card>
+          <Card title="Server diagnostics">
+            <ServerDiagnostics />
+          </Card>
           <Card title="Users">
             {error && (
               <div className="mb-4 rounded-md bg-red-500/10 p-3 text-sm text-red-500">

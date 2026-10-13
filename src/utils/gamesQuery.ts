@@ -17,6 +17,8 @@ export interface BuildGamesQueryParamsOptions {
   releaseDateFrom?: string;
   releaseDateTo?: string;
   earlyAccess?: EarlyAccessFilter;
+  addedSince?: string;
+  libraryFolder?: string;
 }
 
 /**
@@ -42,6 +44,8 @@ export function buildGamesQueryParams(
     releaseDateFrom,
     releaseDateTo,
     earlyAccess = "all",
+    addedSince,
+    libraryFolder,
   } = options;
 
   const params = new URLSearchParams();
@@ -65,7 +69,10 @@ export function buildGamesQueryParams(
     params.set("filter.metadata.genres.name", `$in:${genres.join(",")}`);
   }
   if (developers.length > 0) {
-    params.set("filter.metadata.developers.name", `$in:${developers.join(",")}`);
+    params.set(
+      "filter.metadata.developers.name",
+      `$in:${developers.join(",")}`,
+    );
   }
   if (publishers.length > 0) {
     params.set(
@@ -96,6 +103,13 @@ export function buildGamesQueryParams(
     params.set("filter.metadata.early_access", "$eq:false");
   }
 
+  if (addedSince) params.set("filter.created_at", `$gte:${addedSince}`);
+  if (libraryFolder)
+    params.set(
+      "filter.versions.file_path",
+      `$sw:${libraryFolder.replace(/\\/g, "/").replace(/\/+$/, "")}/`,
+    );
+
   return params;
 }
 
@@ -114,6 +128,8 @@ export interface BuildCacheKeyOptions {
   releaseDateFrom?: string;
   releaseDateTo?: string;
   earlyAccess?: EarlyAccessFilter;
+  addedSince?: string;
+  libraryFolder?: string;
 }
 
 /**
@@ -141,6 +157,8 @@ export function buildCacheKey(
     releaseDateFrom: options.releaseDateFrom,
     releaseDateTo: options.releaseDateTo,
     earlyAccess: options.earlyAccess,
+    addedSince: options.addedSince,
+    libraryFolder: options.libraryFolder,
     serverUrl,
     userId: userId ?? null,
   });

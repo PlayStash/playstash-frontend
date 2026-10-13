@@ -28,15 +28,11 @@ const APP_UPDATER_EVENT = "app-updater-progress";
 const GITHUB_RELEASE_API_URLS: Record<UpdateChannel, string> = {
   stable:
     "https://api.github.com/repos/PlayStash/playstash-frontend/releases/latest",
-  "early-access":
-    "https://api.github.com/repos/PlayStash/playstash-frontend/releases/tags/early-access",
   unstable:
     "https://api.github.com/repos/PlayStash/playstash-frontend/releases/tags/unstable",
 };
 const GITHUB_RELEASE_PAGE_URLS: Record<UpdateChannel, string> = {
   stable: "https://github.com/PlayStash/playstash-frontend/releases/latest",
-  "early-access":
-    "https://github.com/PlayStash/playstash-frontend/releases/tag/early-access",
   unstable:
     "https://github.com/PlayStash/playstash-frontend/releases/tag/unstable",
 };

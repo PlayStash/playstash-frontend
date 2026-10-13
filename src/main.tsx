@@ -1,3 +1,4 @@
+import { initializeI18n } from "./i18n";
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
@@ -28,6 +29,8 @@ import { PlaystashUserRoleEnum } from "./api";
 // loaded lazily so the first paint is fast.
 const Administration = lazy(() => import("./pages/Administration"));
 const Community = lazy(() => import("./pages/Community"));
+const Requests = lazy(() => import("./pages/Requests"));
+const Chat = lazy(() => import("./pages/Chat"));
 const Library = lazy(() => import("./pages/Library"));
 const GameView = lazy(() => import("./pages/GameView"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
@@ -47,6 +50,7 @@ import { LaunchLogWindow } from "./pages/LaunchLogWindow";
 
 // The launch log window boots standalone: it renders its own document without
 // the app providers, router, analytics or global hotkeys.
+initializeI18n();
 const isLaunchLogWindow = window.location.hash === "#launch-log";
 
 if (isLaunchLogWindow) {
@@ -58,16 +62,10 @@ if (isLaunchLogWindow) {
   void applyZoom(getStoredZoom());
   void startMediaCacheMaintenance();
 
-  // Reflect the user's locale on <html> so native form controls (e.g. the
-  // <input type="date"> filters) render dates in the locale the computer uses
-  // instead of the statically-declared "en".
-  if (typeof document !== "undefined" && typeof navigator !== "undefined") {
-    document.documentElement.lang = navigator.language || "en";
-  }
-
   (window as any).global = window;
 
-  const analyticsProjectId = import.meta.env.VITE_PLAYSTASH_ANALYTICS_PROJECT_ID;
+  const analyticsProjectId = import.meta.env
+    .VITE_PLAYSTASH_ANALYTICS_PROJECT_ID;
   const analyticsApiUrl = import.meta.env.VITE_PLAYSTASH_ANALYTICS_API_URL;
   if (analyticsProjectId && analyticsApiUrl && isAnalyticsEnabled()) {
     Swetrix.init(analyticsProjectId, { apiURL: analyticsApiUrl });
@@ -128,6 +126,8 @@ if (isLaunchLogWindow) {
                                   path="community"
                                   element={<Community />}
                                 />
+                                <Route path="requests" element={<Requests />} />
+                                <Route path="chat" element={<Chat />} />
                                 <Route
                                   path="community/:id"
                                   element={<UserProfile />}

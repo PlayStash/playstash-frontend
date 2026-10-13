@@ -1,0 +1,29 @@
+# Upstream issue implementation status — 2026-10-13
+
+This record covers the six open frontend reports reviewed for the PlayStash 17.2.0 baseline, including development changes through commit `cd98faf0cdc89fde62fc41e8bf76c36c70560f7b`. Issue numbers refer to the original reports; status describes the local PlayStash implementation. External issues remain under their maintainers' control.
+
+| Report                        | PlayStash implementation                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| #24 — Library organization    | Saved categories combine tags and relative server-folder filters. Tag queries cover the full server library. Administrators can save persistent folder-tag rules and apply them to existing games and later imports.                                                                                                     |
+| #21 — Video controls          | Media navigation overlays allow pointer access to native trailer playback, audio and seek controls.                                                                                                                                                                                                                      |
+| #17 — Install-type thumbnails | Covers display the game's platform and installation-type badge.                                                                                                                                                                                                                                                          |
+| #7 — Recently added           | A collapsible, paginated library section shows games added during the last seven days.                                                                                                                                                                                                                                   |
+| #10 — Post-install script     | Desktop settings support an explicitly enabled local script with structured arguments and a literal `%F` installation-folder substitution. It runs after a verified installation; failure is shown and keeps source files available.                                                                                     |
+| #36 — Development findings    | Integrated the available fixes for freeze diagnostics/watchdog recovery, executable discovery, UMU, extraction, taskbar progress, playtime tracking, download artwork and uninstall cleanup. Stable and Unstable are the two supported updater channels. The three private Discord-only points below remain unspecified. |
+
+The user explicitly accepted leaving the three remaining #36 points outside this implementation until concrete reproductions or requirements are available:
+
+- **Missing Features Issue** — the private discussion does not supply an identifiable feature specification.
+- **Proton/Wine Improvements** — the private discussion does not identify additional behavior beyond the integrated UMU/Proton work.
+- **Laggy UI Issue** — the report itself states that it cannot be reproduced and provides no public reproduction.
+
+Related library work adds all game website links, archive passwords, Markdown system requirements, launch profiles, package extras and ordered addons, restricted-game controls, versioned saves, game requests and administrator updates, community ratings/reviews, completed-action metrics, temporary lobby/game/direct chat, server logs and metadata refresh. Package recipes and local scripts require local opt-in; addon/save restores confirm overwrites. Big Picture uses the existing controller navigation. English/German catalogs translate navigation and appearance controls; [language coverage](languages.md) describes the remaining English interface.
+
+Validation at this checkpoint:
+
+- 315 frontend tests in 49 files and 14 API-generator/release-script tests passed.
+- TypeScript, ESLint, the production build, Actionlint and whitespace checks passed; strict frozen dependency installation passed.
+- Linux native compilation and all 52 Rust library tests passed in an isolated container. A real optimized Linux `.deb` installer was built and its version, architecture and dependencies inspected.
+- Headless Chromium against the real local backend verified login, library, live lobby-message delivery, administrator folder rules, Big Picture, package extras, mobile game requests and live English/German selection with persisted reload state and document language, with no page errors. The strict chat assertion checks a newly sent message in the rendered conversation; server guard/DTO defects found during this test were corrected and the complete browser retest passed.
+
+Windows/macOS installers are configured in the gated GitHub matrix and require that matrix to run for platform validation. Controller hardware and Steam Deck/Bazzite hardware were not available for direct testing. Workflow jobs remain disabled unless `PLAYSTASH_RUN_WORKFLOWS` is deliberately set to `true`. Private GitHub release hosting requires authenticated manual downloads; automatic desktop update feeds need publicly accessible hosting, as documented in the README.

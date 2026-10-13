@@ -5,6 +5,7 @@ import {
   type GamepadDirection,
   type GamepadFrame,
 } from "@/utils/gamepad";
+import { readBigPicture, setBigPicture } from "@/utils/bigPicture";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -90,9 +91,7 @@ function isAppElement(element: Element): boolean {
  */
 function collectPopoverItems(root: HTMLElement): HTMLElement[] {
   const items = Array.from(
-    root.querySelectorAll<HTMLElement>(
-      '[role="menuitem"], [role="option"]',
-    ),
+    root.querySelectorAll<HTMLElement>('[role="menuitem"], [role="option"]'),
   );
   return items.filter(
     (element) => !element.hasAttribute("disabled") && isVisible(element),
@@ -233,8 +232,7 @@ export default function GamepadNavigator() {
       const current = gamepadFocusRef.current;
       if (!current || event.target !== current) return;
       const next = event.relatedTarget;
-      const movedWithinApp =
-        next instanceof Element && isAppElement(next);
+      const movedWithinApp = next instanceof Element && isAppElement(next);
       const movedToBody =
         next === null ||
         next === document.body ||
@@ -484,7 +482,8 @@ export default function GamepadNavigator() {
       const now = performance.now();
       const cached = scrollContainerCache;
       if (cached && now - cached.at < 250) {
-        if (!cached.element || cached.element.isConnected) return cached.element;
+        if (!cached.element || cached.element.isConnected)
+          return cached.element;
       }
       const element = findScrollContainer();
       scrollContainerCache = { element, at: now };
@@ -559,7 +558,10 @@ export default function GamepadNavigator() {
           case "rb":
             pageScroll(1);
             break;
-          // x, y, select, start: reserved for future use.
+          case "start":
+            void setBigPicture(!readBigPicture()).catch(() => {});
+            break;
+          // x, y, select: reserved for future use.
           default:
             break;
         }

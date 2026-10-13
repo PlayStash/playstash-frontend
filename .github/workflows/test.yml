@@ -48,10 +48,25 @@ jobs:
           node-version: lts/*
           cache: pnpm
 
+      - name: Setup Java for API generation
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Install dependencies
         env:
           PLAYSTASH_API_SPEC_PATH: ${{ steps.api-spec.outputs.file }}
         run: pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm exec eslint .
+
+      - name: Build
+        run: pnpm build
 
       - name: Run tests with coverage
         run: pnpm test:cov

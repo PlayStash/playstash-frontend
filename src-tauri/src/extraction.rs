@@ -3,6 +3,38 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+/// Every format must enforce containment before writing, including existing
+/// links in the destination. Addons use the same extractor in an empty staging
+/// directory and never copy links into a game installation.
+fn safe_output_path(destination: &Path, name: &Path) -> Result<PathBuf, String> {
+  let text = name.to_string_lossy();
+  if text.contains('\\') || text.contains(':') || name.is_absolute()
+    || name.components().any(|component| !matches!(component, std::path::Component::Normal(_) | std::path::Component::CurDir)) {
+    return Err("Archive contains an unsafe path.".into());
+  }
+  let mut output = destination.to_path_buf();
+  for component in name.components() {
+    if component == std::path::Component::CurDir { continue; }
+    output.push(component);
+    if fs::symlink_metadata(&output).map(|metadata| metadata.file_type().is_symlink()).unwrap_or(false) {
+      return Err("Archive cannot write through a symbolic link.".into());
+    }
+  }
+  Ok(output)
+}
+
+#[cfg(test)]
+mod containment_tests {
+  use super::*;
+  #[test]
+  fn rejects_cross_platform_archive_traversal() {
+    for name in ["../outside", "/outside", "C:/outside", "bin\\..\\outside"] {
+      assert!(safe_output_path(Path::new("/games"), Path::new(name)).is_err());
+    }
+    assert_eq!(safe_output_path(Path::new("/games"), Path::new("./bin/game.exe")).unwrap(), PathBuf::from("/games/bin/game.exe"));
+  }
+}
+
 fn extract_zip_archive(
   app: &tauri::AppHandle,
   game_id: i64,
@@ -45,7 +77,10 @@ fn extract_zip_archive(
       None => continue,
     };
     let current_file = out_rel.to_string_lossy().to_string();
-    let out_path = destination.join(out_rel);
+    let out_path = safe_output_path(destination, &out_rel).map_err(|error| (false, error))?;
+    if entry.unix_mode().map(|mode| mode & 0o170000 == 0o120000).unwrap_or(false) {
+      return Err((false, "Archive symbolic links are not supported.".into()));
+    }
 
     if entry.name().ends_with('/') {
       fs::create_dir_all(&out_path)
@@ -136,6 +171,7 @@ fn extract_rar_archive(
     )
   })? {
     let current_file = header.entry().filename.to_string_lossy().to_string();
+    safe_output_path(destination, &header.entry().filename).map_err(|error| (false, error))?;
     processing = header.extract_with_base(destination).map_err(|e| {
       let msg = e.to_string();
       let lower = msg.to_lowercase();
@@ -196,7 +232,8 @@ fn extract_7z_archive(
 
   reader
     .for_each_entries(|entry, entry_reader| {
-      let dest_path = destination.join(entry.name());
+      let dest_path = safe_output_path(destination, Path::new(entry.name()))
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
       if entry.is_directory() {
         fs::create_dir_all(&dest_path)?;
         emit_extract_progress(
@@ -494,6 +531,11 @@ fn extract_tar_from_reader<R: Read>(
   let mut processed = 0u64;
   for entry in entries {
     let mut entry = entry.map_err(|e| (false, format!("Failed to read TAR entry: {e}")))?;
+    if !entry.header().entry_type().is_file() && !entry.header().entry_type().is_dir() {
+      return Err((false, "Archive links and special files are not supported.".into()));
+    }
+    let entry_path = entry.path().map_err(|error| (false, error.to_string()))?.into_owned();
+    safe_output_path(destination, &entry_path).map_err(|error| (false, error))?;
     let current_file = entry
       .path()
       .ok()

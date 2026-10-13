@@ -4,8 +4,7 @@ const argv = process.argv.slice(2);
 const repository = argv[0];
 const tag = argv[1];
 const keepVersionIndex = argv.indexOf("--keep-version");
-const keepVersion =
-  keepVersionIndex !== -1 ? argv[keepVersionIndex + 1] : null;
+const keepVersion = keepVersionIndex !== -1 ? argv[keepVersionIndex + 1] : null;
 
 if (!repository || !tag) {
   console.error(
@@ -24,7 +23,6 @@ if (!token) {
 const ALWAYS_KEEP = new Set([
   "playstash-frontend.zip",
   "unstable.json",
-  "early-access.json",
   "latest.json",
   "updater-channels.json",
 ]);
@@ -35,7 +33,7 @@ const ALWAYS_KEEP = new Set([
 async function fetchManifestAssetNames(assets) {
   const names = new Set();
 
-  for (const feed of ["unstable.json", "early-access.json", "latest.json"]) {
+  for (const feed of ["unstable.json", "latest.json"]) {
     const asset = assets.find((a) => a.name === feed);
     if (!asset) continue;
 

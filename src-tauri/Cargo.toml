@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "17.1.0"
+version = "17.2.0"
 description = "The self-hosted gaming platform for DRM-free games"
 authors = ["Phalcode"]
 license = "CC BY-NC-SA 4.0"
@@ -22,6 +22,7 @@ tauri-build = { version = "2", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
+base64 = "0.22"
 semver = "1"
 tauri = { version = "2", features = ["devtools", "tray-icon"] }
 tauri-plugin-log = "2"

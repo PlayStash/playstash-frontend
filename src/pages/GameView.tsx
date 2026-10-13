@@ -1,3 +1,4 @@
+import { GameWebsites } from "@/components/GameWebsites";
 import { PlaystashGame } from "@/api/models/PlaystashGame";
 import { Progress, ProgressStateEnum } from "@/api/models/Progress";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
@@ -5,6 +6,12 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Media } from "@/components/Media";
 import MediaSlider from "@/components/MediaSlider";
 import MarkdownContent from "@/components/MarkdownContent";
+import { PackageContents } from "@/components/PackageContents";
+import { GameReviews } from "@/components/GameReviews";
+import { GameSaves } from "@/components/GameSaves";
+import { GameMetrics } from "@/components/admin/GameMetrics";
+import type { LaunchProfileDto } from "@/api";
+import { useGameMetrics } from "@/hooks/useGameMetrics";
 import BackButton from "@/components/BackButton";
 import { Spinner } from "@/components/Spinner";
 import { useAuth } from "@/context/AuthContext";
@@ -18,6 +25,7 @@ import { GameVersion } from "@/api/models/GameVersion";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
 import { getRootPaths } from "@/utils/rootPaths";
+import { buildShareUrl } from "@/utils/shareUrl";
 import { formatDate, formatTime, formatYear } from "@/utils/date";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
 import { formatDecimal } from "@/utils/number";
@@ -38,6 +46,7 @@ import {
   WrenchScrewdriverIcon,
   BuildingOffice2Icon,
   ShieldCheckIcon,
+  ArrowUpCircleIcon,
 } from "@heroicons/react/24/solid";
 import {
   StarIcon as StarOutline,
@@ -60,10 +69,15 @@ import { useInstalledGames } from "@/hooks/useInstalledGames";
 import { isTauriApp } from "@/utils/tauri";
 import { onGameDeleted } from "@/utils/gameUpdates";
 import { maskDisplayName, useStreamerMode } from "@/utils/streamerMode";
+import {
+  isGameUpdateAvailable,
+  resolveServerVersionTag,
+} from "@/utils/gameUpdate";
 import { LayoutGroup, motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
 
 export default function GameView() {
+  const reportGameEvent = useGameMetrics();
   const { id } = useParams<{ id: string }>();
   const numericId = Number(id);
   const navigate = useNavigate();
@@ -98,6 +112,14 @@ export default function GameView() {
   const installedInfo = useMemo(
     () => installedGames.find((ig) => ig.gameId === numericId),
     [installedGames, numericId],
+  );
+
+  // Whether the locally installed version differs from the server's current
+  // default version (i.e. a newer version is available to download).
+  const serverVersionTag = useMemo(() => resolveServerVersionTag(game), [game]);
+  const updateAvailable = useMemo(
+    () => isGameUpdateAvailable(game, installedInfo),
+    [game, installedInfo],
   );
 
   // ESC returns to the library (same as the Back button). Open overlays
@@ -182,7 +204,14 @@ export default function GameView() {
     .map((t: any) => t?.name)
     .filter((n: any) => typeof n === "string" && n.trim());
   const [detailsTab, setDetailsTab] = useState<
-    "description" | "notes" | "tags"
+    | "description"
+    | "notes"
+    | "tags"
+    | "package"
+    | "requirements"
+    | "metrics"
+    | "reviews"
+    | "saves"
   >("description");
   const mediaSliderRef = useRef<HTMLDivElement | null>(null);
   const detailsCardRef = useRef<HTMLDivElement | null>(null);
@@ -339,15 +368,26 @@ export default function GameView() {
     showAlert,
   ]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
+    // Anchor the link to the PlayStash server instead of the current origin:
+    // Tauri builds serve the bundled Web UI from `http://tauri.localhost`, so
+    // `window.location.href` would produce a link that is useless to anyone
+    // else.
+    const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const shareUrl = buildShareUrl(serverUrl, route);
     try {
-      navigator.clipboard.writeText(window.location.href);
-    } catch {}
-    // Show global alert notification
-    showAlert({
-      title: "Link copied",
-    });
-  }, [showAlert]);
+      await navigator.clipboard.writeText(shareUrl);
+      // Show global alert notification
+      showAlert({
+        title: "Link copied",
+      });
+    } catch {
+      showAlert({
+        title: "Couldn't copy link",
+        description: shareUrl,
+      });
+    }
+  }, [serverUrl, showAlert]);
 
   const resolveVersions = useCallback(async (): Promise<GameVersion[]> => {
     if (game && Array.isArray(game.versions) && game.versions.length > 0) {
@@ -487,7 +527,7 @@ export default function GameView() {
   }, [game, selectVersionAndRun]);
 
   const handlePlayGame = useCallback(
-    async (e: React.MouseEvent) => {
+    async (e: React.MouseEvent, profile?: LaunchProfileDto) => {
       e.preventDefault();
       e.stopPropagation();
       if (!installedInfo) return;
@@ -526,6 +566,11 @@ export default function GameView() {
           }
         }
 
+        launchExe =
+          profile?.executable || launchExe || game?.metadata?.launch_executable;
+        launchParams = profile
+          ? profile.parameters
+          : (launchParams ?? game?.metadata?.launch_parameters);
         if (!launchExe) {
           showAlert({
             title: "No launch executable configured",
@@ -548,6 +593,11 @@ export default function GameView() {
           umuProtonPath: umuProtonPath || null,
           umuWinePrefix: umuWinePrefix || null,
         });
+        reportGameEvent(
+          installedInfo.gameId,
+          "played",
+          installedInfo.versionId,
+        );
       } catch (err: any) {
         showAlert({
           title: "Failed to launch game",
@@ -555,7 +605,7 @@ export default function GameView() {
         });
       }
     },
-    [installedInfo, showAlert],
+    [installedInfo, showAlert, game?.metadata, title, reportGameEvent],
   );
 
   const handleVersionSelect = useCallback(
@@ -681,7 +731,6 @@ export default function GameView() {
     : (game as any)?.metadata?.release_year || null;
   const versionTag = game?.version || (game as any)?.metadata?.version || null;
   const websites: string[] = (game as any)?.metadata?.url_websites || [];
-  const primaryWebsite = websites.length > 0 ? websites[0] : null;
   const devNames: string[] = ((game as any)?.metadata?.developers || [])
     .map((d: any) => d?.name || d)
     .filter(Boolean);
@@ -794,6 +843,22 @@ export default function GameView() {
                 <div className="text-xl font-semibold leading-tight truncate pr-2">
                   {title}
                 </div>
+                {updateAvailable && (
+                  <span
+                    title={
+                      installedInfo?.versionName && serverVersionTag
+                        ? `${installedInfo.versionName} → ${serverVersionTag}`
+                        : "A newer version is available on the server"
+                    }
+                    className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-300"
+                  >
+                    <ArrowUpCircleIcon
+                      className="h-3.5 w-3.5"
+                      aria-hidden="true"
+                    />
+                    Update available
+                  </span>
+                )}
                 {/* Added flex-wrap to allow buttons to wrap on extremely narrow viewports, preventing horizontal overflow that could push the media slider and cause cutoff */}
                 <div className="flex flex-row flex-wrap gap-2">
                   {isTauri && installedInfo && (
@@ -1022,7 +1087,44 @@ export default function GameView() {
                   surfaceClassName="surface-panel"
                 >
                   <LayoutGroup id="details-tabs">
-                    <div className="flex border-b border-ps-line mb-4 gap-6 text-sm">
+                    <div className="flex flex-wrap border-b border-ps-line mb-4 gap-x-6 gap-y-3 text-sm">
+                      {Number(user?.role) >= 3 && (
+                        <button
+                          type="button"
+                          onClick={() => setDetailsTab("metrics")}
+                          className={clsx(
+                            "relative pb-2 -mb-px border-b-2 font-medium",
+                            detailsTab === "metrics"
+                              ? "border-ps-accent text-ps-accent-strong"
+                              : "border-transparent text-ps-muted hover:text-ps-text",
+                          )}
+                        >
+                          Metrics
+                        </button>
+                      )}
+                      {(
+                        ["package", "requirements", "reviews", "saves"] as const
+                      ).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setDetailsTab(tab)}
+                          className={clsx(
+                            "relative pb-2 -mb-px border-b-2 font-medium",
+                            detailsTab === tab
+                              ? "border-ps-accent text-ps-accent-strong"
+                              : "border-transparent text-ps-muted hover:text-ps-text",
+                          )}
+                        >
+                          {tab === "package"
+                            ? "Package & extras"
+                            : tab === "reviews"
+                              ? "Reviews"
+                              : tab === "saves"
+                                ? "Saves"
+                                : "Requirements"}
+                        </button>
+                      ))}
                       <button
                         onClick={() => setDetailsTab("description")}
                         className={clsx(
@@ -1086,6 +1188,79 @@ export default function GameView() {
                     transition={{ duration: 0.12, ease: EASE_OUT }}
                     className="text-sm leading-relaxed space-y-4 min-h-45 text-ps-text"
                   >
+                    {detailsTab === "metrics" && Number(user?.role) >= 3 && (
+                      <GameMetrics gameId={numericId} />
+                    )}
+                    {detailsTab === "reviews" && (
+                      <GameReviews gameId={numericId} />
+                    )}
+                    {detailsTab === "saves" && <GameSaves gameId={numericId} />}
+                    {detailsTab === "package" && (
+                      <PackageContents
+                        gameId={numericId}
+                        installationPath={installedInfo?.installationDirectory}
+                        archivePassword={game?.metadata?.archive_password}
+                        launchProfiles={game?.metadata?.launch_profiles}
+                        onLaunch={(event, profile) =>
+                          void handlePlayGame(event, profile)
+                        }
+                        onRecipe={(recipe) => {
+                          setGame((previous) =>
+                            previous
+                              ? ({
+                                  ...previous,
+                                  metadata: {
+                                    ...previous.metadata,
+                                    installer_executable: recipe.executable,
+                                    installer_parameters: recipe.parameters,
+                                  },
+                                } as PlaystashGame)
+                              : previous,
+                          );
+                          void showAlert({
+                            title:
+                              "Package installer selected for the next download",
+                          });
+                        }}
+                      />
+                    )}
+                    {detailsTab === "requirements" && (
+                      <div className="space-y-4">
+                        {game?.metadata?.system_requirements_minimum ||
+                        game?.metadata?.system_requirements_recommended ? (
+                          <>
+                            {game?.metadata?.system_requirements_minimum && (
+                              <div>
+                                <h4 className="mb-2 font-semibold">Minimum</h4>
+                                <MarkdownContent
+                                  content={
+                                    game.metadata.system_requirements_minimum
+                                  }
+                                />
+                              </div>
+                            )}
+                            {game?.metadata
+                              ?.system_requirements_recommended && (
+                              <div>
+                                <h4 className="mb-2 font-semibold">
+                                  Recommended
+                                </h4>
+                                <MarkdownContent
+                                  content={
+                                    game.metadata
+                                      .system_requirements_recommended
+                                  }
+                                />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="italic text-ps-muted">
+                            No system requirements provided.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {detailsTab === "description" &&
                       (description ? (
                         <MarkdownContent content={description} />
@@ -1174,25 +1349,9 @@ export default function GameView() {
                     <GlobeAltIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Website
+                        Websites
                       </div>
-                      <div
-                        className="font-medium whitespace-nowrap truncate"
-                        title={primaryWebsite || "—"}
-                      >
-                        {primaryWebsite ? (
-                          <a
-                            href={primaryWebsite}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline hover:text-ps-accent-cool"
-                          >
-                            {primaryWebsite.replace(/^https?:\/\//, "")}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </div>
+                      <GameWebsites urls={websites} />
                     </div>
                   </li>
                   <li className="flex items-start gap-3">

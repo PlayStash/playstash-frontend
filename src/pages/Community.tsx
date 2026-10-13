@@ -549,7 +549,7 @@ export default function Community() {
           });
 
         setUsers(activeUsers);
-        // No users â†’ nothing to await; details `useEffect` keeps the gate
+        // No users → nothing to await; details `useEffect` keeps the gate
         // closed below otherwise.
         setDetailsDone(activeUsers.length === 0);
       } catch (fetchError: any) {
@@ -569,12 +569,12 @@ export default function Community() {
 
   // The list is ordered by activity (last played) which is only known once
   // per-user details have loaded. Gate the grid on `detailsDone` so the card
-  // order is final on first paint â€” otherwise the list re-sorts a second
+  // order is final on first paint — otherwise the list re-sorts a second
   // after loading and the content visibly shifts.
   useEffect(() => {
     let cancelled = false;
 
-    // An empty user list at mount must NOT open the gate â€” the fetch might
+    // An empty user list at mount must NOT open the gate — the fetch might
     // still be in flight and `detailsDone` would let the grid render in
     // alphabetical order before activity details arrive.
     if (users.length === 0) return;

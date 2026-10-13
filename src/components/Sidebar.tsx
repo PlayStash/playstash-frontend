@@ -1,3 +1,4 @@
+import { useTranslation } from "@/i18n";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -5,6 +6,7 @@ import { Logo } from "@components/Logo";
 import {
   ArrowRightStartOnRectangleIcon,
   BookOpenIcon,
+  ChatBubbleLeftRightIcon,
   ChevronUpIcon,
   LifebuoyIcon,
   NewspaperIcon,
@@ -44,6 +46,7 @@ import { NewsDialog } from "./news/NewsDialog";
 import { maskUser, useStreamerMode } from "@/utils/streamerMode";
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,7 +54,8 @@ export function Sidebar() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const streamerMode = useStreamerMode();
   const masked = streamerMode && user ? maskUser(user) : null;
-  const username = masked?.displayName ?? (user?.username || "Unknown User");
+  const username =
+    masked?.displayName ?? (user?.username || t("profile.unknown"));
   const email = masked?.email ?? (user?.email || "");
   const avatar = user?.avatar;
   const userAvatarSeed = user?.id != null ? String(user.id) : undefined;
@@ -98,10 +102,18 @@ export function Sidebar() {
         </SidebarHeader>
         <SidebarBody>
           <SidebarSection>
+            <SidebarItem href="/chat" current={isCurrentPath("/chat")}>
+              <ChatBubbleLeftRightIcon />
+              <SidebarLabel>{t("nav.chat")}</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem href="/requests" current={isCurrentPath("/requests")}>
+              <BookOpenIcon />
+              <SidebarLabel>{t("nav.requests")}</SidebarLabel>
+            </SidebarItem>
             <SidebarItem href="/library" current={isCurrentPath("/library")}>
               <Squares2X2Icon />
               <SidebarLabel className="flex justify-between w-full">
-                Library
+                {t("nav.library")}
               </SidebarLabel>
             </SidebarItem>
             {isTauri && (
@@ -111,7 +123,7 @@ export function Sidebar() {
               >
                 <ArrowDownTrayIcon />
                 <SidebarLabel className="flex justify-between w-full">
-                  Downloads
+                  {t("nav.downloads")}
                 </SidebarLabel>
               </SidebarItem>
             )}
@@ -129,13 +141,13 @@ export function Sidebar() {
             >
               <UserGroupIcon />
               <SidebarLabel className="flex justify-between w-full">
-                Community
+                {t("nav.community")}
               </SidebarLabel>
             </SidebarItem>
             <SidebarItem href="/settings" current={isCurrentPath("/settings")}>
               <Cog6ToothIcon />
               <SidebarLabel className="flex justify-between w-full">
-                Settings
+                {t("nav.settings")}
               </SidebarLabel>
             </SidebarItem>
             {isAdmin ? (
@@ -152,7 +164,7 @@ export function Sidebar() {
                 }
               >
                 <ShieldExclamationIcon />
-                <SidebarLabel>Administration</SidebarLabel>
+                <SidebarLabel>{t("nav.admin")}</SidebarLabel>
               </SidebarItem>
             ) : (
               <SidebarItem
@@ -161,20 +173,26 @@ export function Sidebar() {
                 className="hidden cursor-not-allowed"
               >
                 <ShieldExclamationIcon />
-                <SidebarLabel>Administration</SidebarLabel>
+                <SidebarLabel>{t("nav.admin")}</SidebarLabel>
               </SidebarItem>
             )}
           </SidebarSection>
 
           <SidebarSpacer />
           <SidebarSection>
-            <SidebarItem href="https://github.com/PlayStash/playstash-frontend#readme" target="_blank">
+            <SidebarItem
+              href="https://github.com/PlayStash/playstash-frontend#readme"
+              target="_blank"
+            >
               <BookOpenIcon />
-              <SidebarLabel>Documentation</SidebarLabel>
+              <SidebarLabel>{t("nav.docs")}</SidebarLabel>
             </SidebarItem>
-            <SidebarItem href="https://github.com/PlayStash/playstash-frontend/issues" target="_blank">
+            <SidebarItem
+              href="https://github.com/PlayStash/playstash-frontend/issues"
+              target="_blank"
+            >
               <LifebuoyIcon />
-              <SidebarLabel>Support</SidebarLabel>
+              <SidebarLabel>{t("nav.support")}</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               onClick={(e: any) => {
@@ -184,13 +202,13 @@ export function Sidebar() {
             >
               <NewspaperIcon />
               <SidebarLabel className="flex justify-between w-full items-center">
-                News
+                {t("nav.news")}
                 {badgeVisible && (
                   <Badge
                     color="amber"
                     className="ml-2 motion-safe:animate-pulse"
                   >
-                    New
+                    {t("nav.new")}
                   </Badge>
                 )}
               </SidebarLabel>
@@ -229,19 +247,19 @@ export function Sidebar() {
                 }}
               >
                 <UserIcon />
-                <DropdownLabel>Edit profile</DropdownLabel>
+                <DropdownLabel>{t("profile.edit")}</DropdownLabel>
               </DropdownItem>
               <DropdownDivider />
               <DropdownItem
                 href={user?.id ? `/community/${user.id}` : "/community"}
               >
                 <UserIcon />
-                <DropdownLabel>My profile</DropdownLabel>
+                <DropdownLabel>{t("profile.mine")}</DropdownLabel>
               </DropdownItem>
               <DropdownDivider />
               <DropdownItem href="#" onClick={handleLogout}>
                 <ArrowRightStartOnRectangleIcon />
-                <DropdownLabel>Sign out</DropdownLabel>
+                <DropdownLabel>{t("profile.logout")}</DropdownLabel>
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>

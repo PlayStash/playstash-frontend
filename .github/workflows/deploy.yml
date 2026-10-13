@@ -5,15 +5,15 @@ on:
     branches:
       - main
       - dev
-      - ea
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  group: deploy-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -26,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.package-version.outputs.current-version }}
+      publish_stable: ${{ steps.publish-plan.outputs.publish_stable }}
+      publish_unstable: ${{ steps.publish-plan.outputs.publish_unstable }}
+      upload_draft: ${{ steps.publish-plan.outputs.upload_draft }}
+      release_tag: ${{ steps.publish-plan.outputs.release_tag }}
       build_version: ${{ steps.build-info.outputs.build_version }}
       build_channel: ${{ steps.build-info.outputs.build_channel }}
       build_commit: ${{ steps.build-info.outputs.build_commit }}
@@ -42,7 +46,7 @@ jobs:
       - name: Compute build metadata
         id: build-info
         env:
-          PLAYSTASH_BUILD_CHANNEL: ${{ github.ref == 'refs/heads/main' && 'stable' || github.ref == 'refs/heads/dev' && 'unstable' || 'early-access' }}
+          PLAYSTASH_BUILD_CHANNEL: ${{ github.ref == 'refs/heads/dev' && 'unstable' || 'stable' }}
         run: node scripts/compute-build-info.mjs package.json
 
       - name: Resolve API spec hash
@@ -75,6 +79,12 @@ jobs:
           node-version: lts/*
           cache: pnpm
 
+      - name: Setup Java for API generation
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Install dependencies
         env:
           PLAYSTASH_API_SPEC_PATH: ${{ steps.api-spec.outputs.file }}
@@ -92,47 +102,23 @@ jobs:
       - name: Zip dist folder
         run: zip -r playstash-frontend.zip dist
 
-      - name: Create Github Tag & Release
-        id: release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.package-version.outputs.current-version }}
-          name: Version ${{ steps.package-version.outputs.current-version }}
-          generate_release_notes: true
-          files: playstash-frontend.zip
+      - name: Plan immutable stable release
+        id: publish-plan
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/plan-release.mjs
 
-      - name: Upload Frontend artifact to unstable release
-        if: github.ref == 'refs/heads/dev'
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload web build as workflow artifact
+        uses: actions/upload-artifact@v7
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: playstash-frontend.zip
-          asset_name: playstash-frontend.zip
-          tag: unstable
-          overwrite: true
-          prerelease: true
+          name: playstash-web-${{ steps.build-info.outputs.build_commit }}
+          path: playstash-frontend.zip
 
-      - name: Upload Frontend artifact to early-access release
-        if: github.ref == 'refs/heads/ea'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: playstash-frontend.zip
-          asset_name: playstash-frontend.zip
-          tag: early-access
-          overwrite: true
-          prerelease: true
-
-      - name: Send Discord Notification
-        if: github.ref == 'refs/heads/main' && vars.PLAYSTASH_DISCORD_NOTIFICATIONS == 'true'
-        uses: Ilshidur/action-discord@master
+      - name: Upload web build to new draft release
+        if: steps.publish-plan.outputs.upload_draft == 'true'
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_BOT_WEBHOOK }}
-        with:
-          args: "New Release: {{ EVENT_PAYLOAD.repository.full_name }} v${{ steps.package-version.outputs.current-version }} has been deployed. Here are the changes: https://github.com/{{ EVENT_PAYLOAD.repository.full_name }}/releases/tag/${{ steps.package-version.outputs.current-version }}"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ steps.publish-plan.outputs.release_tag }}" playstash-frontend.zip --clobber
 
       - name: Download coverage report
         if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
@@ -153,9 +139,9 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   tauri:
-    name: Build Tauri (${{ matrix.platform }})
+    name: Build Tauri (${{ matrix.platform }} ${{ matrix.arch }})
     needs: release
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && (needs.release.result == 'success' || needs.release.result == 'skipped')) }}
+    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && needs.release.result == 'success') }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -164,10 +150,20 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            arch: x64
+            target: ""
           - os: windows-latest
             platform: windows
+            arch: x64
+            target: ""
           - os: macos-latest
             platform: macos
+            arch: arm64
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            target: x86_64-apple-darwin
 
     steps:
       - name: Checkout
@@ -216,6 +212,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -231,6 +229,12 @@ jobs:
         with:
           node-version: lts/*
           cache: pnpm
+
+      - name: Setup Java for API generation
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
 
       - name: Install dependencies
         env:
@@ -257,8 +261,8 @@ jobs:
       - name: Write AppStream metainfo
         run: node scripts/write-tauri-metainfo.mjs
 
-      - name: Build Tauri stable release
-        if: github.ref == 'refs/heads/main'
+      - name: Build installers with official Tauri action
+        uses: tauri-apps/tauri-action@v1
         env:
           PLAYSTASH_TAURI_UPDATER_PUBKEY: ${{ vars.PLAYSTASH_TAURI_UPDATER_PUBKEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -268,33 +272,10 @@ jobs:
           PLAYSTASH_BUILD_COMMIT: ${{ needs.release.outputs.build_commit }}
           PLAYSTASH_BUILD_ID: ${{ needs.release.outputs.build_id }}
           PLAYSTASH_RELEASE_REF: ${{ needs.release.outputs.release_ref }}
-        run: pnpm tauri build --config src-tauri/tauri.release.generated.json
-
-      - name: Build Tauri unstable release
-        if: github.ref == 'refs/heads/dev'
-        env:
-          PLAYSTASH_TAURI_UPDATER_PUBKEY: ${{ vars.PLAYSTASH_TAURI_UPDATER_PUBKEY }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          PLAYSTASH_BUILD_VERSION: ${{ needs.release.outputs.build_version }}
-          PLAYSTASH_BUILD_CHANNEL: ${{ needs.release.outputs.build_channel }}
-          PLAYSTASH_BUILD_COMMIT: ${{ needs.release.outputs.build_commit }}
-          PLAYSTASH_BUILD_ID: ${{ needs.release.outputs.build_id }}
-          PLAYSTASH_RELEASE_REF: ${{ needs.release.outputs.release_ref }}
-        run: pnpm tauri build --config src-tauri/tauri.release.generated.json
-
-      - name: Build Tauri early-access release
-        if: github.ref == 'refs/heads/ea'
-        env:
-          PLAYSTASH_TAURI_UPDATER_PUBKEY: ${{ vars.PLAYSTASH_TAURI_UPDATER_PUBKEY }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          PLAYSTASH_BUILD_VERSION: ${{ needs.release.outputs.build_version }}
-          PLAYSTASH_BUILD_CHANNEL: ${{ needs.release.outputs.build_channel }}
-          PLAYSTASH_BUILD_COMMIT: ${{ needs.release.outputs.build_commit }}
-          PLAYSTASH_BUILD_ID: ${{ needs.release.outputs.build_id }}
-          PLAYSTASH_RELEASE_REF: ${{ needs.release.outputs.release_ref }}
-        run: pnpm tauri build --config src-tauri/tauri.release.generated.json
+        with:
+          args: --config src-tauri/tauri.release.generated.json ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
+          retryAttempts: 2
+          uploadUpdaterJson: false
 
       - name: Patch AppImage AppRun (Wayland libwayland fix)
         if: matrix.os == 'ubuntu-latest'
@@ -304,44 +285,37 @@ jobs:
         run: node scripts/patch-appimage-apprun.mjs
 
       - name: Prepare Tauri release assets
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ea'
+        env:
+          PLAYSTASH_TARGET_TRIPLE: ${{ matrix.target }}
+          PLAYSTASH_TARGET_ARCH: ${{ matrix.arch }}
         run: node scripts/prepare-tauri-release-assets.mjs ${{ matrix.platform }} ${{ needs.release.outputs.build_version }}
 
       - name: Upload Tauri release assets
-        if: github.ref == 'refs/heads/main'
+        if: needs.release.outputs.upload_draft == 'true'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ needs.release.outputs.version }}" release-assets/${{ matrix.platform }}/* --clobber
+        run: gh release upload "${{ needs.release.outputs.release_tag }}" release-assets/${{ matrix.platform }}/* --clobber
 
-      - name: Upload unstable Tauri release assets
-        if: github.ref == 'refs/heads/dev'
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload unstable release-assets/${{ matrix.platform }}/* --clobber
-
-      - name: Upload early-access Tauri release assets
-        if: github.ref == 'refs/heads/ea'
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload early-access release-assets/${{ matrix.platform }}/* --clobber
-
-      - name: Upload updater metadata artifact
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ea'
+      - name: Upload platform installers as workflow artifact
         uses: actions/upload-artifact@v7
         with:
-          name: updater-metadata-${{ matrix.platform }}
-          path: updater-metadata/${{ matrix.platform }}.json
+          name: playstash-installers-${{ matrix.platform }}-${{ matrix.arch }}-${{ needs.release.outputs.build_commit }}
+          path: release-assets/${{ matrix.platform }}/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload updater metadata artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: updater-metadata-${{ matrix.platform }}-${{ matrix.arch }}
+          path: updater-metadata/*.json
 
   cleanup-release:
     name: Clean stale release assets
     needs: [release, tauri, updater-manifest]
-    # Run even if a platform build fails or the manifest isn't published, so
-    # partially uploaded prerelease assets still get cleaned up (while keeping
-    # assets still referenced by the published updater feed).
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ea') && needs.updater-manifest.result != 'cancelled') }}
+    # Keep the current feed and its assets untouched after failed builds.
+    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && github.ref == 'refs/heads/dev' && needs.updater-manifest.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -352,18 +326,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$GITHUB_REF" = "refs/heads/dev" ]; then
-            target_tag=unstable
-          else
-            target_tag=early-access
-          fi
-          node scripts/cleanup-release-assets.mjs "${{ github.repository }}" "$target_tag" --keep-version "${{ needs.release.outputs.build_version }}"
+          node scripts/cleanup-release-assets.mjs "${{ github.repository }}" unstable --keep-version "${{ needs.updater-manifest.outputs.published_version }}"
 
   updater-manifest:
     name: Publish updater manifest
     needs: [release, tauri]
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/ea') && needs.release.result == 'success' && needs.tauri.result == 'success') }}
+    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && (needs.release.outputs.publish_stable == 'true' || needs.release.outputs.publish_unstable == 'true') && needs.release.result == 'success' && needs.tauri.result == 'success') }}
     runs-on: ubuntu-latest
+    outputs:
+      published_version: ${{ steps.unstable-publisher.outputs.published_version }}
 
     steps:
       - name: Checkout
@@ -387,49 +358,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            echo "channel=stable" >> "$GITHUB_OUTPUT"
-            echo "file=latest.json" >> "$GITHUB_OUTPUT"
-            echo "tag=${{ needs.release.outputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "asset_tag=${{ needs.release.outputs.version }}" >> "$GITHUB_OUTPUT"
-            echo "channels_tag=${{ needs.release.outputs.version }}" >> "$GITHUB_OUTPUT"
-          elif [ "$GITHUB_REF" = "refs/heads/ea" ]; then
-            echo "channel=early-access" >> "$GITHUB_OUTPUT"
-            echo "file=early-access.json" >> "$GITHUB_OUTPUT"
-            echo "tag=early-access" >> "$GITHUB_OUTPUT"
-            echo "asset_tag=early-access" >> "$GITHUB_OUTPUT"
-            stable_tag=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || true)
-            if [ -n "$stable_tag" ]; then
-              echo "channels_tag=$stable_tag" >> "$GITHUB_OUTPUT"
-            else
-              echo "channels_tag=early-access" >> "$GITHUB_OUTPUT"
-            fi
-          else
+          if [ "$GITHUB_REF" = "refs/heads/dev" ]; then
             echo "channel=unstable" >> "$GITHUB_OUTPUT"
             echo "file=unstable.json" >> "$GITHUB_OUTPUT"
-            echo "tag=unstable" >> "$GITHUB_OUTPUT"
-            echo "asset_tag=unstable" >> "$GITHUB_OUTPUT"
-            stable_tag=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || true)
-            if [ -n "$stable_tag" ]; then
-              echo "channels_tag=$stable_tag" >> "$GITHUB_OUTPUT"
-            else
-              echo "channels_tag=unstable" >> "$GITHUB_OUTPUT"
-            fi
+            echo "tag=${{ needs.release.outputs.release_tag }}" >> "$GITHUB_OUTPUT"
+            echo "asset_tag=${{ needs.release.outputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
+            echo "file=latest.json" >> "$GITHUB_OUTPUT"
+            echo "tag=${{ needs.release.outputs.release_tag }}" >> "$GITHUB_OUTPUT"
+            echo "asset_tag=${{ needs.release.outputs.release_tag }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download existing updater channels source
-        shell: bash
-        run: |
-          rm -f existing-updater-channels.json
-          curl -fsSL "https://github.com/${{ github.repository }}/releases/latest/download/updater-channels.json" -o existing-updater-channels.json || true
-          if [ ! -s existing-updater-channels.json ]; then
-            curl -fsSL "https://github.com/${{ github.repository }}/releases/download/unstable/updater-channels.json" -o existing-updater-channels.json || true
-          fi
-          if [ ! -s existing-updater-channels.json ]; then
-            curl -fsSL "https://github.com/${{ github.repository }}/releases/download/early-access/updater-channels.json" -o existing-updater-channels.json || true
-          fi
+        if: needs.release.outputs.upload_draft == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/read-updater-channels.mjs
 
       - name: Build current channel manifest
+        if: needs.release.outputs.upload_draft == 'true'
         env:
           PLAYSTASH_BUILD_COMMIT: ${{ needs.release.outputs.build_commit }}
           PLAYSTASH_BUILD_ID: ${{ needs.release.outputs.build_id }}
@@ -437,17 +385,42 @@ jobs:
         run: node scripts/build-tauri-updater-manifest.mjs ${{ needs.release.outputs.build_version }} updater-metadata current-channel.json ${{ github.repository }} ${{ steps.manifest.outputs.asset_tag }}
 
       - name: Merge updater channels source
+        if: needs.release.outputs.upload_draft == 'true'
         run: node scripts/merge-tauri-updater-channels.mjs existing-updater-channels.json ${{ steps.manifest.outputs.channel }} current-channel.json updater-channels.json
 
       - name: Extract updater feed for current channel
+        if: needs.release.outputs.upload_draft == 'true'
         run: node scripts/extract-tauri-updater-channel.mjs updater-channels.json ${{ steps.manifest.outputs.channel }} ${{ steps.manifest.outputs.file }}
 
       - name: Upload updater manifest
+        if: needs.release.outputs.upload_draft == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${{ steps.manifest.outputs.tag }}" "${{ steps.manifest.outputs.file }}" --clobber
 
       - name: Upload updater channels source
+        if: needs.release.outputs.upload_draft == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.manifest.outputs.channels_tag }}" updater-channels.json --clobber
+        run: gh release upload "${{ steps.manifest.outputs.tag }}" updater-channels.json --clobber
+
+      - name: Publish completed stable release
+        if: needs.release.outputs.publish_stable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ needs.release.outputs.release_tag }}" --draft=false --latest
+
+      - name: Publish completed unstable build and promote channel
+        id: unstable-publisher
+        if: needs.release.outputs.publish_unstable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/publish-unstable.mjs "${{ needs.release.outputs.release_tag }}" "${{ needs.release.outputs.build_version }}"
+
+      - name: Send Discord Notification
+        if: needs.release.outputs.publish_stable == 'true' && vars.PLAYSTASH_DISCORD_NOTIFICATIONS == 'true'
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_BOT_WEBHOOK }}
+        with:
+          args: "PlayStash ${{ needs.release.outputs.version }} is available: https://github.com/${{ github.repository }}/releases/tag/${{ needs.release.outputs.release_tag }}"

@@ -23,14 +23,12 @@ const PLATFORM_CONFIG = {
   // Each platform can publish multiple *signed* updater bundles. The Tauri
   // updater client searches the feed for "<os>-<arch>-<installer>" first and
   // falls back to "<os>-<arch>", so we emit an entry per installer — this lets
-  // us support both `.deb` and AppImage installs on Linux.
+  // the Windows installer and AppImage installs on Linux. Debian packages
+  // are regular release assets: Tauri does not generate .deb updater signatures.
   linux: {
     osKey: "linux",
-    updaters: [
-      { dir: "deb", suffix: ".deb", installer: "deb" },
-      { dir: "appimage", suffix: ".AppImage", installer: "appimage" },
-    ],
-    optionalReleaseAssets: [],
+    updaters: [{ dir: "appimage", suffix: ".AppImage", installer: "appimage" }],
+    optionalReleaseAssets: [{ dir: "deb", suffix: ".deb" }],
   },
   windows: {
     osKey: "windows",
@@ -56,6 +54,9 @@ const bundleRoot = path.join(
   repoRoot,
   "src-tauri",
   "target",
+  ...(process.env.PLAYSTASH_TARGET_TRIPLE
+    ? [process.env.PLAYSTASH_TARGET_TRIPLE]
+    : []),
   "release",
   "bundle",
 );
@@ -63,7 +64,12 @@ const releaseAssetsDir = path.join(repoRoot, "release-assets", platform);
 const metadataDir = path.join(repoRoot, "updater-metadata");
 
 function resolveArchKey() {
-  const rawArch = (process.env.RUNNER_ARCH || process.arch || "").toLowerCase();
+  const rawArch = (
+    process.env.PLAYSTASH_TARGET_ARCH ||
+    process.env.RUNNER_ARCH ||
+    process.arch ||
+    ""
+  ).toLowerCase();
 
   switch (rawArch) {
     case "x64":
@@ -195,8 +201,7 @@ for (const updater of config.updaters) {
   const assetPath = pickSingleFile(
     files,
     (file) =>
-      file.endsWith(updater.suffix) &&
-      !file.endsWith(`${updater.suffix}.sig`),
+      file.endsWith(updater.suffix) && !file.endsWith(`${updater.suffix}.sig`),
     `${platform} updater bundle ${updater.suffix}`,
   );
 
@@ -276,7 +281,10 @@ const metadata = {
   releaseAssetNames: releaseFiles.map((file) => file.target),
 };
 
-const metadataPath = path.join(metadataDir, `${platform}.json`);
+const metadataPath = path.join(
+  metadataDir,
+  `${platform}-${resolveArchKey()}.json`,
+);
 await writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
 
 console.log(`Prepared ${platform} release assets in ${releaseAssetsDir}`);

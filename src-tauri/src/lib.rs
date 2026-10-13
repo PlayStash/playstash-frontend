@@ -1,9 +1,12 @@
 mod state;
 mod events;
 mod util;
+mod executables;
 mod downloads;
 mod extraction;
 mod installation;
+mod post_install;
+mod addons;
 mod launch_log;
 mod tracker_log;
 mod games;
@@ -32,7 +35,6 @@ use url::Url;
 
 const STABLE_UPDATER_ENDPOINT: &str = "https://github.com/PlayStash/playstash-frontend/releases/latest/download/latest.json";
 const UNSTABLE_UPDATER_ENDPOINT: &str = "https://github.com/PlayStash/playstash-frontend/releases/download/unstable/unstable.json";
-const EARLY_ACCESS_UPDATER_ENDPOINT: &str = "https://github.com/PlayStash/playstash-frontend/releases/download/early-access/early-access.json";
 const APP_UPDATER_EVENT: &str = "app-updater-progress";
 const UPDATER_STATE_PATH: &str = "updater-state.json";
 
@@ -40,7 +42,6 @@ const UPDATER_STATE_PATH: &str = "updater-state.json";
 #[serde(rename_all = "kebab-case")]
 enum UpdateChannel {
   Stable,
-  EarlyAccess,
   Unstable,
 }
 
@@ -48,7 +49,6 @@ impl UpdateChannel {
   fn endpoint(self) -> &'static str {
     match self {
       Self::Stable => STABLE_UPDATER_ENDPOINT,
-      Self::EarlyAccess => EARLY_ACCESS_UPDATER_ENDPOINT,
       Self::Unstable => UNSTABLE_UPDATER_ENDPOINT,
     }
   }
@@ -130,7 +130,6 @@ fn normalize_version_string(value: &str) -> String {
 
 fn default_build_channel() -> UpdateChannel {
   match option_env!("PLAYSTASH_BUILD_CHANNEL") {
-    Some("early-access") => UpdateChannel::EarlyAccess,
     Some("unstable") => UpdateChannel::Unstable,
     _ => UpdateChannel::Stable,
   }
@@ -216,18 +215,11 @@ mod tests {
       UpdateChannel::Stable,
       UpdateChannel::Unstable,
     ));
-    // From a newer unstable build down to early-access.
-    assert!(should_offer_release(
-      &v("18.0.0-alpha.1"),
-      &v("17.1.1-beta.1"),
-      UpdateChannel::EarlyAccess,
-      UpdateChannel::Unstable,
-    ));
     // From stable up into a prerelease channel.
     assert!(should_offer_release(
       &v("17.1.0"),
       &v("17.1.1-beta.1"),
-      UpdateChannel::EarlyAccess,
+      UpdateChannel::Unstable,
       UpdateChannel::Stable,
     ));
   }
@@ -489,7 +481,8 @@ pub fn run() {
       // ── Frontend responsiveness watchdog ───────────────────────────────
       // Records webview hangs from the Rust side, because a frozen webview
       // cannot log its own freeze. See `frontend_watchdog`.
-      frontend_watchdog::start_watchdog();
+      frontend_watchdog::set_verbose(settings::load_settings(app.handle()).diagnostics_verbose);
+      frontend_watchdog::start_watchdog(app.handle().clone());
 
       // ── Time tracker diagnostics log ───────────────────────────────────
       // Records every tracker tick, match transition and credit outcome.
@@ -583,6 +576,10 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
+      post_install::get_post_install_config,
+      post_install::set_post_install_config,
+      post_install::run_post_install_script,
+      addons::install_game_addon,
       games::open_in_file_explorer,
       games::open_external_url,
       util::open_devtools,
@@ -646,6 +643,8 @@ pub fn run() {
       settings::set_prerelease_notice_channel,
       settings::get_always_show_launch_logs,
       settings::set_always_show_launch_logs,
+      settings::get_diagnostics_verbose,
+      settings::set_diagnostics_verbose,
       rendering::get_rendering_diagnostics,
       rendering::get_webkit_settings,
       rendering::set_webkit_smooth_scrolling,

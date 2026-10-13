@@ -83,18 +83,20 @@ The desktop app (Tauri) updates itself from GitHub Releases.
 
 **Channels** – switchable in **Settings → Desktop → Update channel**:
 
-| Channel    | Branch    | Feed                                       |
-| ---------- | --------- | ------------------------------------------ |
-| `stable`   | `main`    | `releases/latest/download/latest.json`     |
-| `unstable` | `dev`     | `releases/download/unstable/unstable.json` |
+| Channel    | Branch | Feed                                       |
+| ---------- | ------ | ------------------------------------------ |
+| `stable`   | `main` | `releases/latest/download/latest.json`     |
+| `unstable` | `dev`  | `releases/download/unstable/unstable.json` |
 
 The choice is persisted in `localStorage` (`playstash_update_channel`).
 
 **How it works** – on startup or via `Check for updates`, the frontend calls the Tauri updater through Rust commands in `src-tauri/src/lib.rs`. The app confirms with the user, downloads, verifies the signature, and installs. If the feed is not published yet, it falls back to the GitHub release page.
 
-**Versioning** – stable uses the plain `package.json`/`Cargo.toml` version. Unstable builds get a CI-generated unique version `17.1.0-unstable.<run>.<attempt>` (same semver core, only the `unstable` suffix bumps), injected into both the web and Rust builds and into the feed.
+**Versioning** – stable uses the plain `package.json`/`Cargo.toml` version. Unstable builds get a CI-generated unique version `17.2.0-unstable.<run>.<attempt>` (same semver core, only the `unstable` suffix bumps), injected into both the web and Rust builds and into the feed.
 
-**CI** – `.github/workflows/deploy.yml` builds signed updater artifacts per OS (`.exe`+`.sig`, `.app.tar.gz`+`.sig`, `.AppImage`+`.sig`), merges them into `updater-channels.json`, and derives `latest.json` / `unstable.json`. Stale `unstable` assets are cleaned up automatically.
+**CI** – after enabling the workflow variable, pushes to `main` and matching `v*` version tags build Windows x64, Linux x64, and macOS ARM64/Intel installers with the official Tauri action. Every build uploads its installers as Actions artifacts. A new package version prepares a draft release; the complete platform matrix and updater feeds must succeed before publication. Published version assets are immutable: subsequent pushes with the same version produce Actions artifacts, without replacing the release. Bump `package.json` and Cargo versions for the next stable publication. A pushed tag must match `v<package version>`. Signed updater artifacts (`.exe`+`.sig`, `.app.tar.gz`+`.sig`, `.AppImage`+`.sig`) are merged into `updater-channels.json` and `latest.json` / `unstable.json`. Linux `.deb` packages are also published for manual installation; Debian packages do not use the AppImage updater. Dev builds upload to a unique draft first. The complete matrix publishes that immutable build and then promotes the `unstable` channel, replacing its feed last. Existing channel data is read with authenticated GitHub API calls, preserving each channel from its published release. Stale `unstable` shortcut assets are cleaned up only after successful publication.
+
+**Private repositories** – workflow installers and releases can be downloaded by signed-in GitHub users with repository access. The desktop updater requests GitHub feeds anonymously, so automatic updates require publicly accessible release hosting. Private release URLs return an unavailable feed; install downloaded releases manually while the repository remains private. No GitHub access token is embedded in the app, its updater configuration or its distributable files.
 
 **Required GitHub config** – under **Settings → Secrets and variables → Actions**:
 
@@ -109,3 +111,13 @@ Generate the keys once with `cargo tauri signer generate -w ~/.tauri/playstash-u
 **Local builds** – a normal `tauri build` produces no updater artifacts. To create them locally, build with the release config and signing env (`pnpm tauri build --config src-tauri/tauri.release.conf.json`). CI uses `src-tauri/tauri.release.generated.json` with the pubkey injected, since the Tauri bundler requires `plugins.updater.pubkey` in the parsed config.
 
 **Linux AppImage media support** – `bundle.linux.appimage.bundleMediaFramework` is enabled, which makes the bundler copy the GStreamer plugins installed on the _build machine_ into the AppImage (they end up in `usr/lib/gstreamer-1.0`). A local AppImage build therefore needs `gstreamer1.0-plugins-base`, `gstreamer1.0-plugins-good` and `gstreamer1.0-plugins-bad` installed (the same packages CI installs); without them the AppImage ships without audio/video support and WebKitGTK logs `GStreamer element ... not found`.
+
+Version 17.2 adds game packages/extras and optional ordered addons, shared archive passwords, system requirements and launch profiles, restricted-game controls, versioned saves, game requests/reviews and completed-action metrics. These features use the bundled PlayStash backend 17.1 API contract. Package recipes and local post-install scripts require explicit local selection; addons and save restores require overwrite confirmation.
+
+**Library organization** – save local categories from tag and folder filters. Administrators can also define persistent automatic folder-tag rules in Administration; saving applies them to existing games, and later imports/reindexes reuse them.
+
+**Controllers and chat** – Big Picture is available from the library heading or controller Start button, using the existing D-pad/stick navigation. Chat supports the lobby, game rooms and direct messages. Presence is published while the chat page is connected, with an Invisible option. Chat history is temporary (up to 24 hours and lost on server restart), and the server can disable the activity/chat gateway.
+
+**Interface language** – Appearance settings provide device-default, English and German choices. See [language coverage and catalog maintenance](docs/languages.md); navigation and appearance controls are translated, while other pages and server content currently retain their source language.
+
+See the [upstream issue implementation and validation record](docs/upstream-issue-status.md) for the six reviewed frontend reports and shared library features.

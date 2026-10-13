@@ -1,3 +1,7 @@
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { useTranslation } from "@/i18n";
+import { PostInstallSettings } from "@/components/PostInstallSettings";
+import { AccountPrivacySettings } from "@/components/AccountPrivacySettings";
 import clsx from "clsx";
 import { useSearchParams } from "react-router";
 import { Divider } from "@tw/divider";
@@ -248,6 +252,13 @@ const SETTINGS_SEARCH_INDEX: SearchableSetting[] = [
   },
   // Appearance
   {
+    id: "appearance-language",
+    title: "Interface language",
+    description: "Choose English, German, or your device language",
+    category: "appearance",
+    keywords: ["language", "locale", "german", "english", "deutsch", "sprache"],
+  },
+  {
     id: "appearance-theme",
     title: "Theme",
     description: "Choose light, dark, or follow your device",
@@ -290,6 +301,14 @@ const SETTINGS_SEARCH_INDEX: SearchableSetting[] = [
     description: "Play a preview at the current volume",
     category: "sound",
     keywords: ["sound", "test", "preview", "audio"],
+  },
+  {
+    id: "downloads-post-install",
+    title: "Post-install script",
+    description: "Run a local script after a successful installation",
+    category: "downloads",
+    keywords: ["script", "cleanup", "post-install"],
+    desktopOnly: true,
   },
   // Startup
   {
@@ -351,6 +370,20 @@ const SETTINGS_SEARCH_INDEX: SearchableSetting[] = [
     linuxOnly: true,
   },
   // Privacy
+  {
+    id: "privacy-game-metrics",
+    title: "Report completed game actions",
+    description: "Share library lifecycle metrics with administrators",
+    category: "privacy",
+    keywords: ["metrics", "downloads", "installed", "privacy"],
+  },
+  {
+    id: "privacy-restricted-activity",
+    title: "Share restricted game activity",
+    description: "Allow administrators to see restricted game activity",
+    category: "privacy",
+    keywords: ["restricted", "activity", "privacy", "sharing"],
+  },
   {
     id: "privacy-analytics",
     title: "Usage analytics",
@@ -459,6 +492,13 @@ const SETTINGS_SEARCH_INDEX: SearchableSetting[] = [
     description: "Export all preferences as JSON for bug reports",
     category: "developer",
     keywords: ["settings", "dump", "export", "copy", "json", "diagnostics"],
+  },
+  {
+    id: "developer-verbose-logging",
+    title: "Verbose diagnostics logging",
+    description: "Log interface snapshots and activity breadcrumbs",
+    category: "developer",
+    keywords: ["log", "logging", "diagnostics", "debug", "freeze", "watchdog"],
   },
   {
     id: "rendering-smooth-scroll",
@@ -670,6 +710,7 @@ function collectSystemInfo(isTauri: boolean): SystemInfo {
 }
 
 export default function Settings() {
+  const { t } = useTranslation();
   const {
     speedLimitKB,
     setSpeedLimitKB,
@@ -705,6 +746,7 @@ export default function Settings() {
   );
   const [alwaysShowLaunchLogs, setAlwaysShowLaunchLogs] =
     useState<boolean>(false);
+  const [verboseDiagnostics, setVerboseDiagnostics] = useState<boolean>(false);
   const [autoExtract, setAutoExtract] = useState<boolean>(() => {
     try {
       return localStorage.getItem(AUTO_EXTRACT_KEY) === "1";
@@ -997,6 +1039,43 @@ export default function Settings() {
       }
     })();
   }, [alwaysShowLaunchLogs, isTauri]);
+
+  // Load and persist the verbose diagnostics logging setting (desktop only).
+  // The stored value must be read before the sync effect may write, otherwise
+  // the initial `false` state would overwrite it.
+  const diagnosticsLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!isTauri) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const stored = await invoke<boolean>("get_diagnostics_verbose");
+        if (!cancelled) setVerboseDiagnostics(stored);
+      } catch (e) {
+        console.error("Failed to load diagnostics logging preference:", e);
+      } finally {
+        diagnosticsLoadedRef.current = true;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isTauri]);
+
+  useEffect(() => {
+    if (!isTauri || !diagnosticsLoadedRef.current) return;
+    (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("set_diagnostics_verbose", {
+          enabled: verboseDiagnostics,
+        });
+      } catch (e) {
+        console.error("Failed to sync diagnostics logging preference:", e);
+      }
+    })();
+  }, [verboseDiagnostics, isTauri]);
 
   // Persist auto-flow settings to localStorage
   useEffect(() => {
@@ -1514,7 +1593,7 @@ export default function Settings() {
           <BackButton onClick={() => setActiveCategory(null)} />
         )}
         <div className="space-y-2">
-          <Heading>Settings</Heading>
+          <Heading>{t("nav.settings")}</Heading>
           <Text className="max-w-2xl">Tune PlayStash to your liking.</Text>
         </div>
         <Divider className="border-ps-line/80" />
@@ -1775,6 +1854,7 @@ export default function Settings() {
 
                     {isTauri && (
                       <SettingsGroup caption="After downloading">
+                        <PostInstallSettings />
                         <SettingsRow
                           id="setting-downloads-auto-extract"
                           className={rowHighlight("downloads-auto-extract")}
@@ -2128,6 +2208,7 @@ export default function Settings() {
                       description="Your data stays yours. Here's what PlayStash sends."
                     />
                     <SettingsGroup>
+                      <AccountPrivacySettings />
                       <SettingsRow>
                         <SettingsLabel
                           title="Help improve PlayStash"
@@ -2152,17 +2233,32 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={SwatchIcon}
-                      title="Appearance"
-                      description="How PlayStash looks."
+                      title={t("appearance.title")}
+                      description={t("appearance.description")}
                     />
+                    <SettingsGroup
+                      id="setting-appearance-language"
+                      className={rowHighlight("appearance-language")}
+                    >
+                      <SettingsRow>
+                        <SettingsLabel
+                          title={t("language.title")}
+                          description={t("language.description")}
+                        />
+                        <div className="w-44 shrink-0">
+                          <LanguagePicker />
+                        </div>
+                      </SettingsRow>
+                    </SettingsGroup>
+
                     <SettingsGroup
                       id="setting-appearance-theme"
                       className={rowHighlight("appearance-theme")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Theme"
-                          description="Choose between light, dark, or follow your device settings."
+                          title={t("appearance.theme")}
+                          description={t("appearance.themeDescription")}
                         />
                         <div className="w-40 shrink-0">
                           <ThemeSelect />
@@ -2176,8 +2272,8 @@ export default function Settings() {
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Zoom"
-                          description="Zoom the interface in or out."
+                          title={t("appearance.zoom")}
+                          description={t("appearance.zoomDescription")}
                         />
                         <div className="w-44 shrink-0">
                           <ZoomControl />
@@ -2509,6 +2605,19 @@ export default function Settings() {
                             Copy
                           </Button>
                         </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title="Verbose diagnostics logging"
+                            description="Writes a periodic snapshot of the interface (page, memory, DOM size) and detailed activity breadcrumbs to the app log to help diagnose freezes. Enable it when a maintainer asks for it — PlayStash keeps detecting and automatically recovering from an unresponsive interface either way."
+                          />
+                          <Switch
+                            name="verboseDiagnostics"
+                            color="indigo"
+                            aria-label="Verbose diagnostics logging"
+                            checked={verboseDiagnostics}
+                            onChange={(v: boolean) => setVerboseDiagnostics(v)}
+                          />
+                        </SettingsRow>
                       </SettingsGroup>
                     </>
                   )}
@@ -2719,9 +2828,6 @@ export default function Settings() {
                                 </ListboxOption>
                                 {devToolsUnlocked && (
                                   <>
-                                    <ListboxOption value="early-access">
-                                      <ListboxLabel>Early Access</ListboxLabel>
-                                    </ListboxOption>
                                     <ListboxOption value="unstable">
                                       <ListboxLabel>Unstable</ListboxLabel>
                                     </ListboxOption>
@@ -2740,7 +2846,7 @@ export default function Settings() {
                                   : updaterStatusText ||
                                     (updaterReady
                                       ? updaterEnabled
-                                        ? `Enabled for the ${updateChannel === "early-access" ? "Early Access" : updateChannel === "unstable" ? "Unstable" : "Stable"} channel.`
+                                        ? `Enabled for the ${updateChannel === "unstable" ? "Unstable" : "Stable"} channel.`
                                         : "Not configured for this build yet."
                                       : "Checking availability...")
                               }

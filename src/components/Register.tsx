@@ -48,7 +48,7 @@ export function Register() {
   const basicAuthAvailable = availableAuthenticationMethods.includes("basic");
   const ssoAvailable = availableAuthenticationMethods.includes("sso");
 
-  // Force device theme on register page (visual only â€” never persisted, so a
+  // Force device theme on register page (visual only — never persisted, so a
   // reload here can't wipe the user's saved theme); restore the stored
   // preference on leave.
   useEffect(() => {
@@ -478,7 +478,7 @@ export function Register() {
                   className="w-full"
                   disabled={!canSubmit() || submitting}
                 >
-                  {submitting ? "Creating accountâ€¦" : "Create account"}
+                  {submitting ? "Creating account…" : "Create account"}
                 </Button>
               )}
             </>

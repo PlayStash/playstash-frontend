@@ -1,3 +1,6 @@
+import { LibraryCategories } from "@/components/LibraryCategories";
+import { RecentlyAddedGames } from "@/components/RecentlyAddedGames";
+import { BigPictureButton } from "@/components/BigPicture";
 import GameCard from "@/components/GameCard";
 import { useAuth } from "@/context/AuthContext";
 import { BookmarkFilter, EarlyAccessFilter, useGames } from "@/hooks/useGames";
@@ -25,9 +28,7 @@ import MultiSelectFilterDialog, {
 } from "@/components/MultiSelectFilterDialog";
 import { Strong, Text, TextLink } from "@/components/tailwind/text";
 import { isTauriApp } from "@/utils/tauri";
-import {
-  useInstalledGames,
-} from "@/hooks/useInstalledGames";
+import { useInstalledGames } from "@/hooks/useInstalledGames";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { SectionExpander } from "@/components/SectionExpander";
 import { RowCountControl } from "@/components/RowCountControl";
@@ -102,6 +103,8 @@ export default function Library() {
 
   const urlInitializedRef = useRef(false);
   const [search, setSearch] = useState("");
+  const [libraryFolder, setLibraryFolder] = useState("");
+  const deferredLibraryFolder = useDebouncedValue(libraryFolder.trim(), 300);
   // Sort/order preferences are always retained (they're the default behaviour).
   const [sortBy, setSortBy] = useState(() => {
     try {
@@ -151,19 +154,23 @@ export default function Library() {
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
-    return computeHasActiveFilters({
-      bookmarkFilter,
-      earlyAccess,
-      gameState: selectedGameState,
-      releaseDateFrom,
-      releaseDateTo,
-      gameTypes: selectedGameTypes,
-      tags: selectedTags,
-      genres: selectedGenres,
-      developers: selectedDevelopers,
-      publishers: selectedPublishers,
-    });
+    return (
+      !!libraryFolder.trim() ||
+      computeHasActiveFilters({
+        bookmarkFilter,
+        earlyAccess,
+        gameState: selectedGameState,
+        releaseDateFrom,
+        releaseDateTo,
+        gameTypes: selectedGameTypes,
+        tags: selectedTags,
+        genres: selectedGenres,
+        developers: selectedDevelopers,
+        publishers: selectedPublishers,
+      })
+    );
   }, [
+    libraryFolder,
     bookmarkFilter,
     selectedGameTypes,
     selectedTags,
@@ -178,19 +185,23 @@ export default function Library() {
 
   // Number of active filter selections (for the badge on the Filters toggle)
   const activeFilterCount = useMemo(() => {
-    return computeActiveFilterCount({
-      bookmarkFilter,
-      earlyAccess,
-      gameState: selectedGameState,
-      releaseDateFrom,
-      releaseDateTo,
-      gameTypes: selectedGameTypes,
-      tags: selectedTags,
-      genres: selectedGenres,
-      developers: selectedDevelopers,
-      publishers: selectedPublishers,
-    });
+    return (
+      Number(!!libraryFolder.trim()) +
+      computeActiveFilterCount({
+        bookmarkFilter,
+        earlyAccess,
+        gameState: selectedGameState,
+        releaseDateFrom,
+        releaseDateTo,
+        gameTypes: selectedGameTypes,
+        tags: selectedTags,
+        genres: selectedGenres,
+        developers: selectedDevelopers,
+        publishers: selectedPublishers,
+      })
+    );
   }, [
+    libraryFolder,
     bookmarkFilter,
     selectedGameTypes,
     selectedTags,
@@ -206,6 +217,7 @@ export default function Library() {
   // Clear all filters
   const clearAllFilters = useCallback(() => {
     setBookmarkFilter("all");
+    setLibraryFolder("");
     setSelectedGameTypes([]);
     setSelectedTags([]);
     setSelectedGenres([]);
@@ -257,6 +269,7 @@ export default function Library() {
     bookmarkFilter,
     gameTypes: gameTypeValues,
     tags: tagNames,
+    libraryFolder: deferredLibraryFolder,
     genres: genreNames,
     developers: developerNames,
     publishers: publisherNames,
@@ -483,6 +496,10 @@ export default function Library() {
         title: ig.gameTitle,
         sort_title: ig.gameTitle?.toLowerCase(),
         type: ig.gameType as any,
+        // Carry the server's version info through so installed-only cards can
+        // also show the "update available" indicator.
+        version: (meta as any)?.version,
+        versions: (meta as any)?.versions,
         metadata: meta
           ? {
               title: meta.title,
@@ -545,6 +562,7 @@ export default function Library() {
             <Heading className="flex items-center gap-3">
               Library {count && <Badge className="ml-1">{count}</Badge>}
             </Heading>
+            <BigPictureButton />
             <Text className="max-w-2xl">
               Browse, search, and manage your entire game collection.
             </Text>
@@ -971,6 +989,18 @@ export default function Library() {
         </div>
       )}
       <div className="flex-1 overflow-y-auto overflow-x-hidden text-center">
+        <LibraryCategories
+          storageKey={`playstash_library_categories:${serverUrl}:${user?.id}`}
+          tags={tagNames}
+          folder={libraryFolder}
+          onFolderChange={setLibraryFolder}
+          onSelect={(category) => {
+            setLibraryFolder(category?.folder || "");
+            setSelectedTags(
+              (category?.tags || []).map((name) => ({ id: name, name })),
+            );
+          }}
+        />
         {!serverUrl && (
           <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
             Connect to a server to load games.
@@ -1021,6 +1051,8 @@ export default function Library() {
             )}
           </SectionExpander>
         )}
+
+        {serverUrl && isOnline && <RecentlyAddedGames />}
 
         {/* Server Games Section */}
         {isTauri && !isOnline ? (

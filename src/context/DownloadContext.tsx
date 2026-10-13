@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { useGameMetrics, useFlushGameMetrics } from "@/hooks/useGameMetrics";
 import { useOnlineStatus } from "./OfflineContext";
 import { useServerStatus } from "@/hooks/useServerStatus";
 import { isTauriApp } from "@/utils/tauri";
@@ -179,6 +180,8 @@ type StartDownloadParams = {
 };
 
 export function DownloadProvider({ children }: { children: ReactNode }) {
+  useFlushGameMetrics();
+  const reportGameEvent = useGameMetrics();
   const { serverUrl, authFetch, auth, getAccessToken } = useAuth();
   const { isOnline } = useOnlineStatus();
   const { info: serverInfo } = useServerStatus();
@@ -214,6 +217,16 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   >({});
   /** Last taskbar indicator state sent to the native side (e.g. "normal:42"). */
   const lastTaskbarRef = useRef<string | null>(null);
+  /**
+   * Media ids whose bytes are already in the native image cache.
+   *
+   * The cache effect below depends on the session token and the connection
+   * state, so it re-runs whenever the token is refreshed or the connection
+   * flips — which happens regularly while a long download is running. Without
+   * this guard every run re-fetched, re-encoded (base64) and re-wrote the
+   * (multi-megabyte) cover and background art of every active download.
+   */
+  const cachedMediaIdsRef = useRef<Set<number>>(new Set());
   const SPEED_WINDOW_MS = 5000;
   const UI_THROTTLE_MS = 500;
   const SAMPLE_INTERVAL_MS = 250;
@@ -453,6 +466,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       try {
         const base = serverUrl.replace(/\/+$/, "");
         const { invoke } = await import("@tauri-apps/api/core");
+        const { blobToBase64 } = await import("@/utils/binary");
         const serverNamespace = getServerNamespace(serverUrl);
 
         let gameJson = freshGame;
@@ -470,7 +484,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
         // Cache cover image
         const coverId = gameJson?.metadata?.cover?.id;
-        if (coverId) {
+        if (coverId && !cachedMediaIdsRef.current.has(Number(coverId))) {
           try {
             const blob = await resolveApiMediaBlob({
               serverUrl,
@@ -478,13 +492,14 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               authFetch,
               owner: { gameId, slot: "cover" },
             });
-            const bytes = new Uint8Array(await blob.arrayBuffer());
+            const bytes = await blobToBase64(blob);
             await invoke("cache_game_image", {
               serverNamespace,
               mediaId: Number(coverId),
-              bytes: Array.from(bytes),
+              dataBase64: bytes,
               contentType: blob.type || "image/png",
             });
+            cachedMediaIdsRef.current.add(Number(coverId));
           } catch {
             /* ignore image cache failures */
           }
@@ -492,7 +507,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
         // Cache background image
         const bgId = gameJson?.metadata?.background?.id;
-        if (bgId) {
+        if (bgId && !cachedMediaIdsRef.current.has(Number(bgId))) {
           try {
             const blob = await resolveApiMediaBlob({
               serverUrl,
@@ -500,13 +515,14 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               authFetch,
               owner: { gameId, slot: "background" },
             });
-            const bytes = new Uint8Array(await blob.arrayBuffer());
+            const bytes = await blobToBase64(blob);
             await invoke("cache_game_image", {
               serverNamespace,
               mediaId: Number(bgId),
-              bytes: Array.from(bytes),
+              dataBase64: bytes,
               contentType: blob.type || "image/png",
             });
+            cachedMediaIdsRef.current.add(Number(bgId));
           } catch {
             /* ignore image cache failures */
           }
@@ -1053,6 +1069,12 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             }
 
             if (payload.status === "completed") {
+              reportGameEvent(
+                gameId,
+                "downloaded",
+                versionId,
+                String(entry.startedAt),
+              );
               const received = Number(payload.received || 0);
               const total =
                 payload.total !== undefined && payload.total !== null
@@ -1271,6 +1293,12 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           total: total || null,
           speedBps: undefined,
         });
+        reportGameEvent(
+          gameId,
+          "downloaded",
+          versionId,
+          String(entry.startedAt),
+        );
       } catch (err: any) {
         if (isDesktop && tauriFilePath) {
           try {
@@ -1764,7 +1792,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           gameId,
           archivePath: d.downloadedFilePath,
           destinationPath: d.extractionDirectory,
-          password: password?.trim() || null,
+          password: (password ?? d.gameMetadata?.archive_password) || null,
         });
 
         if (result.success) {
@@ -1948,6 +1976,27 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
       // Cache game data for offline use
       cacheInstalledGameData(gameId);
+      reportGameEvent(
+        gameId,
+        "installed",
+        d.versionId,
+        d.versionDirectory || String(d.startedAt),
+      );
+
+      if (d.installationDirectory && d.versionDirectory && isTauriApp()) {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("run_post_install_script", {
+            installationPath: d.installationDirectory,
+            versionDirectory: d.versionDirectory,
+          });
+        } catch (error) {
+          updateDownload(gameId, {
+            installationError: `Game installed, but post-install script failed: ${String(error)}`,
+          });
+          return;
+        }
+      }
 
       // Auto-delete source files. Deletion is deferred and retried so that
       // processes spawned by the install (e.g. quicksfv.exe) aren't left
@@ -1979,12 +2028,17 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       if (d.installationDirectory) {
         try {
           const { invoke } = await import("@tauri-apps/api/core");
-          const { executables: installedExecutables } = await invoke<{
-            executables: string[];
-          }>("list_launch_executables", {
-            installationPath: d.installationDirectory,
-          });
-          installVerified = installedExecutables.length > 0;
+          const { executables: installedExecutables, truncated } =
+            await invoke<{
+              executables: string[];
+              truncated?: boolean;
+            }>("list_launch_executables", {
+              installationPath: d.installationDirectory,
+            });
+          // A folder too large to scan completely is populated by definition, so
+          // a truncated scan must not be mistaken for a failed installation
+          // whose executable could not be found.
+          installVerified = installedExecutables.length > 0 || !!truncated;
         } catch {
           installVerified = false;
         }

@@ -46,6 +46,8 @@ export interface UseGamesOptions {
   releaseDateTo?: string;
   // Early access filter
   earlyAccess?: EarlyAccessFilter;
+  addedSince?: string;
+  libraryFolder?: string;
 }
 
 interface CachedGamesState {
@@ -116,6 +118,8 @@ export function useGames({
   releaseDateFrom,
   releaseDateTo,
   earlyAccess = "all",
+  addedSince,
+  libraryFolder,
 }: UseGamesOptions) {
   const { serverUrl, authFetch, user } = useAuth();
   const { isOnline } = useOnlineStatus();
@@ -138,6 +142,8 @@ export function useGames({
       releaseDateFrom,
       releaseDateTo,
       earlyAccess,
+      addedSince,
+      libraryFolder,
     },
     serverUrl || "",
     (user as any)?.id ?? (user as any)?.ID ?? null,
@@ -220,6 +226,8 @@ export function useGames({
         releaseDateFrom,
         releaseDateTo,
         earlyAccess,
+        addedSince,
+        libraryFolder,
       });
       const url = `${base}/api/games?${params.toString()}`;
       const res = await authFetch(url, { method: "GET", signal: ac.signal });
@@ -270,6 +278,8 @@ export function useGames({
     releaseDateFrom,
     releaseDateTo,
     earlyAccess,
+    addedSince,
+    libraryFolder,
     isOnline,
   ]);
 

@@ -1,5 +1,6 @@
 use crate::events::InstalledGameInfo;
-use crate::games::{collect_launch_candidates, list_installed_games_blocking};
+use crate::executables::{self, ScanLimits};
+use crate::games::list_installed_games_blocking;
 use crate::settings::load_settings;
 use crate::state::{
   pending_offline_minutes, reset_tracker_stats, tracker_config, tracker_ledger,
@@ -78,7 +79,7 @@ fn is_shortcut(path: &Path) -> bool {
 }
 
 #[tauri::command]
-pub(crate) fn start_game_time_tracker(
+pub(crate) async fn start_game_time_tracker(
   app: tauri::AppHandle,
   server_url: String,
   user_id: i64,
@@ -160,7 +161,7 @@ pub(crate) fn start_game_time_tracker(
 }
 
 #[tauri::command]
-pub(crate) fn stop_game_time_tracker(reason: Option<String>) -> Result<(), String> {
+pub(crate) async fn stop_game_time_tracker(reason: Option<String>) -> Result<(), String> {
   let reason = reason.unwrap_or_else(|| "unspecified".to_string());
 
   if let Ok(mut tx) = tracker_stop_tx().lock() {
@@ -181,7 +182,7 @@ pub(crate) fn stop_game_time_tracker(reason: Option<String>) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub(crate) fn update_tracker_auth(access_token: String) -> Result<(), String> {
+pub(crate) async fn update_tracker_auth(access_token: String) -> Result<(), String> {
   let mut updated = false;
   if let Ok(mut cfg) = tracker_config().lock() {
     if let Some(ref mut c) = *cfg {
@@ -430,7 +431,7 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         .lock()
         .ok()
         .and_then(|cache| cache.get(&game.game_id).cloned());
-      let mut scan_failed = false;
+      let mut scan_truncated = false;
       let cache_hit = matches!(
         cached.as_ref(),
         Some(entry)
@@ -443,13 +444,18 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         cached.map(|entry| entry.candidates).unwrap_or_default()
       } else {
         cache_misses += 1;
-        let mut rel_candidates = Vec::new();
-        if collect_launch_candidates(&scan_dir, &scan_dir, &mut rel_candidates).is_err() {
-          scan_failed = true;
-        }
-        let scanned: Vec<PathBuf> = rel_candidates
+        // The tracker keeps its own budget (it rescans folders whose timestamp
+        // changed on every tick), but the breadth-first walk still finds the
+        // game executable first, even in a folder with tens of thousands of
+        // data files.
+        let scan = executables::scan_launch_folder(&scan_dir, ScanLimits::TRACKER);
+        scan_truncated = scan.truncated;
+        let scanned: Vec<PathBuf> = scan
+          .executables
           .iter()
-          .map(|rel| scan_dir.join(rel.replace('/', std::path::MAIN_SEPARATOR_STR)))
+          .map(|relative| {
+            scan_dir.join(relative.replace('/', std::path::MAIN_SEPARATOR_STR))
+          })
           .collect();
         if let Ok(mut cache) = candidate_cache().lock() {
           cache.insert(
@@ -497,8 +503,11 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
       }
 
       if abs_paths.is_empty() {
-        let reason = if scan_failed {
-          format!("launch_candidate_scan_failed in {}", scan_dir.to_string_lossy())
+        let reason = if scan_truncated {
+          format!(
+            "launch_candidate_scan_truncated in {}",
+            scan_dir.to_string_lossy()
+          )
         } else if found > 0 && ignored_count > 0 {
           format!(
             "all_candidates_ignored ({found} candidates, {ignored_count} ignored by the ignore list)"
@@ -539,6 +548,7 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
             ("title", game.game_title.clone()),
             ("count", abs_paths.len().to_string()),
             ("cache", if cache_hit { "hit".to_string() } else { "miss".to_string() }),
+            ("truncated", if scan_truncated { "yes".to_string() } else { "no".to_string() }),
             ("exes", listed),
           ],
         );
@@ -815,7 +825,7 @@ enum LedgerMatch {
   Matched,
   /// Process vanished but the game may still be running (launcher hand-off) —
   /// still credit, for at most [`MATCH_GRACE_TICKS`] ticks.
-  Grace { remaining: u64 },
+  Grace,
   /// The game is not running (or never was) — do not credit.
   Lost,
 }
@@ -933,9 +943,7 @@ fn update_ledger(
           ("reason", reason.to_string()),
         ],
       );
-      return LedgerMatch::Grace {
-        remaining: MATCH_GRACE_TICKS - entry.missing_ticks,
-      };
+      return LedgerMatch::Grace;
     }
 
     entry.matched = false;
@@ -1599,7 +1607,7 @@ fn walk_offline_time_files(dir: &Path, results: &mut Vec<OfflineTimeFile>) -> st
 }
 
 #[tauri::command]
-pub(crate) fn delete_offline_time_file(path: String) -> Result<(), String> {
+pub(crate) async fn delete_offline_time_file(path: String) -> Result<(), String> {
   let p = Path::new(&path);
   if p.exists() {
     fs::remove_file(p).map_err(|e| format!("Failed to delete offline time file: {e}"))?;
@@ -1823,11 +1831,9 @@ fn debug_tracker_scan_blocking(
         abs_paths.push(abs);
       }
     }
-    let mut candidates = Vec::new();
-    if collect_launch_candidates(&scan_dir, &scan_dir, &mut candidates).is_ok() {
-      for rel in candidates {
-        abs_paths.push(scan_dir.join(rel.replace('/', std::path::MAIN_SEPARATOR_STR)));
-      }
+    let scan = executables::scan_launch_folder(&scan_dir, ScanLimits::TRACKER);
+    for relative in &scan.executables {
+      abs_paths.push(scan_dir.join(relative.replace('/', std::path::MAIN_SEPARATOR_STR)));
     }
 
     let matching: Vec<String> = processes
@@ -1878,7 +1884,7 @@ pub(crate) struct TrackerStatus {
 }
 
 #[tauri::command]
-pub(crate) fn get_tracker_status() -> TrackerStatus {
+pub(crate) async fn get_tracker_status() -> TrackerStatus {
   let mut stats = tracker_stats().lock().map(|stats| stats.clone()).unwrap_or_default();
   stats.log_path = tracker_log::log_path();
 
@@ -1897,7 +1903,7 @@ pub(crate) fn get_tracker_status() -> TrackerStatus {
 
 /// Clears the playtime ledger so a fresh measurement can be taken.
 #[tauri::command]
-pub(crate) fn reset_tracker_ledger() -> Result<(), String> {
+pub(crate) async fn reset_tracker_ledger() -> Result<(), String> {
   if let Ok(mut ledger) = tracker_ledger().lock() {
     ledger.clear();
   }

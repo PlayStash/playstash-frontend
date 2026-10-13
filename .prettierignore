@@ -1,0 +1,10 @@
+pnpm-lock.yaml
+api-spec/
+src/api/
+dist/
+coverage/
+.local/
+release-assets/
+updater-metadata/
+src-tauri/target/
+src-tauri/gen/

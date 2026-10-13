@@ -8,6 +8,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { pageVariants } from "@/lib/motion";
 import ProtectedRoute from "../guards/ProtectedRoute";
 import { useGameTimeTracker } from "@/hooks/useGameTimeTracker";
+import { BigPictureShell } from "@/components/BigPicture";
+import { useBigPicture } from "@/utils/bigPicture";
 
 interface DashboardLayoutProps {
   guarded?: boolean; // optional boolean to toggle guarding, default true
@@ -17,6 +19,7 @@ export default function DashboardLayout({
   guarded = true,
 }: DashboardLayoutProps) {
   const location = useLocation();
+  const bigPicture = useBigPicture();
   // Freeze the outlet element for the current route. Rendering this element
   // (instead of the live <Outlet />) means the page that is animating out keeps
   // showing its own content, rather than instantly switching to the incoming
@@ -31,6 +34,15 @@ export default function DashboardLayout({
   const isFullBleed = isGameViewRoute;
 
   useGameTimeTracker();
+
+  if (bigPicture)
+    return (
+      <ProtectedRoute guarded={guarded}>
+        <BigPictureShell>
+          <Suspense fallback={<PageLoader />}>{outlet}</Suspense>
+        </BigPictureShell>
+      </ProtectedRoute>
+    );
 
   return (
     <ProtectedRoute guarded={guarded}>
@@ -49,9 +61,7 @@ export default function DashboardLayout({
             exit="exit"
             className="h-full"
           >
-            <Suspense fallback={<PageLoader />}>
-              {outlet}
-            </Suspense>
+            <Suspense fallback={<PageLoader />}>{outlet}</Suspense>
           </motion.div>
         </AnimatePresence>
       </SidebarLayout>

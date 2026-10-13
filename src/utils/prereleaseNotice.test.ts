@@ -43,8 +43,7 @@ beforeEach(() => {
 });
 
 describe("isPrereleaseChannel", () => {
-  it("treats early-access and unstable as pre-release channels", () => {
-    expect(isPrereleaseChannel("early-access")).toBe(true);
+  it("treats unstable as a pre-release channel", () => {
     expect(isPrereleaseChannel("unstable")).toBe(true);
   });
 
@@ -66,8 +65,6 @@ describe("shouldShowPrereleaseNotice (web build)", () => {
 
     await markPrereleaseNoticeSeen("unstable");
     expect(await shouldShowPrereleaseNotice("unstable")).toBe(false);
-    // The other pre-release channel has its own, unrelated warning.
-    expect(await shouldShowPrereleaseNotice("early-access")).toBe(true);
     expect(localStorage.getItem(PRERELEASE_NOTICE_KEY)).toBe("unstable");
   });
 });
@@ -85,23 +82,23 @@ describe("shouldShowPrereleaseNotice (desktop app)", () => {
 
   it("keeps warning about a channel that was never acknowledged", async () => {
     simulateDesktopApp();
-    mockNativeSettings("unstable");
+    mockNativeSettings(null);
 
-    expect(await shouldShowPrereleaseNotice("early-access")).toBe(true);
+    expect(await shouldShowPrereleaseNotice("unstable")).toBe(true);
   });
 
   it("writes the acknowledgement into the app settings", async () => {
     simulateDesktopApp();
     const native = mockNativeSettings(null);
 
-    expect(await shouldShowPrereleaseNotice("early-access")).toBe(true);
+    expect(await shouldShowPrereleaseNotice("unstable")).toBe(true);
 
-    await markPrereleaseNoticeSeen("early-access");
-    expect(native.read()).toBe("early-access");
+    await markPrereleaseNoticeSeen("unstable");
+    expect(native.read()).toBe("unstable");
     expect(invokeMock).toHaveBeenCalledWith("set_prerelease_notice_channel", {
-      channel: "early-access",
+      channel: "unstable",
     });
-    expect(await shouldShowPrereleaseNotice("early-access")).toBe(false);
+    expect(await shouldShowPrereleaseNotice("unstable")).toBe(false);
   });
 
   it("adopts an acknowledgement recorded by an older build", async () => {
@@ -119,7 +116,6 @@ describe("shouldShowPrereleaseNotice (desktop app)", () => {
     invokeMock.mockRejectedValue(new Error("no native settings"));
 
     expect(await shouldShowPrereleaseNotice("unstable")).toBe(false);
-    expect(await shouldShowPrereleaseNotice("early-access")).toBe(true);
   });
 });
 
@@ -132,18 +128,6 @@ describe("prereleaseNoticeContent", () => {
     expect(title).toContain("unstable");
     expect(description).toContain("17.1.0-unstable.42.1");
     expect(description).toContain("developers and testers");
-    expect(description).toContain("additional setup steps may be necessary");
-    expect(description).toContain("Stable update channel");
-  });
-
-  it("warns Early Access users about the program", () => {
-    const { title, description } = prereleaseNoticeContent(
-      "early-access",
-      "17.1.0-ea.7.2",
-    );
-    expect(title).toContain("Early Access");
-    expect(description).toContain("17.1.0-ea.7.2");
-    expect(description).toContain("early access program");
     expect(description).toContain("additional setup steps may be necessary");
     expect(description).toContain("Stable update channel");
   });

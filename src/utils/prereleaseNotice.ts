@@ -2,7 +2,7 @@ import { isTauriApp } from "./tauri";
 import { defaultChannelForBuild, type UpdateChannel } from "./updater";
 
 /** Build channels that are explicitly not meant for everyday use. */
-export type PrereleaseChannel = "early-access" | "unstable";
+export type PrereleaseChannel = "unstable";
 
 /**
  * Remembers which pre-release build the user has already been warned about, so
@@ -19,7 +19,7 @@ export const PRERELEASE_NOTICE_KEY = "playstash_prerelease_notice_channel";
 export function isPrereleaseChannel(
   channel: UpdateChannel,
 ): channel is PrereleaseChannel {
-  return channel === "early-access" || channel === "unstable";
+  return channel === "unstable";
 }
 
 /**
@@ -117,26 +117,15 @@ const SHARED_ADVICE =
  * be required and that problems are expected.
  */
 export function prereleaseNoticeContent(
-  channel: PrereleaseChannel,
+  _channel: PrereleaseChannel,
   version: string,
 ): PrereleaseNoticeContent {
-  if (channel === "unstable") {
-    return {
-      title: "You are running an unstable build",
-      description:
-        `You are using PlayStash v${version}, an unstable development build that tracks the development branch. ` +
-        "It is meant for developers and testers who are comfortable troubleshooting, not for everyday use: " +
-        "additional setup steps may be necessary, features can change or disappear at any time, and crashes, " +
-        `broken downloads or lost settings/progress are expected rather than rare. ${SHARED_ADVICE}`,
-    };
-  }
-
   return {
-    title: "You are running an Early Access build",
+    title: "You are running an unstable build",
     description:
-      `You are using PlayStash v${version}, an Early Access build that is still being worked on. ` +
-      "It is meant for members of the early access program and other testers who are comfortable troubleshooting, " +
-      "not for everyday use: additional setup steps may be necessary, parts of the app can behave unexpectedly, " +
-      `and you will run into issues more often than on a stable release. ${SHARED_ADVICE}`,
+      `You are using PlayStash v${version}, an unstable development build that tracks the development branch. ` +
+      "It is meant for developers and testers who are comfortable troubleshooting, not for everyday use: " +
+      "additional setup steps may be necessary, features can change or disappear at any time, and crashes, " +
+      `broken downloads or lost settings/progress are expected rather than rare. ${SHARED_ADVICE}`,
   };
 }

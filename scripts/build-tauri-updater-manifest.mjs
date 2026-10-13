@@ -54,10 +54,9 @@ for (const filePath of metadataFiles.sort()) {
     throw new Error(`Invalid updater metadata in ${filePath}.`);
   }
 
-  // Emit one feed entry per installer (e.g. "linux-x86_64-deb" and
-  // "linux-x86_64-appimage"). The Tauri updater client looks up
+  // Emit one feed entry per supported updater installer. The client looks up
   // "<os>-<arch>-<installer>" before falling back to "<os>-<arch>", so this
-  // lets both .deb and AppImage installs auto-update.
+  // selects its matching signed bundle. Debian packages are manual installers.
   for (const updater of entry.updaters) {
     if (!updater.assetName || !updater.signature) {
       throw new Error(

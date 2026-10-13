@@ -8,6 +8,8 @@ import globals from "globals";
 export default defineConfig([
   globalIgnores([
     "dist",
+    "coverage",
+    ".local",
     "src-tauri/target",
     "src-tauri/gen",
     "release-assets",

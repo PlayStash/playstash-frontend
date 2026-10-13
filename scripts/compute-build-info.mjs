@@ -35,16 +35,18 @@ const baseVersion = String(pkg.version || "").trim();
 const rawBuildChannel = String(process.env.PLAYSTASH_BUILD_CHANNEL || "")
   .trim()
   .toLowerCase();
-const buildChannel = ["stable", "unstable", "early-access"].includes(
-  rawBuildChannel,
-)
+const buildChannel = ["stable", "unstable"].includes(rawBuildChannel)
   ? rawBuildChannel
   : "stable";
 const runNumber = String(
-  process.env.GITHUB_RUN_NUMBER || process.env.PLAYSTASH_BUILD_RUN_NUMBER || "0",
+  process.env.GITHUB_RUN_NUMBER ||
+    process.env.PLAYSTASH_BUILD_RUN_NUMBER ||
+    "0",
 ).trim();
 const runAttempt = String(
-  process.env.GITHUB_RUN_ATTEMPT || process.env.PLAYSTASH_BUILD_RUN_ATTEMPT || "1",
+  process.env.GITHUB_RUN_ATTEMPT ||
+    process.env.PLAYSTASH_BUILD_RUN_ATTEMPT ||
+    "1",
 ).trim();
 const buildCommit = String(
   process.env.GITHUB_SHA || process.env.PLAYSTASH_BUILD_COMMIT || "",
@@ -58,7 +60,7 @@ const buildVersion =
   buildChannel === "stable"
     ? baseVersion
     : `${major}.${minor}.${patch}-${buildChannel}.${runNumber}.${runAttempt}`;
-const releaseRef = buildChannel === "stable" ? baseVersion : buildChannel;
+const releaseRef = buildChannel === "stable" ? `v${baseVersion}` : buildChannel;
 
 const result = {
   base_version: baseVersion,

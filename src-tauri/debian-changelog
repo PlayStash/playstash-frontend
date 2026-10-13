@@ -1,6 +1,11 @@
-playstash (17.1.0) UNRELEASED; urgency=medium
+playstash (17.2.0) UNRELEASED; urgency=medium
 
   * Establish the fresh PlayStash frontend source baseline.
   * Use PlayStash branding, identifiers and bundled API schema.
+  * Add package extras, ordered addons, launch profiles and save versions.
+  * Add shared metadata, game access controls, requests, reviews and metrics.
+  * Add controller Big Picture, chat, folder-tag rules and server diagnostics.
+  * Publish signed installers for Stable main and Unstable dev channels.
+  * Improve native extraction, SSO, responsiveness and library navigation.
 
  -- PlayStash Maintainers <maintainers@playstash.invalid>  Tue, 13 Oct 2026 00:00:00 +0000

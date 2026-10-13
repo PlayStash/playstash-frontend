@@ -23,6 +23,12 @@ export interface InstalledGameInfo {
   lastPlayedAt: number;
 }
 
+// Games whose metadata + images have already been cached during this app
+// session. Without this, every `isOnline` transition re-ran the whole cache for
+// every installed game — a burst of multi-megabyte IPC transfers that kept the
+// renderer and the Tauri event loop busy.
+const cachedGameIds = new Set<number>();
+
 export function useInstalledGames() {
   const [installedGames, setInstalledGames] = useState<InstalledGameInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,14 +39,16 @@ export function useInstalledGames() {
   const cacheInFlightRef = useRef<Set<number>>(new Set());
 
   const ensureGameCache = useCallback(
-    async (gameId: number) => {
+    async (gameId: number, force = false) => {
       if (!isTauriApp() || !isOnline) return;
       if (cacheInFlightRef.current.has(gameId)) return;
+      if (!force && cachedGameIds.has(gameId)) return;
       cacheInFlightRef.current.add(gameId);
 
       try {
         const base = serverUrl.replace(/\/+$/, "");
         const { invoke } = await import("@tauri-apps/api/core");
+        const { blobToBase64 } = await import("@/utils/binary");
         const serverNamespace = getServerNamespace(serverUrl);
 
         // Fetch full game object
@@ -64,11 +72,11 @@ export function useInstalledGames() {
               authFetch,
               owner: { gameId, slot: "cover" },
             });
-            const bytes = new Uint8Array(await blob.arrayBuffer());
+            const bytes = await blobToBase64(blob);
             await invoke("cache_game_image", {
               serverNamespace,
               mediaId: Number(coverId),
-              bytes: Array.from(bytes),
+              dataBase64: bytes,
               contentType: blob.type || "image/png",
             });
           } catch {
@@ -86,11 +94,11 @@ export function useInstalledGames() {
               authFetch,
               owner: { gameId, slot: "background" },
             });
-            const bytes = new Uint8Array(await blob.arrayBuffer());
+            const bytes = await blobToBase64(blob);
             await invoke("cache_game_image", {
               serverNamespace,
               mediaId: Number(bgId),
-              bytes: Array.from(bytes),
+              dataBase64: bytes,
               contentType: blob.type || "image/png",
             });
           } catch {
@@ -99,6 +107,7 @@ export function useInstalledGames() {
         }
 
         // Update local state to include the new cached metadata
+        cachedGameIds.add(gameId);
         setInstalledGames((prev) =>
           prev.map((g) =>
             g.gameId === gameId ? { ...g, cachedMetadata: gameJson } : g,
@@ -208,12 +217,19 @@ export function useInstalledGames() {
       // from the server so the installed carousel can sort by recency.
       void loadLastPlayed();
 
-      // Refresh server metadata while online so changed media IDs replace stale cache bindings.
+      // Refresh server metadata while online so changed media IDs replace stale
+      // cache bindings. Run these strictly one at a time: each call transfers a
+      // cover and a background over IPC, and firing them for every installed
+      // game at once is what produced the multi-megabyte IPC burst (and the
+      // ~140MB JS heap spike) that stalled the webview in the field log.
       if (isOnline) {
-        for (const game of allResults) {
-          if (game.gameId <= 0) continue;
-          void ensureGameCache(game.gameId);
-        }
+        void allResults
+          .filter((game) => game.gameId > 0)
+          .reduce(
+            (chain, game) => chain.then(() => ensureGameCache(game.gameId)),
+            Promise.resolve() as Promise<void>,
+          )
+          .catch(() => undefined);
       }
     } catch (err: any) {
       setError(err?.message ?? String(err));
@@ -248,7 +264,7 @@ export function useInstalledGames() {
               : game,
           ),
         );
-        if (isOnline) void ensureGameCache(updatedGame.id);
+        if (isOnline) void ensureGameCache(updatedGame.id, true);
       }),
     [ensureGameCache, isOnline],
   );

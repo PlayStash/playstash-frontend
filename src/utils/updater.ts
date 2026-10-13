@@ -1,4 +1,4 @@
-export type UpdateChannel = "stable" | "early-access" | "unstable";
+export type UpdateChannel = "stable" | "unstable";
 
 export const SKIPPED_UPDATE_KEY = "playstash_skipped_update_version";
 export const UPDATE_CHANNEL_KEY = "playstash_update_channel";
@@ -36,20 +36,14 @@ export function clearSkippedVersion(channel: UpdateChannel): void {
 
 export function defaultChannelForBuild(): UpdateChannel {
   const buildChannel = __BUILD_CHANNEL__;
-  return buildChannel === "unstable" || buildChannel === "early-access"
-    ? buildChannel
-    : "stable";
+  return buildChannel === "unstable" ? buildChannel : "stable";
 }
 
 export function readUpdateChannel(): UpdateChannel {
   const buildDefault = defaultChannelForBuild();
   try {
     const value = localStorage.getItem(UPDATE_CHANNEL_KEY);
-    if (
-      value === "stable" ||
-      value === "unstable" ||
-      value === "early-access"
-    ) {
+    if (value === "stable" || value === "unstable") {
       return value;
     }
     return buildDefault;

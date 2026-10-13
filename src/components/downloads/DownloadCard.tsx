@@ -344,6 +344,12 @@ export function DownloadCard({
         </div>
       </div>
 
+      {download.installationError && (
+        <p role="alert" className="mt-3 text-sm text-ps-danger">
+          {download.installationError}
+        </p>
+      )}
+
       <div className="mt-4">
         <PhaseSteps steps={steps} />
       </div>

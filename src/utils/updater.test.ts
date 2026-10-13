@@ -61,8 +61,12 @@ describe("formatUpdatePrompt", () => {
   it("includes version, channel, and confirmation question", () => {
     const prompt = formatUpdatePrompt("2.0.0", "stable");
     expect(prompt).toContain("You are running PlayStash v");
-    expect(prompt).toContain("PlayStash v2.0.0 is available on the stable channel");
-    expect(prompt).toContain("Do you want to download and install this update now?");
+    expect(prompt).toContain(
+      "PlayStash v2.0.0 is available on the stable channel",
+    );
+    expect(prompt).toContain(
+      "Do you want to download and install this update now?",
+    );
   });
 
   it("appends release notes when present", () => {
@@ -75,15 +79,19 @@ describe("formatUpdateError", () => {
   it("unwraps messages or falls back", () => {
     expect(formatUpdateError(new Error("boom"))).toBe("boom");
     expect(formatUpdateError("oops")).toBe("oops");
-    expect(formatUpdateError("")).toBe("PlayStash could not complete the update check.");
-    expect(formatUpdateError(null)).toBe("PlayStash could not complete the update check.");
+    expect(formatUpdateError("")).toBe(
+      "PlayStash could not complete the update check.",
+    );
+    expect(formatUpdateError(null)).toBe(
+      "PlayStash could not complete the update check.",
+    );
   });
 });
 
 describe("channelLabel", () => {
   it("is the identity", () => {
     expect(channelLabel("stable")).toBe("stable");
-    expect(channelLabel("early-access")).toBe("early-access");
+    expect(channelLabel("unstable")).toBe("unstable");
   });
 });
 
@@ -106,8 +114,8 @@ describe("update channel persistence", () => {
   });
 
   it("persists a valid channel", () => {
-    writeUpdateChannel("early-access");
-    expect(readUpdateChannel()).toBe("early-access");
+    writeUpdateChannel("unstable");
+    expect(readUpdateChannel()).toBe("unstable");
   });
 });
 

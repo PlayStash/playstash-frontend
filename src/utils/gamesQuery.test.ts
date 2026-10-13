@@ -2,6 +2,21 @@ import { describe, expect, it } from "vitest";
 import { buildCacheKey, buildGamesQueryParams } from "./gamesQuery";
 
 describe("buildGamesQueryParams", () => {
+  it("filters recent additions and exact folder prefixes on the server", () => {
+    const params = buildGamesQueryParams({
+      addedSince: "2026-10-06T12:00:00.000Z",
+      libraryFolder: "D:\\Games\\RPG\\",
+    });
+    expect(params.get("filter.created_at")).toBe(
+      "$gte:2026-10-06T12:00:00.000Z",
+    );
+    expect(params.get("filter.versions.file_path")).toBe("$sw:D:/Games/RPG/");
+    expect(
+      buildGamesQueryParams({ libraryFolder: "/games/RPG/" }).get(
+        "filter.versions.file_path",
+      ),
+    ).toBe("$sw:/games/RPG/");
+  });
   it("builds search/sort/limit params", () => {
     const params = buildGamesQueryParams({
       search: "minecraft",
@@ -37,9 +52,7 @@ describe("buildGamesQueryParams", () => {
       developers: ["studio"],
       publishers: ["pub"],
     });
-    expect(params.get("filter.type")).toBe(
-      "$in:WINDOWS_SETUP,LINUX_PORTABLE",
-    );
+    expect(params.get("filter.type")).toBe("$in:WINDOWS_SETUP,LINUX_PORTABLE");
     expect(params.get("filter.metadata.tags.name")).toBe("$in:horror");
     expect(params.get("filter.metadata.genres.name")).toBe("$in:action");
     expect(params.get("filter.metadata.developers.name")).toBe("$in:studio");
@@ -55,9 +68,11 @@ describe("buildGamesQueryParams", () => {
     expect(params.get("filter.progresses.user.id")).toBe("$eq:7");
 
     // Without a user id the state filter is omitted.
-    expect(buildGamesQueryParams({ gameState: "COMPLETED" }).has("filter.progresses.state")).toBe(
-      false,
-    );
+    expect(
+      buildGamesQueryParams({ gameState: "COMPLETED" }).has(
+        "filter.progresses.state",
+      ),
+    ).toBe(false);
   });
 
   it("maps release date ranges", () => {
@@ -87,9 +102,11 @@ describe("buildGamesQueryParams", () => {
         "filter.metadata.early_access",
       ),
     ).toBe("$eq:false");
-    expect(buildGamesQueryParams({ earlyAccess: "all" }).has("filter.metadata.early_access")).toBe(
-      false,
-    );
+    expect(
+      buildGamesQueryParams({ earlyAccess: "all" }).has(
+        "filter.metadata.early_access",
+      ),
+    ).toBe(false);
   });
 });
 
@@ -99,18 +116,23 @@ describe("buildCacheKey", () => {
     sortBy: "sort_title",
     order: "ASC",
   };
+  it("isolates folder and recent-addition categories", () => {
+    const all = buildCacheKey(base, "http://x", 1);
+    expect(
+      buildCacheKey({ ...base, libraryFolder: "/games/RPG" }, "http://x", 1),
+    ).not.toBe(all);
+    expect(
+      buildCacheKey(
+        { ...base, addedSince: "2026-10-06T12:00:00Z" },
+        "http://x",
+        1,
+      ),
+    ).not.toBe(all);
+  });
 
   it("is stable when array order changes", () => {
-    const a = buildCacheKey(
-      { ...base, gameTypes: ["a", "b"] },
-      "http://x",
-      1,
-    );
-    const b = buildCacheKey(
-      { ...base, gameTypes: ["b", "a"] },
-      "http://x",
-      1,
-    );
+    const a = buildCacheKey({ ...base, gameTypes: ["a", "b"] }, "http://x", 1);
+    const b = buildCacheKey({ ...base, gameTypes: ["b", "a"] }, "http://x", 1);
     expect(a).toBe(b);
   });
 

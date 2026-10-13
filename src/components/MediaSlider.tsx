@@ -172,16 +172,6 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
     }
   }, [index, autoPlay, isImageOnly, isYT]);
 
-  if (!list.length) {
-    return (
-      <div
-        className={`relative w-full ${aspect} bg-ps-panel rounded-3xl flex items-center justify-center text-xs text-ps-muted ${className}`}
-      >
-        No media
-      </div>
-    );
-  }
-
   const requestFullscreen = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -232,6 +222,16 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       document.removeEventListener("MSFullscreenChange", handler as any);
     };
   }, []);
+
+  if (!list.length) {
+    return (
+      <div
+        className={`relative w-full ${aspect} bg-ps-panel rounded-3xl flex items-center justify-center text-xs text-ps-muted ${className}`}
+      >
+        No media
+      </div>
+    );
+  }
 
   return (
     <div
@@ -316,12 +316,9 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       )}
 
       <div
-        className={
-          `absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent p-2 flex items-center justify-between text-[11px] text-white` +
-          (isYT ? " pointer-events-none" : "")
-        }
+        className={`absolute left-0 right-0 pointer-events-none p-2 flex items-center justify-between text-[11px] text-white ${isImageOnly ? "bottom-0 bg-linear-to-t from-black/70 to-transparent" : "top-0 bg-linear-to-b from-black/70 to-transparent"}`}
       >
-        <div className={isYT ? "pointer-events-none" : ""}>
+        <div>
           Media {index + 1} / {list.length}
         </div>
         <div className="flex items-center gap-2">

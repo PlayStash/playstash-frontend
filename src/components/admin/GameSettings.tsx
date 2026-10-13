@@ -120,6 +120,9 @@ import { getRootPaths } from "@/utils/rootPaths";
 import { getErrorMessage } from "@/utils/apiError";
 import { useDiskUsage } from "@/hooks/useDiskUsage";
 import DiskUsageChart from "@/components/DiskUsageChart";
+import { LibraryMetadataSettings } from "./LibraryMetadataSettings";
+import { GameAccessSettings } from "./GameAccessSettings";
+import { useGameMetrics } from "@/hooks/useGameMetrics";
 
 function isSetupInstallType(gameType?: string) {
   return gameType === PlaystashGameTypeEnum.windows_setup;
@@ -185,6 +188,7 @@ export function GameSettings({
   onGameUpdated,
   onUninstalled,
 }: Props) {
+  const reportGameEvent = useGameMetrics();
   const { serverUrl, authFetch, user } = useAuth() as any;
   const { showAlert } = useAlertDialog();
   const isAdmin = Number(user?.role) >= Number(PlaystashUserRoleEnum._3);
@@ -282,6 +286,7 @@ export function GameSettings({
 
   // Launch options state
   const [launchExecutables, setLaunchExecutables] = useState<string[]>([]);
+  const [launchScanTruncated, setLaunchScanTruncated] = useState(false);
   const [selectedLaunchExe, setSelectedLaunchExe] = useState<string>("");
   const [nonExecutableScripts, setNonExecutableScripts] = useState<string[]>(
     [],
@@ -534,12 +539,14 @@ export function GameSettings({
         const result = await invoke<{
           executables: string[];
           nonExecutableScripts: string[];
+          truncated: boolean;
         }>("list_launch_executables", {
           installationPath: installedGame.installationDirectory,
         });
         if (!cancelled) {
           setLaunchExecutables(result.executables);
           setNonExecutableScripts(result.nonExecutableScripts);
+          setLaunchScanTruncated(!!result.truncated);
         }
 
         // Read saved launch config
@@ -646,11 +653,13 @@ export function GameSettings({
       const result = await invoke<{
         executables: string[];
         nonExecutableScripts: string[];
+        truncated: boolean;
       }>("list_launch_executables", {
         installationPath: installedGame.installationDirectory,
       });
       setLaunchExecutables(result.executables);
       setNonExecutableScripts(result.nonExecutableScripts);
+      setLaunchScanTruncated(!!result.truncated);
     } catch (err: any) {
       console.error("Failed to make scripts executable:", err);
     } finally {
@@ -966,6 +975,11 @@ export function GameSettings({
           installedGame.versionDirectory,
           false,
         );
+        reportGameEvent(
+          installedGame.gameId,
+          "uninstalled",
+          installedGame.versionId,
+        );
         // Clean up the empty per-version / per-game folders left behind.
         await pruneEmptyVersionFolders(installedGame.versionDirectory);
         // Offer to delete any leftover files the uninstaller left behind.
@@ -1037,6 +1051,15 @@ export function GameSettings({
             installedGame.versionDirectory,
             false,
           );
+          reportGameEvent(
+            installedGame.gameId,
+            "uninstalled",
+            installedGame.versionId,
+          );
+          // Clean up the empty per-version / per-game folders left behind. The
+          // uninstaller only removes the game files, so without this the empty
+          // "<Game>/Versions/<version>" chain stays on disk.
+          await pruneEmptyVersionFolders(installedGame.versionDirectory);
           await cleanupLeftoverFiles(installedGame.versionDirectory);
           await offerPrefixCleanup(
             installedGame.versionDirectory,
@@ -1764,10 +1787,11 @@ export function GameSettings({
       try {
         if (isTauri) {
           const { invoke } = await import("@tauri-apps/api/core");
+          const { base64ToBytes } = await import("@/utils/binary");
           const res = (await invoke("fetch_url_bytes", {
             url: state.preview,
-          })) as { bytes: number[]; content_type: string };
-          const bytes = new Uint8Array(res.bytes);
+          })) as { bytesBase64: string; content_type: string };
+          const bytes = base64ToBytes(res.bytesBase64);
           const mime = res.content_type || "image/png";
           const ext = (mime.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "");
           return new File([bytes], `${fallbackName}.${ext}`, { type: mime });
@@ -3036,6 +3060,22 @@ export function GameSettings({
                     {/* Scrollable content */}
                     <div className="flex-1 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-ps-line [&::-webkit-scrollbar-thumb]:rounded-full">
                       <div className="space-y-4">
+                        <LibraryMetadataSettings
+                          game={workingGame}
+                          onGameUpdated={(updated) => {
+                            setFullGame(updated);
+                            onGameUpdated?.(updated);
+                          }}
+                        />
+                        {isAdmin && (
+                          <GameAccessSettings
+                            game={workingGame}
+                            onGameUpdated={(updated) => {
+                              setFullGame(updated);
+                              onGameUpdated?.(updated);
+                            }}
+                          />
+                        )}
                         {/* Title */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
@@ -4054,6 +4094,12 @@ export function GameSettings({
                                 </ListboxOption>
                               ))}
                             </Listbox>
+                          )}
+                          {launchScanTruncated && (
+                            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                              This installation folder is very large — the scan
+                              stopped early, so some executables may be missing.
+                            </p>
                           )}
                         </div>
 
