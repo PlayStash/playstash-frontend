@@ -9,7 +9,8 @@ import { AUTH_REFRESH_STORAGE_KEY } from "@/utils/authConfig";
  * In the Tauri desktop app the refresh token is kept in a Stronghold vault —
  * an encrypted, cross-platform secret store (official Tauri plugin) that works
  * on Windows, macOS and Linux. This removes the token from the webview's
- * `localStorage`, which is readable by any JS running in the page (XSS).
+ * `localStorage`. The vault protects persisted data; frontend code with native
+ * IPC access can still access the user's session and must remain trusted.
  *
  * On the plain web build we fall back to `localStorage`, which is the norm for
  * browser-delivered SPAs.
@@ -25,6 +26,16 @@ interface VaultHandle {
 
 const VAULT_PATH = "vault.hold";
 const CLIENT_NAME = "playstash";
+const NATIVE_TOKEN_BLOCKED_KEY = "app_native_token_blocked";
+
+function blockNativeRestore(blocked: boolean) {
+  try {
+    if (blocked) localStorage.setItem(NATIVE_TOKEN_BLOCKED_KEY, "true");
+    else localStorage.removeItem(NATIVE_TOKEN_BLOCKED_KEY);
+  } catch {
+    /* non-secret restore marker cannot be written */
+  }
+}
 
 let cachedRefreshToken: string | null = null;
 let cacheLoaded = false;
@@ -89,17 +100,23 @@ export function initTokenStorage(): Promise<void> {
     if (cacheLoaded) return;
     try {
       if (isTauriApp()) {
+        clearLocal();
+        if (localStorage.getItem(NATIVE_TOKEN_BLOCKED_KEY) === "true") {
+          cachedRefreshToken = null;
+          cacheLoaded = true;
+          return;
+        }
         const { store } = await ensureVault();
         const data = await store.get(AUTH_REFRESH_STORAGE_KEY);
-        cachedRefreshToken = data
-          ? new TextDecoder().decode(data)
-          : readLocal();
+        cachedRefreshToken = data ? new TextDecoder().decode(data) : null;
+        clearLocal();
       } else {
         cachedRefreshToken = readLocal();
       }
     } catch (e) {
-      console.warn("[tokenStorage] init failed, using localStorage", e);
-      cachedRefreshToken = readLocal();
+      console.warn("[tokenStorage] init failed", e);
+      cachedRefreshToken = isTauriApp() ? null : readLocal();
+      if (isTauriApp()) clearLocal();
     }
     cacheLoaded = true;
   })();
@@ -114,6 +131,10 @@ export function getRefreshToken(): string | null {
 /** Updates the cache and persists the token to secure storage. */
 export async function setRefreshToken(token: string): Promise<void> {
   cachedRefreshToken = token;
+  if (isTauriApp()) {
+    clearLocal();
+    blockNativeRestore(true);
+  }
   try {
     if (isTauriApp()) {
       const { store, stronghold } = await ensureVault();
@@ -122,19 +143,22 @@ export async function setRefreshToken(token: string): Promise<void> {
         Array.from(new TextEncoder().encode(token)),
       );
       await stronghold.save();
+      blockNativeRestore(false);
     } else {
       writeLocal(token);
     }
   } catch (e) {
-    console.warn("[tokenStorage] persist failed, falling back to localStorage", e);
-    // Keep the session working even if secure storage is unavailable.
-    writeLocal(token);
+    // Keep the current session in memory, without silently persisting secrets
+    // in plaintext when the native vault is unavailable.
+    console.warn("[tokenStorage] persist failed; session remains in memory", e);
   }
 }
 
 /** Clears the cache and removes the token from secure storage. */
 export async function removeRefreshToken(): Promise<void> {
   cachedRefreshToken = null;
+  clearLocal();
+  if (isTauriApp()) blockNativeRestore(true);
   try {
     if (isTauriApp()) {
       const { store, stronghold } = await ensureVault();

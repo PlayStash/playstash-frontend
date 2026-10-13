@@ -372,6 +372,10 @@ pub(crate) fn download_game_version(
   speed_limit_kb: Option<u64>,
   resume_position: Option<u64>,
 ) -> Result<(), String> {
+  crate::net::validate_http_url(&url)?;
+  let client = reqwest::Client::builder()
+    .redirect(reqwest::redirect::Policy::none())
+    .build().map_err(|error| error.to_string())?;
   let control_flag = Arc::new(AtomicU8::new(DOWNLOAD_CONTROL_RUNNING));
 
   // A download for this game may already be running: the task survives a
@@ -405,7 +409,6 @@ pub(crate) fn download_game_version(
   tauri::async_runtime::spawn(async move {
     let _active_entry = active_entry;
 
-    let client = reqwest::Client::new();
     let mut req = client.get(&url).header("Accept", "*/*");
     if let Some(auth) = auth_header.as_ref() {
       if !auth.trim().is_empty() {

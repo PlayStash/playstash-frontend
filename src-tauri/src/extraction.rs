@@ -13,6 +13,9 @@ fn safe_output_path(destination: &Path, name: &Path) -> Result<PathBuf, String> 
     return Err("Archive contains an unsafe path.".into());
   }
   let mut output = destination.to_path_buf();
+  if fs::symlink_metadata(destination).map(|metadata| metadata.file_type().is_symlink()).unwrap_or(false) {
+    return Err("Archive cannot write through a symbolic link.".into());
+  }
   for component in name.components() {
     if component == std::path::Component::CurDir { continue; }
     output.push(component);
@@ -21,6 +24,22 @@ fn safe_output_path(destination: &Path, name: &Path) -> Result<PathBuf, String> 
     }
   }
   Ok(output)
+}
+
+/// Replace an existing file's directory entry rather than truncating its inode:
+/// otherwise a hard link could overwrite a file outside the extraction root.
+fn detach_existing_file(path: &Path) -> std::io::Result<()> {
+  match fs::symlink_metadata(path) {
+    Ok(metadata) if metadata.file_type().is_file() => fs::remove_file(path),
+    Ok(_) => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Archive output must be a regular file.")),
+    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+    Err(error) => Err(error),
+  }
+}
+
+fn create_archive_file(path: &Path) -> std::io::Result<fs::File> {
+  detach_existing_file(path)?;
+  fs::OpenOptions::new().write(true).create_new(true).open(path)
 }
 
 #[cfg(test)]
@@ -32,6 +51,27 @@ mod containment_tests {
       assert!(safe_output_path(Path::new("/games"), Path::new(name)).is_err());
     }
     assert_eq!(safe_output_path(Path::new("/games"), Path::new("./bin/game.exe")).unwrap(), PathBuf::from("/games/bin/game.exe"));
+  }
+  #[cfg(unix)]
+  #[test]
+  fn rejects_destination_links_and_does_not_modify_hardlink_targets() {
+    let root = std::env::temp_dir().join(format!("playstash-extract-security-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    fs::create_dir_all(&root).unwrap();
+    let outside = root.join("outside");
+    fs::write(&outside, "private").unwrap();
+    let destination = root.join("extracted");
+    fs::create_dir(&destination).unwrap();
+    let link = root.join("linked-root");
+    std::os::unix::fs::symlink(&destination, &link).unwrap();
+    assert!(safe_output_path(&link, Path::new("payload")).is_err());
+    std::os::unix::fs::symlink(&outside, destination.join("symlink")).unwrap();
+    assert!(safe_output_path(&destination, Path::new("symlink")).is_err());
+    let output = destination.join("hardlink");
+    fs::hard_link(&outside, &output).unwrap();
+    create_archive_file(&output).unwrap().write_all(b"new payload").unwrap();
+    assert_eq!(fs::read_to_string(&outside).unwrap(), "private");
+    assert_eq!(fs::read_to_string(&output).unwrap(), "new payload");
+    fs::remove_dir_all(root).unwrap();
   }
 }
 
@@ -93,7 +133,7 @@ fn extract_zip_archive(
         .map_err(|e| (false, format!("Failed to create parent directory: {e}")))?;
     }
 
-    let mut out_file = fs::File::create(&out_path)
+    let mut out_file = create_archive_file(&out_path)
       .map_err(|e| (false, format!("Failed to create output file: {e}")))?;
     std::io::copy(&mut entry, &mut out_file)
       .map_err(|e| (false, format!("Failed to write output file: {e}")))?;
@@ -171,7 +211,8 @@ fn extract_rar_archive(
     )
   })? {
     let current_file = header.entry().filename.to_string_lossy().to_string();
-    safe_output_path(destination, &header.entry().filename).map_err(|error| (false, error))?;
+    let output = safe_output_path(destination, &header.entry().filename).map_err(|error| (false, error))?;
+    if header.entry().is_file() { detach_existing_file(&output).map_err(|error| (false, error.to_string()))?; }
     processing = header.extract_with_base(destination).map_err(|e| {
       let msg = e.to_string();
       let lower = msg.to_lowercase();
@@ -252,7 +293,7 @@ fn extract_7z_archive(
         fs::create_dir_all(parent)?;
       }
 
-      let mut output = fs::File::create(&dest_path)?;
+      let mut output = create_archive_file(&dest_path)?;
       loop {
         let read_size = entry_reader.read(&mut buffer)?;
         if read_size == 0 {
@@ -380,7 +421,7 @@ fn extract_optical_image_directory(
       }
     };
 
-    let dest_path = dest.join(name);
+    let dest_path = safe_output_path(dest, Path::new(name)).map_err(|error| (false, error))?;
 
     if child.is_directory {
       fs::create_dir_all(&dest_path)
@@ -412,7 +453,7 @@ fn extract_optical_image_directory(
           .map_err(|e| (false, format!("Failed to create parent directory: {e}")))?;
       }
 
-      let mut output = std::fs::File::create(&dest_path)
+      let mut output = create_archive_file(&dest_path)
         .map_err(|e| (false, format!("Failed to create output file: {e}")))?;
 
       // Streams the file's bytes straight from the image in fixed-size chunks,
@@ -535,7 +576,8 @@ fn extract_tar_from_reader<R: Read>(
       return Err((false, "Archive links and special files are not supported.".into()));
     }
     let entry_path = entry.path().map_err(|error| (false, error.to_string()))?.into_owned();
-    safe_output_path(destination, &entry_path).map_err(|error| (false, error))?;
+    let output = safe_output_path(destination, &entry_path).map_err(|error| (false, error))?;
+    if entry.header().entry_type().is_file() { detach_existing_file(&output).map_err(|error| (false, error.to_string()))?; }
     let current_file = entry
       .path()
       .ok()
@@ -566,7 +608,7 @@ fn extract_single_file_from_reader<R: Read>(
   destination: &PathBuf,
 ) -> Result<(), (bool, String)> {
   let output_name = single_file_output_name(archive);
-  let output_path = destination.join(&output_name);
+  let output_path = safe_output_path(destination, Path::new(&output_name)).map_err(|error| (false, error))?;
   let current_file = Some(output_name);
 
   if let Some(parent) = output_path.parent() {
@@ -576,7 +618,7 @@ fn extract_single_file_from_reader<R: Read>(
 
   emit_extract_progress(app, game_id, "extracting", 0, None, current_file.clone(), None);
 
-  let mut output = fs::File::create(&output_path)
+  let mut output = create_archive_file(&output_path)
     .map_err(|e| (false, format!("Failed to create output file: {e}")))?;
   std::io::copy(&mut reader, &mut output)
     .map_err(|e| (false, format!("Failed to extract compressed file: {e}")))?;

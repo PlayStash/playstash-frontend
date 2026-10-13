@@ -58,6 +58,9 @@ jobs:
           PLAYSTASH_API_SPEC_PATH: ${{ steps.api-spec.outputs.file }}
         run: pnpm install --frozen-lockfile --strict-peer-dependencies
 
+      - name: Check dependency advisories
+        run: pnpm audit --audit-level=low
+
       - name: Typecheck
         run: pnpm typecheck
 

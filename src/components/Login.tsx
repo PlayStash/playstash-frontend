@@ -19,9 +19,43 @@ import { Status } from "../api";
 import { applyTheme, getStoredTheme } from "@/utils/theme";
 import { isTauriApp } from "@/utils/tauri";
 
+const SSO_PENDING_SERVER_KEY = "app_sso_pending_server";
+
+function consumeSsoCallback() {
+  try {
+    const loc = window.location;
+    const hash = loc.hash.startsWith("#") ? loc.hash.slice(1) : loc.hash;
+    const unsafeLegacyUrl = /(?:access_token|refresh_token)=/.test(
+      loc.search + loc.pathname,
+    );
+    if (!unsafeLegacyUrl && !/(?:access_token|refresh_token)=/.test(hash))
+      return null;
+    // This runs during initialization, before any effects can start requests.
+    window.history.replaceState({}, document.title, loc.origin + "/login");
+    const pendingServer = sessionStorage.getItem(SSO_PENDING_SERVER_KEY);
+    sessionStorage.removeItem(SSO_PENDING_SERVER_KEY);
+    if (unsafeLegacyUrl || !pendingServer) return null;
+    const server = normalizeServerUrl(pendingServer);
+    const params = new URLSearchParams(hash);
+    const access_token = params.get("access_token") || "";
+    if (!server || !access_token) return null;
+    return {
+      server,
+      tokens: {
+        access_token,
+        refresh_token: params.get("refresh_token") || undefined,
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function Login() {
   const { loginBasic, loginWithTokens, loading, error } = useAuth();
   const navigate = useNavigate();
+  const [ssoCallback] = useState(consumeSsoCallback);
+  const ssoCallbackConsumed = useRef(false);
   const devAutologin = getDevAutologinConfig();
   const [server, setServer] = useState(() => {
     return (
@@ -38,6 +72,7 @@ export function Login() {
   const [username, setUsername] = useState(() => devAutologin?.username || "");
   const [password, setPassword] = useState(() => devAutologin?.password || "");
   const [useSso, setUseSso] = useState(false);
+  const ssoPopupRef = useRef<Window | null>(null);
   const [serverStatus, setServerStatus] = useState<Status | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState(false);
@@ -143,79 +178,45 @@ export function Login() {
     }
   }, [serverStatus, ssoAvailable, basicAuthAvailable]);
 
-  // Parse SSO redirect style: {server}/access_token=...&refresh_token=...
+  // Only consume a fragment callback in the tab that initiated the redirect.
   useEffect(() => {
-    try {
-      const loc = window.location;
-      const search = loc.search.startsWith("?")
-        ? loc.search.substring(1)
-        : loc.search;
-      const path = loc.pathname.startsWith("/")
-        ? loc.pathname.slice(1)
-        : loc.pathname;
-      const hash = loc.hash.startsWith("#") ? loc.hash.slice(1) : loc.hash;
-
-      // Priority order: query string (?access_token=...), then path style, then hash fragment.
-      let candidate = "";
-      if (/access_token=/.test(search)) candidate = search;
-      else if (/access_token=/.test(path)) candidate = path;
-      else if (/access_token=/.test(hash)) candidate = hash;
-      if (!candidate) return; // no tokens present
-
-      const params = new URLSearchParams(candidate.replace(/^[^?]*\?/, ""));
-      const access = params.get("access_token") || "";
-      const refresh = params.get("refresh_token") || undefined;
-      if (!access) return;
-
-      // In the desktop app the flow returns to the app's own origin
-      // (tauri.localhost), which is *not* the API server — the server URL was
-      // persisted when the flow started. On the web both are the same origin.
-      const base = isTauriApp()
-        ? normalizeServerUrl(
-            localStorage.getItem(AUTH_SERVER_STORAGE_KEY) || "",
-          )
-        : window.location.origin;
-      if (!base) return;
-      (async () => {
-        try {
-          await loginWithTokens(base, {
-            access_token: access,
-            refresh_token: refresh,
-          });
-          // Scrub sensitive tokens from the current URL. Stay on the app origin:
-          // a cross-origin replaceState (desktop) would throw.
-          const cleanUrl = window.location.origin + "/login";
-          window.history.replaceState({}, document.title, cleanUrl);
-          navigate("/library", { replace: true });
-        } catch {
-          // ignore - context will show error
-        }
-      })();
-    } catch {
-      // swallow parsing errors silently
-    }
-  }, [loginWithTokens, navigate]);
+    if (!ssoCallback || ssoCallbackConsumed.current) return;
+    ssoCallbackConsumed.current = true;
+    void (async () => {
+      try {
+        await loginWithTokens(ssoCallback.server, ssoCallback.tokens);
+        navigate("/library", { replace: true });
+      } catch {
+        // The URL is already scrubbed even if authentication fails.
+      }
+    })();
+  }, [ssoCallback, loginWithTokens, navigate]);
 
   // Receive the tokens handed back by the SSO popup (web flow). Only trust a
   // message that originates from the configured server origin.
   useEffect(() => {
-    const expectedOrigin = confirmedServer
+    const expectedServer = confirmedServer
       ? normalizeServerUrl(confirmedServer)
       : "";
-    if (!expectedOrigin) return;
+    if (!expectedServer) return;
+    const expectedOrigin = new URL(expectedServer).origin;
 
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== expectedOrigin) return;
+      if (!ssoPopupRef.current || event.source !== ssoPopupRef.current) return;
       const data = event.data as
         | { type?: string; access_token?: string; refresh_token?: string }
         | undefined;
       if (!data || data.type !== "playstash:sso") return;
       const accessToken = data.access_token;
-      if (!accessToken) return;
+      if (typeof accessToken !== "string" || !accessToken) return;
       const refreshToken = data.refresh_token;
+      if (refreshToken !== undefined && typeof refreshToken !== "string")
+        return;
+      ssoPopupRef.current = null;
       void (async () => {
         try {
-          await loginWithTokens(expectedOrigin, {
+          await loginWithTokens(expectedServer, {
             access_token: accessToken,
             refresh_token: refreshToken ?? undefined,
           });
@@ -266,8 +267,12 @@ export function Login() {
             "playstash-sso",
             "popup,width=520,height=680",
           );
-          if (popup) return;
+          if (popup) {
+            ssoPopupRef.current = popup;
+            return;
+          }
         }
+        sessionStorage.setItem(SSO_PENDING_SERVER_KEY, normalized);
         window.location.href = loginUrl;
         return;
       }

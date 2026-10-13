@@ -16,9 +16,16 @@ export function normalizeServerUrl(raw: string): string {
   let normalized = (raw || "").trim();
   if (!normalized) return "";
   if (!/^https?:\/\//i.test(normalized)) {
+    if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) return "";
     normalized = `https://${normalized}`;
   }
-  return normalized.replace(/\/+$/, "");
+  try {
+    const url = new URL(normalized);
+    if (url.username || url.password || url.search || url.hash) return "";
+    return url.href.replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
 }
 
 export function getDevAutologinConfig(): DevAutologinConfig | null {

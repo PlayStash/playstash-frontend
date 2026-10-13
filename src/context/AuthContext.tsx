@@ -21,6 +21,12 @@ import {
   setRefreshToken,
 } from "@/utils/tokenStorage";
 import { isTauriApp } from "@/utils/tauri";
+import {
+  authenticatedRequestUrl,
+  fetchAuthenticated,
+  parseCachedUser,
+  serializeCachedUser,
+} from "@/utils/authSecurity";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import {
   computeNextTokenRefresh,
@@ -97,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Accept: "application/json",
       },
       signal: AbortSignal.timeout(10_000),
+      redirect: "error",
     });
     if (!res.ok)
       throw new Error(
@@ -114,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       body: "",
       signal: AbortSignal.timeout(10_000),
+      redirect: "error",
     });
     if (!res.ok)
       throw new Error(
@@ -131,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always cache user for offline bootstrap (Tauri only)
     if (isTauriApp()) {
       try {
-        localStorage.setItem(AUTH_CACHED_USER_KEY, JSON.stringify(me));
+        localStorage.setItem(AUTH_CACHED_USER_KEY, serializeCachedUser(me));
       } catch {
         /* ignore */
       }
@@ -286,30 +294,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const authFetch = useCallback(
     async (input: string, init?: RequestInit) => {
+      authenticatedRequestUrl(input, serverRef.current);
       await ensureFreshToken();
-
-      const buildHeaders = (token?: string) => {
-        const headers = new Headers(init?.headers || {});
-        if (token && !headers.has("Authorization"))
-          headers.set("Authorization", "Bearer " + token);
-        headers.set("Accept", "*/*");
-        return headers;
-      };
-
-      let res = await fetch(input, {
-        ...(init || {}),
-        headers: buildHeaders(authRef.current?.access_token),
-      });
+      let res = await fetchAuthenticated(
+        input,
+        serverRef.current,
+        authRef.current?.access_token,
+        init,
+      );
 
       if (res.status === 401) {
         // Token was rejected. Try refreshing once and replay the request.
         try {
           await performRefresh();
           const token = authRef.current?.access_token;
-          res = await fetch(input, {
-            ...(init || {}),
-            headers: buildHeaders(token),
-          });
+          res = await fetchAuthenticated(input, serverRef.current, token, init);
         } catch (e) {
           // Refresh failed while handling the 401. Only force a logout for a
           // genuine auth error — a transient network problem should not
@@ -365,7 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me);
         if (isTauriApp()) {
           try {
-            localStorage.setItem(AUTH_CACHED_USER_KEY, JSON.stringify(me));
+            localStorage.setItem(AUTH_CACHED_USER_KEY, serializeCachedUser(me));
           } catch {
             /* ignore */
           }
@@ -407,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me);
         if (isTauriApp()) {
           try {
-            localStorage.setItem(AUTH_CACHED_USER_KEY, JSON.stringify(me));
+            localStorage.setItem(AUTH_CACHED_USER_KEY, serializeCachedUser(me));
           } catch {
             /* ignore */
           }
@@ -503,10 +502,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             );
             if (cachedUserRaw) {
               try {
-                const cachedUser: PlaystashUser = JSON.parse(cachedUserRaw);
+                const cachedUser: PlaystashUser =
+                  parseCachedUser(cachedUserRaw);
+                localStorage.setItem(
+                  AUTH_CACHED_USER_KEY,
+                  serializeCachedUser(cachedUser),
+                );
                 offlineModeRef.current = true;
                 authRef.current = {
-                  access_token: storedRefresh,
+                  access_token: "",
                   refresh_token: storedRefresh,
                 };
                 nextTokenRefreshRef.current = new Date(
@@ -540,7 +544,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me);
         if (isTauriApp()) {
           try {
-            localStorage.setItem(AUTH_CACHED_USER_KEY, JSON.stringify(me));
+            localStorage.setItem(AUTH_CACHED_USER_KEY, serializeCachedUser(me));
           } catch {
             /* ignore */
           }
@@ -556,7 +560,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("[bootstrap] cachedUser exists:", !!cachedUserRaw);
           if (cachedUserRaw) {
             try {
-              const cachedUser: PlaystashUser = JSON.parse(cachedUserRaw);
+              const cachedUser: PlaystashUser = parseCachedUser(cachedUserRaw);
+              localStorage.setItem(
+                AUTH_CACHED_USER_KEY,
+                serializeCachedUser(cachedUser),
+              );
               console.log(
                 "[bootstrap] entering OFFLINE MODE with cached user:",
                 cachedUser.username,
@@ -564,7 +572,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // Reconstruct minimal auth from stored refresh token
               offlineModeRef.current = true;
               authRef.current = {
-                access_token: storedRefresh,
+                access_token: "",
                 refresh_token: storedRefresh,
               };
               // Push expiry 24h out so ensureFreshToken won't try to refresh
@@ -662,6 +670,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setError(null);
     await removeRefreshToken();
+    localStorage.removeItem(AUTH_CACHED_USER_KEY);
   }, []);
 
   const refreshCurrentUser = useCallback(async () => {

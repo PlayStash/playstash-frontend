@@ -1,8 +1,21 @@
 # PlayStash Frontend Changelog
 
+## 17.2.1
+
+Status: Released on 2026-10-13.
+
+### Changes
+
+- Hardened credential storage: desktop vault failures retain only an in-memory session, offline caches exclude keys and sessions, and logout prevents stale vault restores.
+- Restricted authenticated requests to the selected server API and rejected credential-bearing URLs and redirects; SSO accepts only initiated popups or fragment callbacks, removing credentials from the address bar before requests.
+- Fixed archive output containment across ISO and single-file formats and prevented writes through existing hard links; capped native image reads and downloads at 32 MiB.
+- Updated affected JavaScript dependencies, Quinn and Rustls security fixes, and backported the upstream GLib iterator safety fix without changing the GTK3 ABI.
+- Enabled the desktop content security policy to block remote scripts and unsafe evaluation while retaining configured library connections.
+- Preserved the Linux desktop launcher format when repository formatting runs, so packaged application shortcuts remain valid.
+
 ## 17.2.0
 
-Status: Unreleased. This version marks the fresh PlayStash source baseline.
+Status: Released on 2026-10-13. This version marks the fresh PlayStash source baseline.
 
 ### Changes
 

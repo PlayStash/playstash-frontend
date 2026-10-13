@@ -23,7 +23,9 @@ describe("normalizeServerUrl", () => {
   });
 
   it("keeps an existing http/https scheme and strips trailing slashes", () => {
-    expect(normalizeServerUrl("http://example.com/")).toBe("http://example.com");
+    expect(normalizeServerUrl("http://example.com/")).toBe(
+      "http://example.com",
+    );
     expect(normalizeServerUrl("https://example.com///")).toBe(
       "https://example.com",
     );
@@ -31,6 +33,16 @@ describe("normalizeServerUrl", () => {
 
   it("trims surrounding whitespace", () => {
     expect(normalizeServerUrl("  example.com  ")).toBe("https://example.com");
+  });
+
+  it.each([
+    "https://user:password@example.com",
+    "file:///tmp",
+    "https://example.com?token=secret",
+    "https://example.com#token",
+    "https://[",
+  ])("rejects invalid or credential-bearing server URL %s", (input) => {
+    expect(normalizeServerUrl(input)).toBe("");
   });
 });
 

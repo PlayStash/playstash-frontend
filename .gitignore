@@ -18,6 +18,7 @@ release-assets/
 updater-metadata/
 coverage/
 src-tauri/tauri.release.generated.json
+src-tauri/vendor/glib/Cargo.lock
 
 # Editor directories and files
 .vscode-edge-profile/*

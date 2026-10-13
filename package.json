@@ -1,6 +1,6 @@
 {
   "name": "playstash-frontend",
-  "version": "17.2.0",
+  "version": "17.2.1",
   "description": "the self-hosted gaming platform for drm-free games",
   "author": "Alkan Alper, Schäfer Philip GbR / Phalcode",
   "private": true,
@@ -13,8 +13,8 @@
     "debug": "vite dev server",
     "tauridev": "tauri dev",
     "build": "vite build",
-    "test": "vitest run src && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs",
-    "test:cov": "vitest run src --coverage && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs",
+    "test": "vitest run src && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs",
+    "test:cov": "vitest run src --coverage && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs",
     "lint": "prettier --write . && eslint .",
     "licenses": "node scripts/generate-third-party-licenses.mjs",
     "postinstall": "node scripts/ensure-api-client.mjs",

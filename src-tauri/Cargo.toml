@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "17.2.0"
+version = "17.2.1"
 description = "The self-hosted gaming platform for DRM-free games"
 authors = ["Phalcode"]
 license = "CC BY-NC-SA 4.0"
@@ -65,3 +65,8 @@ webkit2gtk = { version = "2", features = ["v2_16"] }
 # scrypt performance bug in dev builds.
 [profile.dev.package.scrypt]
 opt-level = 3
+
+# GTK3 currently requires glib 0.18. This checked-in crate contains the exact
+# upstream VariantStrIter safety fix; see vendor/glib/PLAYSTASH-PATCH.md.
+[patch.crates-io]
+glib = { path = "vendor/glib" }

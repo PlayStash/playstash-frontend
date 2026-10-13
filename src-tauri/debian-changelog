@@ -1,3 +1,9 @@
+playstash (17.2.1) unstable; urgency=medium
+
+  * Harden authentication, credential storage, archive extraction and desktop content security; update vulnerable dependencies.
+
+ -- PlayStash Maintainers <maintainers@playstash.invalid>  Tue, 13 Oct 2026 19:02:33 +0000
+
 playstash (17.2.0) UNRELEASED; urgency=medium
 
   * Establish the fresh PlayStash frontend source baseline.

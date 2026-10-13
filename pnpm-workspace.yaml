@@ -10,3 +10,16 @@ onlyBuiltDependencies:
   - "@nestjs/core"
   - "@openapitools/openapi-generator-cli"
 optimisticRepeatInstall: false
+
+# Restrict security updates to affected transitive versions; do not suppress
+# advisories or replace unrelated major versions.
+overrides:
+  "@dicebear/initials@<=9.4.2": 9.4.3
+  "esbuild@>=0.27.3 <0.28.1": 0.28.2
+  "ip-address@<=10.7.0": 10.7.4
+  "brace-expansion@>=4.0.0 <5.0.12": 5.0.12
+  "basic-ftp@<=6.2.0": 6.2.3
+  "http-cache-semantics@<=4.2.0": 4.3.0
+  "source-map-js@>=1.0.0 <1.2.2": 1.2.2
+  "postcss-selector-parser@<7.1.6": 7.1.6
+  "shell-quote@>=1.8.4 <1.11.0": 1.12.0

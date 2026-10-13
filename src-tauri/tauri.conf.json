@@ -23,18 +23,12 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost https://ipc.localhost http: https: ws: wss:; img-src 'self' asset: http://asset.localhost https://asset.localhost data: blob: http: https:; media-src 'self' asset: http://asset.localhost https://asset.localhost blob: http: https:; font-src 'self' data:; frame-src https://www.youtube.com https://www.youtube-nocookie.com http://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
     }
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "nsis",
-      "app",
-      "dmg",
-      "appimage",
-      "deb"
-    ],
+    "targets": ["nsis", "app", "dmg", "appimage", "deb"],
     "publisher": "PlayStash",
     "license": "CC BY-NC-SA 4.0",
     "homepage": "https://github.com/PlayStash/playstash-frontend",

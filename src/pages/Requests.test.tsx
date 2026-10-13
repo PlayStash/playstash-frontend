@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Requests from "./Requests";
@@ -81,16 +87,20 @@ describe("game requests", () => {
       target: { value: "fulfilled" },
     });
     fireEvent.change(
-      screen.getByRole("spinbutton", { name: "Added game ID (optional)" }),
+      await screen.findByRole("spinbutton", {
+        name: "Added game ID (optional)",
+      }),
       { target: { value: "42" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "Save status" }));
-    expect(mocks.fetch).toHaveBeenCalledWith(
-      "https://library.test/api/requests/4",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ status: "fulfilled", game_id: 42 }),
-      }),
+    await waitFor(() =>
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "https://library.test/api/requests/4",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({ status: "fulfilled", game_id: 42 }),
+        }),
+      ),
     );
   });
 });

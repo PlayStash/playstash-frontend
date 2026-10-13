@@ -8,3 +8,4 @@ release-assets/
 updater-metadata/
 src-tauri/target/
 src-tauri/gen/
+src-tauri/linux/*.desktop.hbs
