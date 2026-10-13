@@ -12,7 +12,7 @@ Status: Unreleased. This version marks the fresh PlayStash source baseline.
 - Made the frontend features available without a subscription.
 - Bundled the PlayStash API schema for reproducible client generation.
 - Preserved current desktop capabilities, including launch logs, streamer mode and protected credential storage.
-- Disabled workflow jobs by default until explicitly enabled for this repository.
+- GitHub-hosted tests, installers and releases run automatically; any future self-hosted runner jobs require explicit activation and are blocked by default.
 - Update settings now offer only the published Stable (`main`) and Unstable (`dev`) channels.
 - Added Windows, Linux and macOS ARM/Intel installer builds, signed updater artifacts and immutable version releases with changelog notes.
 - Release retries resume existing drafts even before their version tags are published; inaccessible release data stops publication.

@@ -17,11 +17,9 @@ concurrency:
 
 jobs:
   test:
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' }}
     uses: ./.github/workflows/test.yml
 
   release:
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' }}
     needs: test
     runs-on: ubuntu-latest
     outputs:
@@ -141,7 +139,7 @@ jobs:
   tauri:
     name: Build Tauri (${{ matrix.platform }} ${{ matrix.arch }})
     needs: release
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && needs.release.result == 'success') }}
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -315,7 +313,7 @@ jobs:
     name: Clean stale release assets
     needs: [release, tauri, updater-manifest]
     # Keep the current feed and its assets untouched after failed builds.
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && github.ref == 'refs/heads/dev' && needs.updater-manifest.result == 'success') }}
+    if: ${{ !cancelled() && github.ref == 'refs/heads/dev' && needs.updater-manifest.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -331,7 +329,7 @@ jobs:
   updater-manifest:
     name: Publish updater manifest
     needs: [release, tauri]
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' && (!cancelled() && (needs.release.outputs.publish_stable == 'true' || needs.release.outputs.publish_unstable == 'true') && needs.release.result == 'success' && needs.tauri.result == 'success') }}
+    if: ${{ !cancelled() && (needs.release.outputs.publish_stable == 'true' || needs.release.outputs.publish_unstable == 'true') && needs.release.result == 'success' && needs.tauri.result == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       published_version: ${{ steps.unstable-publisher.outputs.published_version }}

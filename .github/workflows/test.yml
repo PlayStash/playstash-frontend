@@ -11,7 +11,6 @@ concurrency:
 
 jobs:
   test:
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -80,7 +79,6 @@ jobs:
           retention-days: 14
 
   rust:
-    if: ${{ vars.PLAYSTASH_RUN_WORKFLOWS == 'true' }}
     name: Rust tests (Linux)
     runs-on: ubuntu-latest
 
