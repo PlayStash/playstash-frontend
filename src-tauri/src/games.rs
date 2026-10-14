@@ -460,15 +460,18 @@ pub(crate) async fn make_script_executable(
     relative_paths: Vec<String>,
 ) -> Result<(), String> {
     let root = PathBuf::from(&installation_path);
-    for rel in relative_paths {
+    for rel in &relative_paths {
         let path = root.join(rel.replace('/', std::path::MAIN_SEPARATOR_STR));
         if !path.exists() || !path.is_file() {
             return Err(format!("Script does not exist: {rel}"));
         }
+    }
 
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        for rel in &relative_paths {
+            let path = root.join(rel.replace('/', std::path::MAIN_SEPARATOR_STR));
             let mut permissions = fs::metadata(&path)
                 .map_err(|e| format!("Failed to read permissions: {e}"))?
                 .permissions();
@@ -476,15 +479,16 @@ pub(crate) async fn make_script_executable(
             fs::set_permissions(&path, permissions)
                 .map_err(|e| format!("Failed to make script executable: {e}"))?;
         }
-
-        #[cfg(not(unix))]
-        {
-            return Err(
-                "Making scripts executable is only supported on Unix-like systems".to_string(),
-            );
-        }
+        Ok(())
     }
-    Ok(())
+
+    #[cfg(not(unix))]
+    {
+        if relative_paths.is_empty() {
+            return Ok(());
+        }
+        Err("Making scripts executable is only supported on Unix-like systems".to_string())
+    }
 }
 
 #[tauri::command]

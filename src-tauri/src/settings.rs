@@ -328,7 +328,6 @@ fn write_section_file<T: Serialize>(dir: &Path, name: &str, value: &T) -> Result
 }
 
 /// Loads the settings section `<name>`. A missing or unreadable file yields `T::default()`.
-#[allow(dead_code)] // Used by the feature packages.
 pub(crate) fn load_section<T: DeserializeOwned + Default>(app: &tauri::AppHandle, name: &str) -> T {
   let Ok(dir) = sections_dir(app) else {
     return T::default();
@@ -338,19 +337,9 @@ pub(crate) fn load_section<T: DeserializeOwned + Default>(app: &tauri::AppHandle
   read_section_file(&dir, name)
 }
 
-/// Replaces the settings section `<name>` with `value`.
-#[allow(dead_code)] // Used by the feature packages.
-pub(crate) fn save_section<T: Serialize>(app: &tauri::AppHandle, name: &str, value: &T) -> Result<(), String> {
-  let dir = sections_dir(app)?;
-  let lock = section_lock(name);
-  let _guard = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-  write_section_file(&dir, name, value)
-}
-
 /// Read-modify-write of the settings section `<name>` under its lock, so
 /// concurrent setters of the same section never lose each other's changes.
 /// Returns the saved value.
-#[allow(dead_code)] // Used by the feature packages.
 pub(crate) fn update_section<T, F>(app: &tauri::AppHandle, name: &str, update: F) -> Result<T, String>
 where
   T: DeserializeOwned + Serialize + Default,
