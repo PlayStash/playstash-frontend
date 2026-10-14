@@ -1,0 +1,6 @@
+{
+  "path": "Cargo.toml",
+  "before_sha256": "375a25efbbae38563df67f35e8849f7a3ac60e84ba04a7e0977b1df55f2238c2",
+  "operation": "append",
+  "content": "\n[patch.crates-io]\ncryoglyph = { path = \"vendor/cryoglyph-0.1.0\" }\n"
+}

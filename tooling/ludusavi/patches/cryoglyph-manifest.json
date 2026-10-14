@@ -1,0 +1,7 @@
+{
+  "path": "vendor/cryoglyph-0.1.0/Cargo.toml",
+  "before_sha256": "8429e30c84b1fde135ba9e812fec8f3f0469bf21f58ef376293f8e258f70b91a",
+  "operation": "replace",
+  "before": "[dependencies.lru]\nversion = \"0.16\"",
+  "after": "[dependencies.lru]\nversion = \"0.18.2\""
+}

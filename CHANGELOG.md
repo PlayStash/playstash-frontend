@@ -6,6 +6,7 @@ Status: Unreleased.
 
 ### Changes
 
+- Cloud saves use the same security-patched Ludusavi build as the Windows client, compiled from source with updated dependencies (including the latest Rustls security fixes).
 <!-- WP4 -->
 - Play now works the same everywhere (game page, library card, fullscreen library): it uses launch profiles and the server's default executable, and picks and saves the first suitable executable automatically when none is configured.
 - Added Emulator / ROM launch in Game Settings → Launch Options: start a game's ROM with your own emulator from Play, desktop shortcuts and Steam, with playtime tracked while the emulator runs that ROM. "Use native executable" switches back.

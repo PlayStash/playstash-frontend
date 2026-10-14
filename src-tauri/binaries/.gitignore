@@ -1,5 +1,6 @@
-# Ludusavi sidecars and their notices are downloaded and verified by
-# `pnpm ludusavi:fetch` (scripts/fetch-ludusavi.mjs). Never commit binaries.
+# Ludusavi sidecars, their notices and provenance are built from the pinned,
+# security-patched source by `pnpm ludusavi:build` (scripts/build-ludusavi.mjs).
+# Never commit binaries.
 *
 !.gitignore
 !ludusavi-LICENSE.txt
