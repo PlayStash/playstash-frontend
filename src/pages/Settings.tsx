@@ -12,9 +12,7 @@ import {
   type SimulatedDownloadKind,
 } from "@/context/DownloadContext";
 import { useIgnoreList } from "@/context/IgnoreListContext";
-// ── WP4 launch: begin ──
 import { GamesLaunchSettings } from "@/components/settings/GamesLaunchSettings";
-// ── WP4 launch: end ──
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { useAppUpdater } from "@/context/AppUpdaterContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
@@ -48,10 +46,8 @@ import {
   SettingsSectionHeader,
 } from "@/components/settings/SettingsPrimitives";
 import { SETTINGS_SEARCH_INDEX } from "@/settings/searchIndex";
-// ── WP2 community: begin ──
 import CommunitySettings from "@/components/settings/CommunitySettings";
 import IntegrationsSettings from "@/components/settings/IntegrationsSettings";
-// ── WP2 community: end ──
 import type {
   SearchableSetting,
   SettingsCategory,
@@ -66,9 +62,7 @@ import {
 import { isAnalyticsEnabled, setAnalyticsEnabled } from "@/utils/analytics";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
 import { clearImageCache } from "@/utils/mediaCache";
-// ── WP7 appearance: begin ──
 import { WP7_SECTIONS } from "@/components/settings/wp7Sections";
-// ── WP7 appearance: end ──
 import {
   formatCpuMemoryLabel,
   formatDisplayLabel,
@@ -114,15 +108,9 @@ import {
   PuzzlePieceIcon,
   CircleStackIcon,
 } from "@heroicons/react/24/outline";
-// ── WP5 download-pipeline: begin ──
 import { DownloadExtrasSettings } from "@/components/settings/DownloadExtrasSettings";
-// ── WP5 download-pipeline: end ──
-// ── WP6 accounts: begin ──
 import AccountSettings from "@/components/settings/AccountSettings";
-// ── WP6 accounts: end ──
-// ── WP3 cloud-saves: begin ──
 import { CloudSaveSettings } from "@/components/settings/CloudSaveSettings";
-// ── WP3 cloud-saves: end ──
 
 const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
 const MINIMIZE_ON_GAME_LAUNCH_KEY = "tauri_minimize_on_game_launch";
@@ -269,81 +257,55 @@ const CATEGORY_ORDER: SettingsCategory[] = [
 /**
  * Sections that feature packages add to a category. They render after the
  * category's built-in content, in this order. Components live in
- * `src/components/settings/`. Register sections only inside your own block.
+ * `src/components/settings/`.
  */
 const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   account: [
-    // ── WP6 accounts: begin ──
     { id: "wp6-account", component: AccountSettings },
-    // ── WP6 accounts: end ──
   ],
   appearance: [
-    // ── WP7 appearance: begin ──
-    // ── WP7 appearance: end ──
   ],
   themes: [
-    // ── WP7 appearance: begin ──
     ...WP7_SECTIONS.themes,
-    // ── WP7 appearance: end ──
   ],
   sound: [
-    // ── WP7 appearance: begin ──
-    // ── WP7 appearance: end ──
   ],
   downloads: [
-    // ── WP5 download-pipeline: begin ──
     {
       id: "wp5-download-extras",
       component: DownloadExtrasSettings,
       desktopOnly: true,
     },
-    // ── WP5 download-pipeline: end ──
   ],
   games: [
-    // ── WP4 launch: begin ──
     {
       id: "wp4-games-launch",
       component: GamesLaunchSettings,
       desktopOnly: true,
     },
-    // ── WP4 launch: end ──
   ],
   startup: [
-    // ── WP7 appearance: begin ──
     ...WP7_SECTIONS.startup,
-    // ── WP7 appearance: end ──
   ],
   community: [
-    // ── WP2 community: begin ──
     { id: "wp2-community", component: CommunitySettings, desktopOnly: true },
-    // ── WP2 community: end ──
   ],
   integrations: [
-    // ── WP2 community: begin ──
     {
       id: "wp2-integrations",
       component: IntegrationsSettings,
       desktopOnly: true,
     },
-    // ── WP2 community: end ──
-    // ── WP3 cloud-saves: begin ──
     { id: "wp3-cloud-saves", component: CloudSaveSettings, desktopOnly: true },
-    // ── WP3 cloud-saves: end ──
   ],
   storage: [
-    // ── WP7 appearance: begin ──
     ...WP7_SECTIONS.storage,
-    // ── WP7 appearance: end ──
   ],
   privacy: [],
   about: [
-    // ── WP7 appearance: begin ──
-    // ── WP7 appearance: end ──
   ],
   developer: [
-    // ── WP7 appearance: begin ──
     ...WP7_SECTIONS.developer,
-    // ── WP7 appearance: end ──
   ],
 };
 

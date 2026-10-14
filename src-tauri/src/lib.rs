@@ -22,8 +22,6 @@ mod umu;
 mod rendering;
 mod frontend_watchdog;
 
-// Feature packages add their modules inside their own block only.
-// ── WP1 os-integration: begin ──
 mod children;
 mod cli;
 mod desktop_commands;
@@ -33,33 +31,20 @@ mod notifications;
 mod shortcuts;
 mod tray;
 pub use ipc::predispatch as cli_predispatch;
-// ── WP1 os-integration: end ──
-// ── WP2 community: begin ──
 mod discord;
 mod integrations;
 mod steam;
 mod vdf;
-// ── WP2 community: end ──
-// ── WP3 cloud-saves: begin ──
 mod cloud_saves;
-// ── WP3 cloud-saves: end ──
-// ── WP4 launch: begin ──
 mod game_sessions;
 mod launch_support;
-// ── WP4 launch: end ──
-// ── WP5 download-pipeline: begin ──
 mod download_extras;
 mod iso_mount;
-// ── WP5 download-pipeline: end ──
-// ── WP6 accounts: begin ──
 mod legacy_import;
 mod profiles;
-// ── WP6 accounts: end ──
-// ── WP7 appearance: begin ──
 mod sound;
 mod storage;
 mod themes;
-// ── WP7 appearance: end ──
 
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -445,11 +430,9 @@ pub fn run() {
     // killed here and only the existing instance receives this callback,
     // which brings its window back to the foreground.
     .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-      // ── WP1 os-integration: begin ──
       // Parses the second instance's arguments and dispatches them (a plain
       // start just brings the window to the foreground).
       ipc::handle_second_instance(app, &_args);
-      // ── WP1 os-integration: end ──
     }))
     .plugin(tauri_plugin_window_state::Builder::default().build())
     .plugin(tauri_plugin_dialog::init())
@@ -459,23 +442,8 @@ pub fn run() {
       Default::default(),
       Some(vec!["show", "--autostart"]),
     ))
-    // ── WP1 os-integration: begin ──
     .plugin(tauri_plugin_deep_link::init())
-    .plugin(tauri_plugin_notification::init())
-    // ── WP1 os-integration: end ──
-    // ── WP2 community: begin ──
-    // ── WP2 community: end ──
-    // ── WP3 cloud-saves: begin ──
-    // ── WP3 cloud-saves: end ──
-    // ── WP4 launch: begin ──
-    // ── WP4 launch: end ──
-    // ── WP5 download-pipeline: begin ──
-    // ── WP5 download-pipeline: end ──
-    // ── WP6 accounts: begin ──
-    // ── WP6 accounts: end ──
-    // ── WP7 appearance: begin ──
-    // ── WP7 appearance: end ──
-    ;
+    .plugin(tauri_plugin_notification::init());
 
   if let Some(pubkey) = updater_public_key() {
     builder = builder.plugin(
@@ -551,14 +519,9 @@ pub fn run() {
       rendering::apply_webkit_settings(app.handle());
 
       // ── Feature package setup ──────────────────────────────────────────
-      // ── WP1 os-integration: begin ──
       // Tray, close-to-tray, start-minimized, IPC server, deep links, jump
       // list and the startup command (see `ipc::setup`).
       ipc::setup(app)?;
-      // ── WP1 os-integration: end ──
-      // ── WP2 community: begin ──
-      // ── WP2 community: end ──
-      // ── WP3 cloud-saves: begin ──
       // Helper processes (ludusavi) must not outlive the app window.
       if let Some(window) = app.get_webview_window("main") {
         window.on_window_event(|event| {
@@ -567,16 +530,7 @@ pub fn run() {
           }
         });
       }
-      // ── WP3 cloud-saves: end ──
-      // ── WP4 launch: begin ──
-      // ── WP4 launch: end ──
-      // ── WP5 download-pipeline: begin ──
-      // ── WP5 download-pipeline: end ──
-      // ── WP6 accounts: begin ──
       net::load_connection_context(app.handle());
-      // ── WP6 accounts: end ──
-      // ── WP7 appearance: begin ──
-      // ── WP7 appearance: end ──
 
       Ok(())
     })
@@ -674,7 +628,6 @@ pub fn run() {
       is_updater_enabled,
       check_for_app_update,
       download_and_install_app_update,
-      // ── WP1 os-integration: begin ──
       desktop_commands::desktop_commands_ready,
       desktop_commands::desktop_commands_not_ready,
       desktop_commands::desktop_command_done,
@@ -690,8 +643,6 @@ pub fn run() {
       jumplist::set_jump_list_games,
       jumplist::reset_jump_list_games,
       notifications::os_notify,
-      // ── WP1 os-integration: end ──
-      // ── WP2 community: begin ──
       integrations::get_integrations_settings,
       integrations::set_integrations_settings,
       discord::discord_set_presence,
@@ -701,8 +652,6 @@ pub fn run() {
       steam::steam_remove_shortcuts,
       steam::steam_restore_backup,
       steam::steam_missing_cached_media,
-      // ── WP2 community: end ──
-      // ── WP3 cloud-saves: begin ──
       cloud_saves::get_cloud_save_settings,
       cloud_saves::set_cloud_saves_enabled,
       cloud_saves::set_cloud_save_use_primary_manifest,
@@ -714,22 +663,16 @@ pub fn run() {
       cloud_saves::cloud_save_backup,
       cloud_saves::cloud_save_restore,
       cloud_saves::download_to_file,
-      // ── WP3 cloud-saves: end ──
-      // ── WP4 launch: begin ──
       game_sessions::get_active_game_sessions,
       launch_support::set_last_played,
       launch_support::resolve_path_inside,
       launch_support::resolve_emulator_executable,
       launch_support::find_uninstaller_executable,
-      // ── WP4 launch: end ──
-      // ── WP5 download-pipeline: begin ──
       iso_mount::mount_iso,
       download_extras::get_free_space,
       download_extras::get_paths_size,
       download_extras::get_cached_image_path,
       download_extras::scan_duplicate_installations,
-      // ── WP5 download-pipeline: end ──
-      // ── WP6 accounts: begin ──
       net::wp6::set_additional_request_headers,
       net::wp6::get_additional_request_headers,
       net::wp6::set_server_context,
@@ -744,8 +687,6 @@ pub fn run() {
       legacy_import::legacy_import_write_section,
       legacy_import::legacy_scan_installations,
       legacy_import::legacy_adopt_installation,
-      // ── WP6 accounts: end ──
-      // ── WP7 appearance: begin ──
       themes::themes_dir,
       themes::themes_list,
       themes::theme_read,
@@ -763,7 +704,6 @@ pub fn run() {
       storage::storage_cache_sizes,
       storage::storage_clear_offline_cache,
       storage::storage_app_data_dir,
-      // ── WP7 appearance: end ──
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

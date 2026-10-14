@@ -19,20 +19,16 @@ export interface BuildGamesQueryParamsOptions {
   earlyAccess?: EarlyAccessFilter;
   addedSince?: string;
   libraryFolder?: string;
-  // ── WP7 appearance: begin ──
   /** Age rating filter: `"all"`, `"null"` (N/A) or a rating number. */
   ageRating?: string;
-  // ── WP7 appearance: end ──
 }
 
-// ── WP7 appearance: begin ──
 /** `filter.metadata.age_rating` value for an age rating selection. */
 export function ageRatingFilterValue(ageRating?: string): string | null {
   if (!ageRating || ageRating === "all") return null;
   if (ageRating === "null") return "$null";
   return /^-?\d+$/.test(ageRating) ? `$eq:${ageRating}` : null;
 }
-// ── WP7 appearance: end ──
 
 /**
  * Builds the `/api/games` query string from the library filters. Kept pure so
@@ -116,12 +112,10 @@ export function buildGamesQueryParams(
     params.set("filter.metadata.early_access", "$eq:false");
   }
 
-  // ── WP7 appearance: begin ──
   const ageRatingFilter = ageRatingFilterValue(options.ageRating);
   if (ageRatingFilter) {
     params.set("filter.metadata.age_rating", ageRatingFilter);
   }
-  // ── WP7 appearance: end ──
 
   if (addedSince) params.set("filter.created_at", `$gte:${addedSince}`);
   if (libraryFolder)
@@ -150,9 +144,7 @@ export interface BuildCacheKeyOptions {
   earlyAccess?: EarlyAccessFilter;
   addedSince?: string;
   libraryFolder?: string;
-  // ── WP7 appearance: begin ──
   ageRating?: string;
-  // ── WP7 appearance: end ──
 }
 
 /**
@@ -182,11 +174,9 @@ export function buildCacheKey(
     earlyAccess: options.earlyAccess,
     addedSince: options.addedSince,
     libraryFolder: options.libraryFolder,
-    // ── WP7 appearance: begin ──
     ...(options.ageRating && options.ageRating !== "all"
       ? { ageRating: options.ageRating }
       : {}),
-    // ── WP7 appearance: end ──
     serverUrl,
     userId: userId ?? null,
   });

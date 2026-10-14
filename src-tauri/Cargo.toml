@@ -51,31 +51,16 @@ xz2 = "0.1.7"
 zstd = "0.13.3"
 isomage = "2.1.0"
 
-# Feature package dependencies: add them inside your own block only.
-# ── WP1 os-integration: begin ──
+# Desktop integration dependencies.
 tauri-plugin-deep-link = "2"
 tauri-plugin-notification = "2"
-# ── WP1 os-integration: end ──
-# ── WP2 community: begin ──
 discord-rich-presence = "0.2"
 md-5 = "0.10"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp"] }
-# ── WP2 community: end ──
-# ── WP3 cloud-saves: begin ──
 serde_yaml = "0.9"
-# ── WP3 cloud-saves: end ──
-# ── WP4 launch: begin ──
-# ── WP4 launch: end ──
-# ── WP5 download-pipeline: begin ──
-# ── WP5 download-pipeline: end ──
-# ── WP6 accounts: begin ──
-# ── WP6 accounts: end ──
-# ── WP7 appearance: begin ──
-# ── WP7 appearance: end ──
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser", "synchapi", "handleapi", "winbase", "winerror", "processthreadsapi", "sysinfoapi"] }
-# ── WP1 os-integration: begin ──
 windows = { version = "0.61", features = [
   "Win32_Foundation",
   "Win32_Security",
@@ -94,25 +79,12 @@ windows = { version = "0.61", features = [
   "Win32_UI_Shell_PropertiesSystem",
   "Win32_UI_WindowsAndMessaging",
 ] }
-# ── WP1 os-integration: end ──
-# ── WP2 community: begin ──
 winreg = "0.55"
-# ── WP2 community: end ──
-# ── WP3 cloud-saves: begin ──
-# windows-sys features for the job object live in the shared entry (WP6 block).
-# ── WP3 cloud-saves: end ──
-# ── WP4 launch: begin ──
-# ── WP4 launch: end ──
-# ── WP5 download-pipeline: begin ──
-# ── WP5 download-pipeline: end ──
-# ── WP6 accounts: begin ──
-# DPAPI (legacy WPF data import) and directory junctions.
+# DPAPI (legacy WPF data import), directory junctions and the job object that
+# keeps helper processes from outliving the app.
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_JobObjects", "Win32_System_Threading"] }
-# ── WP6 accounts: end ──
-# ── WP7 appearance: begin ──
 # Native startup-sound playback (WASAPI, no system libraries needed).
 rodio = { version = "0.20", default-features = false, features = ["symphonia-all"] }
-# ── WP7 appearance: end ──
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Direct dependency so we can read/configure WebKitGTK WebKitSettings at runtime
@@ -120,37 +92,9 @@ rodio = { version = "0.20", default-features = false, features = ["symphonia-all
 # section. Already a transitive dependency of tauri/wry on Linux; the `v2_16`
 # feature gates the hardware-acceleration-policy API.
 webkit2gtk = { version = "2", features = ["v2_16"] }
-# ── WP1 os-integration: begin ──
-# ── WP1 os-integration: end ──
-# ── WP2 community: begin ──
-# ── WP2 community: end ──
-# ── WP3 cloud-saves: begin ──
-# ── WP3 cloud-saves: end ──
-# ── WP4 launch: begin ──
-# ── WP4 launch: end ──
-# ── WP5 download-pipeline: begin ──
-# ── WP5 download-pipeline: end ──
-# ── WP6 accounts: begin ──
-# ── WP6 accounts: end ──
-# ── WP7 appearance: begin ──
-# ── WP7 appearance: end ──
 
 [target.'cfg(unix)'.dependencies]
-# ── WP1 os-integration: begin ──
-# ── WP1 os-integration: end ──
-# ── WP2 community: begin ──
-# ── WP2 community: end ──
-# ── WP3 cloud-saves: begin ──
 libc = "0.2"
-# ── WP3 cloud-saves: end ──
-# ── WP4 launch: begin ──
-# ── WP4 launch: end ──
-# ── WP5 download-pipeline: begin ──
-# ── WP5 download-pipeline: end ──
-# ── WP6 accounts: begin ──
-# ── WP6 accounts: end ──
-# ── WP7 appearance: begin ──
-# ── WP7 appearance: end ──
 
 # Recommended by the tauri-plugin-stronghold docs to work around an upstream
 # scrypt performance bug in dev builds.

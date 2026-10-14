@@ -336,7 +336,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const downloadsRef = useRef<Record<number, ActiveDownload>>({});
   downloadsRef.current = downloads;
 
-  // ── WP5 pipeline extras ──────────────────────────────────────────────────
+  // ── Pipeline extras ─────────────────────────────────────────────────────
   // Auto-install portable games defaults to on for fresh installations only.
   useState(() => {
     if (isTauriApp()) applyAutoInstallDefault();

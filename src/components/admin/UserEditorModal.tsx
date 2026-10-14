@@ -19,9 +19,7 @@ import {
 } from "@/utils/droppedImage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlaystashUser } from "../../api";
-// ── WP6 accounts: begin ──
 import { CopyApiKeyButton } from "@/components/account/CopyApiKeyButton";
-// ── WP6 accounts: end ──
 
 interface Props {
   user: PlaystashUser;
@@ -756,9 +754,7 @@ export function UserEditorModal({
               />
             </Field>
             <div className="sm:col-span-2 flex items-center gap-4 pt-2">
-              {/* ── WP6 accounts: begin ── */}
               <CopyApiKeyButton apiKey={user.api_key} />
-              {/* ── WP6 accounts: end ── */}
               {saveMsg && (
                 <Text
                   className={

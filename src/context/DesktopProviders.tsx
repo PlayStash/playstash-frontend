@@ -1,36 +1,22 @@
 import type { ComponentType, ReactNode } from "react";
-// ── WP4 launch: begin ──
 import {
   BigPictureStartupEffect,
   GameSessionProvider,
 } from "@/context/GameSessionProvider";
-// ── WP4 launch: end ──
-// ── WP2 community: begin ──
 import { CommunityProvider } from "@/context/CommunityContext";
 import { DiscordPresenceEffect } from "@/hooks/useDiscordPresence";
 import { SteamShortcutSyncEffect } from "@/hooks/useSteamShortcutSync";
-// ── WP2 community: end ──
-// ── WP5 download-pipeline: begin ──
 import { DownloadFlowHost } from "@/components/downloads/DownloadFlowHost";
 import { DuplicateInstallWatcher } from "@/components/downloads/DuplicateInstallWatcher";
-// ── WP5 download-pipeline: end ──
-// ── WP7 appearance: begin ──
 import { AppearanceEffects } from "@/components/AppearanceEffects";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-// ── WP7 appearance: end ──
-// ── WP1 os-integration: begin ──
 import { DesktopCommandProvider } from "@/context/DesktopCommandContext";
-// ── WP1 os-integration: end ──
-// ── WP6 accounts: begin ──
 import {
   ConnectionNotices,
   LegacyImportPrompt,
   LegacyInstallsPrompt,
 } from "@/components/login/AccountEffects";
-// ── WP6 accounts: end ──
-// ── WP3 cloud-saves: begin ──
 import { CloudSaveSync } from "@/hooks/useCloudSaveSync";
-// ── WP3 cloud-saves: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -38,31 +24,15 @@ import { CloudSaveSync } from "@/hooks/useCloudSaveSync";
  * Mounted inside the router (see `main.tsx`), so everything here may use
  * navigation. Despite the name, entries are not gated automatically: each
  * provider or effect checks `isTauriApp()` itself when it is desktop-only.
- *
- * Add entries only inside your own package block.
  */
 
 /** Wrappers, outermost first. Each one must render its `children`. */
 const PROVIDERS: ComponentType<{ children: ReactNode }>[] = [
-  // ── WP1 os-integration: begin ──
   DesktopCommandProvider,
-  // ── WP1 os-integration: end ──
-  // ── WP2 community: begin ──
   CommunityProvider,
-  // ── WP2 community: end ──
-  // ── WP3 cloud-saves: begin ──
-  // ── WP3 cloud-saves: end ──
-  // ── WP4 launch: begin ──
   GameSessionProvider,
-  // ── WP4 launch: end ──
-  // ── WP5 download-pipeline: begin ──
-  // ── WP5 download-pipeline: end ──
-  // ── WP6 accounts: begin ──
-  // ── WP6 accounts: end ──
-  // ── WP7 appearance: begin ──
   // Crash screen around the routes and the package effects.
   ErrorBoundary,
-  // ── WP7 appearance: end ──
 ];
 
 /**
@@ -70,31 +40,17 @@ const PROVIDERS: ComponentType<{ children: ReactNode }>[] = [
  * useCloudSaveSync(); return null; }`). They render inside all providers.
  */
 const EFFECTS: ComponentType[] = [
-  // ── WP1 os-integration: begin ──
-  // ── WP1 os-integration: end ──
-  // ── WP2 community: begin ──
   DiscordPresenceEffect,
   SteamShortcutSyncEffect,
-  // ── WP2 community: end ──
-  // ── WP3 cloud-saves: begin ──
   CloudSaveSync,
-  // ── WP3 cloud-saves: end ──
-  // ── WP4 launch: begin ──
   BigPictureStartupEffect,
-  // ── WP4 launch: end ──
-  // ── WP5 download-pipeline: begin ──
   // Hosts requestGameDownload (dialogs, auth, navigation).
   DownloadFlowHost,
   DuplicateInstallWatcher,
-  // ── WP5 download-pipeline: end ──
-  // ── WP6 accounts: begin ──
   ConnectionNotices,
   LegacyImportPrompt,
   LegacyInstallsPrompt,
-  // ── WP6 accounts: end ──
-  // ── WP7 appearance: begin ──
   AppearanceEffects,
-  // ── WP7 appearance: end ──
 ];
 
 export function DesktopProviders({ children }: { children: ReactNode }) {

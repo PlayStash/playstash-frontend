@@ -24,9 +24,7 @@ import { GameVersion } from "@/api/models/GameVersion";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
 import { getRootPaths } from "@/utils/rootPaths";
-// ── WP5 download-pipeline: begin ──
 import { requestGameDownload } from "@/utils/downloadFlow";
-// ── WP5 download-pipeline: end ──
 import { buildShareUrl } from "@/utils/shareUrl";
 import { formatDate, formatTime, formatYear } from "@/utils/date";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
@@ -68,9 +66,7 @@ import { Alert, AlertTitle } from "@tw/alert";
 import { GameSettings } from "@/components/admin/GameSettings";
 import { useAuthMediaUrl } from "@/hooks/useAuthMediaUrl";
 import { useInstalledGames } from "@/hooks/useInstalledGames";
-// ── WP4 launch: begin ──
 import { launchInstalledGame } from "@/utils/launchInstalledGame";
-// ── WP4 launch: end ──
 import { isTauriApp } from "@/utils/tauri";
 import { onGameDeleted } from "@/utils/gameUpdates";
 import { maskDisplayName, useStreamerMode } from "@/utils/streamerMode";
@@ -80,9 +76,7 @@ import {
 } from "@/utils/gameUpdate";
 import { LayoutGroup, motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
-// ── WP2 community: begin ──
 import { GameChatButton } from "@/components/GameChatButton";
-// ── WP2 community: end ──
 import { useTranslation } from "@/i18n";
 import {
   displayTitle,
@@ -91,9 +85,7 @@ import {
   useShowMappedTitle,
 } from "@/utils/mappedTitle";
 import { libraryFilterLink } from "@/utils/libraryLinks";
-// ── WP3 cloud-saves: begin ──
 import { CloudSaveRow } from "@/components/CloudSaveRow";
-// ── WP3 cloud-saves: end ──
 
 export default function GameView() {
   const { id } = useParams<{ id: string }>();
@@ -534,14 +526,12 @@ export default function GameView() {
     void selectVersionAndRun("direct");
   }, [game, selectVersionAndRun]);
 
-  // ── WP5 download-pipeline: begin ──
   // Location pick, version pick, overwrite and free-space checks live in the
   // shared download flow (also used by GameCard and the CLI `install`).
   const handleTauriDownload = useCallback(async () => {
     if (!game) return;
     await requestGameDownload({ gameId: game.id });
   }, [game]);
-  // ── WP5 download-pipeline: end ──
 
   const handleRootPathSelect = useCallback(
     (rootPath: string) => {
@@ -566,7 +556,6 @@ export default function GameView() {
       e.preventDefault();
       e.stopPropagation();
       if (!installedInfo) return;
-      // ── WP4 launch: begin ──
       // Shared launch path: hooks, emulator, auto-detection, metrics and
       // error alerts all live in launchInstalledGame.
       await launchInstalledGame({
@@ -576,7 +565,6 @@ export default function GameView() {
         game,
         installed: installedInfo,
       });
-      // ── WP4 launch: end ──
     },
     [installedInfo, game],
   );
@@ -959,12 +947,10 @@ export default function GameView() {
                   >
                     <ShareIcon className="w-5 h-5" />
                   </Button>
-                  {/* ── WP2 community: begin ── */}
                   <GameChatButton
                     gameId={game?.id}
                     className={floatingIconButtonClassName}
                   />
-                  {/* ── WP2 community: end ── */}
                 </div>
                 {(genres && genres.length > 0) ||
                 game?.type ||
@@ -1054,9 +1040,7 @@ export default function GameView() {
                   </div>
                 </div>
               </div>
-              {/* ── WP3 cloud-saves: begin ── */}
               <CloudSaveRow game={game} installed={installedInfo} />
-              {/* ── WP3 cloud-saves: end ── */}
               <div>
                 <div className="text-xs font-medium text-ps-muted mb-1">
                   Progress State
@@ -1206,14 +1190,12 @@ export default function GameView() {
                     {detailsTab === "reviews" && (
                       <GameReviews gameId={numericId} />
                     )}
-                    {/* ── WP3 cloud-saves: begin ── */}
                     {detailsTab === "saves" && (
                       <GameSaves
                         gameId={numericId}
                         gameTitle={game?.title ?? undefined}
                       />
                     )}
-                    {/* ── WP3 cloud-saves: end ── */}
                     {detailsTab === "package" && (
                       <PackageContents
                         gameId={numericId}

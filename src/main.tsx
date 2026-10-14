@@ -38,9 +38,7 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Downloads = lazy(() => import("./pages/Downloads"));
-// ── WP7 appearance: begin ──
 import { initializeThemes } from "./themes/themeManager";
-// ── WP7 appearance: end ──
 import { applyZoom, getStoredZoom, registerZoomHotkeys } from "./utils/zoom";
 import { registerReloadHotkey } from "./utils/reload";
 import { registerStreamerModeHotkey } from "./utils/streamerMode";
@@ -59,10 +57,8 @@ const isLaunchLogWindow = window.location.hash === "#launch-log";
 if (isLaunchLogWindow) {
   createRoot(document.getElementById("root")!).render(<LaunchLogWindow />);
 } else {
-  // ── WP7 appearance: begin ──
   // Apply the stored theme immediately to prevent a flash of the wrong theme
   initializeThemes();
-  // ── WP7 appearance: end ──
   // Apply persisted zoom level (native webview zoom in Tauri, CSS zoom on web)
   void applyZoom(getStoredZoom());
   void startMediaCacheMaintenance();
@@ -105,7 +101,7 @@ if (isLaunchLogWindow) {
                       <GlobalAlertDialogBridge />
                       <PrereleaseNotice />
                       <BrowserRouter>
-                        {/* Feature package providers: see context/DesktopProviders.tsx */}
+                        {/* App-wide providers and effects: see context/DesktopProviders.tsx */}
                         <DesktopProviders>
                           <GamepadProvider>
                             <Suspense fallback={<PageLoader />}>

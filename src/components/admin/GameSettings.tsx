@@ -23,10 +23,8 @@ import { useAlertDialog } from "@/context/AlertDialogContext";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { isTauriApp } from "@/utils/tauri";
 import { formatDate, formatYear } from "@/utils/date";
-// ── WP7 appearance: begin ──
 import { ArtworkSearchButton } from "@/components/ArtworkSearchDialog";
 import { CopyImageButton } from "@/components/admin/CopyImageButton";
-// ── WP7 appearance: end ──
 import {
   applyDroppedSources,
   isProbablyImageUrl,
@@ -111,11 +109,9 @@ import { getRootPaths } from "@/utils/rootPaths";
 import { getErrorMessage } from "@/utils/apiError";
 import { LibraryMetadataSettings } from "./LibraryMetadataSettings";
 import { GameAccessSettings } from "./GameAccessSettings";
-// ── WP4 launch: begin ──
 import { InstallationTab } from "@/components/gameSettings/InstallationTab";
 import { LaunchOptionsTab } from "@/components/gameSettings/LaunchOptionsTab";
 import type { SettingsInstalledGame } from "@/components/gameSettings/types";
-// ── WP4 launch: end ──
 
 interface ImageState {
   file: File | null;
@@ -416,13 +412,11 @@ export function GameSettings({
     }
   }, [isTauri, isOnline, activeTab, installationTabsVisible]);
 
-  // ── WP4 launch: begin ──
   const handleUninstalled = useCallback(async () => {
     setInstalledGame(await findInstalledGame().catch(() => null));
     onUninstalled?.();
     onClose();
   }, [findInstalledGame, onClose, onUninstalled]);
-  // ── WP4 launch: end ──
 
   /** Re-fetches the full game so the version list reflects server state. */
   const refetchGame = useCallback(async (): Promise<PlaystashGame | null> => {
@@ -1833,11 +1827,9 @@ export function GameSettings({
                         <MagnifyingGlassIcon className="w-4 h-4" />
                         Find Images
                       </Button>
-                      {/* ── WP7 appearance: begin ── */}
                       <ArtworkSearchButton
                         title={workingGame.title || "Game"}
                       />
-                      {/* ── WP7 appearance: end ── */}
                     </div>
                     {/* Background zone */}
                     <div className="flex flex-col gap-4">
@@ -2028,9 +2020,7 @@ export function GameSettings({
                                 <div className="flex flex-col gap-4 lg:flex-row">
                                   {gameCoverUrl && (
                                     <div className="group/copy relative shrink-0 self-start rounded-lg overflow-hidden border border-ps-line">
-                                      {/* ── WP7 appearance: begin ── */}
                                       <CopyImageButton src={gameCoverUrl} />
-                                      {/* ── WP7 appearance: end ── */}
                                       <img
                                         src={gameCoverUrl}
                                         alt="Cover"
@@ -2093,11 +2083,9 @@ export function GameSettings({
                                   <div className="flex flex-col gap-4 lg:flex-row">
                                     {mappedGameCoverUrl && (
                                       <div className="group/copy relative shrink-0 self-start rounded-lg overflow-hidden border border-ps-line">
-                                        {/* ── WP7 appearance: begin ── */}
                                         <CopyImageButton
                                           src={mappedGameCoverUrl}
                                         />
-                                        {/* ── WP7 appearance: end ── */}
                                         <img
                                           src={mappedGameCoverUrl}
                                           alt="Provider Cover"
@@ -3257,7 +3245,6 @@ export function GameSettings({
                   </div>
                 )}
 
-                {/* ── WP4 launch: begin ── */}
                 {activeTab === "installation" && installedGame && (
                   <InstallationTab
                     installedGame={installedGame}
@@ -3272,7 +3259,6 @@ export function GameSettings({
                     game={workingGame}
                   />
                 )}
-                {/* ── WP4 launch: end ── */}
 
                 {activeTab === "game-files" && isAdmin && (
                   <div className="max-w-3xl space-y-6">

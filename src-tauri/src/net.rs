@@ -99,7 +99,6 @@ pub(crate) async fn fs_read_binary_file(path: String) -> Result<String, String> 
   Ok(encode_base64(&bytes))
 }
 
-// ── WP6 accounts: begin ──
 // Additional request headers ("Client Settings") and the server context they
 // are scoped to. Every Rust request to the PlayStash server is built through
 // `server_request`, which adds the headers only when the request targets the
@@ -503,7 +502,6 @@ pub(crate) mod wp6 {
     }
   }
 }
-// ── WP6 accounts: end ──
 
 #[cfg(test)]
 mod tests {

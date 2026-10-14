@@ -18,9 +18,7 @@ import { GameSettings } from "@/components/admin/GameSettings";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
 import { getRootPaths } from "@/utils/rootPaths";
-// ── WP5 download-pipeline: begin ──
 import { requestGameDownload } from "@/utils/downloadFlow";
-// ── WP5 download-pipeline: end ──
 import { isTauriApp } from "@/utils/tauri";
 import {
   formatGameSize,
@@ -41,9 +39,7 @@ import clsx from "clsx";
 import { memo, useCallback, useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { GameVersion } from "@/api/models/GameVersion";
-// ── WP7 appearance: begin ──
 import { useMappedTitle } from "@/utils/mappedTitle";
-// ── WP7 appearance: end ──
 
 const GameCard = memo(function GameCard({
   game,
@@ -78,9 +74,7 @@ const GameCard = memo(function GameCard({
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [localGame, setLocalGame] = useState<PlaystashGame>(game);
-  // ── WP7 appearance: begin ──
   const shownTitle = useMappedTitle(localGame);
-  // ── WP7 appearance: end ──
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [selectableVersions, setSelectableVersions] = useState<GameVersion[]>(
     [],
@@ -253,11 +247,9 @@ const GameCard = memo(function GameCard({
       e.preventDefault();
       e.stopPropagation();
       if (!serverUrl) return;
-      // ── WP5 download-pipeline: begin ──
       // Location pick, version pick, overwrite and free-space checks live in
       // the shared download flow (also used by GameView and the CLI).
       await requestGameDownload({ gameId: game.id });
-      // ── WP5 download-pipeline: end ──
     },
     [serverUrl, game.id],
   );

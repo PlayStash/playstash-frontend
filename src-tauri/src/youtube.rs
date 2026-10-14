@@ -90,13 +90,11 @@ fn dispatch(path: &str) -> (&'static str, String) {
 
   let autoplay = params.iter().any(|(k, v)| k == "autoplay" && v == "1");
   let mute = params.iter().any(|(k, v)| k == "mute" && v == "1");
-  // ── WP7 appearance: begin ──
   let volume = params
     .iter()
     .find(|(k, _)| k == "volume")
     .and_then(|(_, v)| v.parse::<u8>().ok())
     .map(|v| v.min(100));
-  // ── WP7 appearance: end ──
 
   ("200 OK", embed_page(video_id, autoplay, mute, volume))
 }
@@ -121,7 +119,6 @@ fn embed_page(video_id: &str, autoplay: bool, mute: bool, volume: Option<u8>) ->
   if mute {
     extra.push_str("&mute=1");
   }
-  // ── WP7 appearance: begin ──
   // With a volume, enable the IFrame API, apply the persisted media volume
   // and forward volume commands posted by the app to the player.
   let volume_script = match volume {
@@ -133,7 +130,6 @@ fn embed_page(video_id: &str, autoplay: bool, mute: bool, volume: Option<u8>) ->
     }
     None => String::new(),
   };
-  // ── WP7 appearance: end ──
 
   format!(
     r#"<!DOCTYPE html>
