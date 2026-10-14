@@ -15,6 +15,7 @@ import { Media } from "@/components/Media";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
 import { formatDecimal } from "@/utils/number";
 import { isTauriApp } from "@/utils/tauri";
+import { useShowMappedTitle } from "@/utils/mappedTitle";
 import { PhaseSteps, type StepState } from "./PhaseSteps";
 import { PhaseDetail } from "./PhaseDetail";
 import { useInstallFlow } from "./useInstallFlow";
@@ -151,6 +152,11 @@ export function DownloadCard({
   download: ActiveDownload;
   index?: number;
 }>) {
+  // Mapped (metadata) title or the game's own title, like the library.
+  const showMappedTitle = useShowMappedTitle();
+  const title =
+    (showMappedTitle ? download.gameTitle : download.fileTitle) ||
+    download.gameTitle;
   const {
     cancelDownload,
     pauseDownload,
@@ -329,13 +335,13 @@ export function DownloadCard({
               width={112}
               height={150}
               square
-              alt={`${download.gameTitle} cover art`}
+              alt={`${title} cover art`}
               className="overflow-hidden rounded-lg border border-ps-line bg-ps-panel-soft shadow-sm"
               gameId={download.gameId}
               mediaSlot="cover"
               fallback={
                 <CoverPlaceholder
-                  title={download.gameTitle || "Game"}
+                  title={title || "Game"}
                   size="large"
                   className="h-full w-full"
                 />
@@ -344,7 +350,7 @@ export function DownloadCard({
           ) : (
             <div className="aspect-3/4 w-28 overflow-hidden rounded-lg border border-dashed border-ps-line bg-ps-panel-soft">
               <CoverPlaceholder
-                title={download.gameTitle || "Game"}
+                title={title || "Game"}
                 size="large"
                 className="h-full w-full"
               />
@@ -357,9 +363,9 @@ export function DownloadCard({
             <div className="min-w-0">
               <h3
                 className="truncate text-base font-semibold tracking-[-0.02em] text-ps-text"
-                title={download.gameTitle || download.filename}
+                title={title || download.filename}
               >
-                {download.gameTitle || download.filename}
+                {title || download.filename}
               </h3>
               <p
                 className="mt-1 truncate font-mono text-sm text-ps-muted"

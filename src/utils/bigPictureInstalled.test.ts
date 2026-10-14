@@ -47,6 +47,14 @@ describe("big picture installed list", () => {
         }),
       ),
     ).toBe("Mapped");
+    expect(
+      displayTitle(
+        entry(1, 1, {
+          cachedMetadata: { title: "Raw", metadata: { title: "Mapped" } },
+        }),
+        false,
+      ),
+    ).toBe("Raw");
     expect(displayTitle(entry(1, 1))).toBe("Game 1");
   });
 

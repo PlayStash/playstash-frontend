@@ -1,6 +1,10 @@
 import { useSyncExternalStore } from "react";
 import type { InstalledGameInfo } from "@/hooks/useInstalledGames";
 import { setBigPicture } from "@/utils/bigPicture";
+import {
+  displayTitle as mappedDisplayTitle,
+  getShowMappedTitle,
+} from "@/utils/mappedTitle";
 
 /** localStorage key: open the fullscreen library when the client starts. */
 export const BIG_PICTURE_ON_START_KEY = "playstash_big_picture_on_start";
@@ -96,13 +100,18 @@ export function bigPictureGames(
   );
 }
 
-/** Title shown for an installed game (server/cached metadata first). */
-export function displayTitle(game: InstalledGameInfo): string {
+/**
+ * Title shown for an installed game: the cached server game, following the
+ * mapped-title preference, else the install folder title.
+ */
+export function displayTitle(
+  game: InstalledGameInfo,
+  showMappedTitle: boolean = getShowMappedTitle(),
+): string {
   const cached = game.cachedMetadata as
     { title?: string; metadata?: { title?: string } } | null | undefined;
   return (
-    cached?.metadata?.title ||
-    cached?.title ||
+    mappedDisplayTitle(cached, showMappedTitle) ||
     game.gameTitle ||
     "Game"
   ).trim();

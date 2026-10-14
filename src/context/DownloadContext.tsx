@@ -73,7 +73,10 @@ type InstallationStatus =
 export interface ActiveDownload {
   gameId: number;
   versionId: number;
+  /** Metadata title first; also names the install folder, so it is stable. */
   gameTitle: string;
+  /** The game's own (file) title, shown when mapped titles are turned off. */
+  fileTitle?: string;
   gameMetadata?: GameMetadata;
   gameType?: PlaystashGameTypeEnum;
   versionName?: string;
@@ -170,6 +173,7 @@ interface DownloadContextValue {
     versionId: number;
     versionName?: string;
     gameTitle: string;
+    fileTitle?: string;
     gameMetadata?: GameMetadata;
     gameType?: PlaystashGameTypeEnum;
     filename: string;
@@ -227,6 +231,7 @@ type StartDownloadParams = {
   versionId: number;
   versionName?: string;
   gameTitle: string;
+  fileTitle?: string;
   gameMetadata?: GameMetadata;
   gameType?: PlaystashGameTypeEnum;
   filename: string;
@@ -716,6 +721,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           next[game.id] = {
             ...existing,
             gameTitle: game.metadata?.title || game.title || existing.gameTitle,
+            fileTitle: game.title || existing.fileTitle,
             gameMetadata: game.metadata,
           };
         }
@@ -758,6 +764,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               updatedGame.metadata?.title ||
               updatedGame.title ||
               existing.gameTitle,
+            fileTitle: updatedGame.title || existing.fileTitle,
             gameMetadata: updatedGame.metadata,
           },
         };
@@ -961,6 +968,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       versionId,
       versionName,
       gameTitle,
+      fileTitle,
       gameMetadata,
       gameType,
       filename,
@@ -982,6 +990,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         gameId,
         versionId,
         gameTitle,
+        fileTitle,
         gameMetadata,
         gameType,
         versionName,
@@ -1607,6 +1616,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         versionId: d.versionId,
         versionName: d.versionName,
         gameTitle: d.gameTitle,
+        fileTitle: d.fileTitle,
         gameMetadata: d.gameMetadata,
         gameType: d.gameType,
         filename: d.filename,
@@ -1768,6 +1778,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         versionId: d.versionId,
         versionName: d.versionName,
         gameTitle: d.gameTitle,
+        fileTitle: d.fileTitle,
         gameMetadata: d.gameMetadata,
         gameType: d.gameType,
         filename: d.filename,
@@ -3315,6 +3326,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         versionId: d.versionId,
         versionName: d.versionName,
         gameTitle: d.gameTitle,
+        fileTitle: d.fileTitle,
         gameMetadata: d.gameMetadata,
         gameType: d.gameType,
         filename: d.filename,

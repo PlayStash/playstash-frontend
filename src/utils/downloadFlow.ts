@@ -40,6 +40,8 @@ export interface StartDownloadRequest {
   versionId: number;
   versionName?: string;
   gameTitle: string;
+  /** The game's own title (shown when mapped titles are off). */
+  fileTitle?: string;
   gameMetadata?: PlaystashGame["metadata"];
   gameType?: PlaystashGameTypeEnum;
   filename: string;
@@ -298,6 +300,7 @@ export async function runDownloadFlow(
     versionId: version.id,
     versionName: version.version,
     gameTitle,
+    fileTitle: game.title,
     gameMetadata: game.metadata,
     gameType: (version.type || game.type) as PlaystashGameTypeEnum,
     filename: versionFilename(version, gameTitle),

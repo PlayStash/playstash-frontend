@@ -198,6 +198,7 @@ const GameCard = memo(function GameCard({
         versionId: selectedVersion.id,
         versionName: selectedVersion.version,
         gameTitle: resolvedTitle,
+        fileTitle: localGame.title,
         gameMetadata: localGame.metadata,
         gameType: (selectedVersion.type || localGame.type) as any,
         filename: selectedFilename,

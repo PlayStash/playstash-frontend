@@ -482,6 +482,7 @@ export default function GameView() {
         versionId: selectedVersion.id,
         versionName: selectedVersion.version,
         gameTitle: resolvedTitle,
+        fileTitle: game.title,
         gameMetadata: game.metadata,
         gameType: (selectedVersion.type || game.type) as any,
         filename: selectedFilename,

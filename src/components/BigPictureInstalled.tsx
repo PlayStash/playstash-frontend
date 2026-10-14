@@ -11,6 +11,7 @@ import {
   moveGridIndex,
 } from "@/utils/bigPictureInstalled";
 import { launchInstalledGame } from "@/utils/launchInstalledGame";
+import { useShowMappedTitle } from "@/utils/mappedTitle";
 
 const ARROW_KEYS = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"] as const;
 type ArrowKey = (typeof ARROW_KEYS)[number];
@@ -34,6 +35,7 @@ export function BigPictureInstalled({
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
+  const showMappedTitle = useShowMappedTitle();
   const { installedGames, loading } = useInstalledGames();
   const games = useMemo(
     () => bigPictureGames(installedGames),
@@ -73,7 +75,10 @@ export function BigPictureInstalled({
       launchingRef.current = true;
       setLaunching(true);
       setStatus(
-        t("bigPicture.launching").replace("{title}", displayTitle(game)),
+        t("bigPicture.launching").replace(
+          "{title}",
+          displayTitle(game, showMappedTitle),
+        ),
       );
       try {
         const result = await launchInstalledGame({
@@ -84,7 +89,10 @@ export function BigPictureInstalled({
         });
         setStatus(
           result.ok
-            ? t("bigPicture.launched").replace("{title}", displayTitle(game))
+            ? t("bigPicture.launched").replace(
+                "{title}",
+                displayTitle(game, showMappedTitle),
+              )
             : result.message || t("launch.failedTitle"),
         );
       } finally {
@@ -92,7 +100,7 @@ export function BigPictureInstalled({
         setLaunching(false);
       }
     },
-    [games, t],
+    [games, t, showMappedTitle],
   );
 
   const select = useCallback((index: number) => {
@@ -161,7 +169,7 @@ export function BigPictureInstalled({
           {games.map((game, index) => {
             const metadata = game.cachedMetadata ?? game.gameMetadata;
             const coverId = coverMediaId(metadata);
-            const title = displayTitle(game);
+            const title = displayTitle(game, showMappedTitle);
             return (
               <button
                 key={`${game.gameId}:${game.versionDirectory}`}
