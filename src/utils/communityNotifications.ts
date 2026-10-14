@@ -3,6 +3,7 @@
  * rules (pure). Mirrors the WPF `CommunityConnection`.
  */
 import type { ChatMessage, ChatTarget } from "@/utils/chat";
+import { profileScopedKey } from "@/utils/profiles";
 
 export type CommunityPresence = "ONLINE" | "BUSY" | "INVISIBLE";
 export type ActivityState = CommunityPresence | "PLAYING" | "OFFLINE";
@@ -18,7 +19,11 @@ export function normalizePresence(value: unknown): CommunityPresence {
   return value === "BUSY" || value === "INVISIBLE" ? value : "ONLINE";
 }
 
-/** localStorage key of the saved presence for one account on one server. */
+/**
+ * localStorage key of the saved presence for one account on one server
+ * (inside the active profile's namespace on the desktop, see
+ * `profileScopedKey`).
+ */
 export function presenceStorageKey(serverUrl: string, userId: number): string {
   return `playstash:community-presence:${serverUrl.replace(/\/+$/, "")}:${userId}`;
 }
@@ -30,7 +35,9 @@ export function loadPresence(
   if (!userId) return "ONLINE";
   try {
     return normalizePresence(
-      localStorage.getItem(presenceStorageKey(serverUrl, userId)),
+      localStorage.getItem(
+        profileScopedKey(presenceStorageKey(serverUrl, userId)),
+      ),
     );
   } catch {
     return "ONLINE";
@@ -44,7 +51,10 @@ export function savePresence(
 ): void {
   if (!userId) return;
   try {
-    localStorage.setItem(presenceStorageKey(serverUrl, userId), presence);
+    localStorage.setItem(
+      profileScopedKey(presenceStorageKey(serverUrl, userId)),
+      presence,
+    );
   } catch {
     // Presence still applies for this session.
   }
@@ -81,8 +91,11 @@ export const COMMUNITY_NOTIFICATIONS_EVENT =
 
 export type CommunityNotificationKind = "chat" | "activity";
 
+/** Per profile like the WPF client (plain key without a profile). */
 function notificationKey(kind: CommunityNotificationKind): string {
-  return kind === "chat" ? CHAT_NOTIFICATIONS_KEY : ACTIVITY_NOTIFICATIONS_KEY;
+  return profileScopedKey(
+    kind === "chat" ? CHAT_NOTIFICATIONS_KEY : ACTIVITY_NOTIFICATIONS_KEY,
+  );
 }
 
 /** Both notification kinds are off unless explicitly enabled. */

@@ -7,6 +7,7 @@ import type { TranslationKey } from "@/i18n";
 import type { InstalledGameInfo } from "@/hooks/useInstalledGames";
 import { normalizeAndDedupeInstalledGames } from "@/utils/installedGames";
 import { getRootPaths } from "@/utils/rootPaths";
+import { getCurrentProfileId } from "@/utils/profiles";
 
 export const CLOUD_SAVES_README_URL =
   "https://github.com/PlayStash/playstash-app#readme";
@@ -63,6 +64,7 @@ export interface CloudSaveRequest {
   accessToken: string;
   winePrefix?: string | null;
   roots: string[];
+  /** The login profile; its folder holds the Ludusavi config (Rust). */
   profileKey?: string | null;
 }
 
@@ -331,6 +333,7 @@ export async function matchCloudSaveTitle(options: {
     title: options.title,
     installationPath: options.installationPath ?? null,
     roots: getRootPaths().map((root) => root.path),
+    profileKey: getCurrentProfileId(),
   });
 }
 
@@ -344,6 +347,7 @@ export function buildCloudSaveRequest(options: {
   accessToken: string;
   winePrefix?: string | null;
   roots?: string[];
+  profileKey?: string | null;
 }): CloudSaveRequest {
   return {
     gameId: options.gameId,
@@ -355,6 +359,10 @@ export function buildCloudSaveRequest(options: {
     accessToken: options.accessToken,
     winePrefix: options.winePrefix?.trim() || null,
     roots: options.roots ?? getRootPaths().map((root) => root.path),
+    profileKey:
+      options.profileKey === undefined
+        ? getCurrentProfileId()
+        : options.profileKey,
   };
 }
 

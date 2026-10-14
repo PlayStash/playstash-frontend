@@ -8,11 +8,11 @@ import {
   saveArtworkProviders,
   validateArtworkProvider,
 } from "./artworkProviders";
-import { setActiveProfileId } from "./profileScope";
+import { profileScopedKey, setCurrentProfileId } from "./profiles";
 
 beforeEach(() => {
   localStorage.clear();
-  setActiveProfileId(null);
+  setCurrentProfileId(null);
 });
 
 describe("loadArtworkProviders", () => {
@@ -30,10 +30,12 @@ describe("loadArtworkProviders", () => {
   });
 
   it("is namespaced per profile", () => {
-    setActiveProfileId("p1");
+    setCurrentProfileId("p1");
     saveArtworkProviders([{ name: "X", url: "https://x.test/?q=$GAME" }]);
-    expect(localStorage.getItem(`${ARTWORK_PROVIDERS_KEY}:p1`)).not.toBeNull();
-    setActiveProfileId(null);
+    expect(
+      localStorage.getItem(profileScopedKey(ARTWORK_PROVIDERS_KEY, "p1")),
+    ).not.toBeNull();
+    setCurrentProfileId(null);
     expect(loadArtworkProviders()).toEqual(DEFAULT_ARTWORK_PROVIDERS);
   });
 });

@@ -5,11 +5,7 @@ import {
   setShowDefaultTheme,
   useActiveTheme,
 } from "@/themes/themeManager";
-import {
-  PROFILE_CHANGED_EVENT,
-  profileIdFromEvent,
-  setActiveProfileId,
-} from "@/utils/profileScope";
+import { PROFILE_CHANGED_EVENT } from "@/utils/profiles";
 import { playStartupSound, stopStartupSound } from "@/utils/startupSound";
 
 /**
@@ -24,10 +20,8 @@ export function AppearanceEffects() {
   const soundPlayedRef = useRef(false);
 
   useEffect(() => {
-    const onProfileChanged = (event: Event) => {
-      setActiveProfileId(profileIdFromEvent(event));
-      void reapplyStoredTheme();
-    };
+    // The active profile is already set when the event fires.
+    const onProfileChanged = () => void reapplyStoredTheme();
     window.addEventListener(PROFILE_CHANGED_EVENT, onProfileChanged);
     return () =>
       window.removeEventListener(PROFILE_CHANGED_EVENT, onProfileChanged);

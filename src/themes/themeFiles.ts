@@ -11,7 +11,7 @@
  */
 import { openDB, type IDBPDatabase } from "idb";
 import { isTauriApp } from "@/utils/tauri";
-import { getActiveProfileId } from "@/utils/profileScope";
+import { getCurrentProfileId } from "@/utils/profiles";
 import {
   parseThemeXaml,
   pathExtension,
@@ -99,7 +99,7 @@ function webDb(): Promise<IDBPDatabase> {
 }
 
 function profileKey(): string {
-  return getActiveProfileId() ?? "";
+  return getCurrentProfileId() ?? "";
 }
 
 function newId(): string {
@@ -129,7 +129,7 @@ async function webRecord(path: string): Promise<WebThemeRecord | undefined> {
 /** The themes folder (desktop). Created when `create` is set. */
 export async function getThemesDirectory(create = false): Promise<string> {
   return invoke<string>("themes_dir", {
-    profileId: getActiveProfileId(),
+    profileId: getCurrentProfileId(),
     create,
   });
 }
@@ -140,7 +140,7 @@ export async function listInstalledThemes(): Promise<InstalledTheme[]> {
     try {
       const files = await invoke<{ path: string; content: string }[]>(
         "themes_list",
-        { profileId: getActiveProfileId() },
+        { profileId: getCurrentProfileId() },
       );
       return files.flatMap((file) => {
         const definition = tryParseThemeXaml(file.content);
@@ -173,7 +173,7 @@ export async function readInstalledTheme(
     return parseThemeXaml(record.content);
   }
   const content = await invoke<string>("theme_read", {
-    profileId: getActiveProfileId(),
+    profileId: getCurrentProfileId(),
     path,
   });
   return parseThemeXaml(content);
@@ -190,7 +190,7 @@ export async function loadThemeOverlay(
     return record?.overlay ?? null;
   }
   const base64 = await invoke<string>("theme_overlay_bytes", {
-    profileId: getActiveProfileId(),
+    profileId: getCurrentProfileId(),
     themePath: path,
     relPath: definition.overlay,
   });
@@ -219,7 +219,7 @@ export async function installThemeFile(
   }
   if (isTauriApp()) {
     return invoke<string>("theme_write", {
-      profileId: getActiveProfileId(),
+      profileId: getCurrentProfileId(),
       fileName: input.fileName,
       content: input.content,
       overlayRelPath: input.overlay?.relPath ?? null,
@@ -254,7 +254,7 @@ export async function deleteInstalledTheme(
     return;
   }
   await invoke("theme_delete", {
-    profileId: getActiveProfileId(),
+    profileId: getCurrentProfileId(),
     path,
     overlayRelPath: definition?.overlay ?? null,
   });

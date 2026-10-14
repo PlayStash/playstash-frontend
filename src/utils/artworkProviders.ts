@@ -2,7 +2,7 @@
  * Artwork search providers (WPF ArtworkSearchUserControl): named search URLs
  * containing `$GAME`, opened in the browser with the game title.
  */
-import { profileScopedKey } from "./profileScope";
+import { profileScopedKey } from "./profiles";
 
 export interface ArtworkProvider {
   name: string;

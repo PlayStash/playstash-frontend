@@ -25,7 +25,7 @@ import {
   type ThemeDefinition,
 } from "./xamlTheme";
 import { parseWpfColor, toArgbHex } from "./wpfColors";
-import { profileScopedKey } from "@/utils/profileScope";
+import { profileScopedKey } from "@/utils/profiles";
 
 export const THEME_STORAGE_KEY = "playstash_theme";
 const LEGACY_DARK_MODE_KEY = "darkMode";
