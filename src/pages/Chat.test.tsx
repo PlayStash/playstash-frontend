@@ -6,13 +6,16 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Chat from "./Chat";
+import { CommunityProvider } from "@/context/CommunityContext";
+import { createSocketMock, type SocketMock } from "@/test/communitySocketMock";
+import { clearGameTitleCache } from "@/utils/gameTitles";
+
 const mocks = vi.hoisted(() => ({
   io: vi.fn(),
-  emit: vi.fn(),
   fetch: vi.fn(),
-  handlers: {} as Record<string, (...args: any[]) => void>,
 }));
 vi.mock("socket.io-client", () => ({ io: mocks.io }));
 vi.mock("@/context/AuthContext", () => ({
@@ -25,36 +28,50 @@ vi.mock("@/context/AuthContext", () => ({
 vi.mock("@/context/OfflineContext", () => ({
   useOnlineStatus: () => ({ isOnline: true }),
 }));
-describe("library chat", () => {
+vi.mock("@/utils/tauri", () => ({ isTauriApp: () => false }));
+
+let socket: SocketMock;
+const emitted = (event: string) =>
+  socket.socket.emit.mock.calls
+    .filter((call) => call[0] === event)
+    .map((call) => call[1]);
+
+describe("library chat", { timeout: 20_000 }, () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
-    mocks.fetch.mockResolvedValue({
+    localStorage.clear();
+    clearGameTitleCache();
+    mocks.fetch.mockImplementation(async (url: string) => ({
       ok: true,
-      json: async () => [{ id: 2, username: "Other user" }],
-    });
-    mocks.handlers = {};
-    mocks.io.mockImplementation(() => ({
-      connected: true,
-      on: (event: string, handler: (...args: any[]) => void) => {
-        mocks.handlers[event] = handler;
-      },
-      emit: mocks.emit,
-      connect: () => mocks.handlers.connect?.(),
-      disconnect: vi.fn(),
+      json: async () =>
+        url.endsWith("/api/games/7")
+          ? { id: 7, title: "celeste", metadata: { title: "Celeste" } }
+          : [
+              { id: 1, username: "Me" },
+              { id: 2, username: "Other user" },
+            ],
     }));
+    mocks.io.mockImplementation(() => {
+      socket = createSocketMock();
+      return socket.socket;
+    });
   });
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
   });
-  const mount = async () => {
+  const mount = async (path = "/chat", conversation = "lobby") => {
     await act(async () => {
-      render(<Chat />);
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <CommunityProvider>
+            <Chat />
+          </CommunityProvider>
+        </MemoryRouter>,
+      );
     });
-    act(() =>
-      mocks.handlers["chat-history"]({ conversation: "lobby", messages: [] }),
-    );
+    act(() => socket.fire("chat-history", { conversation, messages: [] }));
   };
   it("authenticates in the handshake and deduplicates named send replies/broadcasts as text", async () => {
     await mount();
@@ -62,6 +79,7 @@ describe("library chat", () => {
       "http://library.test",
       expect.objectContaining({ auth: { api_key: "local-test-key" } }),
     );
+    expect(emitted("chat-history")).toEqual([{ room: "lobby", limit: 100 }]);
     const message = {
       id: "message-id",
       user_id: 2,
@@ -71,8 +89,8 @@ describe("library chat", () => {
       room: "lobby",
     };
     act(() => {
-      mocks.handlers["chat-message"](message);
-      mocks.handlers["chat-sent"](message);
+      socket.fire("chat-message", message);
+      socket.fire("chat-sent", message);
     });
     expect(screen.getAllByText(message.text)).toHaveLength(1);
     expect(document.querySelector("img")).toBeNull();
@@ -83,9 +101,7 @@ describe("library chat", () => {
       target: { value: "Hello" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    const sent = mocks.emit.mock.calls.find(
-      (call) => call[0] === "chat-send",
-    )?.[1];
+    const sent = emitted("chat-send")[0];
     expect(sent).toMatchObject({
       room: "lobby",
       text: "Hello",
@@ -93,12 +109,10 @@ describe("library chat", () => {
     });
     act(() => vi.advanceTimersByTime(12_000));
     fireEvent.click(screen.getByRole("button", { name: "Retry same message" }));
-    const sends = mocks.emit.mock.calls.filter(
-      (call) => call[0] === "chat-send",
-    );
-    expect(sends[1][1]).toEqual(sends[0][1]);
+    const sends = emitted("chat-send");
+    expect(sends[1]).toEqual(sends[0]);
     act(() =>
-      mocks.handlers["chat-sent"]({
+      socket.fire("chat-sent", {
         id: "server-id",
         user_id: 1,
         username: "Me",
@@ -114,10 +128,10 @@ describe("library chat", () => {
         .value,
     ).toBe("");
   });
-  it("does not show a direct message belonging to another conversation", async () => {
+  it("does not show a direct message belonging to another conversation and binds presence to the community", async () => {
     await mount();
     act(() =>
-      mocks.handlers["chat-message"]({
+      socket.fire("chat-message", {
         id: "private",
         user_id: 2,
         recipient_user_id: 1,
@@ -127,11 +141,62 @@ describe("library chat", () => {
       }),
     );
     expect(screen.queryByText("Private message")).toBeNull();
-    fireEvent.change(screen.getByRole("combobox", { name: "My visibility" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "Your status" }), {
       target: { value: "INVISIBLE" },
     });
-    expect(mocks.emit).toHaveBeenCalledWith("set-activity", {
+    expect(emitted("set-activity").slice(-1)[0]).toEqual({
       state: "INVISIBLE",
+      game_id: null,
     });
+    expect(
+      localStorage.getItem(
+        "playstash:community-presence:http://library.test:1",
+      ),
+    ).toBe("INVISIBLE");
+  });
+  it("preselects This Game for ?room=game:7", async () => {
+    await mount("/chat?room=game:7", "game:7");
+    await act(async () => {});
+    const conversation = screen.getByRole("combobox", {
+      name: "Conversation",
+    }) as HTMLSelectElement;
+    expect(conversation.value).toBe("this-game");
+    expect(
+      screen.getByRole("option", { name: "This Game — Celeste" }),
+    ).toBeTruthy();
+    expect(emitted("chat-history")).toEqual([{ room: "game:7", limit: 100 }]);
+    fireEvent.change(screen.getByRole("textbox", { name: "Message" }), {
+      target: { value: "GG" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    expect(emitted("chat-send")[0]).toMatchObject({
+      room: "game:7",
+      text: "GG",
+    });
+  });
+  it("opens a direct conversation for ?user=2", async () => {
+    await mount("/chat?user=2", "dm:1:2");
+    expect(emitted("chat-history")).toEqual([
+      { recipient_user_id: 2, limit: 100 },
+    ]);
+  });
+  it("lists online activity with names and game titles", async () => {
+    await mount();
+    act(() =>
+      socket.fire("activities", [
+        { user_id: 2, state: "PLAYING", game_id: 7 },
+        { user_id: 9, state: "BUSY" },
+      ]),
+    );
+    await act(async () => {});
+    const list = screen.getByRole("region", { name: "Online Activity" });
+    expect(list.textContent).toContain("Other user");
+    expect(list.textContent).toContain("PLAYING — Celeste");
+    expect(list.textContent).toContain("User #9");
+    act(() => {
+      socket.socket.connected = false;
+      socket.fire("disconnect", "transport close");
+    });
+    expect(list.textContent).toContain("Nobody is online right now.");
   });
 });

@@ -32,6 +32,9 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import type { PlaystashGame, PlaystashUser, Progress } from "../api";
+// ── WP2 community: begin ──
+import { CommunityChatButton } from "@/components/GameChatButton";
+// ── WP2 community: end ──
 
 type ProfileProgressSort = "last" | "time" | "title" | "state";
 
@@ -573,6 +576,9 @@ export default function UserProfile() {
               Browse player profiles, stats, and shared library history.
             </Text>
           </div>
+          {/* ── WP2 community: begin ── */}
+          <CommunityChatButton className="ml-auto" />
+          {/* ── WP2 community: end ── */}
           {canEdit && (
             <Button outline onClick={() => setShowEditProfile(true)}>
               <PencilSquareIcon className="size-4" />

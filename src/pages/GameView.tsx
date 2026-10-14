@@ -75,6 +75,9 @@ import {
 } from "@/utils/gameUpdate";
 import { LayoutGroup, motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
+// ── WP2 community: begin ──
+import { GameChatButton } from "@/components/GameChatButton";
+// ── WP2 community: end ──
 
 export default function GameView() {
   const reportGameEvent = useGameMetrics();
@@ -964,6 +967,12 @@ export default function GameView() {
                   >
                     <ShareIcon className="w-5 h-5" />
                   </Button>
+                  {/* ── WP2 community: begin ── */}
+                  <GameChatButton
+                    gameId={game?.id}
+                    className={floatingIconButtonClassName}
+                  />
+                  {/* ── WP2 community: end ── */}
                 </div>
                 {(genres && genres.length > 0) ||
                 game?.type ||

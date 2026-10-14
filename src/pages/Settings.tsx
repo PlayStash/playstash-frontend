@@ -45,6 +45,10 @@ import {
   SettingsSectionHeader,
 } from "@/components/settings/SettingsPrimitives";
 import { SETTINGS_SEARCH_INDEX } from "@/settings/searchIndex";
+// ── WP2 community: begin ──
+import CommunitySettings from "@/components/settings/CommunitySettings";
+import IntegrationsSettings from "@/components/settings/IntegrationsSettings";
+// ── WP2 community: end ──
 import type {
   SearchableSetting,
   SettingsCategory,
@@ -283,10 +287,16 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   community: [
     // ── WP2 community: begin ──
+    { id: "wp2-community", component: CommunitySettings, desktopOnly: true },
     // ── WP2 community: end ──
   ],
   integrations: [
     // ── WP2 community: begin ──
+    {
+      id: "wp2-integrations",
+      component: IntegrationsSettings,
+      desktopOnly: true,
+    },
     // ── WP2 community: end ──
     // ── WP3 cloud-saves: begin ──
     // ── WP3 cloud-saves: end ──
