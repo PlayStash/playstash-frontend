@@ -1,4 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
+// ── WP1 os-integration: begin ──
+import { DesktopCommandProvider } from "@/context/DesktopCommandContext";
+// ── WP1 os-integration: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -13,6 +16,7 @@ import type { ComponentType, ReactNode } from "react";
 /** Wrappers, outermost first. Each one must render its `children`. */
 const PROVIDERS: ComponentType<{ children: ReactNode }>[] = [
   // ── WP1 os-integration: begin ──
+  DesktopCommandProvider,
   // ── WP1 os-integration: end ──
   // ── WP2 community: begin ──
   // ── WP2 community: end ──

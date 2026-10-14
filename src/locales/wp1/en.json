@@ -1,1 +1,23 @@
-{}
+{
+  "wp1.tray.library": "Library",
+  "wp1.tray.downloads": "Downloads",
+  "wp1.tray.community": "Community",
+  "wp1.tray.settings": "Settings",
+  "wp1.tray.exit": "Exit",
+  "wp1.tray.libraryDescription": "Open Library",
+  "wp1.tray.downloadsDescription": "Open Downloads",
+  "wp1.tray.communityDescription": "Open Community",
+  "wp1.tray.settingsDescription": "Open Settings",
+  "wp1.tray.exitDescription": "Exit PlayStash",
+  "wp1.tray.noticeTitle": "Information",
+  "wp1.tray.noticeBody": "PlayStash is still running in the background",
+  "wp1.jumpList.actions": "Actions",
+  "wp1.jumpList.lastPlayed": "Last Played",
+  "wp1.exit.downloadsRunning": "Downloads are still running in the background, are you sure you want to exit the app anyway?",
+  "wp1.common.yes": "Yes",
+  "wp1.common.no": "No",
+  "wp1.command.gameNotFound": "Game with ID {id} not found",
+  "wp1.command.failed": "PlayStash could not complete the requested action",
+  "wp1.shortcut.confirm": "Do you want to create a desktop shortcut for {title}?",
+  "wp1.shortcut.exists": "Desktop shortcut already exists"
+}
