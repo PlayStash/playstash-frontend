@@ -12,6 +12,9 @@ import {
   type SimulatedDownloadKind,
 } from "@/context/DownloadContext";
 import { useIgnoreList } from "@/context/IgnoreListContext";
+// ── WP4 launch: begin ──
+import { GamesLaunchSettings } from "@/components/settings/GamesLaunchSettings";
+// ── WP4 launch: end ──
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { useAppUpdater } from "@/context/AppUpdaterContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
@@ -275,6 +278,11 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   games: [
     // ── WP4 launch: begin ──
+    {
+      id: "wp4-games-launch",
+      component: GamesLaunchSettings,
+      desktopOnly: true,
+    },
     // ── WP4 launch: end ──
   ],
   startup: [
