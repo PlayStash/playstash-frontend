@@ -82,6 +82,8 @@ winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser
 # ── WP6 accounts: begin ──
 # ── WP6 accounts: end ──
 # ── WP7 appearance: begin ──
+# Native startup-sound playback (WASAPI, no system libraries needed).
+rodio = { version = "0.20", default-features = false, features = ["symphonia-all"] }
 # ── WP7 appearance: end ──
 
 [target.'cfg(target_os = "linux")'.dependencies]
