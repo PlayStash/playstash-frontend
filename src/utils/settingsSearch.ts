@@ -19,17 +19,24 @@ export interface PlatformFlags {
   isLinux: boolean;
 }
 
+/** Whether a desktop/web/Linux-only entry is available on this platform. */
+export function isAvailableOnPlatform(
+  entry: Pick<SearchableSettingMeta, "desktopOnly" | "webOnly" | "linuxOnly">,
+  flags: PlatformFlags,
+): boolean {
+  return (
+    (!entry.desktopOnly || flags.isTauri) &&
+    (!entry.webOnly || !flags.isDesktopApp) &&
+    (!entry.linuxOnly || flags.isLinux)
+  );
+}
+
 /** Filter the settings index based on the current platform flags. */
 export function filterSearchableSettings<T extends SearchableSettingMeta>(
   index: T[],
   flags: PlatformFlags,
 ): T[] {
-  return index.filter(
-    (s) =>
-      (!s.desktopOnly || flags.isTauri) &&
-      (!s.webOnly || !flags.isDesktopApp) &&
-      (!s.linuxOnly || flags.isLinux),
-  );
+  return index.filter((s) => isAvailableOnPlatform(s, flags));
 }
 
 /**

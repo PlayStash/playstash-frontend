@@ -1,16 +1,64 @@
 import { useSyncExternalStore } from "react";
-import english from "./locales/en.json";
-import german from "./locales/de.json";
+import coreEn from "./locales/core/en.json";
+import coreDe from "./locales/core/de.json";
+import wp1En from "./locales/wp1/en.json";
+import wp1De from "./locales/wp1/de.json";
+import wp2En from "./locales/wp2/en.json";
+import wp2De from "./locales/wp2/de.json";
+import wp3En from "./locales/wp3/en.json";
+import wp3De from "./locales/wp3/de.json";
+import wp4En from "./locales/wp4/en.json";
+import wp4De from "./locales/wp4/de.json";
+import wp5En from "./locales/wp5/en.json";
+import wp5De from "./locales/wp5/de.json";
+import wp6En from "./locales/wp6/en.json";
+import wp6De from "./locales/wp6/de.json";
+import wp7En from "./locales/wp7/en.json";
+import wp7De from "./locales/wp7/de.json";
 
 export type Locale = "en" | "de";
 export type LanguagePreference = Locale | "system";
-export type TranslationKey = keyof typeof english;
+/**
+ * Catalogs are split into namespaces (`src/locales/<ns>/{en,de}.json`) so
+ * feature packages can add strings without touching the same file. Keys stay
+ * flat and dotted; a key must live in exactly one namespace.
+ */
+export type TranslationKey = keyof (typeof coreEn &
+  typeof wp1En &
+  typeof wp2En &
+  typeof wp3En &
+  typeof wp4En &
+  typeof wp5En &
+  typeof wp6En &
+  typeof wp7En);
+type Catalog = Partial<Record<TranslationKey, string>>;
+export const translationNamespaces: Record<
+  string,
+  { en: Catalog; de: Catalog }
+> = {
+  core: { en: coreEn, de: coreDe },
+  wp1: { en: wp1En, de: wp1De },
+  wp2: { en: wp2En, de: wp2De },
+  wp3: { en: wp3En, de: wp3De },
+  wp4: { en: wp4En, de: wp4De },
+  wp5: { en: wp5En, de: wp5De },
+  wp6: { en: wp6En, de: wp6De },
+  wp7: { en: wp7En, de: wp7De },
+};
+const english = Object.assign(
+  {},
+  ...Object.values(translationNamespaces).map((catalog) => catalog.en),
+) as Record<TranslationKey, string>;
+const german = Object.assign(
+  {},
+  ...Object.values(translationNamespaces).map((catalog) => catalog.de),
+) as Catalog;
 export const LANGUAGE_STORAGE_KEY = "playstash_interface_language";
 export const supportedLanguages = [
   { code: "en", name: "English" },
   { code: "de", name: "Deutsch" },
 ] as const;
-const catalogs: Record<Locale, Partial<Record<TranslationKey, string>>> = {
+const catalogs: Record<Locale, Catalog> = {
   en: english,
   de: german,
 };

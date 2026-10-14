@@ -13,6 +13,7 @@ import {
 } from "./context/AlertDialogContext";
 import { AppUpdaterProvider } from "./context/AppUpdaterContext";
 import { AuthProvider } from "./context/AuthContext";
+import { DesktopProviders } from "./context/DesktopProviders";
 import { DownloadProvider } from "./context/DownloadContext";
 import { GamepadProvider } from "./context/GamepadContext";
 import { IgnoreListProvider } from "./context/IgnoreListContext";
@@ -100,56 +101,68 @@ if (isLaunchLogWindow) {
                       <GlobalAlertDialogBridge />
                       <PrereleaseNotice />
                       <BrowserRouter>
-                        <GamepadProvider>
-                          <Suspense fallback={<PageLoader />}>
-                            <Routes>
-                              <Route element={<FullscreenLayout />}>
-                                <Route index element={<Login />} />
-                                <Route path="register" element={<Register />} />
-                              </Route>
+                        {/* Feature package providers: see context/DesktopProviders.tsx */}
+                        <DesktopProviders>
+                          <GamepadProvider>
+                            <Suspense fallback={<PageLoader />}>
+                              <Routes>
+                                <Route element={<FullscreenLayout />}>
+                                  <Route index element={<Login />} />
+                                  <Route
+                                    path="register"
+                                    element={<Register />}
+                                  />
+                                </Route>
 
-                              <Route element={<DashboardLayout />}>
-                                <Route
-                                  index
-                                  path="library"
-                                  element={<Library />}
-                                />
-                                <Route
-                                  path="library/:id"
-                                  element={<GameView />}
-                                />
-                                <Route
-                                  path="downloads"
-                                  element={<Downloads />}
-                                />
-                                <Route
-                                  path="community"
-                                  element={<Community />}
-                                />
-                                <Route path="requests" element={<Requests />} />
-                                <Route path="chat" element={<Chat />} />
-                                <Route
-                                  path="community/:id"
-                                  element={<UserProfile />}
-                                />
-                                <Route path="settings" element={<Settings />} />
-                                <Route
-                                  path="admin"
-                                  element={
-                                    <ProtectedRoute
-                                      guarded
-                                      requiredRole={PlaystashUserRoleEnum._3}
-                                    >
-                                      <Administration />
-                                    </ProtectedRoute>
-                                  }
-                                />
-                              </Route>
+                                <Route element={<DashboardLayout />}>
+                                  <Route
+                                    index
+                                    path="library"
+                                    element={<Library />}
+                                  />
+                                  <Route
+                                    path="library/:id"
+                                    element={<GameView />}
+                                  />
+                                  <Route
+                                    path="downloads"
+                                    element={<Downloads />}
+                                  />
+                                  <Route
+                                    path="community"
+                                    element={<Community />}
+                                  />
+                                  <Route
+                                    path="requests"
+                                    element={<Requests />}
+                                  />
+                                  <Route path="chat" element={<Chat />} />
+                                  <Route
+                                    path="community/:id"
+                                    element={<UserProfile />}
+                                  />
+                                  <Route
+                                    path="settings"
+                                    element={<Settings />}
+                                  />
+                                  <Route
+                                    path="admin"
+                                    element={
+                                      <ProtectedRoute
+                                        guarded
+                                        requiredRole={PlaystashUserRoleEnum._3}
+                                      >
+                                        <Administration />
+                                      </ProtectedRoute>
+                                    }
+                                  />
+                                </Route>
 
-                              <Route path="*" element={<NotFound />} />
-                            </Routes>
-                          </Suspense>
-                        </GamepadProvider>
+                                <Route path="*" element={<NotFound />} />
+                              </Routes>
+                            </Suspense>
+                          </GamepadProvider>
+                        </DesktopProviders>
                       </BrowserRouter>
                     </UmuProvider>
                   </AppUpdaterProvider>

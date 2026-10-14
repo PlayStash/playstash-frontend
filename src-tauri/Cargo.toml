@@ -51,8 +51,38 @@ xz2 = "0.1.7"
 zstd = "0.13.3"
 isomage = "2.1.0"
 
+# Feature package dependencies: add them inside your own block only.
+# ── WP1 os-integration: begin ──
+# ── WP1 os-integration: end ──
+# ── WP2 community: begin ──
+# ── WP2 community: end ──
+# ── WP3 cloud-saves: begin ──
+# ── WP3 cloud-saves: end ──
+# ── WP4 launch: begin ──
+# ── WP4 launch: end ──
+# ── WP5 download-pipeline: begin ──
+# ── WP5 download-pipeline: end ──
+# ── WP6 accounts: begin ──
+# ── WP6 accounts: end ──
+# ── WP7 appearance: begin ──
+# ── WP7 appearance: end ──
+
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser", "synchapi", "handleapi", "winbase", "winerror", "processthreadsapi", "sysinfoapi"] }
+# ── WP1 os-integration: begin ──
+# ── WP1 os-integration: end ──
+# ── WP2 community: begin ──
+# ── WP2 community: end ──
+# ── WP3 cloud-saves: begin ──
+# ── WP3 cloud-saves: end ──
+# ── WP4 launch: begin ──
+# ── WP4 launch: end ──
+# ── WP5 download-pipeline: begin ──
+# ── WP5 download-pipeline: end ──
+# ── WP6 accounts: begin ──
+# ── WP6 accounts: end ──
+# ── WP7 appearance: begin ──
+# ── WP7 appearance: end ──
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Direct dependency so we can read/configure WebKitGTK WebKitSettings at runtime
@@ -60,6 +90,36 @@ winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser
 # section. Already a transitive dependency of tauri/wry on Linux; the `v2_16`
 # feature gates the hardware-acceleration-policy API.
 webkit2gtk = { version = "2", features = ["v2_16"] }
+# ── WP1 os-integration: begin ──
+# ── WP1 os-integration: end ──
+# ── WP2 community: begin ──
+# ── WP2 community: end ──
+# ── WP3 cloud-saves: begin ──
+# ── WP3 cloud-saves: end ──
+# ── WP4 launch: begin ──
+# ── WP4 launch: end ──
+# ── WP5 download-pipeline: begin ──
+# ── WP5 download-pipeline: end ──
+# ── WP6 accounts: begin ──
+# ── WP6 accounts: end ──
+# ── WP7 appearance: begin ──
+# ── WP7 appearance: end ──
+
+[target.'cfg(unix)'.dependencies]
+# ── WP1 os-integration: begin ──
+# ── WP1 os-integration: end ──
+# ── WP2 community: begin ──
+# ── WP2 community: end ──
+# ── WP3 cloud-saves: begin ──
+# ── WP3 cloud-saves: end ──
+# ── WP4 launch: begin ──
+# ── WP4 launch: end ──
+# ── WP5 download-pipeline: begin ──
+# ── WP5 download-pipeline: end ──
+# ── WP6 accounts: begin ──
+# ── WP6 accounts: end ──
+# ── WP7 appearance: begin ──
+# ── WP7 appearance: end ──
 
 # Recommended by the tauri-plugin-stronghold docs to work around an upstream
 # scrypt performance bug in dev builds.

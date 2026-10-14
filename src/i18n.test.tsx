@@ -15,10 +15,9 @@ import {
   resolveLocale,
   setLanguage,
   translate,
+  translationNamespaces,
   useTranslation,
 } from "./i18n";
-import english from "./locales/en.json";
-import german from "./locales/de.json";
 
 function NavigationLabel() {
   const { t } = useTranslation();
@@ -67,12 +66,26 @@ describe("interface language", () => {
     expect(translate("__proto__", "de")).toBe("__proto__");
   });
 
-  it("keeps catalog keys valid and translations nonempty", () => {
-    for (const [key, value] of Object.entries(german)) {
-      expect(Object.prototype.hasOwnProperty.call(english, key), key).toBe(
-        true,
-      );
-      expect(value.trim().length, key).toBeGreaterThan(0);
+  it.each(Object.entries(translationNamespaces))(
+    "keeps %s catalog keys valid and translations nonempty",
+    (_namespace, { en, de }) => {
+      for (const [key, value] of Object.entries(en)) {
+        expect(value?.trim().length, key).toBeGreaterThan(0);
+      }
+      for (const [key, value] of Object.entries(de)) {
+        expect(Object.prototype.hasOwnProperty.call(en, key), key).toBe(true);
+        expect(value?.trim().length, key).toBeGreaterThan(0);
+      }
+    },
+  );
+
+  it("defines every key in exactly one namespace", () => {
+    const owners = new Map<string, string>();
+    for (const [namespace, { en }] of Object.entries(translationNamespaces)) {
+      for (const key of Object.keys(en)) {
+        expect(owners.get(key), `${key} (${namespace})`).toBeUndefined();
+        owners.set(key, namespace);
+      }
     }
   });
 

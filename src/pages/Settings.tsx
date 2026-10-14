@@ -27,6 +27,8 @@ import {
 } from "@/utils/tauri";
 import {
   filterSearchableSettings,
+  isAvailableOnPlatform,
+  type PlatformFlags,
   searchResultCategories as searchResultCategoriesFn,
   searchSettings,
 } from "@/utils/settingsSearch";
@@ -36,6 +38,18 @@ import ThemeSelect from "@/components/ThemeSelect";
 import ZoomControl from "@/components/ZoomControl";
 import StreamerModeToggle from "@/components/StreamerModeToggle";
 import BackButton from "@/components/BackButton";
+import {
+  SettingsGroup,
+  SettingsLabel,
+  SettingsRow,
+  SettingsSectionHeader,
+} from "@/components/settings/SettingsPrimitives";
+import { SETTINGS_SEARCH_INDEX } from "@/settings/searchIndex";
+import type {
+  SearchableSetting,
+  SettingsCategory,
+  SettingsSection,
+} from "@/settings/types";
 import {
   Dialog,
   DialogBody,
@@ -84,6 +98,11 @@ import {
   FolderOpenIcon,
   TrashIcon,
   SpeakerWaveIcon,
+  UserCircleIcon,
+  PaintBrushIcon,
+  UserGroupIcon,
+  PuzzlePieceIcon,
+  CircleStackIcon,
 } from "@heroicons/react/24/outline";
 
 const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
@@ -121,16 +140,6 @@ interface LicensesData {
   packages: ThirdPartyLicense[];
 }
 
-type SettingsCategory =
-  | "downloads"
-  | "appearance"
-  | "sound"
-  | "startup"
-  | "games"
-  | "privacy"
-  | "about"
-  | "developer";
-
 const CATEGORY_META: Record<
   SettingsCategory,
   {
@@ -139,6 +148,31 @@ const CATEGORY_META: Record<
     icon: React.ComponentType<{ className?: string }>;
   }
 > = {
+  account: {
+    label: "Account",
+    description: "Profiles, sign-in and the server connection.",
+    icon: UserCircleIcon,
+  },
+  themes: {
+    label: "Themes",
+    description: "Color themes and custom theme files.",
+    icon: PaintBrushIcon,
+  },
+  community: {
+    label: "Community",
+    description: "Presence, chat and activity notifications.",
+    icon: UserGroupIcon,
+  },
+  integrations: {
+    label: "Integrations",
+    description: "Connections to other apps and services.",
+    icon: PuzzlePieceIcon,
+  },
+  storage: {
+    label: "Storage",
+    description: "App data and caches.",
+    icon: CircleStackIcon,
+  },
   downloads: {
     label: "Downloads",
     description: "Where and how games are downloaded.",
@@ -181,343 +215,105 @@ const CATEGORY_META: Record<
   },
 };
 
-interface SearchableSetting {
-  /** Stable identifier, also used as the scroll/highlight target. */
-  id: string;
-  title: string;
-  description?: string;
-  category: SettingsCategory;
-  keywords: string[];
-  /** Only shown in the desktop (Tauri) app. Hidden from search on the web build. */
-  desktopOnly?: boolean;
-  /** Only shown on the web build. Hidden from search in the real desktop app. */
-  webOnly?: boolean;
-  /** Only shown on Linux (Tauri). Hidden from search elsewhere. */
-  linuxOnly?: boolean;
-}
+/**
+ * Categories with content built into this page. Every other category is only
+ * listed while it has at least one visible registered section.
+ */
+const BUILT_IN_CATEGORIES = new Set<SettingsCategory>([
+  "appearance",
+  "sound",
+  "downloads",
+  "games",
+  "startup",
+  "privacy",
+  "about",
+  "developer",
+]);
+
+/** Settings list order, most to least used. */
+const CATEGORY_ORDER: SettingsCategory[] = [
+  "account",
+  "appearance",
+  "themes",
+  "sound",
+  "downloads",
+  "games",
+  "startup",
+  "community",
+  "integrations",
+  "storage",
+  "privacy",
+  "about",
+  "developer",
+];
 
 /**
- * Flat index of every individual setting, used by the settings search bar to
- * surface results that map back to their owning category.
+ * Sections that feature packages add to a category. They render after the
+ * category's built-in content, in this order. Components live in
+ * `src/components/settings/`. Register sections only inside your own block.
  */
-const SETTINGS_SEARCH_INDEX: SearchableSetting[] = [
-  // Downloads
-  {
-    id: "downloads-locations",
-    title: "Download locations",
-    description: "Folders where games are stored",
-    category: "downloads",
-    keywords: ["location", "folder", "directory", "path", "storage"],
-    desktopOnly: true,
-  },
-  {
-    id: "downloads-speed-limit",
-    title: "Download speed limit",
-    description: "Limit download bandwidth. 0 means no limit.",
-    category: "downloads",
-    keywords: ["speed", "limit", "bandwidth", "throttle", "kb"],
-  },
-  {
-    id: "downloads-auto-extract",
-    title: "Auto-Extract Downloads",
-    description: "Unpack archives right after downloading",
-    category: "downloads",
-    keywords: ["extract", "unpack", "archive", "zip", "rar"],
-    desktopOnly: true,
-  },
-  {
-    id: "downloads-auto-install",
-    title: "Auto-Install Games",
-    description:
-      "Start installers or copy game files automatically after extraction, and make any files that need it executable",
-    category: "downloads",
-    keywords: ["install", "installer", "setup", "portable", "executable"],
-    desktopOnly: true,
-  },
-  {
-    id: "downloads-auto-delete-source",
-    title: "Auto-Delete Source Files",
-    description:
-      "Clean up downloaded and extracted files after installation to free space",
-    category: "downloads",
-    keywords: ["delete", "cleanup", "space", "source", "files"],
-    desktopOnly: true,
-  },
-  {
-    id: "downloads-clear-image-cache",
-    title: "Clear image cache",
-    description: "Remove cached covers and background images",
-    category: "downloads",
-    keywords: ["cache", "images", "covers", "backgrounds", "clear"],
-  },
-  // Appearance
-  {
-    id: "appearance-language",
-    title: "Interface language",
-    description: "Choose English, German, or your device language",
-    category: "appearance",
-    keywords: ["language", "locale", "german", "english", "deutsch", "sprache"],
-  },
-  {
-    id: "appearance-theme",
-    title: "Theme",
-    description: "Choose light, dark, or follow your device",
-    category: "appearance",
-    keywords: ["theme", "dark", "light", "mode", "color"],
-  },
-  {
-    id: "appearance-zoom",
-    title: "Zoom",
-    description: "Zoom the interface in or out",
-    category: "appearance",
-    keywords: ["zoom", "scale", "size", "font", "ui"],
-  },
-  {
-    id: "appearance-streamer-mode",
-    title: "Streamer / OPSEC Mode",
-    description: "Mask user names, emails and the server URL with placeholders",
-    category: "appearance",
-    keywords: [
-      "streamer",
-      "opsec",
-      "privacy",
-      "mask",
-      "anon",
-      "placeholder",
-      "hotkey",
-    ],
-  },
-  // Sound
-  {
-    id: "sound-volume",
-    title: "Volume",
-    description: "Master volume for PlayStash sounds",
-    category: "sound",
-    keywords: ["volume", "sound", "audio", "mute", "effects"],
-  },
-  {
-    id: "sound-test",
-    title: "Test sound",
-    description: "Play a preview at the current volume",
-    category: "sound",
-    keywords: ["sound", "test", "preview", "audio"],
-  },
-  {
-    id: "downloads-post-install",
-    title: "Post-install script",
-    description: "Run a local script after a successful installation",
-    category: "downloads",
-    keywords: ["script", "cleanup", "post-install"],
-    desktopOnly: true,
-  },
-  // Startup
-  {
-    id: "startup-autostart",
-    title: "Launch PlayStash on Computer Startup",
-    description: "Automatically start PlayStash when you log in",
-    category: "startup",
-    keywords: ["autostart", "startup", "boot", "launch", "login"],
-    desktopOnly: true,
-  },
-  {
-    id: "startup-start-minimized",
-    title: "Minimize to System Tray on Startup",
-    description: "Start silently in the tray instead of opening the window",
-    category: "startup",
-    keywords: ["startup", "minimize", "tray", "background", "hidden"],
-    desktopOnly: true,
-  },
-  // Games
-  {
-    id: "games-minimize-on-launch",
-    title: "Minimize when launching a game",
-    description: "Hide PlayStash while a game runs and restore it on quit",
-    category: "games",
-    keywords: ["minimize", "launch", "game", "tray", "playing", "restore"],
-    desktopOnly: true,
-  },
-  {
-    id: "games-ignore-list",
-    title: "Ignore List",
-    description: "Files PlayStash should skip completely",
-    category: "games",
-    keywords: ["ignore", "hidden", "executables", "skip", "setup"],
-    desktopOnly: true,
-  },
-  {
-    id: "games-launch-logs",
-    title: "Launch logs",
-    description: "Open the log window automatically and browse launch logs",
-    category: "games",
-    keywords: ["log", "logs", "debug", "crash", "proton", "wine", "umu"],
-    desktopOnly: true,
-  },
-  {
-    id: "games-wine-prefix",
-    title: "Wine/Proton Prefix Directory",
-    description: "Base folder for isolated per-game Wine/Proton prefixes",
-    category: "games",
-    keywords: [
-      "wine",
-      "proton",
-      "prefix",
-      "umu",
-      "linux",
-      "directory",
-      "folder",
-    ],
-    desktopOnly: true,
-    linuxOnly: true,
-  },
-  // Privacy
-  {
-    id: "privacy-game-metrics",
-    title: "Report completed game actions",
-    description: "Share library lifecycle metrics with administrators",
-    category: "privacy",
-    keywords: ["metrics", "downloads", "installed", "privacy"],
-  },
-  {
-    id: "privacy-restricted-activity",
-    title: "Share restricted game activity",
-    description: "Allow administrators to see restricted game activity",
-    category: "privacy",
-    keywords: ["restricted", "activity", "privacy", "sharing"],
-  },
-  {
-    id: "privacy-analytics",
-    title: "Usage analytics",
-    description: "Help make PlayStash better",
-    category: "privacy",
-    keywords: ["analytics", "privacy", "telemetry", "usage", "anonymous"],
-  },
-  // About
-  {
-    id: "about-version",
-    title: "Application Version",
-    description: "The installed PlayStash version",
-    category: "about",
-    keywords: ["version", "build", "app"],
-  },
-  {
-    id: "about-license",
-    title: "License",
-    description: "PlayStash is licensed under CC BY-NC-SA 4.0",
-    category: "about",
-    keywords: ["license", "legal", "cc"],
-  },
-  {
-    id: "about-open-source-licenses",
-    title: "Open Source Licenses",
-    description: "Third-party libraries used by PlayStash",
-    category: "about",
-    keywords: ["open source", "licenses", "third-party", "libraries"],
-  },
-  {
-    id: "about-updates",
-    title: "Updates",
-    description: "Update channel and auto-update status",
-    category: "about",
-    keywords: ["update", "updater", "channel", "version", "stable"],
-    desktopOnly: true,
-  },
-  {
-    id: "about-system",
-    title: "System information",
-    description: "Operating system, hardware, GPU and display details",
-    category: "about",
-    keywords: [
-      "system",
-      "info",
-      "os",
-      "platform",
-      "hardware",
-      "cpu",
-      "memory",
-      "gpu",
-      "webgl",
-      "webgpu",
-      "display",
-      "monitors",
-      "user agent",
-    ],
-  },
-  // Developer
-  {
-    id: "developer-open-devtools",
-    title: "Open Browser DevTools",
-    description: "Open the WebView devtools for the desktop build",
-    category: "developer",
-    keywords: ["devtools", "developer", "inspect", "console", "window"],
-  },
-  {
-    id: "developer-simulate-desktop",
-    title: "Simulate Desktop App",
-    description: "Preview PlayStash as a native desktop application",
-    category: "developer",
-    keywords: ["simulate", "desktop", "tauri", "debug"],
-    webOnly: true,
-  },
-  {
-    id: "developer-simulate-outage",
-    title: "Simulate Network Outage",
-    description: "Force an offline state to test error banners",
-    category: "developer",
-    keywords: ["network", "offline", "outage", "simulate", "error"],
-  },
-  {
-    id: "developer-toasts",
-    title: "Toast Notifications",
-    description: "Preview each toast tone",
-    category: "developer",
-    keywords: ["toast", "notification", "snackbar", "preview"],
-  },
-  {
-    id: "developer-simulate-download",
-    title: "Simulate Download Status",
-    description: "Preview each download state without a real download",
-    category: "developer",
-    keywords: ["download", "simulate", "status", "test"],
-  },
-  {
-    id: "developer-build-info",
-    title: "Build Info",
-    description: "Version, channel and environment",
-    category: "developer",
-    keywords: ["build", "version", "channel", "environment"],
-  },
-  {
-    id: "developer-settings-dump",
-    title: "Copy Settings Dump",
-    description: "Export all preferences as JSON for bug reports",
-    category: "developer",
-    keywords: ["settings", "dump", "export", "copy", "json", "diagnostics"],
-  },
-  {
-    id: "developer-verbose-logging",
-    title: "Verbose diagnostics logging",
-    description: "Log interface snapshots and activity breadcrumbs",
-    category: "developer",
-    keywords: ["log", "logging", "diagnostics", "debug", "freeze", "watchdog"],
-  },
-  {
-    id: "rendering-smooth-scroll",
-    title: "Smooth Scrolling",
-    description: "Toggle WebKitGTK smooth-scroll animation",
-    category: "appearance",
-    keywords: ["scroll", "webkit", "smooth", "animation", "rendering"],
-    desktopOnly: true,
-  },
-  {
-    id: "rendering-hw-accel",
-    title: "Hardware Acceleration",
-    description:
-      "WebKitGTK hardware acceleration policy. Only takes effect after restarting the app.",
-    category: "appearance",
-    keywords: ["gpu", "acceleration", "webkit", "hardware", "rendering"],
-    desktopOnly: true,
-  },
-];
+const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
+  account: [
+    // ── WP6 accounts: begin ──
+    // ── WP6 accounts: end ──
+  ],
+  appearance: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+  themes: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+  sound: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+  downloads: [
+    // ── WP5 download-pipeline: begin ──
+    // ── WP5 download-pipeline: end ──
+  ],
+  games: [
+    // ── WP4 launch: begin ──
+    // ── WP4 launch: end ──
+  ],
+  startup: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+  community: [
+    // ── WP2 community: begin ──
+    // ── WP2 community: end ──
+  ],
+  integrations: [
+    // ── WP2 community: begin ──
+    // ── WP2 community: end ──
+    // ── WP3 cloud-saves: begin ──
+    // ── WP3 cloud-saves: end ──
+  ],
+  storage: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+  privacy: [],
+  about: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+  developer: [
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+  ],
+};
+
+function visibleCategorySections(
+  category: SettingsCategory,
+  flags: PlatformFlags,
+): SettingsSection[] {
+  return CATEGORY_SECTIONS[category].filter((section) =>
+    isAvailableOnPlatform(section, flags),
+  );
+}
 
 /**
  * Gamepad icon in the Heroicons outline style (24x24, 1.5 stroke). Heroicons
@@ -541,114 +337,6 @@ function GamepadIcon({ className }: { className?: string }) {
       <circle cx="15.5" cy="11" r="1" />
       <circle cx="17.5" cy="13" r="1" />
     </svg>
-  );
-}
-
-/**
- * Grouped settings list, iOS Settings style: a rounded container with
- * hairline dividers and a small uppercase group caption above it.
- */
-function SettingsGroup({
-  caption,
-  description,
-  children,
-  className,
-  id,
-}: {
-  caption?: string;
-  description?: string;
-  children: React.ReactNode;
-  className?: string;
-  id?: string;
-}) {
-  return (
-    <div className={clsx(className)} id={id}>
-      {caption && (
-        <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-ps-muted">
-          {caption}
-        </p>
-      )}
-      {description && (
-        <p className="mb-2 px-1 text-xs leading-5 text-ps-muted">
-          {description}
-        </p>
-      )}
-      <div className="divide-y divide-ps-line overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong shadow-sm">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/** One row inside a settings group: label + description on the left, control on the right. */
-function SettingsRow({
-  children,
-  className,
-  id,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  id?: string;
-}) {
-  return (
-    <div
-      id={id}
-      className={clsx(
-        "flex min-h-12 items-center justify-between gap-x-4 px-4 py-2.5",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-/** Left-hand label + optional description for a settings row. */
-function SettingsLabel({
-  title,
-  description,
-  className,
-}: {
-  title: string;
-  description?: string | null;
-  className?: string;
-}) {
-  return (
-    <div className={clsx("min-w-0 flex-1", className)}>
-      <p className="text-sm font-medium text-ps-text">{title}</p>
-      {description && (
-        <p className="mt-0.5 text-xs leading-5 text-ps-muted">{description}</p>
-      )}
-    </div>
-  );
-}
-
-/** Section heading shown above the groups of the active category. */
-function SettingsSectionHeader({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-ps-panel-soft text-ps-accent ring-1 ring-ps-line">
-        <Icon className="size-5" />
-      </span>
-      <div className="min-w-0 pt-0.5">
-        <h2 className="text-base font-semibold tracking-[-0.01em] text-ps-text">
-          {title}
-        </h2>
-        {description && (
-          <p className="mt-0.5 text-xs text-ps-muted sm:text-sm">
-            {description}
-          </p>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -810,8 +498,14 @@ export default function Settings() {
       ignore: "games",
     };
     const section = (raw && legacy[raw]) || (raw as SettingsCategory | null);
-    setActiveCategory(section && section in CATEGORY_META ? section : null);
-  }, [searchParams]);
+    const available =
+      !!section &&
+      section in CATEGORY_META &&
+      (BUILT_IN_CATEGORIES.has(section) ||
+        visibleCategorySections(section, { isTauri, isDesktopApp, isLinux })
+          .length > 0);
+    setActiveCategory(available ? section : null);
+  }, [searchParams, isTauri, isDesktopApp, isLinux]);
   // Settings search: free-text query, the matched settings, and the target we
   // scroll/highlight to when a result is chosen.
   const [searchQuery, setSearchQuery] = useState("");
@@ -1518,17 +1212,23 @@ export default function Settings() {
   // Category nav order; desktop-only General leads, Developer sits at the end.
   // Ordered most → least used by a typical user. Desktop-only categories are
   // interleaved; on web the desktop ones simply drop out.
-  const navCategories: SettingsCategory[] = [
-    "appearance",
-    "sound",
-    "downloads",
-    ...(isTauri ? (["games", "startup"] as SettingsCategory[]) : []),
-    "privacy",
-    "about",
-    ...(import.meta.env.DEV || devToolsUnlocked
-      ? (["developer"] as SettingsCategory[])
-      : []),
-  ];
+  const isBuiltInCategoryVisible = (id: SettingsCategory) => {
+    if (!BUILT_IN_CATEGORIES.has(id)) return false;
+    if (id === "games" || id === "startup") return isTauri;
+    if (id === "developer") return import.meta.env.DEV || devToolsUnlocked;
+    return true;
+  };
+  // Developer Tools stay hidden until unlocked, even with package sections.
+  const categorySections = (id: SettingsCategory) =>
+    id === "developer" && !isBuiltInCategoryVisible(id)
+      ? []
+      : visibleCategorySections(id, platformFlags);
+  // Categories without built-in content only appear once a package adds a
+  // section that is visible on this platform.
+  const navCategories = CATEGORY_ORDER.filter(
+    (id) => isBuiltInCategoryVisible(id) || categorySections(id).length > 0,
+  );
+  const activeSections = activeCategory ? categorySections(activeCategory) : [];
 
   // During search, present categories in the same order as the nav list.
   const orderedSearchCategories = navCategories.filter((c) =>
@@ -2907,6 +2607,25 @@ export default function Settings() {
                     )}
                   </>
                 )}
+
+                {activeCategory !== null &&
+                  activeSections.length > 0 &&
+                  !isBuiltInCategoryVisible(activeCategory) && (
+                    <SettingsSectionHeader
+                      icon={CATEGORY_META[activeCategory].icon}
+                      title={CATEGORY_META[activeCategory].label}
+                      description={CATEGORY_META[activeCategory].description}
+                    />
+                  )}
+                {activeSections.map(({ id, component: Section }) => (
+                  <Section
+                    key={id}
+                    rowHighlight={rowHighlight}
+                    isTauri={isTauri}
+                    isDesktopApp={isDesktopApp}
+                    isLinux={isLinux}
+                  />
+                ))}
               </motion.div>
             )}
           </AnimatePresence>

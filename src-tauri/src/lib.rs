@@ -22,6 +22,25 @@ mod umu;
 mod rendering;
 mod frontend_watchdog;
 
+// Feature packages add their modules inside their own block only.
+// ── WP1 os-integration: begin ──
+mod desktop_commands;
+mod shortcuts;
+// ── WP1 os-integration: end ──
+// ── WP2 community: begin ──
+// ── WP2 community: end ──
+// ── WP3 cloud-saves: begin ──
+// ── WP3 cloud-saves: end ──
+// ── WP4 launch: begin ──
+mod game_sessions;
+// ── WP4 launch: end ──
+// ── WP5 download-pipeline: begin ──
+// ── WP5 download-pipeline: end ──
+// ── WP6 accounts: begin ──
+// ── WP6 accounts: end ──
+// ── WP7 appearance: begin ──
+// ── WP7 appearance: end ──
+
 use crate::settings::AppSettings;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -409,6 +428,8 @@ pub fn run() {
     // killed here and only the existing instance receives this callback,
     // which brings its window back to the foreground.
     .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+      // ── WP1 os-integration: begin ──
+      // ── WP1 os-integration: end ──
       if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
@@ -419,7 +440,22 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
-    .plugin(tauri_plugin_autostart::init(Default::default(), None));
+    .plugin(tauri_plugin_autostart::init(Default::default(), None))
+    // ── WP1 os-integration: begin ──
+    // ── WP1 os-integration: end ──
+    // ── WP2 community: begin ──
+    // ── WP2 community: end ──
+    // ── WP3 cloud-saves: begin ──
+    // ── WP3 cloud-saves: end ──
+    // ── WP4 launch: begin ──
+    // ── WP4 launch: end ──
+    // ── WP5 download-pipeline: begin ──
+    // ── WP5 download-pipeline: end ──
+    // ── WP6 accounts: begin ──
+    // ── WP6 accounts: end ──
+    // ── WP7 appearance: begin ──
+    // ── WP7 appearance: end ──
+    ;
 
   if let Some(pubkey) = updater_public_key() {
     builder = builder.plugin(
@@ -573,6 +609,22 @@ pub fn run() {
       #[cfg(target_os = "linux")]
       rendering::apply_webkit_settings(app.handle());
 
+      // ── Feature package setup ──────────────────────────────────────────
+      // ── WP1 os-integration: begin ──
+      // ── WP1 os-integration: end ──
+      // ── WP2 community: begin ──
+      // ── WP2 community: end ──
+      // ── WP3 cloud-saves: begin ──
+      // ── WP3 cloud-saves: end ──
+      // ── WP4 launch: begin ──
+      // ── WP4 launch: end ──
+      // ── WP5 download-pipeline: begin ──
+      // ── WP5 download-pipeline: end ──
+      // ── WP6 accounts: begin ──
+      // ── WP6 accounts: end ──
+      // ── WP7 appearance: begin ──
+      // ── WP7 appearance: end ──
+
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
@@ -668,7 +720,27 @@ pub fn run() {
       launch_log::read_launch_log_file,
       is_updater_enabled,
       check_for_app_update,
-      download_and_install_app_update
+      download_and_install_app_update,
+      // ── WP1 os-integration: begin ──
+      desktop_commands::desktop_commands_ready,
+      shortcuts::create_desktop_shortcut,
+      shortcuts::remove_desktop_shortcut,
+      shortcuts::desktop_shortcut_exists,
+      // ── WP1 os-integration: end ──
+      // ── WP2 community: begin ──
+      // ── WP2 community: end ──
+      // ── WP3 cloud-saves: begin ──
+      // ── WP3 cloud-saves: end ──
+      // ── WP4 launch: begin ──
+      game_sessions::get_active_game_sessions,
+      // ── WP4 launch: end ──
+      // ── WP5 download-pipeline: begin ──
+      // ── WP5 download-pipeline: end ──
+      // ── WP6 accounts: begin ──
+      net::set_additional_request_headers,
+      // ── WP6 accounts: end ──
+      // ── WP7 appearance: begin ──
+      // ── WP7 appearance: end ──
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

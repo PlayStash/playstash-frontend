@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterSearchableSettings,
+  isAvailableOnPlatform,
   matchesQuery,
   rowHighlight,
   searchResultCategories,
@@ -47,7 +48,11 @@ describe("filterSearchableSettings", () => {
       isDesktopApp: true,
       isLinux: true,
     });
-    expect(result.map((s) => s.id)).toEqual(["a-theme", "b-autostart", "d-linux"]);
+    expect(result.map((s) => s.id)).toEqual([
+      "a-theme",
+      "b-autostart",
+      "d-linux",
+    ]);
   });
 
   it("excludes desktop/linux-only settings on the web build", () => {
@@ -105,5 +110,20 @@ describe("rowHighlight", () => {
     expect(rowHighlight("a-theme", "a-theme")).toBe("bg-ps-accent/10");
     expect(rowHighlight("a-theme", "other")).toBe("");
     expect(rowHighlight(null, "a-theme")).toBe("");
+  });
+});
+
+describe("isAvailableOnPlatform", () => {
+  const web = { isTauri: false, isDesktopApp: false, isLinux: false };
+  const windows = { isTauri: true, isDesktopApp: true, isLinux: false };
+  const linux = { isTauri: true, isDesktopApp: true, isLinux: true };
+
+  it("applies the desktop, web and Linux flags", () => {
+    expect(isAvailableOnPlatform({}, web)).toBe(true);
+    expect(isAvailableOnPlatform({ desktopOnly: true }, web)).toBe(false);
+    expect(isAvailableOnPlatform({ desktopOnly: true }, windows)).toBe(true);
+    expect(isAvailableOnPlatform({ webOnly: true }, windows)).toBe(false);
+    expect(isAvailableOnPlatform({ linuxOnly: true }, windows)).toBe(false);
+    expect(isAvailableOnPlatform({ linuxOnly: true }, linux)).toBe(true);
   });
 });

@@ -99,6 +99,27 @@ pub(crate) async fn fs_read_binary_file(path: String) -> Result<String, String> 
   Ok(encode_base64(&bytes))
 }
 
+// ── WP6 accounts: begin ──
+/// Applies the user's additional request headers to a request aimed at the
+/// PlayStash server (WP6 contract stub from Step 0). Every Rust request to the
+/// server must be built through this helper. Stub: returns the builder as is.
+#[allow(dead_code)] // Contract stub, filled by WP6.
+pub(crate) fn server_request(builder: reqwest::RequestBuilder, url: &str) -> reqwest::RequestBuilder {
+  let _ = url;
+  builder
+}
+
+/// Stores the additional request headers sent with every server request
+/// (WP6 contract stub from Step 0).
+#[tauri::command]
+pub(crate) async fn set_additional_request_headers(
+  headers: std::collections::HashMap<String, String>,
+) -> Result<(), String> {
+  let _ = headers;
+  Err("Additional request headers are not implemented yet.".to_string())
+}
+// ── WP6 accounts: end ──
+
 #[cfg(test)]
 mod tests {
   use super::*;
