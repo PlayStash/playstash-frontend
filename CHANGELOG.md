@@ -18,6 +18,20 @@ Status: Unreleased.
 - Fixed playtime tracking freezing when a running game was closed, and the exit of games started as administrator on Windows was never noticed.
 <!-- /WP4 -->
 
+<!-- WP2 -->
+
+- Community presence and activity now stay connected app-wide instead of only while the chat page is open, reconnect automatically after 5 seconds and show the connection status.
+- Your community status (Online, Busy, Invisible) is remembered per account and server.
+- Other players now see "PLAYING" with the game while you play in the desktop app, unless you are invisible.
+- Added optional desktop notifications for new chat messages and for community activity changes (Settings → Community); messages in the conversation you are viewing are not announced.
+- Added "Game Chat" on game pages and "Activity and Chat" on the community pages; chat links open the lobby, a game room or a direct message directly.
+- The chat page shows an "Online Activity" list with user names and the titles of the games being played.
+- Added Discord Rich Presence for the game you are playing, with your own Discord application ID (Settings → Integrations); it is cleared when the game ends, the option is turned off or you sign out.
+- Added Steam non-Steam shortcuts for installed games with cover and hero artwork, kept in sync as games are installed, removed or reconfigured, plus "Restore Backup" for the original Steam shortcuts file.
+- Added a link to the Playnite extension under Settings → Integrations.
+
+<!-- /WP2 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.

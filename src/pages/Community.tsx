@@ -28,6 +28,9 @@ import { Link, useParams } from "react-router";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { maskUser, useStreamerMode } from "@/utils/streamerMode";
 import type { PlaystashGame, PlaystashUser, Progress } from "../api";
+// ── WP2 community: begin ──
+import { CommunityChatButton } from "@/components/GameChatButton";
+// ── WP2 community: end ──
 
 type UserDetailsMap = Record<number, PlaystashUser>;
 type ProfileProgressSort = "last" | "time" | "title" | "state";
@@ -675,6 +678,9 @@ export default function Community() {
           </Text>
         </div>
         <div className="flex flex-wrap gap-3">
+          {/* ── WP2 community: begin ── */}
+          <CommunityChatButton />
+          {/* ── WP2 community: end ── */}
           <span className="data-chip">
             <strong data-numeric>{networkStats.members}</strong>
             Members

@@ -5,6 +5,11 @@ import {
   GameSessionProvider,
 } from "@/context/GameSessionProvider";
 // ── WP4 launch: end ──
+// ── WP2 community: begin ──
+import { CommunityProvider } from "@/context/CommunityContext";
+import { DiscordPresenceEffect } from "@/hooks/useDiscordPresence";
+import { SteamShortcutSyncEffect } from "@/hooks/useSteamShortcutSync";
+// ── WP2 community: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -21,6 +26,7 @@ const PROVIDERS: ComponentType<{ children: ReactNode }>[] = [
   // ── WP1 os-integration: begin ──
   // ── WP1 os-integration: end ──
   // ── WP2 community: begin ──
+  CommunityProvider,
   // ── WP2 community: end ──
   // ── WP3 cloud-saves: begin ──
   // ── WP3 cloud-saves: end ──
@@ -43,6 +49,8 @@ const EFFECTS: ComponentType[] = [
   // ── WP1 os-integration: begin ──
   // ── WP1 os-integration: end ──
   // ── WP2 community: begin ──
+  DiscordPresenceEffect,
+  SteamShortcutSyncEffect,
   // ── WP2 community: end ──
   // ── WP3 cloud-saves: begin ──
   // ── WP3 cloud-saves: end ──
