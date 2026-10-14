@@ -11,7 +11,6 @@ import { GameReviews } from "@/components/GameReviews";
 import { GameSaves } from "@/components/GameSaves";
 import { GameMetrics } from "@/components/admin/GameMetrics";
 import type { LaunchProfileDto } from "@/api";
-import { useGameMetrics } from "@/hooks/useGameMetrics";
 import BackButton from "@/components/BackButton";
 import { Spinner } from "@/components/Spinner";
 import { useAuth } from "@/context/AuthContext";
@@ -66,6 +65,9 @@ import { Alert, AlertTitle } from "@tw/alert";
 import { GameSettings } from "@/components/admin/GameSettings";
 import { useAuthMediaUrl } from "@/hooks/useAuthMediaUrl";
 import { useInstalledGames } from "@/hooks/useInstalledGames";
+// ── WP4 launch: begin ──
+import { launchInstalledGame } from "@/utils/launchInstalledGame";
+// ── WP4 launch: end ──
 import { isTauriApp } from "@/utils/tauri";
 import { onGameDeleted } from "@/utils/gameUpdates";
 import { maskDisplayName, useStreamerMode } from "@/utils/streamerMode";
@@ -77,7 +79,6 @@ import { LayoutGroup, motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
 
 export default function GameView() {
-  const reportGameEvent = useGameMetrics();
   const { id } = useParams<{ id: string }>();
   const numericId = Number(id);
   const navigate = useNavigate();
@@ -531,81 +532,19 @@ export default function GameView() {
       e.preventDefault();
       e.stopPropagation();
       if (!installedInfo) return;
-
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const { join } = await import("@tauri-apps/api/path");
-
-        const configPath = await join(
-          installedInfo.versionDirectory,
-          ".playstash.game.config.json",
-        );
-
-        let launchExe: string | undefined;
-        let launchParams: string | undefined;
-        let launchAsAdmin = false;
-        let umuGameId: string | undefined;
-        let umuStore: string | undefined;
-        let umuProtonPath: string | undefined;
-        let umuWinePrefix: string | undefined;
-
-        if (await invoke<boolean>("fs_path_exists", { path: configPath })) {
-          try {
-            const raw = JSON.parse(
-              await invoke<string>("fs_read_text_file", { path: configPath }),
-            );
-            launchExe = raw.launchexecutable;
-            launchParams = raw.launchparameters;
-            launchAsAdmin = !!raw.launchasadmin;
-            umuGameId = raw.umugameid;
-            umuStore = raw.umustore;
-            umuProtonPath = raw.umuprotonpath;
-            umuWinePrefix = raw.umuwineprefix;
-          } catch {
-            console.warn("Failed to parse game config:", configPath);
-          }
-        }
-
-        launchExe =
-          profile?.executable || launchExe || game?.metadata?.launch_executable;
-        launchParams = profile
-          ? profile.parameters
-          : (launchParams ?? game?.metadata?.launch_parameters);
-        if (!launchExe) {
-          showAlert({
-            title: "No launch executable configured",
-            description:
-              "Open Game Settings → Launch Options to select an executable first.",
-          });
-          return;
-        }
-
-        await invoke("launch_game", {
-          gameTitle: title || game?.title || "Game",
-          gameId: installedInfo.gameId,
-          versionDirectory: installedInfo.versionDirectory,
-          installationPath: installedInfo.installationDirectory,
-          executableRelativePath: launchExe,
-          launchParameters: launchParams || null,
-          runAsAdmin: launchAsAdmin,
-          umuGameId: umuGameId || null,
-          umuStore: umuStore || null,
-          umuProtonPath: umuProtonPath || null,
-          umuWinePrefix: umuWinePrefix || null,
-        });
-        reportGameEvent(
-          installedInfo.gameId,
-          "played",
-          installedInfo.versionId,
-        );
-      } catch (err: any) {
-        showAlert({
-          title: "Failed to launch game",
-          description: err?.message || String(err),
-        });
-      }
+      // ── WP4 launch: begin ──
+      // Shared launch path: hooks, emulator, auto-detection, metrics and
+      // error alerts all live in launchInstalledGame.
+      await launchInstalledGame({
+        gameId: installedInfo.gameId,
+        profile,
+        source: "game-view",
+        game,
+        installed: installedInfo,
+      });
+      // ── WP4 launch: end ──
     },
-    [installedInfo, showAlert, game?.metadata, title, reportGameEvent],
+    [installedInfo, game],
   );
 
   const handleVersionSelect = useCallback(

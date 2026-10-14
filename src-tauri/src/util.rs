@@ -127,8 +127,21 @@ pub(crate) fn resolve_version_subdir(version_path: &Path, preferred: &str, legac
 
 #[cfg(test)]
 mod tests {
-  use super::{parse_version_folder, resolve_version_id};
+  use super::{is_ignored_executable, parse_version_folder, resolve_version_id};
   use serde_json::json;
+  use std::path::Path;
+
+  #[test]
+  fn ignores_executables_whose_name_contains_an_entry() {
+    let ignored = vec!["setup".to_string(), "UnityCrashHandler".to_string(), " ".to_string()];
+    assert!(is_ignored_executable(Path::new("bin/setup.exe"), &ignored));
+    assert!(is_ignored_executable(Path::new("GameSetup_x64.EXE"), &ignored));
+    assert!(is_ignored_executable(Path::new("unitycrashhandler64.exe"), &ignored));
+    assert!(!is_ignored_executable(Path::new("Game.exe"), &ignored));
+    // The entry must be contained in the name, not the other way round.
+    assert!(!is_ignored_executable(Path::new("set.exe"), &ignored));
+    assert!(!is_ignored_executable(Path::new("Game.exe"), &["".to_string()]));
+  }
 
   #[test]
   fn parses_legacy_version_folder() {
@@ -284,14 +297,16 @@ pub(crate) fn paths_match(a: &Path, b: &Path) -> bool {
   }
 }
 
-/// True when the executable's base name (without extension) is in `ignored`.
-/// Matching is case-insensitive; ignore-list entries have no extension.
+/// True when the executable's base name (without extension) contains an
+/// entry of `ignored`, case-insensitively (e.g. "setup" ignores
+/// "setup_x64.exe" and "GameSetup.exe"). Empty entries never match.
 pub(crate) fn is_ignored_executable(path: &Path, ignored: &[String]) -> bool {
   let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
     return false;
   };
   let stem_lower = stem.to_lowercase();
-  ignored
-    .iter()
-    .any(|name| name.to_lowercase() == stem_lower)
+  ignored.iter().any(|name| {
+    let entry = name.trim().to_lowercase();
+    !entry.is_empty() && stem_lower.contains(&entry)
+  })
 }

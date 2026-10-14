@@ -7,6 +7,7 @@ use crate::state::{
   tracker_ledger_snapshot, tracker_stats, tracker_stop_tx, GamePlayLedger, TrackerConfig,
   TrackerRuntimeStats,
 };
+use crate::game_sessions::{self, GameSessionEvent, GameSessionState};
 use crate::tracker_log;
 use crate::util::{is_ignored_executable, paths_match};
 use serde::Serialize;
@@ -149,6 +150,8 @@ pub(crate) async fn start_game_time_tracker(
     stats.log_path = tracker_log::log_path();
   }
   reset_tracker_stats(tracker_log::now_ms(), TICK_INTERVAL_SECS);
+  // The ledger starts over, so every open session is forgotten too.
+  game_sessions::clear_sessions();
 
   let (stop_tx, stop_rx) = watch::channel(false);
   if let Ok(mut tx) = tracker_stop_tx().lock() {
@@ -176,6 +179,8 @@ pub(crate) async fn stop_game_time_tracker(reason: Option<String>) -> Result<(),
     stats.running = false;
     stats.stop_reason = Some(reason.clone());
   }
+  // Nothing is tracked any more, so no game counts as active.
+  game_sessions::clear_sessions();
 
   tracker_log::push("info", "lifecycle", &format!("tracker stop requested (reason={reason})"));
   Ok(())
@@ -375,7 +380,14 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
     let library_ms = library_start.elapsed().as_millis() as u64;
 
     if installed.is_empty() {
-      mark_all_unmatched("no_installed_games");
+      for (game_id, total_minutes) in mark_all_unmatched("no_installed_games") {
+        handle_session_transition(
+          &app,
+          game_id,
+          SessionTransition::Ended { total_minutes },
+          "",
+        );
+      }
       tracker_log::push_kv(
         "warn",
         "tick",
@@ -392,7 +404,8 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
     // ── Executable candidates per installed game ───────────────────────────
     let ignored = load_settings(&app).ignored_executables;
     let candidates_start = Instant::now();
-    let mut game_exe_map: HashMap<i64, Vec<PathBuf>> = HashMap::new();
+    let mut game_exe_map: HashMap<i64, Vec<Candidate>> = HashMap::new();
+    let mut emulator_rules: HashMap<i64, Vec<EmulatorRule>> = HashMap::new();
     let mut game_titles: HashMap<i64, String> = HashMap::new();
     let mut skips: HashMap<i64, SkipReason> = HashMap::new();
     let mut cache_hits = 0usize;
@@ -476,8 +489,13 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
       let found = scanned.len();
       let mut abs_paths: Vec<PathBuf> = Vec::new();
       let mut seen: HashSet<String> = HashSet::new();
-      let configured_launcher =
-        read_configured_launch_executable(Path::new(&game.version_directory));
+      let game_config = read_game_config(Path::new(&game.version_directory));
+      let configured_launcher = game_config.as_ref().and_then(configured_launch_executable);
+      // An emulator launch runs an executable outside the installation: track
+      // it as "emulator running this game's ROM" (never the emulator alone).
+      let emulator_rule = game_config.as_ref().and_then(|config| {
+        emulator_rule_from_config(config, &configured_install, &game.version_directory)
+      });
       if let Some(rel_exe) = configured_launcher.clone() {
         let abs = scan_dir.join(rel_exe);
         if abs.exists() && !is_ignored_executable(&abs, &ignored) && !is_shortcut(&abs) {
@@ -502,7 +520,7 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         }
       }
 
-      if abs_paths.is_empty() {
+      if abs_paths.is_empty() && emulator_rule.is_none() {
         let reason = if scan_truncated {
           format!(
             "launch_candidate_scan_truncated in {}",
@@ -554,10 +572,16 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         );
       }
 
+      if let Some(rule) = emulator_rule {
+        emulator_rules.entry(game.game_id).or_default().push(rule);
+      }
       game_exe_map
         .entry(game.game_id)
         .or_default()
-        .extend(abs_paths);
+        .extend(abs_paths.into_iter().map(|path| Candidate {
+          path,
+          version_directory: game.version_directory.clone(),
+        }));
     }
 
     let candidates_ms = candidates_start.elapsed().as_millis() as u64;
@@ -595,18 +619,44 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
     let process_ms = process_start.elapsed().as_millis() as u64;
     let match_start = Instant::now();
 
+    // Emulator processes running a configured ROM belong to that game only:
+    // the same emulator is shared between games, so it never counts as a
+    // plain executable of another game.
+    let mut claimed: HashMap<sysinfo::Pid, (i64, String)> = HashMap::new();
+    for (game_id, rules) in &emulator_rules {
+      for process in &processes {
+        if let Some(rule) = rules.iter().find(|rule| process_runs_emulator_rule(process, rule)) {
+          claimed
+            .entry(process.pid())
+            .or_insert((*game_id, rule.version_directory.clone()));
+        }
+      }
+    }
+
     let mut matched_game_ids: Vec<i64> = Vec::new();
-    for (game_id, exe_paths) in &game_exe_map {
-      let matching: Vec<String> = processes
-        .iter()
-        .filter(|process| exe_paths.iter().any(|game_exe| process_matches_game(process, game_exe)))
-        .map(|process| describe_process(process))
-        .collect();
+    for (game_id, candidates) in &game_exe_map {
+      let mut matching: Vec<String> = Vec::new();
+      let mut matched_version: Option<String> = None;
+      for process in &processes {
+        let version = match claimed.get(&process.pid()) {
+          Some((owner, version)) if owner == game_id => Some(version.clone()),
+          Some(_) => None,
+          None => candidates
+            .iter()
+            .find(|candidate| process_matches_game(process, &candidate.path))
+            .map(|candidate| candidate.version_directory.clone()),
+        };
+        if let Some(version) = version {
+          matched_version.get_or_insert(version);
+          matching.push(describe_process(process));
+        }
+      }
       let title = game_titles.get(game_id).cloned().unwrap_or_default();
+      let exe_paths: Vec<PathBuf> = candidates.iter().map(|candidate| candidate.path.clone()).collect();
       let reason = if matching.is_empty() {
         // Distinguish "the game closed" from "the game is running but our
         // candidate paths do not match it" — the second one is a bug report.
-        if candidate_name_seen(&processes, exe_paths) {
+        if candidate_name_seen(&processes, &exe_paths) {
           Some("exe_seen_but_unmatched")
         } else {
           Some("process_gone")
@@ -615,7 +665,7 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         None
       };
 
-      let state = update_ledger(
+      let update = update_ledger(
         *game_id,
         &title,
         !matching.is_empty(),
@@ -624,14 +674,20 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         dropped_ticks,
         now_ms,
       );
-      if !matches!(state, LedgerMatch::Lost) {
+      if let Some(transition) = update.transition {
+        let version = matched_version
+          .or_else(|| candidates.first().map(|candidate| candidate.version_directory.clone()))
+          .unwrap_or_default();
+        handle_session_transition(&app, *game_id, transition, &version);
+      }
+      if !matches!(update.state, LedgerMatch::Lost) {
         matched_game_ids.push(*game_id);
       }
     }
 
     // Games without executable candidates can never match: record why.
     for skip in skips.values() {
-      update_ledger(
+      let update = update_ledger(
         skip.game_id,
         &skip.title,
         false,
@@ -640,6 +696,9 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
         dropped_ticks,
         now_ms,
       );
+      if let Some(transition) = update.transition {
+        handle_session_transition(&app, skip.game_id, transition, "");
+      }
     }
 
     let match_ms = match_start.elapsed().as_millis() as u64;
@@ -786,15 +845,85 @@ async fn game_time_tracker_loop(mut stop_rx: watch::Receiver<bool>, app: tauri::
 }
 
 /// Records that no game could be matched this tick, e.g. an empty library scan.
-fn mark_all_unmatched(reason: &str) {
+/// Returns the games whose session ended, with their session minute counter.
+fn mark_all_unmatched(reason: &str) -> Vec<(i64, u64)> {
+  let mut ended = Vec::new();
   if let Ok(mut ledger) = tracker_ledger().lock() {
     for entry in ledger.values_mut() {
       if entry.matched {
         entry.matched = false;
+        entry.missing_ticks = 0;
+        ended.push((entry.game_id, session_minute_counter(entry)));
       }
       entry.last_skip_reason = Some(reason.to_string());
     }
   }
+  ended
+}
+
+/// Minutes recorded for a game so far: credited plus stored offline. Built
+/// from the tick counters, which only ever grow (offline minutes shrink again
+/// once they are replayed), so session deltas stay correct.
+fn session_minute_counter(entry: &GamePlayLedger) -> u64 {
+  entry.credited_ticks + entry.offline_ticks
+}
+
+/// A game started or stopped being matched by the tracker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SessionTransition {
+  /// The game is running now; `baseline_minutes` is the minute counter at
+  /// that moment.
+  Started { baseline_minutes: u64 },
+  /// The match was lost after the grace window; `total_minutes` is the
+  /// minute counter at that moment.
+  Ended { total_minutes: u64 },
+}
+
+/// Result of a ledger update: how to credit this tick, and whether the game's
+/// session started or ended.
+pub(crate) struct LedgerUpdate {
+  state: LedgerMatch,
+  transition: Option<SessionTransition>,
+}
+
+/// Records a session transition and emits `game-session` on its own task.
+/// Called after the ledger lock is released.
+fn handle_session_transition(
+  app: &tauri::AppHandle,
+  game_id: i64,
+  transition: SessionTransition,
+  version_directory: &str,
+) {
+  let event = match transition {
+    SessionTransition::Started { baseline_minutes } => {
+      game_sessions::record_session_started(
+        game_id,
+        version_directory,
+        tracker_log::now_ms(),
+        baseline_minutes,
+      );
+      GameSessionEvent {
+        game_id,
+        version_directory: version_directory.to_string(),
+        state: GameSessionState::Started,
+        minutes: None,
+      }
+    }
+    SessionTransition::Ended { total_minutes } => {
+      let (started_version, minutes) = game_sessions::record_session_ended(game_id, total_minutes);
+      GameSessionEvent {
+        game_id,
+        version_directory: if started_version.is_empty() {
+          version_directory.to_string()
+        } else {
+          started_version
+        },
+        state: GameSessionState::Ended,
+        minutes: Some(minutes),
+      }
+    }
+  };
+  game_sessions::spawn_emit_game_session(app, event);
 }
 
 /// Logs a missing-executable reason once per change instead of every tick.
@@ -820,6 +949,7 @@ fn log_skip_once(logged: &mut HashMap<i64, String>, skip: &SkipReason) {
 }
 
 /// What a ledger update means for the current tick.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LedgerMatch {
   /// Process still running — credit normally.
   Matched,
@@ -839,10 +969,14 @@ fn update_ledger(
   fallback_reason: Option<&str>,
   dropped_ticks: u64,
   now_ms: u64,
-) -> LedgerMatch {
+) -> LedgerUpdate {
   let Ok(mut ledger) = tracker_ledger().lock() else {
-    return if matched { LedgerMatch::Matched } else { LedgerMatch::Lost };
+    return LedgerUpdate {
+      state: if matched { LedgerMatch::Matched } else { LedgerMatch::Lost },
+      transition: None,
+    };
   };
+  let pending_offline = pending_offline_minutes_in(&ledger);
   let entry = ledger.entry(game_id).or_default();
   entry.game_id = game_id;
   if !title.is_empty() {
@@ -871,7 +1005,11 @@ fn update_ledger(
   }
 
   if matched {
+    let mut transition = None;
     if !entry.matched {
+      transition = Some(SessionTransition::Started {
+        baseline_minutes: session_minute_counter(entry),
+      });
       if entry.first_matched_at.is_none() {
         entry.first_matched_at = Some(now_ms);
         tracker_log::push_kv(
@@ -915,7 +1053,10 @@ fn update_ledger(
     entry.last_matched_at = Some(now_ms);
     entry.observed_seconds += TICK_INTERVAL_SECS;
     entry.last_skip_reason = None;
-    return LedgerMatch::Matched;
+    return LedgerUpdate {
+      state: LedgerMatch::Matched,
+      transition,
+    };
   }
 
   // Not matched on this tick.
@@ -943,7 +1084,10 @@ fn update_ledger(
           ("reason", reason.to_string()),
         ],
       );
-      return LedgerMatch::Grace;
+      return LedgerUpdate {
+        state: LedgerMatch::Grace,
+        transition: None,
+      };
     }
 
     entry.matched = false;
@@ -964,11 +1108,25 @@ fn update_ledger(
         ),
       ],
     );
-    log_session_summary(entry, pending_offline_minutes());
-    return LedgerMatch::Lost;
+    let total_minutes = session_minute_counter(entry);
+    // The ledger lock is held here: use the total taken before borrowing the
+    // entry (calling `pending_offline_minutes()` would lock it a second time).
+    log_session_summary(entry, pending_offline);
+    return LedgerUpdate {
+      state: LedgerMatch::Lost,
+      transition: Some(SessionTransition::Ended { total_minutes }),
+    };
   }
 
-  LedgerMatch::Lost
+  LedgerUpdate {
+    state: LedgerMatch::Lost,
+    transition: None,
+  }
+}
+
+/// [`pending_offline_minutes`] for a ledger whose lock is already held.
+fn pending_offline_minutes_in(ledger: &HashMap<i64, GamePlayLedger>) -> u64 {
+  ledger.values().map(|game| game.offline_minutes).sum()
 }
 
 /// One decisive line per game session: what was played, what was credited and
@@ -1424,15 +1582,122 @@ pub(crate) fn matches_game_file_name(game_exe: &Path, arg: &Path) -> bool {
   }
 }
 
-fn read_configured_launch_executable(version_dir: &Path) -> Option<PathBuf> {
+/// A tracked executable candidate and the installed version it belongs to.
+#[derive(Debug, Clone)]
+struct Candidate {
+  path: PathBuf,
+  version_directory: String,
+}
+
+/// "This emulator runs this ROM": how a game launched through a user-chosen
+/// emulator (outside the installation) is recognised.
+#[derive(Debug, Clone)]
+pub(crate) struct EmulatorRule {
+  pub emulator: PathBuf,
+  pub rom: PathBuf,
+  pub version_directory: String,
+}
+
+fn read_game_config(version_dir: &Path) -> Option<serde_json::Value> {
   let config_path = version_dir.join(".playstash.game.config.json");
   let content = fs::read_to_string(config_path).ok()?;
-  let value: serde_json::Value = serde_json::from_str(&content).ok()?;
-  let exe = value.get("launchexecutable")?.as_str()?;
-  if exe.trim().is_empty() {
-    return None;
+  serde_json::from_str(&content).ok()
+}
+
+fn config_string<'a>(config: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+  config
+    .get(key)
+    .and_then(|value| value.as_str())
+    .map(str::trim)
+    .filter(|value| !value.is_empty())
+}
+
+fn configured_launch_executable(config: &serde_json::Value) -> Option<PathBuf> {
+  config_string(config, "launchexecutable").map(PathBuf::from)
+}
+
+fn read_configured_launch_executable(version_dir: &Path) -> Option<PathBuf> {
+  read_game_config(version_dir).as_ref().and_then(configured_launch_executable)
+}
+
+/// Builds the emulator rule from `emulatorexecutable` (absolute) and
+/// `emulatorrom` (relative to the installation directory).
+pub(crate) fn emulator_rule_from_config(
+  config: &serde_json::Value,
+  installation_dir: &Path,
+  version_directory: &str,
+) -> Option<EmulatorRule> {
+  let emulator = PathBuf::from(config_string(config, "emulatorexecutable")?);
+  let rom_relative = config_string(config, "emulatorrom")?;
+  let rom = rom_relative
+    .split(['/', '\\'])
+    .filter(|part| !part.is_empty())
+    .fold(installation_dir.to_path_buf(), |acc, part| acc.join(part));
+  Some(EmulatorRule {
+    emulator,
+    rom,
+    version_directory: version_directory.to_string(),
+  })
+}
+
+/// Last path segment of an argument, accepting both `/` and `\` (Windows paths
+/// show up in Wine/Proton command lines on Linux).
+fn last_path_segment(value: &str) -> &str {
+  value
+    .trim_matches('"')
+    .rsplit(['/', '\\'])
+    .next()
+    .unwrap_or(value)
+}
+
+fn same_file_name(a: &str, b: &str) -> bool {
+  if cfg!(windows) {
+    a.eq_ignore_ascii_case(b)
+  } else {
+    a == b
   }
-  Some(PathBuf::from(exe))
+}
+
+/// Whether a process (its executable and argv) is the emulator running the
+/// rule's ROM. The emulator alone never matches: the ROM must appear in argv,
+/// either as the same path or with the same file name.
+pub(crate) fn emulator_process_matches(
+  exe: Option<&Path>,
+  cmd: &[String],
+  rule: &EmulatorRule,
+) -> bool {
+  let emulator_name = rule
+    .emulator
+    .file_name()
+    .map(|name| name.to_string_lossy().to_string())
+    .unwrap_or_default();
+  let is_emulator = exe.map(|exe| paths_match(&rule.emulator, exe)).unwrap_or(false)
+    || cmd.iter().any(|arg| {
+      paths_match(&rule.emulator, Path::new(arg.trim_matches('"')))
+        || (!emulator_name.is_empty() && same_file_name(last_path_segment(arg), &emulator_name))
+    });
+  if !is_emulator {
+    return false;
+  }
+
+  let rom_name = rule
+    .rom
+    .file_name()
+    .map(|name| name.to_string_lossy().to_string())
+    .unwrap_or_default();
+  cmd.iter().any(|arg| {
+    paths_match(&rule.rom, Path::new(arg.trim_matches('"')))
+      || (!rom_name.is_empty() && same_file_name(last_path_segment(arg), &rom_name))
+  })
+}
+
+fn process_runs_emulator_rule(process: &sysinfo::Process, rule: &EmulatorRule) -> bool {
+  let cmd: Vec<String> = process
+    .cmd()
+    .iter()
+    .map(|arg| arg.to_string_lossy().to_string())
+    .collect();
+  emulator_process_matches(process.exe(), &cmd, rule)
 }
 
 /// Builds the offline file content, keeping `accumulated_minutes` monotonic.
@@ -1831,6 +2096,9 @@ fn debug_tracker_scan_blocking(
         abs_paths.push(abs);
       }
     }
+    let emulator_rule = read_game_config(Path::new(&game.version_directory)).and_then(|config| {
+      emulator_rule_from_config(&config, &configured_install, &game.version_directory)
+    });
     let scan = executables::scan_launch_folder(&scan_dir, ScanLimits::TRACKER);
     for relative in &scan.executables {
       abs_paths.push(scan_dir.join(relative.replace('/', std::path::MAIN_SEPARATOR_STR)));
@@ -1838,7 +2106,13 @@ fn debug_tracker_scan_blocking(
 
     let matching: Vec<String> = processes
       .iter()
-      .filter(|p| abs_paths.iter().any(|exe| process_matches_game(p, exe)))
+      .filter(|p| {
+        abs_paths.iter().any(|exe| process_matches_game(p, exe))
+          || emulator_rule
+            .as_ref()
+            .map(|rule| process_runs_emulator_rule(p, rule))
+            .unwrap_or(false)
+      })
       .map(|p| {
         let cmd: Vec<String> = p.cmd().iter().map(|c| c.to_string_lossy().to_string()).collect();
         format!("[{}] {}", p.pid(), cmd.join(" "))
@@ -1855,7 +2129,17 @@ fn debug_tracker_scan_blocking(
       game_title: game.game_title.clone(),
       installation_directory: game.installation_directory.clone(),
       version_directory: game.version_directory.clone(),
-      exe_candidates: abs_paths.iter().map(|p| p.to_string_lossy().to_string()).collect(),
+      exe_candidates: abs_paths
+        .iter()
+        .map(|p| p.to_string_lossy().to_string())
+        .chain(emulator_rule.iter().map(|rule| {
+          format!(
+            "emulator {} with ROM {}",
+            rule.emulator.to_string_lossy(),
+            rule.rom.to_string_lossy()
+          )
+        }))
+        .collect(),
     });
   }
 
@@ -2001,6 +2285,106 @@ mod tests {
     let negative = r#"{"accumulated_minutes": -5}"#;
     let (clamped, _) = offline_payload(Some(negative), 1, 7, "https://example.test", 0);
     assert_eq!(clamped, 1);
+  }
+
+  fn rule() -> EmulatorRule {
+    let base = std::env::temp_dir().join("playstash-wp4-emulator-test");
+    EmulatorRule {
+      emulator: base.join("RetroArch").join("retroarch.exe"),
+      rom: base.join("Game").join("Installation").join("roms").join("Super Game.sfc"),
+      version_directory: base.join("Game").to_string_lossy().to_string(),
+    }
+  }
+
+  #[test]
+  fn emulator_alone_does_not_match() {
+    let rule = rule();
+    let cmd = vec![rule.emulator.to_string_lossy().to_string()];
+    assert!(!emulator_process_matches(Some(&rule.emulator), &cmd, &rule));
+    let other_rom = vec![
+      rule.emulator.to_string_lossy().to_string(),
+      "other.sfc".to_string(),
+    ];
+    assert!(!emulator_process_matches(Some(&rule.emulator), &other_rom, &rule));
+  }
+
+  #[test]
+  fn emulator_with_rom_path_matches() {
+    let rule = rule();
+    let cmd = vec![
+      rule.emulator.to_string_lossy().to_string(),
+      "-L".to_string(),
+      "core.dll".to_string(),
+      rule.rom.to_string_lossy().to_string(),
+    ];
+    assert!(emulator_process_matches(Some(&rule.emulator), &cmd, &rule));
+  }
+
+  #[test]
+  fn emulator_with_rom_name_in_argv_matches() {
+    let rule = rule();
+    // Wine/Proton command lines carry Windows paths and no host exe path.
+    let cmd = vec![
+      "Z:\\opt\\RetroArch\\retroarch.exe".to_string(),
+      "Z:\\games\\roms\\Super Game.sfc".to_string(),
+    ];
+    assert!(emulator_process_matches(None, &cmd, &rule));
+  }
+
+  #[test]
+  fn another_process_with_the_rom_does_not_match() {
+    let rule = rule();
+    let cmd = vec!["notepad.exe".to_string(), rule.rom.to_string_lossy().to_string()];
+    assert!(!emulator_process_matches(Some(Path::new("notepad.exe")), &cmd, &rule));
+  }
+
+  #[test]
+  fn builds_the_emulator_rule_from_the_config() {
+    let config = serde_json::json!({
+      "emulatorexecutable": "/opt/emu/emu",
+      "emulatorrom": "roms/game.bin",
+    });
+    let rule = emulator_rule_from_config(&config, Path::new("/games/x/Installation"), "/games/x").unwrap();
+    assert_eq!(rule.emulator, PathBuf::from("/opt/emu/emu"));
+    assert_eq!(
+      rule.rom,
+      Path::new("/games/x/Installation").join("roms").join("game.bin")
+    );
+    assert!(emulator_rule_from_config(&serde_json::json!({"emulatorexecutable": "/e"}), Path::new("/i"), "/v").is_none());
+    assert!(emulator_rule_from_config(&serde_json::json!({}), Path::new("/i"), "/v").is_none());
+  }
+
+  #[test]
+  fn ledger_emits_session_transitions() {
+    let id = 900_201;
+    let start = update_ledger(id, "Test", true, &["game.exe".to_string()], None, 0, 1_000);
+    assert_eq!(start.state, LedgerMatch::Matched);
+    assert_eq!(start.transition, Some(SessionTransition::Started { baseline_minutes: 0 }));
+
+    // Still running: no new transition.
+    let running = update_ledger(id, "Test", true, &[], None, 0, 61_000);
+    assert_eq!(running.transition, None);
+    record_credit(id, CreditOutcome::Credited { server_minutes: None });
+    record_credit(id, CreditOutcome::Offline { reason: "test".to_string() });
+
+    // Missing for the grace ticks keeps the session open...
+    for tick in 0..MATCH_GRACE_TICKS {
+      let grace = update_ledger(id, "Test", false, &[], Some("process_gone"), 0, 121_000 + tick);
+      assert_eq!(grace.state, LedgerMatch::Grace);
+      assert_eq!(grace.transition, None);
+    }
+    // ...then the match is lost and the session ends with its minutes.
+    let lost = update_ledger(id, "Test", false, &[], Some("process_gone"), 0, 300_000);
+    assert_eq!(lost.state, LedgerMatch::Lost);
+    assert_eq!(lost.transition, Some(SessionTransition::Ended { total_minutes: 2 }));
+
+    // Not running and not matched before: nothing happens.
+    let idle = update_ledger(id, "Test", false, &[], Some("process_gone"), 0, 360_000);
+    assert_eq!(idle.transition, None);
+
+    // Playing again starts a new session from the current counter.
+    let resumed = update_ledger(id, "Test", true, &[], None, 0, 420_000);
+    assert_eq!(resumed.transition, Some(SessionTransition::Started { baseline_minutes: 2 }));
   }
 
   #[test]

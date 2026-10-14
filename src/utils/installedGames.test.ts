@@ -27,6 +27,7 @@ describe("normalizeInstalledGame", () => {
       installationDirectory: "/x/Game",
       versionDirectory: "v1.0.0",
       installedAt: 123,
+      lastLaunchedAt: 0,
       lastPlayedAt: 0,
     });
   });
@@ -40,6 +41,12 @@ describe("normalizeInstalledGame", () => {
     expect(info.gameId).toBe(5);
     expect(info.gameTitle).toBe("Legacy");
     expect(info.installedAt).toBe(456);
+  });
+
+  it("uses the local launch time as last played until the server answers", () => {
+    const info = normalizeInstalledGame({ gameId: 1, last_launched_at: 789 });
+    expect(info.lastLaunchedAt).toBe(789);
+    expect(info.lastPlayedAt).toBe(789);
   });
 });
 

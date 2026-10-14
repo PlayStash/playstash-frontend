@@ -17,7 +17,10 @@ export function normalizeInstalledGame(raw: any): InstalledGameInfo {
       raw.installationDirectory ?? raw.installation_directory ?? "",
     versionDirectory: raw.versionDirectory ?? raw.version_directory ?? "",
     installedAt: Number(raw.installedAt ?? raw.installed_at ?? 0),
-    lastPlayedAt: 0,
+    lastLaunchedAt: Number(raw.lastLaunchedAt ?? raw.last_launched_at ?? 0),
+    // Until the server's last-played time is merged in, the local launch time
+    // keeps the "recently played" order working offline.
+    lastPlayedAt: Number(raw.lastLaunchedAt ?? raw.last_launched_at ?? 0),
   };
 }
 

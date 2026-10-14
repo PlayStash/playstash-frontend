@@ -1,5 +1,23 @@
 # PlayStash Frontend Changelog
 
+## 17.3.0
+
+Status: Unreleased.
+
+### Changes
+
+<!-- WP4 -->
+- Play now works the same everywhere (game page, library card, fullscreen library): it uses launch profiles and the server's default executable, and picks and saves the first suitable executable automatically when none is configured.
+- Added Emulator / ROM launch in Game Settings → Launch Options: start a game's ROM with your own emulator from Play, desktop shortcuts and Steam, with playtime tracked while the emulator runs that ROM. "Use native executable" switches back.
+- Launch Options can now apply a server launch profile, copy the executable path relative to the installation and create a desktop icon; changing the executable updates an existing desktop shortcut.
+- Uninstalling now honours an install type you forced during installation, accepts uninstallers that ask for a reboot (exit code 3010), keeps the files when an uninstaller fails, finds the configured uninstaller anywhere in the installation and removes the game's desktop shortcut.
+- The fullscreen library (Big Picture) opens on your installed games: pick with arrow keys, D-pad or stick, play with Enter or A (or a double-click) and close with Esc or B. A new setting opens it when the client starts.
+- Added a Reset button that restores the server's default list of ignored executables. An executable is now ignored when its name contains an ignored entry (e.g. "setup" also hides "GameSetup_x64").
+- Installed games remember when you last launched them, so "recently played" ordering also works offline.
+- Launch parameters with quoted paths containing spaces now work on Linux and macOS.
+- Fixed playtime tracking freezing when a running game was closed, and the exit of games started as administrator on Windows was never noticed.
+<!-- /WP4 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.

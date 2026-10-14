@@ -6,6 +6,7 @@ import { getRootPaths } from "@/utils/rootPaths";
 import { onGameUpdated } from "@/utils/gameUpdates";
 import { getServerNamespace, resolveApiMediaBlob } from "@/utils/mediaCache";
 import { normalizeInstalledGame } from "@/utils/installedGames";
+import { INSTALLED_GAMES_CHANGED_EVENT } from "@/utils/installedGameLookup";
 
 export interface InstalledGameInfo {
   gameId: number;
@@ -21,6 +22,8 @@ export interface InstalledGameInfo {
   installedAt: number;
   /** Unix timestamp (ms) of the last time the game was played; 0 if unknown. */
   lastPlayedAt: number;
+  /** Unix timestamp (ms) of the last launch through this client; 0 if never. */
+  lastLaunchedAt?: number;
 }
 
 // Games whose metadata + images have already been cached during this app
@@ -151,7 +154,12 @@ export function useInstalledGames() {
       setInstalledGames((prev) =>
         prev.map((g) => ({
           ...g,
-          lastPlayedAt: lastPlayed.get(g.gameId) ?? 0,
+          // The local launch time also counts, so a game launched while the
+          // server was unreachable still sorts first.
+          lastPlayedAt: Math.max(
+            lastPlayed.get(g.gameId) ?? 0,
+            g.lastLaunchedAt ?? 0,
+          ),
         })),
       );
     } catch {
@@ -241,6 +249,14 @@ export function useInstalledGames() {
 
   useEffect(() => {
     fetchInstalledGames();
+  }, [fetchInstalledGames]);
+
+  // Installs/uninstalls done outside this hook (e.g. from a desktop command).
+  useEffect(() => {
+    const handleChange = () => void fetchInstalledGames();
+    window.addEventListener(INSTALLED_GAMES_CHANGED_EVENT, handleChange);
+    return () =>
+      window.removeEventListener(INSTALLED_GAMES_CHANGED_EVENT, handleChange);
   }, [fetchInstalledGames]);
 
   useEffect(() => {

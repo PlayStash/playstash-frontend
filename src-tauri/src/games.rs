@@ -1,4 +1,5 @@
 use crate::events::{emit_game_launch_failed, InstalledGameInfo};
+use crate::game_sessions::LaunchIdentity;
 use crate::executables::{self, ScanLimits};
 use crate::settings::load_settings;
 use crate::util::{
@@ -154,6 +155,8 @@ pub(crate) fn list_installed_games_blocking(
                 .map(|d| d.as_millis() as i64)
                 .unwrap_or(0);
 
+            let last_launched_at = crate::launch_support::read_last_launched(&cfg_value);
+
             results.push(InstalledGameInfo {
                 game_id: resolved_game_id,
                 game_title: resolved_game_title.clone(),
@@ -165,6 +168,7 @@ pub(crate) fn list_installed_games_blocking(
                 installation_directory: installations_dir.to_string_lossy().to_string(),
                 version_directory: version_path_str,
                 installed_at,
+                last_launched_at,
             });
         }
     }
@@ -497,6 +501,7 @@ pub(crate) async fn launch_game(
     umu_store: Option<String>,
     umu_proton_path: Option<String>,
     umu_wine_prefix: Option<String>,
+    absolute_executable: Option<String>,
 ) -> Result<(), String> {
     // Launching can first install umu-launcher (a multi-megabyte download) and
     // spawns processes, so it must not run on the UI thread: the setup overlay
@@ -515,6 +520,7 @@ pub(crate) async fn launch_game(
             umu_store,
             umu_proton_path,
             umu_wine_prefix,
+            absolute_executable,
         )
     })
     .await
@@ -535,14 +541,23 @@ fn launch_game_blocking(
     umu_store: Option<String>,
     umu_proton_path: Option<String>,
     umu_wine_prefix: Option<String>,
+    absolute_executable: Option<String>,
 ) -> Result<(), String> {
     let root = PathBuf::from(&installation_path);
-    let exe_path = root.join(executable_relative_path.replace('/', std::path::MAIN_SEPARATOR_STR));
-    if !exe_path.exists() || !exe_path.is_file() {
-        return Err("Selected executable does not exist".to_string());
-    }
+    // An emulator launch uses an executable outside the installation (an
+    // absolute path); everything else is relative to the installation.
+    let exe_path = resolve_launch_executable(
+        &root,
+        &executable_relative_path,
+        absolute_executable.as_deref(),
+    )?;
 
     let working_dir = exe_path.parent().unwrap_or(&root);
+    let identity = LaunchIdentity {
+        game_id,
+        version_directory: version_directory.clone(),
+        installation_path: installation_path.clone(),
+    };
     let settings = load_settings(&app);
     let restore_on_exit = settings.minimize_on_game_launch;
 
@@ -574,6 +589,7 @@ fn launch_game_blocking(
             umu_wine_prefix.as_deref(),
             restore_on_exit,
             Some(log),
+            installation_path.clone(),
         );
     }
 
@@ -586,6 +602,7 @@ fn launch_game_blocking(
             &working_dir,
             Some(params_str),
             restore_on_exit,
+            identity,
         );
     }
 
@@ -598,7 +615,7 @@ fn launch_game_blocking(
         if let Some(ref params) = launch_parameters {
             let params = params.trim();
             if !params.is_empty() {
-                for arg in params.split_whitespace() {
+                for arg in crate::launch_support::split_launch_args(params) {
                     args.push(arg.into());
                 }
             }
@@ -627,6 +644,7 @@ fn launch_game_blocking(
                     ADMIN_LAUNCH_GRACE,
                     restore_on_exit,
                     log,
+                    identity,
                 );
                 return Ok(());
             }
@@ -658,6 +676,7 @@ fn launch_game_blocking(
                     ADMIN_LAUNCH_GRACE,
                     restore_on_exit,
                     log,
+                    identity,
                 );
                 Ok(())
             }
@@ -689,7 +708,7 @@ fn launch_game_blocking(
             }
             #[cfg(not(windows))]
             {
-                for arg in params.split_whitespace() {
+                for arg in crate::launch_support::split_launch_args(params) {
                     command.arg(arg);
                 }
             }
@@ -719,6 +738,7 @@ fn launch_game_blocking(
                 LAUNCH_GRACE,
                 restore_on_exit,
                 log,
+                identity,
             );
             Ok(())
         }
@@ -733,6 +753,7 @@ fn launch_game_blocking(
                 &working_dir,
                 Some(params_str),
                 restore_on_exit,
+                identity,
             )
         }
         Err(e) => {
@@ -744,6 +765,32 @@ fn launch_game_blocking(
 }
 
 const LAUNCH_GRACE: Duration = Duration::from_secs(5);
+
+/// Resolves the executable to start: an absolute emulator path when given
+/// (it must exist), otherwise the relative path inside the installation.
+fn resolve_launch_executable(
+    root: &Path,
+    executable_relative_path: &str,
+    absolute_executable: Option<&str>,
+) -> Result<PathBuf, String> {
+    let absolute = absolute_executable
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let exe_path = match absolute {
+        Some(path) => {
+            let path = PathBuf::from(path);
+            if !path.is_absolute() {
+                return Err("The emulator executable must be an absolute path".to_string());
+            }
+            path
+        }
+        None => root.join(executable_relative_path.replace('/', std::path::MAIN_SEPARATOR_STR)),
+    };
+    if !exe_path.exists() || !exe_path.is_file() {
+        return Err("Selected executable does not exist".to_string());
+    }
+    Ok(exe_path)
+}
 #[cfg(target_os = "linux")]
 const ADMIN_LAUNCH_GRACE: Duration = Duration::from_secs(30);
 
@@ -801,12 +848,18 @@ pub(crate) fn restore_main_window(app: &tauri::AppHandle) {
     }
 }
 
-/// Watches an elevated Windows game process (launched via UAC) so we can
-/// restore the playstash window once the game quits. `ShellExecuteExW` with
-/// `SEE_MASK_NOCLOSEPROCESS` hands us a handle to the elevated process that we
-/// can wait on even across the UAC elevation boundary.
+/// Watches an elevated Windows game process (launched via UAC): reports its
+/// exit as `game-exited` and, with "minimize on launch", hides the playstash
+/// window while it runs. `ShellExecuteExW` with `SEE_MASK_NOCLOSEPROCESS` hands
+/// us a handle to the elevated process that we can wait on even across the UAC
+/// elevation boundary.
 #[cfg(windows)]
-fn spawn_admin_launch_monitor(app: tauri::AppHandle, handle: winapi::um::winnt::HANDLE) {
+fn spawn_admin_launch_monitor(
+    app: tauri::AppHandle,
+    handle: winapi::um::winnt::HANDLE,
+    restore_on_exit: bool,
+    identity: LaunchIdentity,
+) {
     use std::os::windows::io::{AsRawHandle, FromRawHandle};
 
     // Take ownership of the raw process handle up front: `OwnedHandle` is
@@ -819,9 +872,10 @@ fn spawn_admin_launch_monitor(app: tauri::AppHandle, handle: winapi::um::winnt::
     };
 
     thread::spawn(move || {
-        // This monitor is only spawned when "minimize on launch" is enabled, so
-        // hide the window up front and restore it once the game quits.
-        hide_main_window(&app);
+        if restore_on_exit {
+            hide_main_window(&app);
+        }
+        let start = Instant::now();
 
         // Poll until the elevated process exits.
         loop {
@@ -836,7 +890,25 @@ fn spawn_admin_launch_monitor(app: tauri::AppHandle, handle: winapi::um::winnt::
             }
         }
 
-        restore_main_window(&app);
+        let mut exit_code: u32 = 0;
+        let valid = unsafe {
+            winapi::um::processthreadsapi::GetExitCodeProcess(
+                owned.as_raw_handle() as winapi::um::winnt::HANDLE,
+                &mut exit_code,
+            )
+        };
+        let ran = start.elapsed();
+
+        if restore_on_exit {
+            restore_main_window(&app);
+        }
+        crate::game_sessions::emit_game_exited(
+            &app,
+            &identity,
+            (valid != 0).then_some(exit_code as i32),
+            ran.as_millis() as u64,
+            ran >= LAUNCH_GRACE,
+        );
     });
 }
 
@@ -850,6 +922,7 @@ fn launch_windows_admin(
     working_dir: &Path,
     launch_parameters: Option<&str>,
     restore_on_exit: bool,
+    identity: LaunchIdentity,
 ) -> Result<(), String> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
@@ -893,11 +966,12 @@ fn launch_windows_admin(
         ));
     }
 
-    if restore_on_exit {
-        spawn_admin_launch_monitor(app, info.hProcess);
-    } else {
-        unsafe { winapi::um::handleapi::CloseHandle(info.hProcess) };
+    // Always watch the elevated process so its exit is reported; the window
+    // is only hidden while it runs with "minimize on launch".
+    if info.hProcess.is_null() {
+        return Ok(());
     }
+    spawn_admin_launch_monitor(app, info.hProcess, restore_on_exit, identity);
     Ok(())
 }
 
@@ -910,6 +984,7 @@ fn spawn_launch_monitor(
     grace: Duration,
     restore_on_exit: bool,
     log: std::sync::Arc<crate::launch_log::LaunchLog>,
+    identity: LaunchIdentity,
 ) {
     thread::spawn(move || {
         // When the user has enabled "minimize on launch", tuck the playstash
@@ -941,6 +1016,13 @@ fn spawn_launch_monitor(
                     log.finish_failed(&app, None);
                     clean_up_launch_logs(&out_path, &err_path);
                     restore_main_window(&app);
+                    crate::game_sessions::emit_game_exited(
+                        &app,
+                        &identity,
+                        None,
+                        start.elapsed().as_millis() as u64,
+                        launched_running,
+                    );
                     return;
                 }
             }
@@ -971,6 +1053,13 @@ fn spawn_launch_monitor(
         } else {
             log.finish_success(&app, exit_code);
         }
+        crate::game_sessions::emit_game_exited(
+            &app,
+            &identity,
+            exit_code,
+            start.elapsed().as_millis() as u64,
+            launched_running,
+        );
     });
 }
 
@@ -1059,7 +1148,30 @@ impl LaunchFileTail {
 
 #[cfg(test)]
 mod tests {
-    use super::validate_external_url;
+    use super::{resolve_launch_executable, validate_external_url};
+    use std::path::Path;
+
+    #[test]
+    fn emulator_path_must_be_absolute_and_exist() {
+        let root = std::env::temp_dir();
+        assert!(resolve_launch_executable(&root, "missing.exe", None).is_err());
+        assert!(resolve_launch_executable(&root, "", Some("relative/emu.exe")).is_err());
+        let missing = root.join("playstash-wp4-missing-emulator.exe");
+        assert!(resolve_launch_executable(
+            Path::new("/unused"),
+            "game.exe",
+            Some(missing.to_string_lossy().as_ref())
+        )
+        .is_err());
+
+        let exe = root.join(format!("playstash-wp4-emu-{}.exe", std::process::id()));
+        std::fs::write(&exe, "x").unwrap();
+        let resolved =
+            resolve_launch_executable(Path::new("/unused"), "game.exe", Some(exe.to_string_lossy().as_ref()))
+                .unwrap();
+        assert_eq!(resolved, exe);
+        let _ = std::fs::remove_file(&exe);
+    }
 
     #[test]
     fn accepts_http_and_https_urls() {
