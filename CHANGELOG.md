@@ -79,6 +79,7 @@ Status: Unreleased.
 - Desktop: the first time the window is closed to the tray, a notification explains that PlayStash keeps running in the background.
 - Windows: the taskbar jump list offers Library, Downloads, Community, Settings and Exit, plus your five most recently played or installed games to start directly; it is cleared when you log out.
 - Desktop: "Minimize PlayStash to System Tray on Startup" now only applies when PlayStash is started with your computer; starting it yourself always shows the window.
+- The whole interface is now available in German (Settings → Appearance → Language), including the settings search; content from the server such as game descriptions stays in its original language.
 
 ### Breaking Changes & Migration
 
