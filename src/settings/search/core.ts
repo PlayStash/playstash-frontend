@@ -44,13 +44,6 @@ export const coreSearchEntries: SearchableSetting[] = [
     keywords: ["delete", "cleanup", "space", "source", "files"],
     desktopOnly: true,
   },
-  {
-    id: "downloads-clear-image-cache",
-    title: "Clear image cache",
-    description: "Remove cached covers and background images",
-    category: "downloads",
-    keywords: ["cache", "images", "covers", "backgrounds", "clear"],
-  },
   // Appearance
   {
     id: "appearance-language",

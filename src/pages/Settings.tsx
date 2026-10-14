@@ -61,7 +61,6 @@ import {
 } from "@/components/tailwind/dialog";
 import { isAnalyticsEnabled, setAnalyticsEnabled } from "@/utils/analytics";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
-import { clearImageCache } from "@/utils/mediaCache";
 import { WP7_SECTIONS } from "@/components/settings/wp7Sections";
 import {
   formatCpuMemoryLabel,
@@ -100,7 +99,6 @@ import {
   XMarkIcon,
   FolderIcon,
   FolderOpenIcon,
-  TrashIcon,
   SpeakerWaveIcon,
   UserCircleIcon,
   PaintBrushIcon,
@@ -260,16 +258,10 @@ const CATEGORY_ORDER: SettingsCategory[] = [
  * `src/components/settings/`.
  */
 const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
-  account: [
-    { id: "wp6-account", component: AccountSettings },
-  ],
-  appearance: [
-  ],
-  themes: [
-    ...WP7_SECTIONS.themes,
-  ],
-  sound: [
-  ],
+  account: [{ id: "wp6-account", component: AccountSettings }],
+  appearance: [],
+  themes: [...WP7_SECTIONS.themes],
+  sound: [],
   downloads: [
     {
       id: "wp5-download-extras",
@@ -284,9 +276,7 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
       desktopOnly: true,
     },
   ],
-  startup: [
-    ...WP7_SECTIONS.startup,
-  ],
+  startup: [...WP7_SECTIONS.startup],
   community: [
     { id: "wp2-community", component: CommunitySettings, desktopOnly: true },
   ],
@@ -298,15 +288,10 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
     },
     { id: "wp3-cloud-saves", component: CloudSaveSettings, desktopOnly: true },
   ],
-  storage: [
-    ...WP7_SECTIONS.storage,
-  ],
+  storage: [...WP7_SECTIONS.storage],
   privacy: [],
-  about: [
-  ],
-  developer: [
-    ...WP7_SECTIONS.developer,
-  ],
+  about: [],
+  developer: [...WP7_SECTIONS.developer],
 };
 
 function visibleCategorySections(
@@ -954,36 +939,6 @@ export default function Settings() {
     await persistWinePrefix(null);
   };
 
-  const handleClearImageCache = async () => {
-    const confirmed = await showAlert({
-      title: "Clear image cache?",
-      description:
-        "This removes all cached game covers and background images. They will be re-downloaded from your server the next time they're shown.",
-      affirmativeText: "Clear cache",
-      negativeText: "Cancel",
-      tone: "warning",
-    });
-    if (!confirmed) return;
-
-    try {
-      const removed = await clearImageCache();
-      await showAlert({
-        title: "Image cache cleared",
-        description:
-          removed > 0
-            ? `Removed ${removed} cached image${removed === 1 ? "" : "s"}.`
-            : "No cached images were found.",
-        tone: "success",
-      });
-    } catch {
-      await showAlert({
-        title: "Failed to clear cache",
-        description: "Something went wrong while clearing the image cache.",
-        tone: "danger",
-      });
-    }
-  };
-
   const handleCopySettingsDump = async () => {
     const settings: Record<string, string | null> = {};
     try {
@@ -1610,26 +1565,6 @@ export default function Settings() {
                         </SettingsRow>
                       </SettingsGroup>
                     )}
-
-                    <SettingsGroup
-                      id="setting-downloads-clear-image-cache"
-                      className={rowHighlight("downloads-clear-image-cache")}
-                      caption="Storage"
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title="Clear image cache"
-                          description="Remove all cached game covers and background images so they're re-downloaded from your server."
-                        />
-                        <Button
-                          outline
-                          onClick={() => void handleClearImageCache()}
-                        >
-                          <TrashIcon className="size-4" />
-                          Clear cache
-                        </Button>
-                      </SettingsRow>
-                    </SettingsGroup>
                   </>
                 )}
 
