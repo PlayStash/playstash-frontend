@@ -57,6 +57,7 @@ isomage = "2.1.0"
 # ── WP2 community: begin ──
 # ── WP2 community: end ──
 # ── WP3 cloud-saves: begin ──
+serde_yaml = "0.9"
 # ── WP3 cloud-saves: end ──
 # ── WP4 launch: begin ──
 # ── WP4 launch: end ──
@@ -74,6 +75,7 @@ winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser
 # ── WP2 community: begin ──
 # ── WP2 community: end ──
 # ── WP3 cloud-saves: begin ──
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading"] }
 # ── WP3 cloud-saves: end ──
 # ── WP4 launch: begin ──
 # ── WP4 launch: end ──
@@ -111,6 +113,7 @@ webkit2gtk = { version = "2", features = ["v2_16"] }
 # ── WP2 community: begin ──
 # ── WP2 community: end ──
 # ── WP3 cloud-saves: begin ──
+libc = "0.2"
 # ── WP3 cloud-saves: end ──
 # ── WP4 launch: begin ──
 # ── WP4 launch: end ──

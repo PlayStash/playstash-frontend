@@ -30,6 +30,8 @@ mod shortcuts;
 // ── WP2 community: begin ──
 // ── WP2 community: end ──
 // ── WP3 cloud-saves: begin ──
+mod children;
+mod cloud_saves;
 // ── WP3 cloud-saves: end ──
 // ── WP4 launch: begin ──
 mod game_sessions;
@@ -615,6 +617,14 @@ pub fn run() {
       // ── WP2 community: begin ──
       // ── WP2 community: end ──
       // ── WP3 cloud-saves: begin ──
+      // Helper processes (ludusavi) must not outlive the app window.
+      if let Some(window) = app.get_webview_window("main") {
+        window.on_window_event(|event| {
+          if matches!(event, tauri::WindowEvent::Destroyed) {
+            children::kill_all();
+          }
+        });
+      }
       // ── WP3 cloud-saves: end ──
       // ── WP4 launch: begin ──
       // ── WP4 launch: end ──
@@ -730,6 +740,17 @@ pub fn run() {
       // ── WP2 community: begin ──
       // ── WP2 community: end ──
       // ── WP3 cloud-saves: begin ──
+      cloud_saves::get_cloud_save_settings,
+      cloud_saves::set_cloud_saves_enabled,
+      cloud_saves::set_cloud_save_use_primary_manifest,
+      cloud_saves::set_cloud_save_custom_manifests,
+      cloud_saves::get_ludusavi_status,
+      cloud_saves::cloud_save_match_title,
+      cloud_saves::get_cloud_save_installation_id,
+      cloud_saves::get_cloud_save_installation_ids,
+      cloud_saves::cloud_save_backup,
+      cloud_saves::cloud_save_restore,
+      cloud_saves::download_to_file,
       // ── WP3 cloud-saves: end ──
       // ── WP4 launch: begin ──
       game_sessions::get_active_game_sessions,
