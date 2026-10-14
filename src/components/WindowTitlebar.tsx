@@ -1,5 +1,10 @@
-import { ArrowPathIcon, MinusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  MinusIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { isTauriApp } from "@/utils/tauri";
+import { useTranslation } from "@/i18n";
 
 async function minimizeWindow() {
   const { getCurrentWindow } = await import("@tauri-apps/api/window");
@@ -25,6 +30,7 @@ const controlButtonClassName =
   "flex w-11 cursor-pointer items-center justify-center text-ps-muted transition-colors hover:bg-white/5 hover:text-ps-text focus:outline-none";
 
 export default function WindowTitlebar() {
+  const { t } = useTranslation();
   // Only rendered inside the Tauri desktop shell; hidden in plain browser mode.
   if (!isTauriApp()) {
     return null;
@@ -38,7 +44,7 @@ export default function WindowTitlebar() {
       <div className="flex items-stretch">
         <button
           type="button"
-          aria-label="Refresh"
+          aria-label={t("common.refresh")}
           onClick={() => reloadWindow()}
           className={controlButtonClassName}
         >
@@ -47,7 +53,7 @@ export default function WindowTitlebar() {
         <div className="my-2 w-px bg-ps-line" aria-hidden="true" />
         <button
           type="button"
-          aria-label="Minimize"
+          aria-label={t("shell.titlebar.minimize")}
           onClick={() => void minimizeWindow()}
           className={controlButtonClassName}
         >
@@ -55,7 +61,7 @@ export default function WindowTitlebar() {
         </button>
         <button
           type="button"
-          aria-label="Maximize"
+          aria-label={t("shell.titlebar.maximize")}
           onClick={() => void toggleMaximizeWindow()}
           className={controlButtonClassName}
         >
@@ -73,7 +79,7 @@ export default function WindowTitlebar() {
         </button>
         <button
           type="button"
-          aria-label="Close"
+          aria-label={t("common.close")}
           onClick={() => void closeWindow()}
           className={`${controlButtonClassName} hover:bg-red-500 hover:text-white`}
         >

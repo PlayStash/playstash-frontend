@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "./tailwind/button";
 import { Input } from "./tailwind/input";
+import { translate, useTranslation } from "@/i18n";
 
 export function PostInstallSettings() {
+  const { t } = useTranslation();
   const [script, setScript] = useState("");
   const [argumentsJson, setArgumentsJson] = useState('["%F"]');
   const [loaded, setLoaded] = useState(false);
@@ -24,7 +26,7 @@ export function PostInstallSettings() {
         setLoaded(true);
       })
       .catch(() => {
-        if (!cancelled) setMessage("Couldn't load post-install settings.");
+        if (!cancelled) setMessage(translate("game.postInstall.loadFailed"));
       });
     return () => {
       cancelled = true;
@@ -35,33 +37,30 @@ export function PostInstallSettings() {
       id="setting-downloads-post-install"
       className="space-y-3 px-4 py-3 text-left"
     >
-      <p className="text-sm font-medium text-ps-text">Post-install script</p>
+      <p className="text-sm font-medium text-ps-text">
+        {t("game.postInstall.title")}
+      </p>
       <p className="text-xs text-ps-muted">
-        Optional script on this computer, run once after each successful
-        installation. Leave the path empty to disable. Scripts run with your
-        account permissions.
+        {t("game.postInstall.description")}
       </p>
       <label className="block text-sm text-ps-muted">
-        Absolute script or executable path
+        {t("game.postInstall.path")}
         <Input
-          aria-label="Post-install script path"
+          aria-label={t("game.postInstall.pathLabel")}
           value={script}
           onChange={(event) => setScript(event.target.value)}
           placeholder="/media/cleanup.sh"
         />
       </label>
       <label className="block text-sm text-ps-muted">
-        Arguments (JSON array)
+        {t("game.postInstall.arguments")}
         <Input
-          aria-label="Post-install script arguments"
+          aria-label={t("game.postInstall.argumentsLabel")}
           value={argumentsJson}
           onChange={(event) => setArgumentsJson(event.target.value)}
         />
       </label>
-      <p className="text-xs text-ps-muted">
-        %F is replaced with the installation folder as one literal argument.
-        Executables, .sh and .ps1 scripts are supported.
-      </p>
+      <p className="text-xs text-ps-muted">{t("game.postInstall.hint")}</p>
       <Button
         outline
         disabled={!loaded}
@@ -72,22 +71,22 @@ export function PostInstallSettings() {
               !Array.isArray(args) ||
               args.some((argument) => typeof argument !== "string")
             )
-              throw new Error("Arguments must be a JSON array of strings.");
+              throw new Error(t("game.postInstall.argumentsInvalid"));
             const { invoke } = await import("@tauri-apps/api/core");
             await invoke("set_post_install_config", {
               config: { script: script.trim() || null, arguments: args },
             });
             setMessage(
               script.trim()
-                ? "Post-install script enabled."
-                : "Post-install script disabled.",
+                ? t("game.postInstall.enabled")
+                : t("game.postInstall.disabled"),
             );
           } catch (error) {
             setMessage(String(error));
           }
         }}
       >
-        Save post-install settings
+        {t("game.postInstall.save")}
       </Button>
       {message && (
         <p role="status" className="text-sm text-ps-muted">

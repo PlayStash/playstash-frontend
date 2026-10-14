@@ -20,6 +20,7 @@ import { useOnlineStatus } from "@/context/OfflineContext";
 import { useActiveGames } from "@/hooks/useActiveGames";
 import { translate, useTranslation, type TranslationKey } from "@/i18n";
 import {
+  ACTIVITY_STATE_LABELS,
   activityNotification,
   activityPayload,
   applyActivityEvent,
@@ -271,6 +272,10 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
     chatTitle: tRef.current("community.notify.chatTitle"),
     activityTitle: tRef.current("community.notify.activityTitle"),
     unknownUser: tRef.current("community.userFallback"),
+    state: (state) => {
+      const key = ACTIVITY_STATE_LABELS[state];
+      return key ? tRef.current(key) : state;
+    },
   });
 
   const userName = useCallback(

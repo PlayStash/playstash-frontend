@@ -24,6 +24,8 @@ import {
   type ActivationPollResult,
 } from "@/components/login/PendingActivation";
 import { IncompatibleServerDialog } from "@/components/login/IncompatibleServerDialog";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 interface FormState {
   username?: string;
@@ -36,6 +38,7 @@ interface FormState {
 }
 
 export function Register() {
+  const { t } = useTranslation();
   const { loginBasic } = useAuth();
   const navigate = useNavigate();
   const [incompatibleOpen, setIncompatibleOpen] = useState(false);
@@ -142,7 +145,7 @@ export function Register() {
       if (!canSubmit() || submitting) return;
       const chosenServer = confirmedServer;
       if (!chosenServer) {
-        setMsg("Missing server URL");
+        setMsg(t("register.missingServer"));
         return;
       }
       setSubmitting(true);
@@ -184,14 +187,17 @@ export function Register() {
         if (!res.ok && res.status !== 406) {
           const txt = await res.text();
           throw new Error(
-            `Register failed (${res.status}): ${txt || res.statusText}`,
+            fillTemplate(t("register.failed"), {
+              status: res.status,
+              details: txt || res.statusText,
+            }),
           );
         }
         const created = (await res.json().catch(() => ({}))) as {
           activated?: boolean;
         };
         setSuccess(true);
-        setMsg("Registration successful. You can now sign in.");
+        setMsg(t("register.success"));
         // Like the WPF client: sign in right away (desktop: as a new
         // profile). An account that still needs an admin's approval waits on
         // the pending screen, which retries the login every 5 seconds.
@@ -232,12 +238,12 @@ export function Register() {
           if (isPendingActivationError(loginError)) waitForActivation();
         }
       } catch (err: any) {
-        setMsg(err?.message || "Registration error");
+        setMsg(err?.message || t("register.error"));
       } finally {
         setSubmitting(false);
       }
     },
-    [form, confirmedServer, submitting, canSubmit, loginBasic, navigate],
+    [form, confirmedServer, submitting, canSubmit, loginBasic, navigate, t],
   );
 
   const isInvalid = (field: string) => {
@@ -274,32 +280,29 @@ export function Register() {
       />
       <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
       <div className="space-y-3">
-        <Heading>Create your account</Heading>
-        <Text>
-          Point at your server, confirm requirements, then create a local
-          launcher account.
-        </Text>
+        <Heading>{t("register.title")}</Heading>
+        <Text>{t("register.description")}</Text>
       </div>
 
       {!confirmedServer && !backendServed && (
         <>
           <Field>
             <Label>
-              Server URL{" "}
+              {t("register.serverUrl")}{" "}
               <span className="text-rose-400" aria-hidden>
                 *
               </span>
             </Label>
             <Input
               name="server"
-              placeholder="example.com or https://example.com"
+              placeholder={t("register.serverPlaceholder")}
               value={serverInput}
               onChange={onServerInput}
               autoFocus
             />
           </Field>
           <Button type="submit" className="w-full">
-            Continue
+            {t("accounts.form.continue")}
           </Button>
         </>
       )}
@@ -307,7 +310,7 @@ export function Register() {
       {confirmedServer && (
         <>
           <Field>
-            <Label>Server URL</Label>
+            <Label>{t("register.serverUrl")}</Label>
             <div data-slot="control" className="flex gap-2">
               <Input
                 name="server_display"
@@ -322,7 +325,7 @@ export function Register() {
                   onClick={handleChangeServer}
                   className="shrink-0"
                 >
-                  Change
+                  {t("accounts.form.change")}
                 </Button>
               )}
             </div>
@@ -351,19 +354,19 @@ export function Register() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              <Text>Connecting to server...</Text>
+              <Text>{t("accounts.form.connecting")}</Text>
             </div>
           )}
 
           {reqError && (
             <Text className="text-xs text-rose-400 -mt-4">
-              Failed to connect to server. Please check the URL.
+              {t("accounts.form.connectFailed")}
             </Text>
           )}
 
           {!reqLoading && !reqError && registrationEnabled === false && (
             <Text className="text-xs text-rose-400 -mt-4">
-              Registration is currently disabled on this server.
+              {t("register.disabled")}
             </Text>
           )}
 
@@ -372,15 +375,15 @@ export function Register() {
               {!basicAuthAvailable && (
                 <Text className="text-xs text-rose-400 -mt-4" role="alert">
                   {ssoAvailable
-                    ? "Registration via username and password is disabled on this server. Please sign in via SSO. Your account should be created automatically."
-                    : "Registration is not available."}
+                    ? t("register.basicDisabledSso")
+                    : t("register.unavailable")}
                 </Text>
               )}
               {basicAuthAvailable && (
                 <>
                   <Field>
                     <Label>
-                      Username{" "}
+                      {t("common.username")}{" "}
                       {!reqLoading && required.has("username") && (
                         <span className="text-rose-400" aria-hidden>
                           *
@@ -403,7 +406,7 @@ export function Register() {
                   <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-4">
                     <Field>
                       <Label>
-                        First name{" "}
+                        {t("register.firstName")}{" "}
                         {!reqLoading && required.has("first_name") && (
                           <span className="text-rose-400" aria-hidden>
                             *
@@ -425,7 +428,7 @@ export function Register() {
                     </Field>
                     <Field>
                       <Label>
-                        Last name{" "}
+                        {t("register.lastName")}{" "}
                         {!reqLoading && required.has("last_name") && (
                           <span className="text-rose-400" aria-hidden>
                             *
@@ -448,7 +451,7 @@ export function Register() {
                   </div>
                   <Field>
                     <Label>
-                      Email{" "}
+                      {t("register.email")}{" "}
                       {!reqLoading && required.has("email") && (
                         <span className="text-rose-400" aria-hidden>
                           *
@@ -469,7 +472,7 @@ export function Register() {
                   </Field>
                   <Field>
                     <Label>
-                      Birth date{" "}
+                      {t("register.birthDate")}{" "}
                       {!reqLoading && required.has("birth_date") && (
                         <span className="text-rose-400" aria-hidden>
                           *
@@ -493,7 +496,7 @@ export function Register() {
                   </Field>
                   <Field>
                     <Label>
-                      Password{" "}
+                      {t("common.password")}{" "}
                       {!reqLoading && required.has("password") && (
                         <span className="text-rose-400" aria-hidden>
                           *
@@ -516,7 +519,7 @@ export function Register() {
                   </Field>
                   <Field>
                     <Label>
-                      Repeat password{" "}
+                      {t("register.repeatPassword")}{" "}
                       {!reqLoading && required.has("password") && (
                         <span className="text-rose-400" aria-hidden>
                           *
@@ -545,7 +548,7 @@ export function Register() {
                     form.repeat_password &&
                     form.password !== form.repeat_password && (
                       <Text className="text-xs text-rose-400 -mt-6">
-                        Passwords do not match
+                        {t("register.passwordMismatch")}
                       </Text>
                     )}
                 </>
@@ -563,7 +566,7 @@ export function Register() {
                   className="w-full"
                   disabled={!canSubmit() || submitting}
                 >
-                  {submitting ? "Creating account…" : "Create account"}
+                  {submitting ? t("register.creating") : t("register.create")}
                 </Button>
               )}
             </>
@@ -571,9 +574,9 @@ export function Register() {
         </>
       )}
       <Text>
-        Already have an account? {""}
+        {t("register.haveAccount")} {""}
         <TextLink href="/">
-          <Strong>Sign in</Strong>
+          <Strong>{t("register.signIn")}</Strong>
         </TextLink>
       </Text>
     </form>

@@ -6,6 +6,8 @@ import { ProgressStateEnum } from "@/api/models/Progress";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { isTauriApp } from "@/utils/tauri";
+import { translate } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   buildCacheKey,
   buildGamesQueryParams,
@@ -245,7 +247,12 @@ export function useGames({
       });
       const url = `${base}/api/games?${params.toString()}`;
       const res = await authFetch(url, { method: "GET", signal: ac.signal });
-      if (!res.ok) throw new Error(`Games fetch failed (${res.status})`);
+      if (!res.ok)
+        throw new Error(
+          fillTemplate(translate("library.fetchFailed"), {
+            status: res.status,
+          }),
+        );
       const json: PaginatedData<PlaystashGame> = await res.json();
       // Drop games that were removed from the library (e.g. their last version
       // was deleted) so they don't reappear after a re-fetch.
@@ -314,7 +321,12 @@ export function useGames({
         else url = `${base}/api/games?${next}`;
       }
       const res = await authFetch(url, { method: "GET" });
-      if (!res.ok) throw new Error(`Games fetch failed (${res.status})`);
+      if (!res.ok)
+        throw new Error(
+          fillTemplate(translate("library.fetchFailed"), {
+            status: res.status,
+          }),
+        );
       const json: PaginatedData<PlaystashGame> = await res.json();
       setGames((prev) => {
         const merged = [...prev, ...(json.data || [])].filter(

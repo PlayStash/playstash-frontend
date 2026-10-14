@@ -29,7 +29,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useLocation, useNavigate } from "react-router";
 import { useAlertDialog } from "@/context/AlertDialogContext";
-import { useTranslation, type TranslationKey } from "@/i18n";
+import { translate, useTranslation, type TranslationKey } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import { getErrorMessage } from "@/utils/apiError";
 import {
   COVER_SIZE_MAX,
@@ -87,48 +88,75 @@ import {
   setParamValues,
 } from "@/utils/libraryFilters";
 
-const SORT_BY: { label: string; value: string }[] = [
-  { label: "Title", value: "sort_title" },
-  { label: "Size", value: "size" },
-  { label: "Date Added", value: "created_at" },
-  { label: "Release Date", value: "metadata.release_date" },
-  { label: "Rating", value: "metadata.rating" },
-  { label: "Download Count", value: "download_count" },
-  { label: "Average Playtime", value: "metadata.average_playtime" },
+const SORT_BY: { label: TranslationKey; value: string }[] = [
+  { label: "library.sort.title", value: "sort_title" },
+  { label: "library.sort.size", value: "size" },
+  { label: "library.sort.dateAdded", value: "created_at" },
+  { label: "library.sort.releaseDate", value: "metadata.release_date" },
+  { label: "library.sort.rating", value: "metadata.rating" },
+  { label: "library.sort.downloadCount", value: "download_count" },
+  {
+    label: "library.sort.averagePlaytime",
+    value: "metadata.average_playtime",
+  },
 ];
 
-const GAME_TYPES: { label: string; value: PlaystashGameTypeEnum }[] = [
-  { label: "Windows Setup", value: PlaystashGameTypeEnum.windows_setup },
-  { label: "Windows Portable", value: PlaystashGameTypeEnum.windows_portable },
-  { label: "Linux Portable", value: PlaystashGameTypeEnum.linux_portable },
+const GAME_TYPES: { label: TranslationKey; value: PlaystashGameTypeEnum }[] = [
+  {
+    label: "libraryFilters.gameType.windowsSetup",
+    value: PlaystashGameTypeEnum.windows_setup,
+  },
+  {
+    label: "libraryFilters.gameType.windowsPortable",
+    value: PlaystashGameTypeEnum.windows_portable,
+  },
+  {
+    label: "libraryFilters.gameType.linuxPortable",
+    value: PlaystashGameTypeEnum.linux_portable,
+  },
 ];
 
-// Static items for game type filter (used in MultiSelectFilterDialog)
-const GAME_TYPE_FILTER_ITEMS: FilterItem[] = GAME_TYPES.map((t) => ({
-  id: t.value,
-  name: t.label,
-}));
-
-const GAME_STATES: { label: string; value: ProgressStateEnum }[] = [
-  { label: "Unplayed", value: ProgressStateEnum.unplayed },
-  { label: "Infinite", value: ProgressStateEnum.infinite },
-  { label: "Playing", value: ProgressStateEnum.playing },
-  { label: "Completed", value: ProgressStateEnum.completed },
-  { label: "Aborted (Temporary)", value: ProgressStateEnum.aborted_temporary },
-  { label: "Aborted (Permanent)", value: ProgressStateEnum.aborted_permanent },
+const GAME_STATES: { label: TranslationKey; value: ProgressStateEnum }[] = [
+  { label: "libraryFilters.state.unplayed", value: ProgressStateEnum.unplayed },
+  { label: "libraryFilters.state.infinite", value: ProgressStateEnum.infinite },
+  { label: "libraryFilters.state.playing", value: ProgressStateEnum.playing },
+  {
+    label: "libraryFilters.state.completed",
+    value: ProgressStateEnum.completed,
+  },
+  {
+    label: "libraryFilters.state.abortedTemporary",
+    value: ProgressStateEnum.aborted_temporary,
+  },
+  {
+    label: "libraryFilters.state.abortedPermanent",
+    value: ProgressStateEnum.aborted_permanent,
+  },
 ];
 
-const EARLY_ACCESS_OPTIONS: { label: string; value: EarlyAccessFilter }[] = [
-  { label: "All", value: "all" },
-  { label: "Early Access Only", value: "true" },
-  { label: "No Early Access", value: "false" },
+const EARLY_ACCESS_OPTIONS: {
+  label: TranslationKey;
+  value: EarlyAccessFilter;
+}[] = [
+  { label: "common.all", value: "all" },
+  { label: "libraryFilters.earlyAccess.only", value: "true" },
+  { label: "libraryFilters.earlyAccess.none", value: "false" },
 ];
 
-const BOOKMARK_OPTIONS: { label: string; value: BookmarkFilter }[] = [
-  { label: "All", value: "all" },
-  { label: "Bookmarked by Me", value: "mine" },
-  { label: "Bookmarked by Others", value: "others" },
+const BOOKMARK_OPTIONS: { label: TranslationKey; value: BookmarkFilter }[] = [
+  { label: "common.all", value: "all" },
+  { label: "libraryFilters.bookmarked.mine", value: "mine" },
+  { label: "libraryFilters.bookmarked.others", value: "others" },
 ];
+
+/** Display name of a game type filter item (its id is the enum value). */
+function gameTypeLabel(
+  t: (key: TranslationKey) => string,
+  item: FilterItem,
+): string {
+  const match = GAME_TYPES.find((gt) => gt.value === item.id);
+  return match ? t(match.label) : item.name;
+}
 
 const LIB_SORT_KEY = "app_library_sort";
 const LIB_ORDER_KEY = "app_library_order";
@@ -184,8 +212,18 @@ function DiceIcon({ className }: { className?: string }) {
 
 export default function Library() {
   const { serverUrl, user, authFetch } = useAuth();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { showAlert } = useAlertDialog();
+  // Static items for the game type filter (used in MultiSelectFilterDialog).
+  // Keyed on the locale so the array stays stable between renders.
+  const gameTypeFilterItems: FilterItem[] = useMemo(
+    () =>
+      GAME_TYPES.map((gt) => ({
+        id: gt.value,
+        name: translate(gt.label, locale),
+      })),
+    [locale],
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const { isOnline } = useOnlineStatus();
@@ -494,7 +532,7 @@ export default function Library() {
         types
           .map((t): FilterItem | null => {
             const match = GAME_TYPES.find((gt) => gt.value === t);
-            return match ? { id: t, name: match.label } : null;
+            return match ? { id: t, name: translate(match.label) } : null;
           })
           .filter((x): x is FilterItem => x !== null),
       );
@@ -806,12 +844,11 @@ export default function Library() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
             <Heading className="flex items-center gap-3">
-              Library {count && <Badge className="ml-1">{count}</Badge>}
+              {t("nav.library")}{" "}
+              {count && <Badge className="ml-1">{count}</Badge>}
             </Heading>
             <BigPictureButton />
-            <Text className="max-w-2xl">
-              Browse, search, and manage your entire game collection.
-            </Text>
+            <Text className="max-w-2xl">{t("library.subtitle")}</Text>
           </div>
         </div>
         <Divider className="border-ps-line/80" />
@@ -821,7 +858,7 @@ export default function Library() {
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto_auto] lg:items-end">
           <div className="w-full lg:col-span-1">
             <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-              Search
+              {t("common.search")}
             </label>
             <Input
               name="search"
@@ -829,7 +866,7 @@ export default function Library() {
               onChange={(e: any) => setSearch(e.target.value)}
               clearable
               onClear={() => setSearch("")}
-              placeholder="Search games..."
+              placeholder={t("library.search.placeholder")}
               disabled={!serverUrl}
             />
           </div>
@@ -840,7 +877,7 @@ export default function Library() {
             <div className="flex min-w-0 flex-1 items-end gap-2 lg:contents">
               <div className="min-w-0 flex-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Sort by
+                  {t("library.sortBy")}
                 </label>
                 <Listbox
                   name="sortBy"
@@ -849,7 +886,7 @@ export default function Library() {
                 >
                   {SORT_BY.map((opt) => (
                     <ListboxOption key={opt.value} value={opt.value}>
-                      <ListboxLabel>{opt.label}</ListboxLabel>
+                      <ListboxLabel>{t(opt.label)}</ListboxLabel>
                     </ListboxOption>
                   ))}
                 </Listbox>
@@ -859,7 +896,7 @@ export default function Library() {
                 <Button
                   outline
                   className={`${CONTROL_HEIGHT_CLASS} px-3 gap-1.5`}
-                  aria-label="Toggle sorting direction"
+                  aria-label={t("library.sortDirection.toggle")}
                   onClick={() =>
                     setOrder((o) => (o === "ASC" ? "DESC" : "ASC"))
                   }
@@ -870,7 +907,9 @@ export default function Library() {
                     <ArrowDownIcon className="h-4 w-4" />
                   )}
                   <span className="hidden sm:inline">
-                    {order === "ASC" ? "Ascending" : "Descending"}
+                    {order === "ASC"
+                      ? t("library.sortDirection.ascending")
+                      : t("library.sortDirection.descending")}
                   </span>
                 </Button>
               </div>
@@ -902,17 +941,27 @@ export default function Library() {
                 className={`${CONTROL_HEIGHT_CLASS} px-3 ${hasActiveFilters ? "text-ps-accent" : ""}`}
                 aria-label={
                   showFilters
-                    ? "Hide filters"
-                    : `Show filters${activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ""}`
+                    ? t("libraryFilters.hide")
+                    : activeFilterCount > 0
+                      ? fillTemplate(t("libraryFilters.showActive"), {
+                          count: activeFilterCount,
+                        })
+                      : t("libraryFilters.show")
                 }
                 onClick={() => setShowFilters((s) => !s)}
               >
                 <FunnelIcon className="h-4 w-4 sm:mr-1" />
-                <span>{showFilters ? "Hide filters" : "Filters"}</span>
+                <span>
+                  {showFilters
+                    ? t("libraryFilters.hide")
+                    : t("libraryFilters.toggle")}
+                </span>
                 {activeFilterCount > 0 && (
                   <span
                     className="ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-ps-accent px-1 text-[0.65rem] font-bold leading-none text-white"
-                    aria-label={`${activeFilterCount} active filters`}
+                    aria-label={fillTemplate(t("libraryFilters.activeCount"), {
+                      count: activeFilterCount,
+                    })}
                   >
                     <span className="translate-y-[0.2em]">
                       {activeFilterCount}
@@ -932,7 +981,9 @@ export default function Library() {
               <div className="flex items-center gap-2">
                 <FunnelIcon className="h-4 w-4 text-ps-muted" />
                 <span className="text-xs text-ps-muted">
-                  {hasActiveFilters ? "Filters active" : "No filters active"}
+                  {hasActiveFilters
+                    ? t("libraryFilters.active")
+                    : t("libraryFilters.noneActive")}
                 </span>
               </div>
               {hasActiveFilters && (
@@ -942,7 +993,7 @@ export default function Library() {
                   className={`${CONTROL_HEIGHT_CLASS} px-3 flex items-center gap-1`}
                 >
                   <TrashIcon className="h-4 w-4" />
-                  Clear All
+                  {t("libraryFilters.clearAll")}
                 </Button>
               )}
             </div>
@@ -952,7 +1003,7 @@ export default function Library() {
               {/* Types */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Type
+                  {t("libraryFilters.type")}
                 </label>
                 <Button
                   outline
@@ -963,8 +1014,10 @@ export default function Library() {
                     className={`truncate ${selectedGameTypes.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedGameTypes.length > 0
-                      ? `${selectedGameTypes.length} selected`
-                      : "All types"}
+                      ? fillTemplate(t("libraryFilters.selectedCount"), {
+                          count: selectedGameTypes.length,
+                        })
+                      : t("libraryFilters.allTypes")}
                   </span>
                 </Button>
               </div>
@@ -972,7 +1025,7 @@ export default function Library() {
               {/* Tags */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Tags
+                  {t("common.tags")}
                 </label>
                 <Button
                   outline
@@ -983,8 +1036,10 @@ export default function Library() {
                     className={`truncate ${selectedTags.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedTags.length > 0
-                      ? `${selectedTags.length} selected`
-                      : "All tags"}
+                      ? fillTemplate(t("libraryFilters.selectedCount"), {
+                          count: selectedTags.length,
+                        })
+                      : t("libraryFilters.allTags")}
                   </span>
                 </Button>
               </div>
@@ -992,7 +1047,7 @@ export default function Library() {
               {/* Genres */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Genres
+                  {t("common.genres")}
                 </label>
                 <Button
                   outline
@@ -1003,8 +1058,10 @@ export default function Library() {
                     className={`truncate ${selectedGenres.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedGenres.length > 0
-                      ? `${selectedGenres.length} selected`
-                      : "All genres"}
+                      ? fillTemplate(t("libraryFilters.selectedCount"), {
+                          count: selectedGenres.length,
+                        })
+                      : t("libraryFilters.allGenres")}
                   </span>
                 </Button>
               </div>
@@ -1012,7 +1069,7 @@ export default function Library() {
               {/* Developers */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Developers
+                  {t("libraryFilters.developers")}
                 </label>
                 <Button
                   outline
@@ -1023,8 +1080,10 @@ export default function Library() {
                     className={`truncate ${selectedDevelopers.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedDevelopers.length > 0
-                      ? `${selectedDevelopers.length} selected`
-                      : "All developers"}
+                      ? fillTemplate(t("libraryFilters.selectedCount"), {
+                          count: selectedDevelopers.length,
+                        })
+                      : t("libraryFilters.allDevelopers")}
                   </span>
                 </Button>
               </div>
@@ -1032,7 +1091,7 @@ export default function Library() {
               {/* Publishers */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Publishers
+                  {t("libraryFilters.publishers")}
                 </label>
                 <Button
                   outline
@@ -1043,8 +1102,10 @@ export default function Library() {
                     className={`truncate ${selectedPublishers.length > 0 ? "text-ps-accent-cool" : ""}`}
                   >
                     {selectedPublishers.length > 0
-                      ? `${selectedPublishers.length} selected`
-                      : "All publishers"}
+                      ? fillTemplate(t("libraryFilters.selectedCount"), {
+                          count: selectedPublishers.length,
+                        })
+                      : t("libraryFilters.allPublishers")}
                   </span>
                 </Button>
               </div>
@@ -1055,7 +1116,7 @@ export default function Library() {
               {/* Game State */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  State
+                  {t("libraryFilters.state")}
                 </label>
                 <Listbox
                   name="gameState"
@@ -1066,11 +1127,11 @@ export default function Library() {
                   disabled={!user}
                 >
                   <ListboxOption value="">
-                    <ListboxLabel>All</ListboxLabel>
+                    <ListboxLabel>{t("common.all")}</ListboxLabel>
                   </ListboxOption>
                   {GAME_STATES.map((state) => (
                     <ListboxOption key={state.value} value={state.value}>
-                      <ListboxLabel>{state.label}</ListboxLabel>
+                      <ListboxLabel>{t(state.label)}</ListboxLabel>
                     </ListboxOption>
                   ))}
                 </Listbox>
@@ -1079,7 +1140,7 @@ export default function Library() {
               {/* Release Date From */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Released After
+                  {t("libraryFilters.releasedAfter")}
                 </label>
                 <Input
                   type="date"
@@ -1092,7 +1153,7 @@ export default function Library() {
               {/* Release Date To */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Released Before
+                  {t("libraryFilters.releasedBefore")}
                 </label>
                 <Input
                   type="date"
@@ -1105,7 +1166,7 @@ export default function Library() {
               {/* Early Access */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Early Access
+                  {t("libraryFilters.earlyAccess")}
                 </label>
                 <Listbox
                   name="earlyAccess"
@@ -1114,7 +1175,7 @@ export default function Library() {
                 >
                   {EARLY_ACCESS_OPTIONS.map((opt) => (
                     <ListboxOption key={opt.value} value={opt.value}>
-                      <ListboxLabel>{opt.label}</ListboxLabel>
+                      <ListboxLabel>{t(opt.label)}</ListboxLabel>
                     </ListboxOption>
                   ))}
                 </Listbox>
@@ -1123,7 +1184,7 @@ export default function Library() {
               {/* Bookmarks */}
               <div className="col-span-1">
                 <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  Bookmarked
+                  {t("libraryFilters.bookmarked")}
                 </label>
                 <Listbox
                   name="bookmarkFilter"
@@ -1133,7 +1194,7 @@ export default function Library() {
                 >
                   {BOOKMARK_OPTIONS.map((opt) => (
                     <ListboxOption key={opt.value} value={opt.value}>
-                      <ListboxLabel>{opt.label}</ListboxLabel>
+                      <ListboxLabel>{t(opt.label)}</ListboxLabel>
                     </ListboxOption>
                   ))}
                 </Listbox>
@@ -1230,7 +1291,7 @@ export default function Library() {
                       color="pink"
                       className="text-xs flex items-center gap-1"
                     >
-                      {item.name}
+                      {gameTypeLabel(t, item)}
                       <button
                         type="button"
                         onClick={() =>
@@ -1345,7 +1406,7 @@ export default function Library() {
         />
         {!serverUrl && (
           <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-            Connect to a server to load games.
+            {t("library.noServer")}
           </div>
         )}
         {serverUrl && error && (
@@ -1357,7 +1418,9 @@ export default function Library() {
         {/* Installed Games Section (Tauri only) */}
         {isTauri && (
           <SectionExpander
-            title={`Installed Games (${filteredInstalledGames.length})`}
+            title={fillTemplate(t("library.installed.section"), {
+              count: filteredInstalledGames.length,
+            })}
             defaultOpen={getInstalledOpen()}
             onOpenChange={setInstalledOpen}
             headerRight={
@@ -1453,7 +1516,7 @@ export default function Library() {
             </div>
             {filteredInstalledGames.length === 0 ? (
               <div className="surface-panel-soft rounded-2xl p-4 text-sm text-ps-muted">
-                No installed games found.
+                {t("library.installed.empty")}
               </div>
             ) : (
               <div className="overflow-x-auto overflow-y-hidden pb-3">
@@ -1494,13 +1557,18 @@ export default function Library() {
         {/* Server Games Section */}
         {isTauri && !isOnline ? (
           <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted text-center">
-            <p className="font-semibold text-ps-text mb-2">Offline Mode</p>
-            <p>Server games are unavailable while offline.</p>
-            <p className="mt-1">Installed games remain fully playable above.</p>
+            <p className="font-semibold text-ps-text mb-2">
+              {t("library.offline.title")}
+            </p>
+            <p>{t("library.offline.unavailable")}</p>
+            <p className="mt-1">{t("library.offline.installedPlayable")}</p>
           </div>
         ) : isTauri ? (
           <SectionExpander
-            title={`Server Games (${visibleGames.length} of ${count ?? 0})`}
+            title={fillTemplate(t("library.server.section"), {
+              visible: visibleGames.length,
+              total: count ?? 0,
+            })}
             defaultOpen={true}
           >
             {serverUrl && loading && games.length === 0 && (
@@ -1520,7 +1588,7 @@ export default function Library() {
               games.length === 0 &&
               !error && (
                 <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-                  No games found.
+                  {t("library.empty")}
                   {(search.trim() || hasActiveFilters) && (
                     <div className="mt-2">
                       <TextLink
@@ -1531,7 +1599,7 @@ export default function Library() {
                           setSearch("");
                         }}
                       >
-                        <Strong>Try clearing all filters and search</Strong>
+                        <Strong>{t("library.empty.clearFilters")}</Strong>
                       </TextLink>
                     </div>
                   )}
@@ -1596,7 +1664,7 @@ export default function Library() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Loading more…
+                {t("library.loadingMore")}
               </div>
             )}
           </SectionExpander>
@@ -1619,7 +1687,7 @@ export default function Library() {
               games.length === 0 &&
               !error && (
                 <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-                  No games found.
+                  {t("library.empty")}
                   {(search.trim() || hasActiveFilters) && (
                     <div className="mt-2">
                       <TextLink
@@ -1630,7 +1698,7 @@ export default function Library() {
                           setSearch("");
                         }}
                       >
-                        <Strong>Try clearing all filters and search</Strong>
+                        <Strong>{t("library.empty.clearFilters")}</Strong>
                       </TextLink>
                     </div>
                   )}
@@ -1695,7 +1763,7 @@ export default function Library() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                Loading more…
+                {t("library.loadingMore")}
               </div>
             )}
           </>
@@ -1718,8 +1786,10 @@ export default function Library() {
       <MultiSelectFilterDialog
         open={gameTypesDialogOpen}
         onClose={() => setGameTypesDialogOpen(false)}
-        title="Types"
-        staticItems={GAME_TYPE_FILTER_ITEMS}
+        title={t("libraryFilters.types")}
+        searchPlaceholder={t("libraryFilters.search.types")}
+        emptyText={t("libraryFilters.empty.types")}
+        staticItems={gameTypeFilterItems}
         selectedItems={selectedGameTypes}
         onSelectionChange={setSelectedGameTypes}
         badgeColor="pink"
@@ -1727,7 +1797,9 @@ export default function Library() {
       <MultiSelectFilterDialog
         open={tagsDialogOpen}
         onClose={() => setTagsDialogOpen(false)}
-        title="Tags"
+        title={t("common.tags")}
+        searchPlaceholder={t("libraryFilters.search.tags")}
+        emptyText={t("libraryFilters.empty.tags")}
         endpoint="/api/tags"
         selectedItems={selectedTags}
         onSelectionChange={setSelectedTags}
@@ -1736,7 +1808,9 @@ export default function Library() {
       <MultiSelectFilterDialog
         open={genresDialogOpen}
         onClose={() => setGenresDialogOpen(false)}
-        title="Genres"
+        title={t("common.genres")}
+        searchPlaceholder={t("libraryFilters.search.genres")}
+        emptyText={t("libraryFilters.empty.genres")}
         endpoint="/api/genres"
         selectedItems={selectedGenres}
         onSelectionChange={setSelectedGenres}
@@ -1745,7 +1819,9 @@ export default function Library() {
       <MultiSelectFilterDialog
         open={developersDialogOpen}
         onClose={() => setDevelopersDialogOpen(false)}
-        title="Developers"
+        title={t("libraryFilters.developers")}
+        searchPlaceholder={t("libraryFilters.search.developers")}
+        emptyText={t("libraryFilters.empty.developers")}
         endpoint="/api/developers"
         selectedItems={selectedDevelopers}
         onSelectionChange={setSelectedDevelopers}
@@ -1754,7 +1830,9 @@ export default function Library() {
       <MultiSelectFilterDialog
         open={publishersDialogOpen}
         onClose={() => setPublishersDialogOpen(false)}
-        title="Publishers"
+        title={t("libraryFilters.publishers")}
+        searchPlaceholder={t("libraryFilters.search.publishers")}
+        emptyText={t("libraryFilters.empty.publishers")}
         endpoint="/api/publishers"
         selectedItems={selectedPublishers}
         onSelectionChange={setSelectedPublishers}

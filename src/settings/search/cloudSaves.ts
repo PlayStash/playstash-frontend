@@ -4,8 +4,8 @@ import type { SearchableSetting } from "@/settings/types";
 export const cloudSavesSearchEntries: SearchableSetting[] = [
   {
     id: "integrations-cloud-saves",
-    title: "Sync cloud saves",
-    description: "Back up and restore save files through your PlayStash server",
+    title: "cloudSaves.settings.sync",
+    description: "settings.search.integrationsCloudSaves.description",
     category: "integrations",
     keywords: [
       "cloud",
@@ -21,8 +21,8 @@ export const cloudSavesSearchEntries: SearchableSetting[] = [
   },
   {
     id: "integrations-cloud-save-manifests",
-    title: "Custom Ludusavi Manifests",
-    description: "Use Primary Manifest, custom manifest files or URLs",
+    title: "cloudSaves.settings.manifests",
+    description: "settings.search.integrationsCloudSaveManifests.description",
     category: "integrations",
     keywords: ["ludusavi", "manifest", "primary", "custom", "cloud", "save"],
     desktopOnly: true,

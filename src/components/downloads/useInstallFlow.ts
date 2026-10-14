@@ -11,6 +11,7 @@ import {
   resolveInstallMode,
   type InstallCardState,
 } from "./install-utils";
+import { translate } from "@/i18n";
 
 /**
  * Owns the expanded install-flow state for a single download card:
@@ -35,9 +36,8 @@ export function useInstallFlow(download: ActiveDownload) {
     setInstallState({
       mode: "undetected",
       forcedType:
-        FORCE_INSTALL_TYPES.find(
-          (option) => option.value === download.gameType,
-        )?.value || PlaystashGameTypeEnum.windows_setup,
+        FORCE_INSTALL_TYPES.find((option) => option.value === download.gameType)
+          ?.value || PlaystashGameTypeEnum.windows_setup,
       installerOptions: [],
       selectedInstaller: "",
       loadingInstallers: false,
@@ -79,7 +79,7 @@ export function useInstallFlow(download: ActiveDownload) {
             loadingInstallers: false,
             installerLoadError: installerOptions.length
               ? undefined
-              : "No executable installer was found in the extracted files.",
+              : translate("downloads.install.noInstallerFound"),
           });
         } catch (error) {
           setInstallState({
@@ -112,12 +112,9 @@ export function useInstallFlow(download: ActiveDownload) {
     ],
   );
 
-  const updateInstallState = useCallback(
-    (patch: Partial<InstallCardState>) => {
-      setInstallState((prev) => (prev ? { ...prev, ...patch } : prev));
-    },
-    [],
-  );
+  const updateInstallState = useCallback((patch: Partial<InstallCardState>) => {
+    setInstallState((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
 
   return {
     installState,

@@ -1,20 +1,19 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import {
-  SpeakerWaveIcon,
-  SpeakerXMarkIcon,
-} from "@heroicons/react/24/outline";
+import { SpeakerWaveIcon, SpeakerXMarkIcon } from "@heroicons/react/24/outline";
 import {
   AUDIO_VOLUME_EVENT,
   getAudioVolume,
   setAudioVolume,
 } from "@/utils/audio";
+import { useTranslation } from "@/i18n";
 
 /**
  * Volume slider for the central audio system: drag to set the level,
  * click the speaker icon to mute/unmute, shows the percentage.
  */
 export function VolumeControl({ className }: Readonly<{ className?: string }>) {
+  const { t } = useTranslation();
   const [volume, setVolume] = useState(getAudioVolume());
 
   useEffect(() => {
@@ -35,8 +34,8 @@ export function VolumeControl({ className }: Readonly<{ className?: string }>) {
       <button
         type="button"
         onClick={() => handleChange(muted ? 1 : 0)}
-        aria-label={muted ? "Unmute" : "Mute"}
-        title={muted ? "Unmute" : "Mute"}
+        aria-label={muted ? t("sound.unmute") : t("sound.mute")}
+        title={muted ? t("sound.unmute") : t("sound.mute")}
         className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text focus:outline-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
       >
         {muted ? (
@@ -53,7 +52,7 @@ export function VolumeControl({ className }: Readonly<{ className?: string }>) {
         step={0.05}
         value={volume}
         onChange={(event) => handleChange(Number(event.target.value))}
-        aria-label="Sound volume"
+        aria-label={t("sound.volume")}
         aria-valuetext={`${Math.round(volume * 100)}%`}
         className="h-1.5 w-full min-w-0 cursor-pointer appearance-none rounded-full bg-ps-line accent-ps-accent"
       />

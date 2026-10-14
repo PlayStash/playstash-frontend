@@ -15,6 +15,20 @@ import accountsEn from "./locales/accounts/en.json";
 import accountsDe from "./locales/accounts/de.json";
 import appearanceEn from "./locales/appearance/en.json";
 import appearanceDe from "./locales/appearance/de.json";
+import commonEn from "./locales/common/en.json";
+import commonDe from "./locales/common/de.json";
+import settingsEn from "./locales/settings/en.json";
+import settingsDe from "./locales/settings/de.json";
+import gameEditorEn from "./locales/gameEditor/en.json";
+import gameEditorDe from "./locales/gameEditor/de.json";
+import adminEn from "./locales/admin/en.json";
+import adminDe from "./locales/admin/de.json";
+import libraryEn from "./locales/library/en.json";
+import libraryDe from "./locales/library/de.json";
+import gameEn from "./locales/game/en.json";
+import gameDe from "./locales/game/de.json";
+import shellEn from "./locales/shell/en.json";
+import shellDe from "./locales/shell/de.json";
 
 export type Locale = "en" | "de";
 export type LanguagePreference = Locale | "system";
@@ -30,7 +44,14 @@ export type TranslationKey = keyof (typeof coreEn &
   typeof launchEn &
   typeof downloadsEn &
   typeof accountsEn &
-  typeof appearanceEn);
+  typeof appearanceEn &
+  typeof commonEn &
+  typeof settingsEn &
+  typeof gameEditorEn &
+  typeof adminEn &
+  typeof libraryEn &
+  typeof gameEn &
+  typeof shellEn);
 type Catalog = Partial<Record<TranslationKey, string>>;
 export const translationNamespaces: Record<
   string,
@@ -44,6 +65,13 @@ export const translationNamespaces: Record<
   downloads: { en: downloadsEn, de: downloadsDe },
   accounts: { en: accountsEn, de: accountsDe },
   appearance: { en: appearanceEn, de: appearanceDe },
+  common: { en: commonEn, de: commonDe },
+  settings: { en: settingsEn, de: settingsDe },
+  gameEditor: { en: gameEditorEn, de: gameEditorDe },
+  admin: { en: adminEn, de: adminDe },
+  library: { en: libraryEn, de: libraryDe },
+  game: { en: gameEn, de: gameDe },
+  shell: { en: shellEn, de: shellDe },
 };
 const english = Object.assign(
   {},

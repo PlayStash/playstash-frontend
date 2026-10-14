@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { TranslationKey } from "@/i18n";
 
 export type SettingsCategory =
   | "account"
@@ -18,9 +19,12 @@ export type SettingsCategory =
 export interface SearchableSetting {
   /** Stable identifier, also used as the scroll/highlight target. */
   id: string;
-  title: string;
-  description?: string;
+  /** Translation key of the title shown in the results (and searched). */
+  title: TranslationKey;
+  /** Translation key of the description shown in the results (and searched). */
+  description?: TranslationKey;
   category: SettingsCategory;
+  /** Lowercase English search aliases. They are matched but never shown. */
   keywords: string[];
   /** Only shown in the desktop (Tauri) app. Hidden from search on the web build. */
   desktopOnly?: boolean;

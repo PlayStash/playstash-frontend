@@ -11,6 +11,7 @@ import MarkdownContent from "@/components/MarkdownContent";
 import { Button } from "@tw/button";
 import { useEffect, useState } from "react";
 import { useNews } from "../../hooks/useNews";
+import { useTranslation } from "@/i18n";
 
 interface NewsDialogProps {
   onClose: () => void;
@@ -26,13 +27,14 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
   const [saving, setSaving] = useState(false);
 
   const { user, serverUrl } = useAuth();
+  const { t } = useTranslation();
   const { playStashNews, serverNews, markNewsAsRead, updateServerNews } =
     useNews();
   const hasErr = tab === "playstash" ? playStashNews?.error : serverNews?.error;
   const content =
     tab === "playstash"
-      ? (playStashNews?.content ?? "*Loading PlayStash News...*")
-      : (serverNews?.content ?? "*Loading Server News...*");
+      ? (playStashNews?.content ?? t("news.loading.playstash"))
+      : (serverNews?.content ?? t("news.loading.server"));
   const isAdmin = Number(user?.role) >= Number(PlaystashUserRoleEnum._3);
   const canEditServerNews = Boolean(serverUrl) && isAdmin && tab === "server";
   const showEditor = canEditServerNews && isEditingServerNews;
@@ -88,12 +90,12 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
       className="!h-[min(85vh,850px)] flex flex-col"
     >
       <DialogTitle className="flex items-center justify-between gap-4 pb-1">
-        <span>News</span>
+        <span>{t("nav.news")}</span>
         <button
           type="button"
           onClick={onClose}
           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <svg
             width="16"
@@ -118,7 +120,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
                 : "border-transparent text-ps-muted hover:text-ps-text")
             }
           >
-            PlayStash News
+            {t("news.tab.playstash")}
           </button>
           <button
             onClick={() => setTab("server")}
@@ -129,7 +131,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
                 : "border-transparent text-ps-muted hover:text-ps-text")
             }
           >
-            Server News
+            {t("news.tab.server")}
           </button>
         </div>
       </div>
@@ -141,7 +143,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
         {showEditor ? (
           <div className="space-y-4">
             <div className="rounded-xl border border-ps-line bg-ps-panel-soft px-4 py-3 text-xs text-ps-muted">
-              Markdown supported. Changes save to server `news.md` file.
+              {t("news.editorHint")}
             </div>
 
             {saveError && (
@@ -153,7 +155,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
               onChange={(e) => setDraftContent(e.target.value)}
               resizable={false}
               textareaClassName="min-h-105"
-              placeholder="Write server news in markdown..."
+              placeholder={t("news.placeholder")}
             />
           </div>
         ) : (
@@ -169,7 +171,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
               color="zinc"
               disabled={saving}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
@@ -177,18 +179,18 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
               color="indigo"
               disabled={saving}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("common.saving") : t("common.save")}
             </Button>
           </>
         ) : (
           <>
             {canEditServerNews && (
               <Button type="button" onClick={handleStartEditing} plain>
-                Edit
+                {t("common.edit")}
               </Button>
             )}
             <Button type="button" onClick={onClose} color="zinc">
-              Close
+              {t("common.close")}
             </Button>
           </>
         )}

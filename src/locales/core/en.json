@@ -22,7 +22,18 @@
   "appearance.zoom": "Zoom",
   "appearance.zoomDescription": "Zoom the interface in or out.",
   "language.title": "Interface language",
-  "language.description": "Choose English, German, or your device language. Some pages and server messages are still English.",
+  "language.description": "Choose English, German, or your device language. Content from the server, such as game descriptions, stays in its original language.",
   "language.system": "Device language",
-  "language.scope": "Navigation and these language controls are translated. Missing translations use English."
+  "appearance.themeToggle": "Toggle dark mode",
+  "appearance.zoom.out": "Zoom out",
+  "appearance.zoom.outTitle": "Zoom out (Ctrl/Cmd + -)",
+  "appearance.zoom.in": "Zoom in",
+  "appearance.zoom.inTitle": "Zoom in (Ctrl/Cmd + +)",
+  "appearance.zoom.resetTitle": "Reset to 100% (Ctrl/Cmd + 0)",
+  "appearance.rows.label": "Rows",
+  "appearance.rows.decrease": "Decrease rows",
+  "appearance.rows.increase": "Increase rows",
+  "appearance.streamerMode.toggle": "Streamer / OPSEC Mode",
+  "appearance.debug.simulateDesktop": "Simulate Desktop",
+  "appearance.debug.simulateDesktopToggle": "Toggle Tauri desktop simulation mode"
 }

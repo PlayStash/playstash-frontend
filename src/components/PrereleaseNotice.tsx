@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAlertDialog } from "@/context/AlertDialogContext";
+import { translate } from "@/i18n";
 import {
   markPrereleaseNoticeSeen,
   prereleaseChannelOfBuild,
@@ -32,7 +33,7 @@ export function PrereleaseNotice() {
 
       await showAlert({
         tone: "warning",
-        affirmativeText: "I understand",
+        affirmativeText: translate("updater.prerelease.acknowledge"),
         ...prereleaseNoticeContent(channel, __APP_VERSION__),
       });
 

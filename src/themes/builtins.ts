@@ -10,6 +10,7 @@ import defaultLight from "./builtin/ThemeDefaultLight.xaml?raw";
 import halloweenDark from "./builtin/ThemeHalloweenDark.xaml?raw";
 import phalcodeDark from "./builtin/ThemePhalcodeDark.xaml?raw";
 import phalcodeLight from "./builtin/ThemePhalcodeLight.xaml?raw";
+import type { TranslationKey } from "@/i18n";
 import { parseThemeXaml, type ThemeDefinition } from "./xamlTheme";
 
 /** WPF file names in the WPF list order. */
@@ -23,6 +24,40 @@ export const BUILTIN_THEME_SOURCES: ReadonlyArray<[id: string, xaml: string]> =
     ["ThemeHalloweenDark", halloweenDark],
     ["ThemeChristmasDark", christmasDark],
   ];
+
+/** Translated name and description of each built-in WPF theme. */
+export const BUILTIN_THEME_TEXT: Readonly<
+  Record<string, { name: TranslationKey; description: TranslationKey }>
+> = {
+  ThemeDefaultDark: {
+    name: "themes.builtin.defaultDark.name",
+    description: "themes.builtin.defaultDark.description",
+  },
+  ThemeDefaultLight: {
+    name: "themes.builtin.defaultLight.name",
+    description: "themes.builtin.defaultLight.description",
+  },
+  ThemeClassicDark: {
+    name: "themes.builtin.classicDark.name",
+    description: "themes.builtin.classicDark.description",
+  },
+  ThemePhalcodeDark: {
+    name: "themes.builtin.phalcodeDark.name",
+    description: "themes.builtin.phalcodeDark.description",
+  },
+  ThemePhalcodeLight: {
+    name: "themes.builtin.phalcodeLight.name",
+    description: "themes.builtin.phalcodeLight.description",
+  },
+  ThemeHalloweenDark: {
+    name: "themes.builtin.halloweenDark.name",
+    description: "themes.builtin.halloweenDark.description",
+  },
+  ThemeChristmasDark: {
+    name: "themes.builtin.christmasDark.name",
+    description: "themes.builtin.christmasDark.description",
+  },
+};
 
 export interface BuiltinTheme {
   id: string;

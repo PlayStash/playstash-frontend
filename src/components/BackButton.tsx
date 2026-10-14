@@ -1,5 +1,6 @@
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router";
+import { useTranslation } from "@/i18n";
 
 interface BackButtonProps {
   /** Override the default `navigate(-1)` behavior (e.g. a drill-down back). */
@@ -18,6 +19,7 @@ interface BackButtonProps {
  */
 export default function BackButton({ onClick }: BackButtonProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleClick = () => {
     if (onClick) {
@@ -31,11 +33,11 @@ export default function BackButton({ onClick }: BackButtonProps) {
     <button
       type="button"
       onClick={handleClick}
-      aria-label="Go back"
+      aria-label={t("shell.backButton.ariaLabel")}
       className="group flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm/5 text-ps-muted transition-colors hover:text-ps-text"
     >
       <ChevronLeftIcon className="size-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
-      Back
+      {t("common.back")}
     </button>
   );
 }

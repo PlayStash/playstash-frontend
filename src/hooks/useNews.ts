@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
+import { translate } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import releaseNotes from "../../CHANGELOG.md?raw";
 
@@ -50,7 +51,7 @@ export function useNews() {
     } catch (error: any) {
       setPlayStashNews({
         content: "",
-        error: error.message || "Failed to load PlayStash news",
+        error: error.message || translate("news.error.playstash"),
         isNew: false,
       });
     }
@@ -59,7 +60,7 @@ export function useNews() {
   const fetchServerNews = useCallback(async () => {
     if (!serverUrl) {
       setServerNews({
-        content: "No server connected.",
+        content: translate("news.noServer"),
         error: null,
         isNew: false,
       });
@@ -74,7 +75,7 @@ export function useNews() {
     } catch (error: any) {
       setServerNews({
         content: "",
-        error: error.message || "Failed to load Server news",
+        error: error.message || translate("news.error.server"),
         isNew: false,
       });
     }
@@ -87,7 +88,7 @@ export function useNews() {
 
   const updateServerNews = useCallback(
     async (content: string) => {
-      if (!serverUrl) throw new Error("No server connected.");
+      if (!serverUrl) throw new Error(translate("news.noServer"));
 
       const base = serverUrl.replace(/\/$/, "");
       const res = await authFetch(base + "/api/config/news", {

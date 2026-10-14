@@ -4,6 +4,8 @@
  * The Tauri backend records the full output of every game launch and streams
  * it live into the "Launch log" window (`launch-log` window label).
  */
+import { translate, type TranslationKey } from "@/i18n";
+
 export interface LaunchLogLine {
   seq: number;
   /** "out", "err" or "info". */
@@ -87,10 +89,25 @@ export function bufferFromSnapshot(snapshot: LaunchLogSnapshot): LogBuffer {
   };
 }
 
+const STATUS_LABEL: Record<string, TranslationKey> = {
+  running: "launch.log.status.running",
+  finished: "launch.log.status.finished",
+  failed: "launch.log.status.failed",
+};
+
+/** Translated launch status ("running", "finished", "failed"). */
+export function formatLaunchStatus(status: string): string {
+  const key = STATUS_LABEL[status];
+  return key ? translate(key) : status;
+}
+
 export function formatExitCode(snapshot: LaunchLogSnapshot): string {
-  if (snapshot.status === "running") return "running";
-  if (snapshot.exitCode === null) return snapshot.status;
-  return `${snapshot.status} (exit code ${snapshot.exitCode})`;
+  const status = formatLaunchStatus(snapshot.status);
+  if (snapshot.status === "running" || snapshot.exitCode === null)
+    return status;
+  return translate("launch.log.exitCode")
+    .replace("{status}", () => status)
+    .replace("{code}", () => String(snapshot.exitCode));
 }
 
 export function logText(lines: LaunchLogLine[]): string {

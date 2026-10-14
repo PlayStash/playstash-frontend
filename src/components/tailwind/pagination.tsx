@@ -1,15 +1,17 @@
 import clsx from "clsx";
 import type React from "react";
 import { Button } from "./button";
+import { useTranslation } from "@/i18n";
 
 export function Pagination({
-  "aria-label": ariaLabel = "Page navigation",
+  "aria-label": ariaLabel,
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"nav">) {
+  const { t } = useTranslation();
   return (
     <nav
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t("library.pagination.label")}
       {...props}
       className={clsx(className, "flex gap-x-2")}
     />
@@ -19,14 +21,15 @@ export function Pagination({
 export function PaginationPrevious({
   href = null,
   className,
-  children = "Previous",
+  children,
 }: React.PropsWithChildren<{ href?: string | null; className?: string }>) {
+  const { t } = useTranslation();
   return (
     <span className={clsx(className, "grow basis-0")}>
       <Button
         {...(href === null ? { disabled: true } : { href })}
         plain
-        aria-label="Previous page"
+        aria-label={t("library.pagination.previousPage")}
       >
         <svg
           className="stroke-current"
@@ -42,7 +45,7 @@ export function PaginationPrevious({
             strokeLinejoin="round"
           />
         </svg>
-        {children}
+        {children ?? t("common.previous")}
       </Button>
     </span>
   );
@@ -51,16 +54,17 @@ export function PaginationPrevious({
 export function PaginationNext({
   href = null,
   className,
-  children = "Next",
+  children,
 }: React.PropsWithChildren<{ href?: string | null; className?: string }>) {
+  const { t } = useTranslation();
   return (
     <span className={clsx(className, "flex grow basis-0 justify-end")}>
       <Button
         {...(href === null ? { disabled: true } : { href })}
         plain
-        aria-label="Next page"
+        aria-label={t("library.pagination.nextPage")}
       >
-        {children}
+        {children ?? t("common.next")}
         <svg
           className="stroke-current"
           data-slot="icon"
@@ -102,11 +106,15 @@ export function PaginationPage({
   className?: string;
   current?: boolean;
 }>) {
+  const { t } = useTranslation();
   return (
     <Button
       href={href}
       plain
-      aria-label={`Page ${children}`}
+      aria-label={t("library.pagination.page").replace(
+        "{page}",
+        String(children),
+      )}
       aria-current={current ? "page" : undefined}
       className={clsx(
         className,

@@ -33,6 +33,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import type { PlaystashGame, PlaystashUser, Progress } from "../api";
 import { CommunityChatButton } from "@/components/GameChatButton";
+import { translate, useTranslation, type TranslationKey } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 
 type ProfileProgressSort = "last" | "time" | "title" | "state";
 
@@ -40,18 +42,38 @@ const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 const PROGRESS_STATE_META: Record<
   string,
-  { label: string; tone: string; chip: keyof typeof badgeTones }
+  { label: TranslationKey; tone: string; chip: keyof typeof badgeTones }
 > = {
-  UNPLAYED: { label: "Unplayed", tone: "text-ps-muted", chip: "zinc" },
-  INFINITE: { label: "Ongoing", tone: "text-sky-400", chip: "blue" },
-  PLAYING: { label: "Playing", tone: "text-emerald-400", chip: "green" },
-  COMPLETED: { label: "Finished", tone: "text-violet-300", chip: "indigo" },
+  UNPLAYED: {
+    label: "community.progress.unplayed",
+    tone: "text-ps-muted",
+    chip: "zinc",
+  },
+  INFINITE: {
+    label: "community.progress.ongoing",
+    tone: "text-sky-400",
+    chip: "blue",
+  },
+  PLAYING: {
+    label: "community.progress.playing",
+    tone: "text-emerald-400",
+    chip: "green",
+  },
+  COMPLETED: {
+    label: "community.progress.finished",
+    tone: "text-violet-300",
+    chip: "indigo",
+  },
   ABORTED_TEMPORARY: {
-    label: "On hold",
+    label: "community.progress.onHold",
     tone: "text-amber-400",
     chip: "amber",
   },
-  ABORTED_PERMANENT: { label: "Dropped", tone: "text-rose-400", chip: "rose" },
+  ABORTED_PERMANENT: {
+    label: "community.progress.dropped",
+    tone: "text-rose-400",
+    chip: "rose",
+  },
 };
 
 const badgeTones = {
@@ -63,21 +85,24 @@ const badgeTones = {
   rose: true,
 } as const;
 
-const PROFILE_FILTER_OPTIONS = [
-  { value: "all", label: "All states" },
-  { value: "PLAYING", label: "Playing" },
-  { value: "INFINITE", label: "Ongoing" },
-  { value: "COMPLETED", label: "Finished" },
-  { value: "ABORTED_TEMPORARY", label: "On hold" },
-  { value: "ABORTED_PERMANENT", label: "Dropped" },
-  { value: "UNPLAYED", label: "Unplayed" },
-] as const;
+const PROFILE_FILTER_OPTIONS: { value: string; label: TranslationKey }[] = [
+  { value: "all", label: "userProfile.filter.all" },
+  { value: "PLAYING", label: "community.progress.playing" },
+  { value: "INFINITE", label: "community.progress.ongoing" },
+  { value: "COMPLETED", label: "community.progress.finished" },
+  { value: "ABORTED_TEMPORARY", label: "community.progress.onHold" },
+  { value: "ABORTED_PERMANENT", label: "community.progress.dropped" },
+  { value: "UNPLAYED", label: "community.progress.unplayed" },
+];
 
-const PROFILE_SORT_OPTIONS: { value: ProfileProgressSort; label: string }[] = [
-  { value: "last", label: "Last played" },
-  { value: "time", label: "Playtime" },
-  { value: "title", label: "Title" },
-  { value: "state", label: "State" },
+const PROFILE_SORT_OPTIONS: {
+  value: ProfileProgressSort;
+  label: TranslationKey;
+}[] = [
+  { value: "last", label: "userProfile.sort.last" },
+  { value: "time", label: "userProfile.sort.time" },
+  { value: "title", label: "userProfile.sort.title" },
+  { value: "state", label: "userProfile.sort.state" },
 ];
 
 function toTimestamp(value: unknown) {
@@ -95,13 +120,21 @@ function toTimestamp(value: unknown) {
   return -Infinity;
 }
 
-function formatDate(value: unknown, fallback = "Never") {
+/** Current interface language for date formatting outside of hooks. */
+function currentLocale(): string {
+  return (
+    (typeof document !== "undefined" && document.documentElement.lang) || "en"
+  );
+}
+
+function formatDate(value: unknown, fallback?: string) {
   const timestamp = toTimestamp(value);
-  if (timestamp === -Infinity) return fallback;
+  const empty = fallback ?? translate("community.never");
+  if (timestamp === -Infinity) return empty;
   try {
-    return new Date(timestamp).toLocaleDateString();
+    return new Date(timestamp).toLocaleDateString(currentLocale());
   } catch {
-    return fallback;
+    return empty;
   }
 }
 
@@ -109,7 +142,7 @@ function formatFullDateTime(value: unknown): string | null {
   const timestamp = toTimestamp(value);
   if (timestamp === -Infinity) return null;
   try {
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toLocaleString(currentLocale());
   } catch {
     return null;
   }
@@ -123,12 +156,16 @@ function formatPlaytime(minutes: number) {
 }
 
 function getDisplayName(user: PlaystashUser | null | undefined) {
-  if (!user) return "Unknown User";
+  if (!user) return translate("profile.unknown");
   const fullName = [user.first_name, user.last_name]
     .filter(Boolean)
     .join(" ")
     .trim();
-  return fullName || user.username || `User #${user.id}`;
+  return (
+    fullName ||
+    user.username ||
+    formatMessage(translate("community.userFallback"), { id: user.id })
+  );
 }
 
 function getUserHandle(user: PlaystashUser | null | undefined) {
@@ -297,7 +334,9 @@ function ProfileProgressCard({
   onDelete?: (progressId: number, gameId: number, title: string) => void;
 }) {
   const game = progress.game;
-  const title = game?.metadata?.title || game?.title || "Unknown Game";
+  const { t } = useTranslation();
+  const title =
+    game?.metadata?.title || game?.title || t("community.unknownGame");
   const meta = getProgressMeta(progress.state);
   return (
     <Link
@@ -319,7 +358,7 @@ function ProfileProgressCard({
                 {title}
               </h3>
               <Badge color={meta.chip} className="shrink-0 self-start">
-                {meta.label}
+                {t(meta.label)}
               </Badge>
             </div>
             <div className="mt-3 min-w-0 space-y-2 text-sm text-ps-muted">
@@ -337,7 +376,9 @@ function ProfileProgressCard({
                     formatFullDateTime(progress.last_played_at) ?? undefined
                   }
                 >
-                  Last played {formatDate(progress.last_played_at)}
+                  {formatMessage(t("community.lastPlayed"), {
+                    date: formatDate(progress.last_played_at),
+                  })}
                 </span>
               </div>
             </div>
@@ -353,8 +394,8 @@ function ProfileProgressCard({
               onDelete(progress.id, gid, title);
             }}
             className="absolute bottom-3 right-3 rounded-xl p-2 text-ps-muted hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer"
-            aria-label={`Delete progress for ${title}`}
-            title={`Delete progress for ${title}`}
+            aria-label={formatMessage(t("userProfile.delete.label"), { title })}
+            title={formatMessage(t("userProfile.delete.label"), { title })}
           >
             <TrashIcon className="h-4 w-4" />
           </button>
@@ -367,6 +408,7 @@ function ProfileProgressCard({
 export default function UserProfile() {
   const { serverUrl, authFetch, user: loggedIn } = useAuth();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
   const { id } = useParams<{ id?: string }>();
   const streamerMode = useStreamerMode();
 
@@ -399,11 +441,17 @@ export default function UserProfile() {
         const res = await authFetch(`${base}/api/users/${userId}`, {
           headers: { Accept: "application/json" },
         });
-        if (!res.ok) throw new Error(`Failed to load user (${res.status})`);
+        if (!res.ok)
+          throw new Error(
+            formatMessage(translate("userProfile.error.load"), {
+              status: res.status,
+            }),
+          );
         const json = await res.json();
         if (!cancelled) setUser(json);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load user profile");
+        if (!cancelled)
+          setError(e?.message || translate("userProfile.error.loadProfile"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -426,7 +474,7 @@ export default function UserProfile() {
         const title =
           progress.game?.metadata?.title ||
           progress.game?.title ||
-          "Unknown Game";
+          t("community.unknownGame");
         const matchesQuery = !query || title.toLowerCase().includes(query);
         const matchesState =
           progressFilter === "all" || progress.state === progressFilter;
@@ -440,21 +488,25 @@ export default function UserProfile() {
         }
         if (progressSort === "title") {
           const leftTitle =
-            left.game?.metadata?.title || left.game?.title || "Unknown Game";
+            left.game?.metadata?.title ||
+            left.game?.title ||
+            t("community.unknownGame");
           const rightTitle =
-            right.game?.metadata?.title || right.game?.title || "Unknown Game";
+            right.game?.metadata?.title ||
+            right.game?.title ||
+            t("community.unknownGame");
           return leftTitle.localeCompare(rightTitle);
         }
         if (progressSort === "state") {
-          return getProgressMeta(left.state).label.localeCompare(
-            getProgressMeta(right.state).label,
+          return t(getProgressMeta(left.state).label).localeCompare(
+            t(getProgressMeta(right.state).label),
           );
         }
         return (
           toTimestamp(right.last_played_at) - toTimestamp(left.last_played_at)
         );
       });
-  }, [user, progressSearch, progressFilter, progressSort]);
+  }, [user, progressSearch, progressFilter, progressSort, t]);
 
   const { url: backdropUrl } = useAuthMediaUrl(getPrimaryBackdropMediaId(user));
 
@@ -469,12 +521,12 @@ export default function UserProfile() {
       if (!serverUrl || !userId || !gameId) return;
 
       const confirmed = await showAlert({
-        title: "Delete progress entry?",
+        title: t("userProfile.delete.title"),
         description: title
-          ? `This will permanently remove the playtime, state, and history for "${title}". This action cannot be undone.`
-          : "This will permanently remove the playtime, state, and history for this game. This action cannot be undone.",
-        affirmativeText: "Delete",
-        negativeText: "Cancel",
+          ? formatMessage(t("userProfile.delete.description"), { title })
+          : t("userProfile.delete.descriptionGeneric"),
+        affirmativeText: t("common.delete"),
+        negativeText: t("common.cancel"),
       });
 
       if (!confirmed) return;
@@ -486,7 +538,11 @@ export default function UserProfile() {
           { method: "DELETE" },
         );
         if (!res.ok && res.status !== 204) {
-          throw new Error(`Delete failed (${res.status})`);
+          throw new Error(
+            formatMessage(t("userProfile.delete.failedStatus"), {
+              status: res.status,
+            }),
+          );
         }
         // Remove from local state
         setUser((prev) =>
@@ -500,21 +556,21 @@ export default function UserProfile() {
       } catch (err: any) {
         console.error("Failed to delete progress:", err);
         showAlert({
-          title: "Failed to delete progress",
-          description: err?.message || "An unknown error occurred.",
+          title: t("userProfile.delete.failed"),
+          description: err?.message || t("userProfile.delete.unknownError"),
         });
       }
     },
-    [serverUrl, userId, authFetch, showAlert],
+    [serverUrl, userId, authFetch, showAlert, t],
   );
 
   if (!serverUrl) {
     return (
       <div className="flex min-h-full flex-col gap-6">
-        <Heading>Community</Heading>
+        <Heading>{t("nav.community")}</Heading>
         <Divider className="border-ps-line/80" />
         <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-          Connect to a server to browse the network.
+          {t("community.noServer")}
         </div>
       </div>
     );
@@ -525,11 +581,11 @@ export default function UserProfile() {
       <div className="flex min-h-full flex-col gap-6">
         <div className="flex flex-col gap-4">
           <BackButton />
-          <Heading>Community</Heading>
+          <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
         <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-          Invalid user ID.
+          {t("userProfile.invalidId")}
         </div>
       </div>
     );
@@ -540,7 +596,7 @@ export default function UserProfile() {
       <div className="flex min-h-full flex-col gap-6">
         <div className="flex flex-col gap-4">
           <BackButton />
-          <Heading>Community</Heading>
+          <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
         <div className="surface-panel h-96 animate-pulse rounded-[1.75rem]" />
@@ -553,11 +609,11 @@ export default function UserProfile() {
       <div className="flex min-h-full flex-col gap-6">
         <div className="flex flex-col gap-4">
           <BackButton />
-          <Heading>Community</Heading>
+          <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
         <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-          {error || "User not found in this network."}
+          {error || t("userProfile.notFound")}
         </div>
       </div>
     );
@@ -569,16 +625,14 @@ export default function UserProfile() {
         <BackButton />
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <Heading>Community</Heading>
-            <Text>
-              Browse player profiles, stats, and shared library history.
-            </Text>
+            <Heading>{t("nav.community")}</Heading>
+            <Text>{t("userProfile.description")}</Text>
           </div>
           <CommunityChatButton className="ml-auto" />
           {canEdit && (
             <Button outline onClick={() => setShowEditProfile(true)}>
               <PencilSquareIcon className="size-4" />
-              Edit profile
+              {t("profile.edit")}
             </Button>
           )}
         </div>
@@ -623,8 +677,12 @@ export default function UserProfile() {
                   <Badge color={getRoleBadgeColor(user.role)}>
                     {getRoleLabel(Number(user.role))}
                   </Badge>
-                  {isOwnProfile && <Badge color="indigo">Your profile</Badge>}
-                  {!user.activated && <Badge color="rose">Inactive</Badge>}
+                  {isOwnProfile && (
+                    <Badge color="indigo">{t("userProfile.yourProfile")}</Badge>
+                  )}
+                  {!user.activated && (
+                    <Badge color="rose">{t("userProfile.inactive")}</Badge>
+                  )}
                 </div>
                 <div>
                   <h2 className="truncate text-3xl font-bold tracking-[-0.04em] text-white">
@@ -638,34 +696,46 @@ export default function UserProfile() {
                   <span
                     title={formatFullDateTime(user.created_at) ?? undefined}
                   >
-                    Joined {formatDate(user.created_at, "Unknown")}
+                    {formatMessage(t("userProfile.joined"), {
+                      date: formatDate(user.created_at, t("common.unknown")),
+                    })}
                   </span>
                   <span
                     title={formatFullDateTime(stats.lastPlayed) ?? undefined}
                   >
-                    Last seen {formatDate(stats.lastPlayed, "Never")}
+                    {formatMessage(t("community.lastSeen"), {
+                      date: formatDate(stats.lastPlayed, t("community.never")),
+                    })}
                   </span>
-                  <span>{formatPlaytime(stats.totalMinutes)} logged</span>
+                  <span>
+                    {formatMessage(t("community.logged"), {
+                      time: formatPlaytime(stats.totalMinutes),
+                    })}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                { icon: UserGroupIcon, label: "Tracked", value: stats.tracked },
+                {
+                  icon: UserGroupIcon,
+                  label: t("community.stat.tracked"),
+                  value: stats.tracked,
+                },
                 {
                   icon: PlayCircleIcon,
-                  label: "Playing",
+                  label: t("community.stat.playing"),
                   value: stats.playing,
                 },
                 {
                   icon: CheckCircleIcon,
-                  label: "Finished",
+                  label: t("community.stat.finished"),
                   value: stats.completed,
                 },
                 {
                   icon: BookmarkIcon,
-                  label: "Bookmarks",
+                  label: t("community.stat.bookmarks"),
                   value: stats.bookmarks,
                 },
               ].map((item) => (
@@ -691,11 +761,13 @@ export default function UserProfile() {
         <section className="surface-panel rounded-[1.75rem] p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <Subheading>Recent activity</Subheading>
-              <Text>Games touched in the last 2 weeks.</Text>
+              <Subheading>{t("userProfile.recent.title")}</Subheading>
+              <Text>{t("userProfile.recent.description")}</Text>
             </div>
             <Badge color="zinc" className="shrink-0 whitespace-nowrap">
-              {recent.length} in 2 weeks
+              {formatMessage(t("userProfile.recent.count"), {
+                count: recent.length,
+              })}
             </Badge>
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -709,7 +781,7 @@ export default function UserProfile() {
               ))
             ) : (
               <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted">
-                No recent activity in the last 2 weeks.
+                {t("userProfile.recent.empty")}
               </div>
             )}
           </div>
@@ -718,33 +790,37 @@ export default function UserProfile() {
         <section className="surface-panel rounded-[1.75rem] p-5 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <Subheading>All game progress</Subheading>
-              <Text>
-                Filter the full history to inspect paused, dropped, finished, or
-                untouched games.
-              </Text>
+              <Subheading>{t("userProfile.all.title")}</Subheading>
+              <Text>{t("userProfile.all.description")}</Text>
             </div>
             <Badge color="zinc" className="shrink-0 whitespace-nowrap">
-              {allProgresses.length} matches
+              {formatMessage(
+                t(
+                  allProgresses.length === 1
+                    ? "userProfile.all.matches.one"
+                    : "userProfile.all.matches.other",
+                ),
+                { count: allProgresses.length },
+              )}
             </Badge>
           </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
             <div className="w-full">
               <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                Search games
+                {t("userProfile.searchGames")}
               </label>
               <Input
                 name="progressSearch"
                 value={progressSearch}
                 onChange={(event: any) => setProgressSearch(event.target.value)}
-                placeholder="Find a game in this profile..."
+                placeholder={t("userProfile.searchPlaceholder")}
                 clearable
                 onClear={() => setProgressSearch("")}
               />
             </div>
             <div>
               <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                Filter by state
+                {t("userProfile.filterByState")}
               </label>
               <Listbox
                 name="progressFilter"
@@ -753,14 +829,14 @@ export default function UserProfile() {
               >
                 {PROFILE_FILTER_OPTIONS.map((option) => (
                   <ListboxOption key={option.value} value={option.value}>
-                    <ListboxLabel>{option.label}</ListboxLabel>
+                    <ListboxLabel>{t(option.label)}</ListboxLabel>
                   </ListboxOption>
                 ))}
               </Listbox>
             </div>
             <div>
               <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                Sort by
+                {t("userProfile.sortBy")}
               </label>
               <Listbox
                 name="progressSort"
@@ -771,7 +847,7 @@ export default function UserProfile() {
               >
                 {PROFILE_SORT_OPTIONS.map((option) => (
                   <ListboxOption key={option.value} value={option.value}>
-                    <ListboxLabel>{option.label}</ListboxLabel>
+                    <ListboxLabel>{t(option.label)}</ListboxLabel>
                   </ListboxOption>
                 ))}
               </Listbox>
@@ -793,7 +869,7 @@ export default function UserProfile() {
               ))
             ) : (
               <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted md:col-span-2">
-                No games match this filter combination.
+                {t("userProfile.all.empty")}
               </div>
             )}
           </div>
@@ -802,17 +878,20 @@ export default function UserProfile() {
         <section className="surface-panel rounded-[1.75rem] p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <Subheading>Bookmarked shelf</Subheading>
-              <Text>Games this player pinned for later.</Text>
+              <Subheading>{t("userProfile.bookmarks.title")}</Subheading>
+              <Text>{t("userProfile.bookmarks.description")}</Text>
             </div>
             <Badge color="zinc" className="shrink-0 whitespace-nowrap">
-              {bookmarks.length} saved
+              {formatMessage(t("userProfile.bookmarks.count"), {
+                count: bookmarks.length,
+              })}
             </Badge>
           </div>
           <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
             {bookmarks.length > 0 ? (
               bookmarks.map((game) => {
-                const title = game.metadata?.title || game.title || "Game";
+                const title =
+                  game.metadata?.title || game.title || t("community.game");
                 return (
                   <Link
                     key={game.id}
@@ -835,7 +914,7 @@ export default function UserProfile() {
               })
             ) : (
               <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted">
-                No bookmarks shared yet.
+                {t("userProfile.bookmarks.empty")}
               </div>
             )}
           </div>

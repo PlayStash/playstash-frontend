@@ -6,6 +6,7 @@
  * error messages are the WPF ones. File-system checks (file size on disk,
  * links, overlay location and size) live in Rust (`src-tauri/src/themes.rs`).
  */
+import { translate, type TranslationKey } from "@/i18n";
 import {
   parseWpfColor,
   THEME_COLOR_PATTERN,
@@ -71,20 +72,34 @@ export type ThemeColors = Record<ThemeColorName, ArgbColor>;
 export const OVERLAY_KEY = "PlayStash.Images.Overlay";
 
 /** WPF error texts, verbatim. */
-export const THEME_ERRORS = {
-  tooLarge: "The theme file is too large.",
-  dictionary: "Unsupported theme resource dictionary.",
-  noKey: "A theme resource has no key.",
-  duplicate: "Unsupported or duplicate theme resource.",
-  imageNoPath: "The theme image has no path.",
-  imageFormat: "Unsupported theme image format.",
-  schema: "The theme schema or required resources are invalid.",
-  unsupported: "The theme contains an unsupported resource type or value.",
-  localFiles: "Themes must be local files.",
-  imageTooLarge: "The theme image is too large.",
-  unsafePath: "The archive contains an unsafe path.",
-  unsafeWindowsPath: "The archive contains an unsafe Windows path.",
-} as const;
+const THEME_ERROR_KEYS = {
+  tooLarge: "themes.error.tooLarge",
+  dictionary: "themes.error.dictionary",
+  noKey: "themes.error.noKey",
+  duplicate: "themes.error.duplicate",
+  imageNoPath: "themes.error.imageNoPath",
+  imageFormat: "themes.error.imageFormat",
+  schema: "themes.error.schema",
+  unsupported: "themes.error.unsupported",
+  localFiles: "themes.error.localFiles",
+  imageTooLarge: "themes.error.imageTooLarge",
+  unsafePath: "themes.error.unsafePath",
+  unsafeWindowsPath: "themes.error.unsafeWindowsPath",
+} as const satisfies Record<string, TranslationKey>;
+
+/**
+ * User-facing theme validation messages. Each property is translated when it
+ * is read, so errors always use the current interface language.
+ */
+export const THEME_ERRORS = Object.defineProperties(
+  {} as Record<keyof typeof THEME_ERROR_KEYS, string>,
+  Object.fromEntries(
+    Object.entries(THEME_ERROR_KEYS).map(([name, key]) => [
+      name,
+      { enumerable: true, get: () => translate(key) },
+    ]),
+  ),
+);
 
 export class ThemeValidationError extends Error {
   constructor(message: string) {

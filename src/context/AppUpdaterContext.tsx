@@ -22,6 +22,16 @@ import {
   writeUpdateChannel,
 } from "@/utils/updater";
 import type { UpdateChannel } from "@/utils/updater";
+import { translate, type TranslationKey } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
+
+/** Translates at call time and fills `{placeholders}`. */
+function tr(
+  key: TranslationKey,
+  values?: Record<string, string | number>,
+): string {
+  return values ? fillTemplate(translate(key), values) : translate(key);
+}
 
 const AUTO_CHECK_DELAY_MS = 1500;
 const APP_UPDATER_EVENT = "app-updater-progress";
@@ -105,7 +115,9 @@ async function fetchGithubReleaseFallback(
   });
 
   if (!response.ok) {
-    throw new Error(`GitHub release lookup failed (${response.status}).`);
+    throw new Error(
+      tr("updater.error.githubLookup", { status: response.status }),
+    );
   }
 
   return (await response.json()) as GithubReleaseFallback;
@@ -206,8 +218,8 @@ export function AppUpdaterProvider({
           setIsInstalling(true);
           setStatusText(
             snapshot.status === "installing"
-              ? "Installing update..."
-              : "Downloading update...",
+              ? tr("updater.status.installing")
+              : tr("updater.status.downloading"),
           );
 
           // The backend keeps streaming progress; follow it so the status text
@@ -219,13 +231,11 @@ export function AppUpdaterProvider({
               if (cancelled) return;
               switch (event.payload.event) {
                 case "Installing":
-                  setStatusText("Installing update...");
+                  setStatusText(tr("updater.status.installing"));
                   break;
                 case "Finished":
                   setIsInstalling(false);
-                  setStatusText(
-                    "Update installed. Restart PlayStash to finish.",
-                  );
+                  setStatusText(tr("updater.status.installed"));
                   break;
                 default:
                   break;
@@ -235,7 +245,7 @@ export function AppUpdaterProvider({
           if (cancelled) unlisten();
         } else if (snapshot.status === "finished") {
           setAvailableVersion(null);
-          setStatusText("Update installed. Restart PlayStash to finish.");
+          setStatusText(tr("updater.status.installed"));
         } else if (snapshot.status === "error" && snapshot.error) {
           setErrorText(snapshot.error);
         }
@@ -258,10 +268,9 @@ export function AppUpdaterProvider({
       if (!isTauriApp()) {
         if (manual) {
           await showAlert({
-            title: "Desktop updates unavailable",
-            description:
-              "Auto-updates are only available in the PlayStash desktop app.",
-            affirmativeText: "OK",
+            title: tr("updater.unavailable.title"),
+            description: tr("updater.unavailable.description"),
+            affirmativeText: tr("common.ok"),
           });
         }
         return;
@@ -270,10 +279,9 @@ export function AppUpdaterProvider({
       if (!updaterEnabled) {
         if (manual) {
           await showAlert({
-            title: "Auto-updates not configured",
-            description:
-              "This desktop build does not have a Tauri updater public key configured yet.",
-            affirmativeText: "OK",
+            title: tr("updater.notConfigured.title"),
+            description: tr("updater.notConfigured.description"),
+            affirmativeText: tr("common.ok"),
           });
         }
         return;
@@ -282,13 +290,14 @@ export function AppUpdaterProvider({
       runningRef.current = true;
       setIsChecking(true);
       setErrorText(null);
-      setStatusText(`Checking ${channelLabel(updateChannel)} updates...`);
+      setStatusText(
+        tr("updater.status.checking", { channel: channelLabel(updateChannel) }),
+      );
       let update: PendingUpdate | null = null;
       let removeProgressListener: (() => void) | null = null;
 
       const handleMissingFeedFallback = async (cause: unknown) => {
-        const fallbackMessage =
-          "The signed updater feed for this channel is not published yet.";
+        const fallbackMessage = tr("updater.feedMissing");
 
         try {
           const release = await fetchGithubReleaseFallback(updateChannel);
@@ -303,24 +312,24 @@ export function AppUpdaterProvider({
             if (!hasNewerStable) {
               setAvailableVersion(null);
               setErrorText(fallbackMessage);
-              setStatusText(
-                "The stable updater feed is not published yet. Open the stable GitHub release page to install or switch channels manually.",
-              );
+              setStatusText(tr("updater.stable.feedMissingStatus"));
 
               if (!manual) {
                 return;
               }
 
               const approved = await showAlert({
-                title: "Stable release page available",
-                description: `The signed updater feed is not published yet for the stable channel. GitHub currently lists stable release v${remoteVersion}. Open that release page instead?`,
-                affirmativeText: "Open GitHub release",
-                negativeText: "Cancel",
+                title: tr("updater.stable.pageAvailable.title"),
+                description: tr("updater.stable.pageAvailable.description", {
+                  version: remoteVersion,
+                }),
+                affirmativeText: tr("updater.openGithubRelease"),
+                negativeText: tr("common.cancel"),
               });
 
               if (approved) {
                 openExternalReleasePage(updateChannel, releaseUrl);
-                setStatusText("Opened the stable GitHub release page.");
+                setStatusText(tr("updater.stable.openedPage"));
               }
 
               return;
@@ -329,7 +338,7 @@ export function AppUpdaterProvider({
             setAvailableVersion(remoteVersion);
             setErrorText(fallbackMessage);
             setStatusText(
-              `Stable release v${remoteVersion} is available on GitHub, but the signed updater feed is not published yet.`,
+              tr("updater.stable.newerStatus", { version: remoteVersion }),
             );
 
             if (
@@ -344,17 +353,18 @@ export function AppUpdaterProvider({
             }
 
             const approved = await showAlert({
-              title: `Stable release v${remoteVersion} available`,
-              description:
-                "The signed updater feed is not published yet for the stable channel. A newer stable GitHub release is available. Open the GitHub release page instead?",
-              affirmativeText: "Open GitHub release",
-              negativeText: "Cancel",
+              title: tr("updater.stable.newer.title", {
+                version: remoteVersion,
+              }),
+              description: tr("updater.stable.newer.description"),
+              affirmativeText: tr("updater.openGithubRelease"),
+              negativeText: tr("common.cancel"),
             });
 
             if (approved) {
               clearSkippedVersion(updateChannel);
               openExternalReleasePage(updateChannel, releaseUrl);
-              setStatusText("Opened the stable GitHub release page.");
+              setStatusText(tr("updater.stable.openedPage"));
             }
             return;
           }
@@ -363,7 +373,7 @@ export function AppUpdaterProvider({
           setAvailableVersion(null);
           setErrorText(fallbackMessage);
           setStatusText(
-            `The ${label} updater feed is not published yet. The ${label} GitHub prerelease page is available instead.`,
+            tr("updater.channel.feedMissingStatus", { channel: label }),
           );
 
           if (!manual) {
@@ -372,19 +382,28 @@ export function AppUpdaterProvider({
 
           const updatedLabel = release.updated_at || release.published_at;
           const description = updatedLabel
-            ? `The signed updater feed is not published yet for the ${label} channel. GitHub shows a ${label} prerelease updated at ${new Date(updatedLabel).toLocaleString()}. Open that release page instead?`
-            : `The signed updater feed is not published yet for the ${label} channel. Open the ${label} GitHub prerelease page instead?`;
+            ? tr("updater.channel.pageAvailable.descriptionUpdated", {
+                channel: label,
+                date: new Date(updatedLabel).toLocaleString(),
+              })
+            : tr("updater.channel.pageAvailable.description", {
+                channel: label,
+              });
 
           const approved = await showAlert({
-            title: `${label} release page available`,
+            title: tr("updater.channel.pageAvailable.title", {
+              channel: label,
+            }),
             description,
-            affirmativeText: `Open ${label} release`,
-            negativeText: "Cancel",
+            affirmativeText: tr("updater.channel.openRelease", {
+              channel: label,
+            }),
+            negativeText: tr("common.cancel"),
           });
 
           if (approved) {
             openExternalReleasePage(updateChannel, releaseUrl);
-            setStatusText(`Opened the ${label} GitHub release page.`);
+            setStatusText(tr("updater.channel.openedPage", { channel: label }));
           }
         } catch (fallbackError) {
           const message = formatUpdateError(fallbackError);
@@ -399,9 +418,9 @@ export function AppUpdaterProvider({
 
           if (manual) {
             await showAlert({
-              title: "Update failed",
+              title: tr("updater.failed.title"),
               description: message,
-              affirmativeText: "OK",
+              affirmativeText: tr("common.ok"),
             });
           }
         }
@@ -416,14 +435,19 @@ export function AppUpdaterProvider({
         if (!update) {
           setAvailableVersion(null);
           setStatusText(
-            `PlayStash is up to date on the ${channelLabel(updateChannel)} channel.`,
+            tr("updater.status.upToDate", {
+              channel: channelLabel(updateChannel),
+            }),
           );
 
           if (manual) {
             await showAlert({
-              title: "PlayStash is up to date",
-              description: `You are already running the latest ${channelLabel(updateChannel)} desktop release (v${__APP_VERSION__}).`,
-              affirmativeText: "OK",
+              title: tr("updater.upToDate.title"),
+              description: tr("updater.upToDate.description", {
+                channel: channelLabel(updateChannel),
+                version: __APP_VERSION__,
+              }),
+              affirmativeText: tr("common.ok"),
             });
           }
           return;
@@ -433,20 +457,23 @@ export function AppUpdaterProvider({
 
         if (!manual && readSkippedVersion(updateChannel) === update.version) {
           setStatusText(
-            `${channelLabel(updateChannel)} update v${update.version} is available.`,
+            tr("updater.status.available", {
+              channel: channelLabel(updateChannel),
+              version: update.version,
+            }),
           );
           return;
         }
 
         const approved = await showAlert({
-          title: `Update v${update.version} available`,
+          title: tr("updater.available.title", { version: update.version }),
           description: formatUpdatePrompt(
             update.version,
             updateChannel,
             update.body,
           ),
-          affirmativeText: "Update now",
-          negativeText: "Later",
+          affirmativeText: tr("updater.updateNow"),
+          negativeText: tr("updater.later"),
         });
 
         if (!approved) {
@@ -454,15 +481,18 @@ export function AppUpdaterProvider({
             writeSkippedVersion(updateChannel, update.version);
           }
           setStatusText(
-            `${channelLabel(updateChannel)} update v${update.version} is available.`,
+            tr("updater.status.available", {
+              channel: channelLabel(updateChannel),
+              version: update.version,
+            }),
           );
           return;
         }
 
         clearSkippedVersion(updateChannel);
         setIsInstalling(true);
-        setStatusText("Downloading update...");
-        void showAlert({ title: "Downloading update..." });
+        setStatusText(tr("updater.status.downloading"));
+        void showAlert({ title: tr("updater.status.downloading") });
 
         let contentLength = 0;
         let downloaded = 0;
@@ -476,8 +506,8 @@ export function AppUpdaterProvider({
                 contentLength = event.payload.contentLength ?? 0;
                 setStatusText(
                   contentLength > 0
-                    ? "Downloading update... 0%"
-                    : "Downloading update...",
+                    ? tr("updater.status.downloadingPercent", { percent: 0 })
+                    : tr("updater.status.downloading"),
                 );
                 break;
               case "Progress":
@@ -487,15 +517,17 @@ export function AppUpdaterProvider({
                     99,
                     Math.round((downloaded / contentLength) * 100),
                   );
-                  setStatusText(`Downloading update... ${percent}%`);
+                  setStatusText(
+                    tr("updater.status.downloadingPercent", { percent }),
+                  );
                 }
                 break;
               case "Installing":
-                setStatusText("Installing update...");
-                void showAlert({ title: "Installing update..." });
+                setStatusText(tr("updater.status.installing"));
+                void showAlert({ title: tr("updater.status.installing") });
                 break;
               case "Finished":
-                setStatusText("Update installed. Restart PlayStash to finish.");
+                setStatusText(tr("updater.status.installed"));
                 break;
             }
           },
@@ -506,13 +538,12 @@ export function AppUpdaterProvider({
         });
 
         setAvailableVersion(null);
-        setStatusText("Update installed. Restart PlayStash to finish.");
+        setStatusText(tr("updater.status.installed"));
 
         await showAlert({
-          title: "Update installed",
-          description:
-            "PlayStash has been updated. Restart the app to finish loading the new version.",
-          affirmativeText: "OK",
+          title: tr("updater.installed.title"),
+          description: tr("updater.installed.description"),
+          affirmativeText: tr("common.ok"),
         });
       } catch (error) {
         if (isMissingUpdaterFeedError(error)) {
@@ -527,9 +558,9 @@ export function AppUpdaterProvider({
 
         if (manual) {
           await showAlert({
-            title: "Update failed",
+            title: tr("updater.failed.title"),
             description: message,
-            affirmativeText: "OK",
+            affirmativeText: tr("common.ok"),
           });
         }
       } finally {

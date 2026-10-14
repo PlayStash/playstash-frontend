@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import type { DiskUsageData } from "@/hooks/useDiskUsage";
 import { formatDecimal, formatNumber } from "@/utils/number";
+import { useTranslation } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 
 const COLORS = {
   current: "#F4417F", // deep pink
@@ -37,38 +39,47 @@ export default function DiskUsageChart({
   gameTitle,
   rootPath,
 }: DiskUsageChartProps) {
+  const { t } = useTranslation();
   const segments = useMemo(() => {
     if (!data) return [];
     return [
       {
-        label: `This Game${gameTitle ? ` (${gameTitle})` : ""}`,
+        id: "current",
+        label: gameTitle
+          ? formatMessage(t("admin.diskUsage.thisGameNamed"), {
+              title: gameTitle,
+            })
+          : t("admin.diskUsage.thisGame"),
         value: data.currentGameSize,
         color: COLORS.current,
       },
       {
-        label: "Other installed PlayStash Games",
+        id: "other",
+        label: t("admin.diskUsage.otherGames"),
         value: data.otherGamesSize,
         color: COLORS.other,
       },
       {
-        label: "Unmanaged Data",
+        id: "unmanaged",
+        label: t("admin.diskUsage.unmanaged"),
         value: data.unmanagedData,
         color: COLORS.unmanaged,
       },
       {
-        label: "Free Space",
+        id: "free",
+        label: t("admin.diskUsage.free"),
         value: data.free,
         color: COLORS.free,
       },
     ].filter((segment) => segment.value > 0);
-  }, [data, gameTitle]);
+  }, [data, gameTitle, t]);
 
   const total = data?.total ?? 0;
 
   if (loading) {
     return (
       <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
-        <p className="text-sm text-ps-muted">Loading disk usage…</p>
+        <p className="text-sm text-ps-muted">{t("admin.diskUsage.loading")}</p>
       </div>
     );
   }
@@ -76,7 +87,9 @@ export default function DiskUsageChart({
   if (!data || total <= 0) {
     return (
       <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
-        <p className="text-sm text-ps-muted">Disk usage is not available.</p>
+        <p className="text-sm text-ps-muted">
+          {t("admin.diskUsage.unavailable")}
+        </p>
       </div>
     );
   }
@@ -94,7 +107,7 @@ export default function DiskUsageChart({
     cumulative += dash;
     return (
       <circle
-        key={segment.label}
+        key={segment.id}
         cx={size / 2}
         cy={size / 2}
         r={radius}
@@ -109,7 +122,9 @@ export default function DiskUsageChart({
 
   return (
     <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
-      <div className="text-sm font-semibold text-ps-text">Disk Usage</div>
+      <div className="text-sm font-semibold text-ps-text">
+        {t("admin.diskUsage.title")}
+      </div>
       {rootPath && (
         <div className="mt-0.5 font-mono text-xs text-ps-muted">{rootPath}</div>
       )}
@@ -119,7 +134,7 @@ export default function DiskUsageChart({
           viewBox={`0 0 ${size} ${size}`}
           className="h-40 w-40 shrink-0"
           role="img"
-          aria-label="Disk usage breakdown"
+          aria-label={t("admin.diskUsage.chartLabel")}
         >
           <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>{arcs}</g>
           <text
@@ -136,10 +151,7 @@ export default function DiskUsageChart({
 
         <ul className="w-full space-y-2">
           {segments.map((segment) => (
-            <li
-              key={segment.label}
-              className="flex items-center gap-2 text-sm"
-            >
+            <li key={segment.id} className="flex items-center gap-2 text-sm">
               <span
                 className="inline-block size-3 shrink-0 rounded-full"
                 style={{ backgroundColor: segment.color }}

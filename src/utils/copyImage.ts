@@ -1,4 +1,5 @@
 /** Copies an image (URL or object URL) to the clipboard as PNG. */
+import { translate } from "@/i18n";
 
 async function toPng(blob: Blob): Promise<Blob> {
   if (blob.type === "image/png") return blob;
@@ -8,12 +9,12 @@ async function toPng(blob: Blob): Promise<Blob> {
     canvas.width = bitmap.width;
     canvas.height = bitmap.height;
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas is unavailable.");
+    if (!context) throw new Error(translate("images.error.canvas"));
     context.drawImage(bitmap, 0, 0);
     return await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
         (png) =>
-          png ? resolve(png) : reject(new Error("PNG encoding failed.")),
+          png ? resolve(png) : reject(new Error(translate("images.error.png"))),
         "image/png",
       ),
     );

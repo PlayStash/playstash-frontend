@@ -3,8 +3,11 @@ import { useGames } from "@/hooks/useGames";
 import { SectionExpander } from "./SectionExpander";
 import GameCard from "./GameCard";
 import { Button } from "./tailwind/button";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 export function RecentlyAddedGames() {
+  const { t } = useTranslation();
   const addedSince = useMemo(
     () => new Date(Date.now() - 7 * 86400000).toISOString(),
     [],
@@ -18,7 +21,7 @@ export function RecentlyAddedGames() {
   });
   return (
     <SectionExpander
-      title={`Recently Added · Last 7 days (${count})`}
+      title={fillTemplate(t("library.recent.title"), { count })}
       defaultOpen
     >
       {error && (
@@ -27,9 +30,7 @@ export function RecentlyAddedGames() {
         </p>
       )}
       {!loading && !error && games.length === 0 && (
-        <p className="p-4 text-sm text-ps-muted">
-          No games added in the last week.
-        </p>
+        <p className="p-4 text-sm text-ps-muted">{t("library.recent.empty")}</p>
       )}
       <div className="flex gap-5 overflow-x-auto py-2 pb-4">
         {games.map((game) => (
@@ -40,12 +41,12 @@ export function RecentlyAddedGames() {
       </div>
       {loading && (
         <p role="status" className="text-sm text-ps-muted">
-          Loading recently added games…
+          {t("library.recent.loading")}
         </p>
       )}
       {hasMore && (
         <Button outline onClick={() => void loadMore()} disabled={loading}>
-          Load more recently added games
+          {t("library.recent.loadMore")}
         </Button>
       )}
     </SectionExpander>

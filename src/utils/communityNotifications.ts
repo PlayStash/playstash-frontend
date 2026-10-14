@@ -3,6 +3,7 @@
  * rules (pure). Mirrors the WPF `CommunityConnection`.
  */
 import type { ChatMessage, ChatTarget } from "@/utils/chat";
+import type { TranslationKey } from "@/i18n";
 import { profileScopedKey } from "@/utils/profiles";
 
 export type CommunityPresence = "ONLINE" | "BUSY" | "INVISIBLE";
@@ -59,6 +60,15 @@ export function savePresence(
     // Presence still applies for this session.
   }
 }
+
+/** Catalog keys of the activity states shown to users. */
+export const ACTIVITY_STATE_LABELS: Record<string, TranslationKey> = {
+  ONLINE: "chat.state.online",
+  BUSY: "chat.state.busy",
+  INVISIBLE: "chat.state.invisible",
+  PLAYING: "chat.state.playing",
+  OFFLINE: "chat.state.offline",
+};
 
 export interface PublishedActivity {
   state: CommunityPresence | "PLAYING";
@@ -142,6 +152,8 @@ export interface NotificationLabels {
   activityTitle: string;
   /** `{id}` is replaced with the user id. */
   unknownUser: string;
+  /** Display text of an activity state (defaults to the raw state). */
+  state?: (state: string) => string;
 }
 
 export const DEFAULT_NOTIFICATION_LABELS: NotificationLabels = {
@@ -313,5 +325,6 @@ export function activityNotification(
   const name =
     input.username?.trim() ||
     labels.unknownUser.replace("{id}", String(changed.userId));
-  return { title: labels.activityTitle, body: `${name}: ${changed.state}` };
+  const state = labels.state?.(changed.state) ?? changed.state;
+  return { title: labels.activityTitle, body: `${name}: ${state}` };
 }

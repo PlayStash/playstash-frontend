@@ -32,7 +32,7 @@ export function ServerDiagnostics() {
       const response = await authFetch(`${serverUrl}/api/status`);
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not read the server status."),
+          await getErrorMessage(response, t("admin.diagnostics.statusFailed")),
         );
       const status = await response.json();
       setHealth({
@@ -69,7 +69,7 @@ export function ServerDiagnostics() {
       const response = await authFetch(`${serverUrl}/api/admin/logs`);
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not read server logs."),
+          await getErrorMessage(response, t("admin.diagnostics.logsFailed")),
         );
       setLogs(await response.json());
     } catch (cause) {
@@ -85,11 +85,10 @@ export function ServerDiagnostics() {
   const recache = async () => {
     if (
       !(await showAlert({
-        title: "Refresh all game metadata?",
-        description:
-          "This contacts configured metadata providers for the entire library. Manual metadata and mappings are preserved. Large libraries may take time and provider limits still apply.",
-        affirmativeText: "Queue refresh",
-        negativeText: "Cancel",
+        title: t("admin.diagnostics.recache.title"),
+        description: t("admin.diagnostics.recache.description"),
+        affirmativeText: t("admin.diagnostics.recache.confirm"),
+        negativeText: t("common.cancel"),
       }))
     )
       return;
@@ -102,11 +101,16 @@ export function ServerDiagnostics() {
       });
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not queue metadata refresh."),
+          await getErrorMessage(
+            response,
+            t("admin.diagnostics.recache.failed"),
+          ),
         );
       const result = await response.json();
       setMessage(
-        `Queued metadata refresh for ${result.queued_games} games. The server processes it in the background; refresh the logs to inspect progress.`,
+        formatMessage(t("admin.diagnostics.recache.queued"), {
+          count: result.queued_games,
+        }),
       );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -117,9 +121,7 @@ export function ServerDiagnostics() {
   return (
     <section className="space-y-4">
       <p className="text-sm text-ps-muted">
-        Inspect recent server logs or refresh provider metadata for the library.
-        Logs are filtered by the server; review their contents before sharing
-        them.
+        {t("admin.diagnostics.description")}
       </p>
       <div className="space-y-2 rounded-xl bg-ps-panel-soft p-4 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -145,15 +147,17 @@ export function ServerDiagnostics() {
       </div>
       <div className="flex flex-wrap gap-3">
         <Button outline disabled={busy} onClick={() => void loadLogs()}>
-          {logs ? "Refresh logs" : "Read server logs"}
+          {logs
+            ? t("admin.diagnostics.refreshLogs")
+            : t("admin.diagnostics.readLogs")}
         </Button>
         <Button outline disabled={busy} onClick={() => void recache()}>
-          Refresh all metadata
+          {t("admin.diagnostics.refreshMetadata")}
         </Button>
       </div>
       {busy && (
         <p role="status" className="text-sm text-ps-muted">
-          Working…
+          {t("admin.diagnostics.working")}
         </p>
       )}
       {error && (
@@ -169,7 +173,7 @@ export function ServerDiagnostics() {
       {logs && (
         <div
           className="max-h-96 space-y-3 overflow-auto rounded-xl bg-ps-panel-soft p-4 text-xs"
-          aria-label="Recent server logs"
+          aria-label={t("admin.diagnostics.logsLabel")}
         >
           {!logs.length && <p>{t("admin.logs.empty")}</p>}
           {logs.map((record, index) => (

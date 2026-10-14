@@ -6,6 +6,7 @@ import {
   LibraryCategory,
   readLibraryCategories,
 } from "@/utils/libraryCategories";
+import { useTranslation } from "@/i18n";
 
 export function LibraryCategories({
   storageKey,
@@ -20,12 +21,13 @@ export function LibraryCategories({
   onFolderChange: (folder: string) => void;
   onSelect: (category: LibraryCategory | null) => void;
 }) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState(() =>
     readLibraryCategories(storageKey),
   );
   const [selected, setSelected] = useState("");
   const [name, setName] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(false);
   useEffect(() => {
     setCategories(readLibraryCategories(storageKey));
     setSelected("");
@@ -34,18 +36,18 @@ export function LibraryCategories({
     try {
       localStorage.setItem(storageKey, JSON.stringify(next));
       setCategories(next);
-      setError("");
+      setError(false);
     } catch {
-      setError("Couldn't save categories. Check browser storage permissions.");
+      setError(true);
     }
   };
   return (
     <div className="mb-4 space-y-2 rounded-2xl bg-ps-panel-soft p-3 text-left">
       <div className="flex flex-wrap items-end gap-3">
         <label className="min-w-40 flex-1 text-sm text-ps-muted">
-          Category
+          {t("library.categories.category")}
           <select
-            aria-label="Library category"
+            aria-label={t("library.categories.select")}
             value={selected}
             className="mt-1 block min-h-11 w-full rounded-lg bg-ps-panel px-3 text-ps-text"
             onChange={(event) => {
@@ -57,7 +59,7 @@ export function LibraryCategories({
               );
             }}
           >
-            <option value="">All games</option>
+            <option value="">{t("library.categories.allGames")}</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -66,24 +68,24 @@ export function LibraryCategories({
           </select>
         </label>
         <label className="min-w-52 flex-1 text-sm text-ps-muted">
-          Library folder
+          {t("library.categories.folder")}
           <Input
-            aria-label="Library folder"
+            aria-label={t("library.categories.folder")}
             value={folder}
             onChange={(event) => {
               onFolderChange(event.target.value);
               setSelected("");
             }}
-            placeholder="Server folder, e.g. /games/RPG"
+            placeholder={t("library.categories.folderPlaceholder")}
           />
         </label>
         <label className="min-w-40 flex-1 text-sm text-ps-muted">
-          Save current tags and folder as
+          {t("library.categories.saveAs")}
           <Input
-            aria-label="Category name"
+            aria-label={t("library.categories.name")}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Category name"
+            placeholder={t("library.categories.name")}
           />
         </label>
         <Button
@@ -99,7 +101,7 @@ export function LibraryCategories({
             setSelected(id);
           }}
         >
-          Save category
+          {t("library.categories.save")}
         </Button>
         {selected && (
           <Button
@@ -110,17 +112,14 @@ export function LibraryCategories({
               onSelect(null);
             }}
           >
-            Delete category
+            {t("library.categories.delete")}
           </Button>
         )}
       </div>
-      <p className="text-xs text-ps-muted">
-        Categories are saved for this account on this device. Choose tags in
-        Filters; new matching games appear automatically.
-      </p>
+      <p className="text-xs text-ps-muted">{t("library.categories.hint")}</p>
       {error && (
         <p role="alert" className="text-sm text-ps-danger">
-          {error}
+          {t("library.categories.saveFailed")}
         </p>
       )}
     </div>

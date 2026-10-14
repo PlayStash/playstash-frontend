@@ -20,6 +20,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PlaystashUser } from "../../api";
 import { CopyApiKeyButton } from "@/components/account/CopyApiKeyButton";
+import { useTranslation, type TranslationKey } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 
 interface Props {
   user: PlaystashUser;
@@ -40,6 +42,13 @@ interface Props {
 
 type TabKey = "images" | "details";
 
+const VIA_LABELS: Record<Exclude<ImageState["via"], "none">, TranslationKey> = {
+  file: "admin.userEditor.via.file",
+  url: "admin.userEditor.via.url",
+  paste: "admin.userEditor.via.paste",
+  drag: "admin.userEditor.via.drag",
+};
+
 interface ImageState {
   file: File | null;
   via: "none" | "file" | "url" | "paste" | "drag";
@@ -57,10 +66,12 @@ export function UserEditorModal({
   self = false,
 }: Props) {
   const { serverUrl, authFetch, refreshCurrentUser } = useAuth() as any;
+  const { t } = useTranslation();
   const isTauri = isTauriApp();
   const [activeTab, setActiveTab] = useState<TabKey>("images");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(false);
 
   const birthRaw = user.birth_date;
   let birthISO = "";
@@ -101,7 +112,7 @@ export function UserEditorModal({
   ): Promise<{ ok: boolean; message?: string }> => {
     try {
       const base = serverUrl?.replace(/\/+$/, "");
-      if (!base) return { ok: false, message: "No server URL" };
+      if (!base) return { ok: false, message: t("admin.userEditor.noServer") };
       const uid = user.id;
       const endpoint = self
         ? `${base}/api/users/me`
@@ -126,7 +137,10 @@ export function UserEditorModal({
       }
       return { ok: true };
     } catch (e: any) {
-      return { ok: false, message: e?.message || "Failed to save" };
+      return {
+        ok: false,
+        message: e?.message || t("admin.userEditor.saveFailed"),
+      };
     }
   };
 
@@ -145,9 +159,11 @@ export function UserEditorModal({
     const res = await (onSave ? onSave(payload) : defaultSave(payload));
     if (res.ok) {
       setForm((f) => ({ ...f, password: "" }));
-      setSaveMsg("Successfully saved User details");
+      setSaveOk(true);
+      setSaveMsg(t("admin.userEditor.saved"));
     } else {
-      setSaveMsg(res.message || "Unknown error");
+      setSaveOk(false);
+      setSaveMsg(res.message || t("admin.userEditor.unknownError"));
     }
     setSaving(false);
   };
@@ -171,6 +187,7 @@ export function UserEditorModal({
   });
   const [savingImages, setSavingImages] = useState(false);
   const [imagesMsg, setImagesMsg] = useState<string | null>(null);
+  const [imagesOk, setImagesOk] = useState(false);
   const revokeRef = useRef<string[]>([]);
   const dragTargetRef = useRef<"avatar" | "bg" | null>(null);
   const nativeDragHandledRef = useRef(false);
@@ -407,7 +424,7 @@ export function UserEditorModal({
     return null;
   };
   const uploadImage = async (file: File): Promise<number> => {
-    if (!serverUrl) throw new Error("No server URL");
+    if (!serverUrl) throw new Error(t("admin.userEditor.noServer"));
     const base = serverUrl.replace(/\/+$/, "");
     const formData = new FormData();
     formData.append("file", file, file.name);
@@ -418,12 +435,15 @@ export function UserEditorModal({
     if (!res.ok) {
       const txt = await res.text();
       throw new Error(
-        `Upload failed (${res.status}): ${txt || res.statusText}`,
+        formatMessage(t("admin.userEditor.uploadFailed"), {
+          status: res.status,
+          message: txt || res.statusText,
+        }),
       );
     }
     const media = await res.json();
     const mid = media?.id ?? media?.ID;
-    if (!mid) throw new Error("Upload response missing id");
+    if (!mid) throw new Error(t("admin.userEditor.uploadMissingId"));
     return mid;
   };
   const saveImages = async () => {
@@ -437,17 +457,17 @@ export function UserEditorModal({
       let backgroundId: number | undefined;
       if (newAvatar) {
         const file = await obtainFileForState(avatarImg, "avatar");
-        if (!file) throw new Error("Invalid avatar image");
+        if (!file) throw new Error(t("admin.userEditor.invalidAvatar"));
         avatarId = await uploadImage(file);
       }
       if (newBg) {
         const file = await obtainFileForState(bgImg, "background");
-        if (!file) throw new Error("Invalid background image");
+        if (!file) throw new Error(t("admin.userEditor.invalidBackground"));
         backgroundId = await uploadImage(file);
       }
       if (avatarId || backgroundId) {
         const base = serverUrl?.replace(/\/+$/, "");
-        if (!base) throw new Error("Missing server URL");
+        if (!base) throw new Error(t("admin.register.missingServer"));
         const uid = user.id;
         const endpoint = self
           ? `${base}/api/users/me`
@@ -468,14 +488,18 @@ export function UserEditorModal({
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(
-            `User update failed (${res.status}): ${txt || res.statusText}`,
+            formatMessage(t("admin.userEditor.updateFailed"), {
+              status: res.status,
+              message: txt || res.statusText,
+            }),
           );
         }
         const updatedUser = await res.json();
         onUserUpdated?.(updatedUser);
         if (self) refreshCurrentUser?.();
       }
-      setImagesMsg("Images saved successfully");
+      setImagesOk(true);
+      setImagesMsg(t("admin.userEditor.imagesSaved"));
       if (newAvatar)
         setAvatarImg((s) => ({
           ...s,
@@ -495,7 +519,8 @@ export function UserEditorModal({
           loadedId: backgroundId ?? s.loadedId,
         }));
     } catch (e: any) {
-      setImagesMsg(e?.message || "Failed to save images");
+      setImagesOk(false);
+      setImagesMsg(e?.message || t("admin.userEditor.imagesFailed"));
     } finally {
       setSavingImages(false);
     }
@@ -508,7 +533,7 @@ export function UserEditorModal({
       size="3xl"
       className="!h-[min(85vh,850px)] flex flex-col"
     >
-      <DialogTitle>User Settings</DialogTitle>
+      <DialogTitle>{t("admin.userEditor.title")}</DialogTitle>
       <div className="px-6 mt-1 flex gap-2 border-b border-ps-line text-sm">
         <button
           onClick={() => setActiveTab("images")}
@@ -519,7 +544,7 @@ export function UserEditorModal({
               : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
-          Images
+          {t("admin.userEditor.tab.images")}
         </button>
         <button
           onClick={() => setActiveTab("details")}
@@ -530,7 +555,7 @@ export function UserEditorModal({
               : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
-          Details
+          {t("admin.userEditor.tab.details")}
         </button>
       </div>
       {/* Fixed panel height so switching tabs does not visually resize the dialog */}
@@ -540,10 +565,10 @@ export function UserEditorModal({
             {/* Avatar zone */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-ps-muted">
-                <span>Avatar</span>
+                <span>{t("admin.userEditor.avatar")}</span>
                 {avatarImg.via !== "none" && (
                   <span className="rounded-full bg-ps-panel px-2 py-0.5 text-[10px] font-semibold text-ps-muted">
-                    {avatarImg.via}
+                    {t(VIA_LABELS[avatarImg.via])}
                   </span>
                 )}
               </div>
@@ -558,20 +583,22 @@ export function UserEditorModal({
                 {avatarImg.preview ? (
                   <img
                     src={avatarImg.preview}
-                    alt="Avatar preview"
+                    alt={t("admin.userEditor.avatarPreview")}
                     className="object-contain w-full h-full"
                     draggable={false}
                   />
                 ) : (
                   <div className="text-xs text-ps-muted text-center px-4">
-                    {avatarMediaId ? "Loading…" : "Drag & Drop / Click / Paste"}
+                    {avatarMediaId
+                      ? t("common.loading")
+                      : t("admin.userEditor.dropHint")}
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <Input
                   type="text"
-                  placeholder="Paste image URL"
+                  placeholder={t("admin.userEditor.urlPlaceholder")}
                   value={avatarImg.urlInput}
                   onChange={(e) =>
                     setAvatarImg((p) => ({ ...p, urlInput: e.target.value }))
@@ -599,7 +626,7 @@ export function UserEditorModal({
                         }))
                       }
                     >
-                      Reset
+                      {t("common.reset")}
                     </Button>
                   )}
               </div>
@@ -618,10 +645,10 @@ export function UserEditorModal({
             {/* Background zone */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-ps-muted">
-                <span>Background</span>
+                <span>{t("admin.userEditor.background")}</span>
                 {bgImg.via !== "none" && (
                   <span className="rounded-full bg-ps-panel px-2 py-0.5 text-[10px] font-semibold text-ps-muted">
-                    {bgImg.via}
+                    {t(VIA_LABELS[bgImg.via])}
                   </span>
                 )}
               </div>
@@ -636,22 +663,22 @@ export function UserEditorModal({
                 {bgImg.preview ? (
                   <img
                     src={bgImg.preview}
-                    alt="Background preview"
+                    alt={t("admin.userEditor.backgroundPreview")}
                     className="object-cover w-full h-full"
                     draggable={false}
                   />
                 ) : (
                   <div className="text-xs text-ps-muted text-center px-4">
                     {backgroundMediaId
-                      ? "Loading…"
-                      : "Drag & Drop / Click / Paste"}
+                      ? t("common.loading")
+                      : t("admin.userEditor.dropHint")}
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <Input
                   type="text"
-                  placeholder="Paste image URL"
+                  placeholder={t("admin.userEditor.urlPlaceholder")}
                   value={bgImg.urlInput}
                   onChange={(e) =>
                     setBgImg((p) => ({ ...p, urlInput: e.target.value }))
@@ -678,7 +705,7 @@ export function UserEditorModal({
                       }))
                     }
                   >
-                    Reset
+                    {t("common.reset")}
                   </Button>
                 )}
               </div>
@@ -705,11 +732,11 @@ export function UserEditorModal({
             className="grid gap-6 sm:grid-cols-2"
           >
             <Field className="sm:col-span-1">
-              <Label>Username</Label>
+              <Label>{t("common.username")}</Label>
               <Input name="username" value={form.username} onChange={onInput} />
             </Field>
             <Field className="sm:col-span-1">
-              <Label>Email</Label>
+              <Label>{t("admin.form.email")}</Label>
               <Input
                 type="email"
                 name="email"
@@ -718,7 +745,7 @@ export function UserEditorModal({
               />
             </Field>
             <Field className="sm:col-span-1">
-              <Label>First name</Label>
+              <Label>{t("admin.form.firstName")}</Label>
               <Input
                 name="first_name"
                 value={form.first_name}
@@ -726,7 +753,7 @@ export function UserEditorModal({
               />
             </Field>
             <Field className="sm:col-span-1">
-              <Label>Last name</Label>
+              <Label>{t("admin.form.lastName")}</Label>
               <Input
                 name="last_name"
                 value={form.last_name}
@@ -734,18 +761,18 @@ export function UserEditorModal({
               />
             </Field>
             <Field className="sm:col-span-1">
-              <Label>Password</Label>
+              <Label>{t("common.password")}</Label>
               <Input
                 type="password"
                 name="password"
                 autoComplete="new-password"
-                placeholder="new password"
+                placeholder={t("admin.userEditor.newPassword")}
                 value={form.password}
                 onChange={onInput}
               />
             </Field>
             <Field className="sm:col-span-1">
-              <Label>Birth date</Label>
+              <Label>{t("admin.form.birthDate")}</Label>
               <Input
                 type="date"
                 name="birth_date"
@@ -758,10 +785,7 @@ export function UserEditorModal({
               {saveMsg && (
                 <Text
                   className={
-                    "text-xs " +
-                    (saveMsg.startsWith("Successfully")
-                      ? "text-emerald-400"
-                      : "text-rose-400")
+                    "text-xs " + (saveOk ? "text-emerald-400" : "text-rose-400")
                   }
                 >
                   {saveMsg}
@@ -773,7 +797,7 @@ export function UserEditorModal({
                 color="indigo"
                 disabled={!hasChanges || saving}
               >
-                {saving ? "Saving…" : "Save"}
+                {saving ? t("common.saving") : t("common.save")}
               </Button>
             </div>
           </form>
@@ -783,10 +807,7 @@ export function UserEditorModal({
             {imagesMsg && (
               <Text
                 className={
-                  "text-xs " +
-                  (imagesMsg.includes("successfully")
-                    ? "text-emerald-400"
-                    : "text-rose-400")
+                  "text-xs " + (imagesOk ? "text-emerald-400" : "text-rose-400")
                 }
               >
                 {imagesMsg}
@@ -798,7 +819,9 @@ export function UserEditorModal({
               disabled={!imagesDirty || savingImages}
               onClick={saveImages}
             >
-              {savingImages ? "Saving Images…" : "Save Images"}
+              {savingImages
+                ? t("admin.userEditor.savingImages")
+                : t("admin.userEditor.saveImages")}
             </Button>
           </div>
         )}
@@ -810,7 +833,7 @@ export function UserEditorModal({
           color="zinc"
           disabled={saving || savingImages}
         >
-          Close
+          {t("common.close")}
         </Button>
       </DialogActions>
     </Dialog>

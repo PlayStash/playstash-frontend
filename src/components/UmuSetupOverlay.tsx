@@ -4,6 +4,8 @@ import {
   DialogTitle,
 } from "@/components/tailwind/dialog";
 import { Button } from "@tw/button";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 export type UmuPhase = "installing" | "setup" | "running" | "error" | "exit";
 
@@ -27,12 +29,13 @@ export function UmuSetupOverlay({
   lines,
   onDismiss,
 }: UmuSetupOverlayProps) {
+  const { t } = useTranslation();
   if (!visible) return null;
 
   const installing = phase === "installing";
   const title = installing
-    ? "Installing umu launcher…"
-    : "Setting up umu launcher…";
+    ? t("umu.overlay.installingTitle")
+    : t("umu.overlay.setupTitle");
 
   return (
     <Dialog open onClose={() => onDismiss()} size="lg">
@@ -63,10 +66,12 @@ export function UmuSetupOverlay({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
               {installing
-                ? "umu-launcher lets PlayStash run Windows games on Linux. Downloading and setting it up — this can take a moment."
+                ? t("umu.overlay.installingDescription")
                 : gameTitle
-                  ? `Preparing the Wine/Proton environment for ${gameTitle}. The first launch downloads UMU-Proton and the Steam runtime, which can take a few minutes.`
-                  : "Preparing the Wine/Proton environment. The first launch downloads UMU-Proton and the Steam runtime, which can take a few minutes."}
+                  ? fillTemplate(t("umu.overlay.setupDescriptionGame"), {
+                      title: gameTitle,
+                    })
+                  : t("umu.overlay.setupDescription")}
             </DialogDescription>
           </div>
         </div>
@@ -79,7 +84,7 @@ export function UmuSetupOverlay({
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <Button plain onClick={onDismiss}>
-            Dismiss
+            {t("common.dismiss")}
           </Button>
         </div>
       </div>

@@ -52,7 +52,9 @@ export function ThemeGeneratorDialog({
   const { t } = useTranslation();
   const { user } = useAuth();
   const { showAlert } = useAlertDialog();
-  const [name, setName] = useState<string>(GENERATOR_DEFAULTS.name);
+  const [name, setName] = useState<string>(() =>
+    t("themes.generator.defaultName"),
+  );
   const [nameError, setNameError] = useState(false);
   const [colors, setColors] = useState<Record<ColorField, string>>({
     accent: GENERATOR_DEFAULTS.accent,

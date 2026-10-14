@@ -10,6 +10,7 @@ import type React from "react";
 import { motion, type HTMLMotionProps } from "motion/react";
 import { DURATION_FAST, DURATION_SLOW, EASE_OUT } from "@/lib/motion";
 import { isTauriApp } from "@/utils/tauri";
+import { useTranslation } from "@/i18n";
 
 export type ToastTone = "info" | "success" | "warning" | "danger";
 
@@ -71,6 +72,7 @@ export function Toast({
   action?: { label: string; onClick: () => void };
 } & HTMLMotionProps<"div">) {
   const { rail, icon, Icon } = tones[tone];
+  const { t } = useTranslation();
 
   return (
     <motion.div
@@ -126,7 +128,7 @@ export function Toast({
           className="flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
         >
           <XMarkIcon className="size-4" />
-          <span className="sr-only">Dismiss</span>
+          <span className="sr-only">{t("common.dismiss")}</span>
         </button>
       )}
     </motion.div>

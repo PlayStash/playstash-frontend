@@ -22,7 +22,8 @@ import {
 import { Button } from "@tw/button";
 import { Toast, type ToastTone } from "@tw/toast";
 import { isTauriApp } from "@/utils/tauri";
-import { translate } from "@/i18n";
+import { translate, useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 // Shape of a queued alert request
 export interface AlertDialogRequest {
@@ -68,6 +69,7 @@ export const useAlertDialog = () => {
  * Terminal-style block that shows raw process output with a copy button.
  */
 function ConsoleOutput({ log }: { log: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
 
@@ -94,11 +96,11 @@ function ConsoleOutput({ log }: { log: string }) {
       <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-zinc-200 bg-zinc-950 px-3 py-2 dark:border-zinc-800">
         <CommandLineIcon className="size-3.5 text-zinc-400" />
         <span className="text-xs font-medium tracking-wide text-zinc-400">
-          CONSOLE OUTPUT
+          {t("shell.console.title")}
         </span>
         <button
           type="button"
-          aria-label="Copy console output to clipboard"
+          aria-label={t("shell.console.copyAriaLabel")}
           onClick={() => void copy()}
           className="ml-auto flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100"
         >
@@ -107,7 +109,7 @@ function ConsoleOutput({ log }: { log: string }) {
           ) : (
             <ClipboardIcon className="size-3.5" />
           )}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("common.copied") : t("common.copy")}
         </button>
       </div>
       <pre className="max-h-48 overflow-y-auto rounded-b-lg border border-zinc-200 bg-zinc-950 p-3 font-mono text-xs leading-5 whitespace-pre-wrap wrap-break-word text-zinc-200 dark:border-zinc-800">
@@ -170,7 +172,7 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
       title,
       description,
       log,
-      affirmativeText = "Confirm",
+      affirmativeText = translate("common.confirm"),
       negativeText,
       tone,
       action,
@@ -253,7 +255,7 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
                   </Button>
                 )}
                 <Button onClick={() => handleClose(true)} autoFocus>
-                  {active.affirmativeText || "Confirm"}
+                  {active.affirmativeText || translate("common.confirm")}
                 </Button>
               </AlertActions>
             </>
@@ -293,18 +295,24 @@ export const GlobalAlertDialogBridge: React.FC = () => {
           message: string;
         }>("game-launch-failed", (event) => {
           const { gameTitle, exitCode, message } = event.payload;
-          const codeInfo =
-            exitCode != null ? ` with exit code ${exitCode}` : "";
           void (async () => {
             try {
               const { openLaunchLogWindow } = await import("@/utils/launchLog");
               await openLaunchLogWindow();
             } catch {
               await showAlert({
-                title: `${gameTitle} exited with an error`,
-                description: `The game process closed${codeInfo}. It printed the following output:`,
+                title: fillTemplate(translate("shell.gameExited.title"), {
+                  title: gameTitle,
+                }),
+                description:
+                  exitCode != null
+                    ? fillTemplate(
+                        translate("shell.gameExited.descriptionWithCode"),
+                        { code: exitCode },
+                      )
+                    : translate("shell.gameExited.description"),
                 log: message,
-                affirmativeText: "OK",
+                affirmativeText: translate("common.ok"),
               });
             }
           })();

@@ -8,6 +8,8 @@ import { formatBytes } from "@/utils/downloadFormat";
 import { moveSelectedAddon } from "@/utils/launchProfiles";
 import { Button } from "./tailwind/button";
 import { Input } from "./tailwind/input";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 type Asset = PackageAssetDto;
 interface Recipe {
@@ -38,6 +40,7 @@ export function PackageContents({
   const { serverUrl, authFetch, getAccessToken } = useAuth();
   const { isOnline } = useOnlineStatus();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
   const [contents, setContents] = useState<GamePackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,7 +62,9 @@ export function PackageContents({
       }
       if (!response.ok)
         throw new Error(
-          `Could not load package contents (${response.status}).`,
+          fillTemplate(t("game.package.loadFailed"), {
+            status: response.status,
+          }),
         );
       setContents(await response.json());
     } catch (cause) {
@@ -86,11 +91,17 @@ export function PackageContents({
   const download = async (asset: Asset) => {
     setBusy(true);
     setError("");
-    setStatus(`Downloading ${asset.title}…`);
+    setStatus(
+      fillTemplate(t("game.package.downloading"), { title: asset.title }),
+    );
     try {
       const response = await authFetch(urlFor(asset));
       if (!response.ok)
-        throw new Error(`Download failed (${response.status}).`);
+        throw new Error(
+          fillTemplate(t("game.package.downloadFailed"), {
+            status: response.status,
+          }),
+        );
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -98,7 +109,9 @@ export function PackageContents({
       anchor.download = asset.path.split(/[/\\]/).pop() || asset.title;
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      setStatus(`Downloaded ${asset.title}.`);
+      setStatus(
+        fillTemplate(t("game.package.downloaded"), { title: asset.title }),
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
       setStatus("");
@@ -109,10 +122,12 @@ export function PackageContents({
   const install = async () => {
     if (!installationPath || !selected.length) return;
     const confirmed = await showAlert({
-      title: "Apply selected addons?",
-      description: `These addons will be applied in the displayed order to ${installationPath}. They can overwrite existing game files. Back up files you want to keep.`,
-      affirmativeText: "Apply and overwrite files",
-      negativeText: "Cancel",
+      title: t("game.package.applyTitle"),
+      description: fillTemplate(t("game.package.applyDescription"), {
+        path: installationPath,
+      }),
+      affirmativeText: t("game.package.applyConfirm"),
+      negativeText: t("common.cancel"),
     });
     if (!confirmed) return;
     setBusy(true);
@@ -124,10 +139,14 @@ export function PackageContents({
         const asset = contents?.addons.find((item) => item.id === id);
         if (!asset) continue;
         setStatus(
-          `Applying ${completed + 1}/${selected.length}: ${asset.title}…`,
+          fillTemplate(t("game.package.applying"), {
+            current: completed + 1,
+            total: selected.length,
+            title: asset.title,
+          }),
         );
         const token = await getAccessToken();
-        if (!token) throw new Error("Sign in again before downloading addons.");
+        if (!token) throw new Error(t("game.package.signInAgain"));
         await invoke("install_game_addon", {
           gameId,
           downloadUrl: urlFor(asset),
@@ -139,12 +158,23 @@ export function PackageContents({
         });
         completed++;
       }
-      setStatus(`Applied ${completed} addon${completed === 1 ? "" : "s"}.`);
+      setStatus(
+        fillTemplate(
+          t(
+            completed === 1
+              ? "game.package.applied.one"
+              : "game.package.applied.other",
+          ),
+          { n: completed },
+        ),
+      );
       setSelected([]);
     } catch (cause) {
-      setStatus(`Stopped after ${completed} completed addons.`);
+      setStatus(fillTemplate(t("game.package.stopped"), { n: completed }));
       setError(
-        `${cause instanceof Error ? cause.message : String(cause)} Files already applied remain installed.`,
+        fillTemplate(t("game.package.partiallyApplied"), {
+          error: cause instanceof Error ? cause.message : String(cause),
+        }),
       );
     } finally {
       setBusy(false);
@@ -157,7 +187,9 @@ export function PackageContents({
     <section className="space-y-4 text-sm">
       {profiles.length > 0 && (
         <div className="space-y-2">
-          <h4 className="font-medium text-ps-text">Launch profiles</h4>
+          <h4 className="font-medium text-ps-text">
+            {t("game.package.launchProfiles")}
+          </h4>
           <div className="flex flex-wrap gap-2">
             {profiles.map((profile, index) => (
               <Button
@@ -171,23 +203,23 @@ export function PackageContents({
             ))}
           </div>
           <p className="text-xs text-ps-muted">
-            Profiles run when selected in the desktop app.
+            {t("game.package.profilesHint")}
           </p>
         </div>
       )}
       {loading && (
         <p role="status" className="text-ps-muted">
-          Loading package contents…
+          {t("game.package.loading")}
         </p>
       )}
       {!isOnline && (
-        <p className="text-ps-muted">
-          Connect to the server to view extras and addons.
-        </p>
+        <p className="text-ps-muted">{t("game.package.offline")}</p>
       )}
       {contents?.manifest?.install && (
         <div className="space-y-2">
-          <h4 className="font-medium text-ps-text">Package installer</h4>
+          <h4 className="font-medium text-ps-text">
+            {t("game.package.installer")}
+          </h4>
           <p className="break-all text-ps-muted">
             {contents.manifest.install.executable}{" "}
             {contents.manifest.install.parameters}
@@ -197,13 +229,15 @@ export function PackageContents({
             disabled={busy || !isTauriApp()}
             onClick={() => onRecipe(contents.manifest!.install!)}
           >
-            Use recipe for next download
+            {t("game.package.useRecipe")}
           </Button>
         </div>
       )}
       {!!contents?.extras.length && (
         <div className="space-y-2">
-          <h4 className="font-medium text-ps-text">Extras</h4>
+          <h4 className="font-medium text-ps-text">
+            {t("game.package.extras")}
+          </h4>
           {contents.extras.map((asset) => (
             <div
               key={asset.id}
@@ -220,7 +254,7 @@ export function PackageContents({
                 disabled={busy}
                 onClick={() => void download(asset)}
               >
-                Download
+                {t("common.download")}
               </Button>
             </div>
           ))}
@@ -228,7 +262,9 @@ export function PackageContents({
       )}
       {!!contents?.addons.length && (
         <div className="space-y-3">
-          <h4 className="font-medium text-ps-text">Optional addons</h4>
+          <h4 className="font-medium text-ps-text">
+            {t("game.package.addons")}
+          </h4>
           {contents.addons.map((asset) => (
             <div
               key={asset.id}
@@ -260,13 +296,13 @@ export function PackageContents({
                 disabled={busy}
                 onClick={() => void download(asset)}
               >
-                Download
+                {t("common.download")}
               </Button>
             </div>
           ))}
           {selected.length > 0 && (
             <div className="space-y-2">
-              <h5 className="font-medium">Installation order</h5>
+              <h5 className="font-medium">{t("game.package.installOrder")}</h5>
               <ol className="space-y-2">
                 {selected.map((id, index) => (
                   <li
@@ -281,7 +317,9 @@ export function PackageContents({
                       <Button
                         outline
                         disabled={busy || index === 0}
-                        aria-label={`Move addon ${index + 1} up`}
+                        aria-label={fillTemplate(t("game.package.moveUp"), {
+                          n: index + 1,
+                        })}
                         onClick={() =>
                           setSelected(moveSelectedAddon(selected, id, -1))
                         }
@@ -291,7 +329,9 @@ export function PackageContents({
                       <Button
                         outline
                         disabled={busy || index === selected.length - 1}
-                        aria-label={`Move addon ${index + 1} down`}
+                        aria-label={fillTemplate(t("game.package.moveDown"), {
+                          n: index + 1,
+                        })}
                         onClick={() =>
                           setSelected(moveSelectedAddon(selected, id, 1))
                         }
@@ -303,7 +343,7 @@ export function PackageContents({
                 ))}
               </ol>
               <label className="block text-ps-muted">
-                Archive password (if needed)
+                {t("game.package.archivePassword")}
                 <Input
                   type="password"
                   autoComplete="off"
@@ -317,14 +357,15 @@ export function PackageContents({
                 disabled={busy || !isTauriApp() || !installationPath}
                 onClick={() => void install()}
               >
-                {busy ? "Applying addons…" : "Apply selected addons"}
+                {busy
+                  ? t("game.package.applyingAddons")
+                  : t("game.package.applySelected")}
               </Button>
             </div>
           )}
           {(!isTauriApp() || !installationPath) && (
             <p className="text-xs text-ps-muted">
-              Install the game in the desktop app to apply addons automatically.
-              Downloads remain available.
+              {t("game.package.desktopOnly")}
             </p>
           )}
         </div>
@@ -334,16 +375,14 @@ export function PackageContents({
         isOnline &&
         !contents?.extras.length &&
         !contents?.addons.length && (
-          <p className="text-ps-muted">
-            No extras or addons provided for this game.
-          </p>
+          <p className="text-ps-muted">{t("game.package.empty")}</p>
         )}
       {error && (
         <div role="alert" className="space-y-2 text-red-400">
           <p>{error}</p>
           {!busy && (
             <Button outline onClick={() => void load()}>
-              Reload package contents
+              {t("game.package.reload")}
             </Button>
           )}
         </div>

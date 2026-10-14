@@ -5,6 +5,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslation } from "@/i18n";
 
 export type StepState = "pending" | "active" | "done" | "error";
 
@@ -51,8 +52,12 @@ function StepIcon({ state }: Readonly<{ state: StepState }>) {
 }
 
 export function PhaseSteps({ steps }: Readonly<{ steps: PhaseStep[] }>) {
+  const { t } = useTranslation();
   return (
-    <ol className="flex items-center gap-2 sm:gap-3" aria-label="Download phases">
+    <ol
+      className="flex items-center gap-2 sm:gap-3"
+      aria-label={t("downloads.step.phases")}
+    >
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
         let labelClass = "text-ps-text";

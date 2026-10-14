@@ -4,17 +4,17 @@ import type { SearchableSetting } from "@/settings/types";
 export const downloadsSearchEntries: SearchableSetting[] = [
   {
     id: "downloads-default-extraction-password",
-    title: "Default extraction password",
+    title: "pipeline.settings.passwordTitle",
     description:
-      "Set a password that will automatically be tried when extracting games",
+      "settings.search.downloadsDefaultExtractionPassword.description",
     category: "downloads",
     keywords: ["password", "archive", "extract", "encrypted", "7z", "rar"],
     desktopOnly: true,
   },
   {
     id: "downloads-mount-iso",
-    title: "Mount ISO instead of extracting",
-    description: "Mount .iso downloads as a drive and install from it",
+    title: "settings.search.downloadsMountIso.title",
+    description: "settings.search.downloadsMountIso.description",
     category: "downloads",
     keywords: ["iso", "mount", "disc", "image", "drive", "extract"],
     desktopOnly: true,

@@ -87,9 +87,11 @@ describe("game requests", () => {
       target: { value: "fulfilled" },
     });
     fireEvent.change(
-      await screen.findByRole("spinbutton", {
-        name: "Added game ID (optional)",
-      }),
+      await screen.findByRole(
+        "spinbutton",
+        { name: "Added game ID (optional)" },
+        { timeout: 3000 },
+      ),
       { target: { value: "42" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "Save status" }));

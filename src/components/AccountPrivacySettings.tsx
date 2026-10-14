@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/apiError";
+import { useTranslation } from "@/i18n";
 import { Switch } from "./tailwind/switch";
 
 export function AccountPrivacySettings() {
   const { serverUrl, authFetch, user, refreshCurrentUser } = useAuth();
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const save = async (
@@ -21,7 +23,10 @@ export function AccountPrivacySettings() {
       });
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not save privacy settings."),
+          await getErrorMessage(
+            response,
+            t("settingsSection.privacy.saveFailed"),
+          ),
         );
       await refreshCurrentUser();
     } catch (cause) {
@@ -39,11 +44,10 @@ export function AccountPrivacySettings() {
       >
         <label htmlFor="report-game-metrics" className="text-sm">
           <span className="block font-medium text-ps-text">
-            Report completed game actions
+            {t("settingsSection.privacy.metrics.title")}
           </span>
           <span className="block text-ps-muted">
-            Share downloads, installations, uninstalls and launches with your
-            library administrator. Queued reports are discarded when disabled.
+            {t("settingsSection.privacy.metrics.description")}
           </span>
         </label>
         <Switch
@@ -60,11 +64,10 @@ export function AccountPrivacySettings() {
       >
         <label htmlFor="share-restricted-activity" className="text-sm">
           <span className="block font-medium text-ps-text">
-            Share restricted game activity
+            {t("settingsSection.privacy.restricted.title")}
           </span>
           <span className="block text-ps-muted">
-            Allow administrators to see your activity for games with restricted
-            access. Disabled by default.
+            {t("settingsSection.privacy.restricted.description")}
           </span>
         </label>
         <Switch

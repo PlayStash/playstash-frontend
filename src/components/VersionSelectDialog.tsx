@@ -18,6 +18,14 @@ import { CheckIcon } from "@heroicons/react/24/solid";
 import { Button } from "@tw/button";
 import { useMemo, useState } from "react";
 import { formatDecimal } from "@/utils/number";
+import { useTranslation, type TranslationKey } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
+
+const GAME_TYPE_LABEL: Record<string, TranslationKey> = {
+  WINDOWS_SETUP: "gameView.type.windowsSetup",
+  WINDOWS_PORTABLE: "gameView.type.windowsPortable",
+  LINUX_PORTABLE: "gameView.type.linuxPortable",
+};
 
 interface VersionSelectDialogProps {
   open: boolean;
@@ -36,6 +44,7 @@ export function VersionSelectDialog({
   onSelect,
   onClose,
 }: VersionSelectDialogProps) {
+  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState<SortKey>("indexed_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -60,10 +69,12 @@ export function VersionSelectDialog({
   };
 
   const formatGameType = (type: string) =>
-    type
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    GAME_TYPE_LABEL[type]
+      ? t(GAME_TYPE_LABEL[type])
+      : type
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (c) => c.toUpperCase());
 
   const formatIndexedAt = (value: Date) => {
     const date = value instanceof Date ? value : new Date(value);
@@ -77,13 +88,18 @@ export function VersionSelectDialog({
       let compareValue = 0;
 
       if (sortBy === "version") {
-        compareValue = (left.version || "").localeCompare(right.version || "", undefined, {
-          sensitivity: "base",
-          numeric: true,
-        });
+        compareValue = (left.version || "").localeCompare(
+          right.version || "",
+          undefined,
+          {
+            sensitivity: "base",
+            numeric: true,
+          },
+        );
       } else if (sortBy === "indexed_at") {
         compareValue =
-          new Date(left.indexed_at).getTime() - new Date(right.indexed_at).getTime();
+          new Date(left.indexed_at).getTime() -
+          new Date(right.indexed_at).getTime();
       } else if (sortBy === "type") {
         compareValue = left.type.localeCompare(right.type, undefined, {
           sensitivity: "base",
@@ -116,9 +132,11 @@ export function VersionSelectDialog({
 
   return (
     <Dialog open onClose={onClose} size="5xl">
-      <DialogTitle>Select Version</DialogTitle>
+      <DialogTitle>{t("game.versionSelect.title")}</DialogTitle>
       <DialogDescription>
-        Choose which version of {gameTitle} you want to download.
+        {fillTemplate(t("game.versionSelect.description"), {
+          title: gameTitle,
+        })}
       </DialogDescription>
       <DialogBody className="pt-3">
         <Table className="[--gutter:--spacing(3)] max-h-[55vh] overflow-y-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-ps-panel [&::-webkit-scrollbar-thumb]:rounded-full [scrollbar-color:var(--color-ps-line)_transparent]">
@@ -130,7 +148,7 @@ export function VersionSelectDialog({
                   onClick={() => handleSort("version")}
                   className="inline-flex items-center gap-1 cursor-pointer"
                 >
-                  Version {sortIndicator("version")}
+                  {t("common.version")} {sortIndicator("version")}
                 </button>
               </TableHeader>
               <TableHeader className="sticky top-0 z-10 bg-ps-panel">
@@ -139,7 +157,8 @@ export function VersionSelectDialog({
                   onClick={() => handleSort("indexed_at")}
                   className="inline-flex items-center gap-1 cursor-pointer"
                 >
-                  Date Added {sortIndicator("indexed_at")}
+                  {t("game.versionSelect.dateAdded")}{" "}
+                  {sortIndicator("indexed_at")}
                 </button>
               </TableHeader>
               <TableHeader className="sticky top-0 z-10 bg-ps-panel">
@@ -148,7 +167,7 @@ export function VersionSelectDialog({
                   onClick={() => handleSort("type")}
                   className="inline-flex items-center gap-1 cursor-pointer"
                 >
-                  Game Type {sortIndicator("type")}
+                  {t("game.versionSelect.gameType")} {sortIndicator("type")}
                 </button>
               </TableHeader>
               <TableHeader className="sticky top-0 z-10 bg-ps-panel text-center">
@@ -157,7 +176,7 @@ export function VersionSelectDialog({
                   onClick={() => handleSort("early_access")}
                   className="inline-flex items-center gap-1 cursor-pointer"
                 >
-                  Early Access {sortIndicator("early_access")}
+                  {t("gameView.earlyAccess")} {sortIndicator("early_access")}
                 </button>
               </TableHeader>
               <TableHeader className="sticky top-0 z-10 bg-ps-panel">
@@ -166,7 +185,7 @@ export function VersionSelectDialog({
                   onClick={() => handleSort("size")}
                   className="inline-flex items-center gap-1 cursor-pointer"
                 >
-                  Size {sortIndicator("size")}
+                  {t("common.size")} {sortIndicator("size")}
                 </button>
               </TableHeader>
             </TableRow>
@@ -181,16 +200,19 @@ export function VersionSelectDialog({
                 <TableCell>
                   <span
                     className="block max-w-100 overflow-hidden text-ellipsis whitespace-nowrap"
-                    title={`(${version.id}) ${version.version || "Unspecified"}`}
+                    title={`(${version.id}) ${version.version || t("game.versionSelect.unspecified")}`}
                   >
-                    {version.version || "Unspecified"}
+                    {version.version || t("game.versionSelect.unspecified")}
                   </span>
                 </TableCell>
                 <TableCell>{formatIndexedAt(version.indexed_at)}</TableCell>
                 <TableCell>{formatGameType(version.type)}</TableCell>
                 <TableCell className="text-center">
                   {version.early_access ? (
-                    <span className="inline-flex items-center justify-center" title="Early Access">
+                    <span
+                      className="inline-flex items-center justify-center"
+                      title={t("gameView.earlyAccess")}
+                    >
                       <CheckIcon className="h-4 w-4" />
                     </span>
                   ) : null}
@@ -203,7 +225,7 @@ export function VersionSelectDialog({
       </DialogBody>
       <DialogActions>
         <Button plain onClick={onClose}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </DialogActions>
     </Dialog>

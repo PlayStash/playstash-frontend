@@ -2,12 +2,14 @@ import { isDebugTauriOverride, setDebugTauriOverride } from "@/utils/tauri";
 import { ComputerDesktopIcon } from "@heroicons/react/16/solid";
 import { Switch, SwitchField, SwitchGroup } from "@tw/switch";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
 
 export default function TauriDebugSwitch({
   className,
 }: {
   className?: string;
 }) {
+  const { t } = useTranslation();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -29,11 +31,11 @@ export default function TauriDebugSwitch({
           className="flex items-center gap-2 text-sm text-ps-muted"
         >
           <ComputerDesktopIcon className="size-4" aria-hidden="true" />
-          <span>Simulate Desktop</span>
+          <span>{t("appearance.debug.simulateDesktop")}</span>
         </div>
 
         <Switch
-          aria-label="Toggle Tauri desktop simulation mode"
+          aria-label={t("appearance.debug.simulateDesktopToggle")}
           checked={checked}
           onChange={handleChange}
           color="dark/zinc"

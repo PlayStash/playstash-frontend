@@ -2,8 +2,10 @@
 import { MoonIcon, SunIcon } from "@heroicons/react/16/solid";
 import { Switch, SwitchField, SwitchGroup } from "@tw/switch";
 import useDarkMode from "use-dark-mode";
+import { useTranslation } from "@/i18n";
 
 export default function ThemeSwitch({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const darkMode = useDarkMode(false, {
     classNameDark: "dark",
     classNameLight: "light",
@@ -23,11 +25,11 @@ export default function ThemeSwitch({ className }: { className?: string }) {
           ) : (
             <SunIcon className="size-4" aria-hidden="true" />
           )}
-          <span>Theme</span>
+          <span>{t("appearance.theme")}</span>
         </div>
 
         <Switch
-          aria-label="Toggle dark mode"
+          aria-label={t("appearance.themeToggle")}
           checked={darkMode.value}
           onChange={darkMode.toggle}
           color="dark/zinc"

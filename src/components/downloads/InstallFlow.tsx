@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatDecimal } from "@/utils/number";
 import { Switch } from "@tw/switch";
 import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   getCreateDesktopShortcutEnabled,
   setCreateDesktopShortcutEnabled,
@@ -77,7 +78,7 @@ export function InstallFlow({
     download.installationProgress !== null &&
     download.installationProgress !== undefined
       ? `${formatDecimal(download.installationProgress, 1)}%`
-      : "In progress";
+      : t("downloads.detail.inProgress");
 
   const handleCopyInstallPath = async (path?: string) => {
     if (!path) return;
@@ -85,7 +86,10 @@ export function InstallFlow({
       await navigator.clipboard.writeText(path);
       await showAlert({ title: t("pipeline.install.copiedDirectory") });
     } catch {
-      await showAlert({ title: "Could not copy path", description: path });
+      await showAlert({
+        title: t("downloads.install.copyPathFailed"),
+        description: path,
+      });
     }
   };
 
@@ -121,20 +125,20 @@ export function InstallFlow({
             aria-hidden="true"
           />
           <span className="truncate text-sm font-semibold text-ps-text">
-            Installation
+            {t("downloads.step.installation")}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge color="indigo">{gameTypeLabel}</Badge>
           {download.installationStatus === "running" && (
-            <Badge color="blue">Running</Badge>
+            <Badge color="blue">{t("downloads.detail.running")}</Badge>
           )}
           {download.installationStatus === "copying" && (
-            <Badge color="blue">Copying</Badge>
+            <Badge color="blue">{t("downloads.detail.copying")}</Badge>
           )}
           <Button plain onClick={onSetUndetectedMode}>
             <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
-            Edit
+            {t("common.edit")}
           </Button>
         </div>
       </div>
@@ -142,14 +146,12 @@ export function InstallFlow({
       {installState.mode === "portable" && (
         <div className="space-y-4">
           <p className="text-sm text-ps-muted">
-            This is a portable game, so there is no setup to run. Just press
-            "Install" and PlayStash will copy the game files to the game's
-            installation folder.
+            {t("downloads.install.portableHint")}
           </p>
 
           {download.installationStatus === "copying" && (
             <ProgressBar
-              label="Copy Progress"
+              label={t("downloads.install.copyProgress")}
               value={download.installationProgress}
               valueText={copyProgressText}
               currentFile={download.installationCurrentFile}
@@ -161,7 +163,7 @@ export function InstallFlow({
       {installState.mode === "setup" && (
         <div className="space-y-4">
           <ol className="list-decimal space-y-1.5 pl-4 text-sm text-ps-muted marker:text-ps-muted">
-            <li>Pick the correct installer from the dropdown menu below.</li>
+            <li>{t("downloads.install.setupStep1")}</li>
           </ol>
 
           <Listbox
@@ -171,10 +173,10 @@ export function InstallFlow({
             }
             placeholder={
               installState.loadingInstallers
-                ? "Scanning extracted files..."
-                : "Select an installer"
+                ? t("downloads.install.scanning")
+                : t("downloads.install.selectInstaller")
             }
-            aria-label="Installer executable"
+            aria-label={t("downloads.install.installerExecutable")}
             disabled={installState.loadingInstallers}
           >
             {installState.installerOptions.map((option) => (
@@ -188,19 +190,16 @@ export function InstallFlow({
             start={2}
             className="list-decimal space-y-1.5 pl-4 text-sm text-ps-muted marker:text-ps-muted"
           >
-            <li>Hit the 'Install' button to launch the game's installer.</li>
-            <li>Go through the game's setup process.</li>
-            <li>
-              If not already set, make sure to select this folder as the
-              installer's destination:
-            </li>
+            <li>{t("downloads.install.setupStep2")}</li>
+            <li>{t("downloads.install.setupStep3")}</li>
+            <li>{t("downloads.install.setupStep4")}</li>
           </ol>
 
           <div className="surface-panel-soft rounded-xl p-3">
             {windowsInstallPath ? (
               <div className="space-y-2">
                 <p className="text-xs text-ps-muted">
-                  Enter this path in the installer:
+                  {t("downloads.install.enterPath")}
                 </p>
                 <div className="flex items-center justify-between gap-3">
                   <p
@@ -220,14 +219,16 @@ export function InstallFlow({
                       className="h-4 w-4"
                       aria-hidden="true"
                     />
-                    Copy Path
+                    {t("downloads.install.copyPath")}
                   </Button>
                 </div>
                 <p
                   className="truncate font-mono text-xs text-ps-muted"
                   title={download.installationDirectory}
                 >
-                  On disk: {download.installationDirectory}
+                  {fillTemplate(t("downloads.install.onDisk"), {
+                    path: download.installationDirectory ?? "",
+                  })}
                 </p>
               </div>
             ) : (
@@ -237,7 +238,7 @@ export function InstallFlow({
                   title={download.installationDirectory}
                 >
                   {download.installationDirectory ||
-                    "No installation path available"}
+                    t("downloads.install.noPath")}
                 </p>
                 <Button
                   color="zinc"
@@ -251,7 +252,7 @@ export function InstallFlow({
                     className="h-4 w-4"
                     aria-hidden="true"
                   />
-                  Copy Path
+                  {t("downloads.install.copyPath")}
                 </Button>
               </div>
             )}
@@ -268,18 +269,17 @@ export function InstallFlow({
       {installState.mode === "undetected" && (
         <div className="space-y-4">
           <p className="text-sm text-ps-muted">
-            Unable to detect game type. You can try forcing an installation
-            procedure by selecting it from the options below.
+            {t("downloads.install.undetectedHint")}
           </p>
 
           <Listbox
             value={installState.forcedType}
             onChange={(value) => onUpdate({ forcedType: value as GameType })}
-            aria-label="Forced installation type"
+            aria-label={t("downloads.install.forcedType")}
           >
             {FORCE_INSTALL_TYPES.map((option) => (
               <ListboxOption key={option.value} value={option.value}>
-                <ListboxLabel>{option.label}</ListboxLabel>
+                <ListboxLabel>{t(option.label)}</ListboxLabel>
               </ListboxOption>
             ))}
           </Listbox>
@@ -307,12 +307,14 @@ export function InstallFlow({
 
       <div className="flex items-center justify-between gap-3">
         <Button color="zinc" onClick={onClose}>
-          Cancel
+          {t("common.cancel")}
         </Button>
 
         <div className="flex items-center gap-2">
           {download.installationStatus === "running" && (
-            <span className="text-xs font-medium text-ps-accent">Running</span>
+            <span className="text-xs font-medium text-ps-accent">
+              {t("downloads.detail.running")}
+            </span>
           )}
 
           {installState.mode === "portable" && (
@@ -324,8 +326,8 @@ export function InstallFlow({
               disabled={installationBusy}
             >
               {download.installationStatus === "copying"
-                ? "Installing..."
-                : "Install"}
+                ? t("downloads.action.installing")
+                : t("common.install")}
             </Button>
           )}
 
@@ -347,14 +349,14 @@ export function InstallFlow({
               }
             >
               {download.installationStatus === "launching"
-                ? "Launching..."
-                : "Install"}
+                ? t("downloads.install.launching")
+                : t("common.install")}
             </Button>
           )}
 
           {installState.mode === "undetected" && (
             <Button color="indigo" onClick={onForceInstall}>
-              Force Installation
+              {t("downloads.install.force")}
             </Button>
           )}
         </div>

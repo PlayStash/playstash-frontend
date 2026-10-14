@@ -1,5 +1,11 @@
 import { LanguagePicker } from "@/components/LanguagePicker";
-import { useTranslation } from "@/i18n";
+import {
+  translate,
+  useTranslation,
+  type Locale,
+  type TranslationKey,
+} from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import { PostInstallSettings } from "@/components/PostInstallSettings";
 import { AccountPrivacySettings } from "@/components/AccountPrivacySettings";
 import clsx from "clsx";
@@ -18,7 +24,7 @@ import { useAppUpdater } from "@/context/AppUpdaterContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { Switch } from "@tw/switch";
 import { Text } from "@/components/tailwind/text";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import {
   isTauriApp,
@@ -121,14 +127,23 @@ const SENSITIVE_KEY_PATTERN = /token|password|secret|auth|refresh|credential/i;
 
 const SIMULATED_DOWNLOAD_KINDS: {
   kind: SimulatedDownloadKind;
-  label: string;
+  label: TranslationKey;
 }[] = [
-  { kind: "downloading", label: "Downloading" },
-  { kind: "paused", label: "Paused" },
-  { kind: "error", label: "Error" },
-  { kind: "aborted", label: "Aborted" },
-  { kind: "completed", label: "Completed" },
-  { kind: "installing", label: "Installing" },
+  {
+    kind: "downloading",
+    label: "settings.developer.simulateDownload.downloading",
+  },
+  { kind: "paused", label: "settings.developer.simulateDownload.paused" },
+  { kind: "error", label: "settings.developer.simulateDownload.error" },
+  { kind: "aborted", label: "settings.developer.simulateDownload.aborted" },
+  {
+    kind: "completed",
+    label: "settings.developer.simulateDownload.completed",
+  },
+  {
+    kind: "installing",
+    label: "settings.developer.simulateDownload.installing",
+  },
 ];
 
 interface ThirdPartyLicense {
@@ -148,74 +163,74 @@ interface LicensesData {
 const CATEGORY_META: Record<
   SettingsCategory,
   {
-    label: string;
-    description: string;
+    label: TranslationKey;
+    description: TranslationKey;
     icon: React.ComponentType<{ className?: string }>;
   }
 > = {
   account: {
-    label: "Account",
-    description: "Profiles, sign-in and the server connection.",
+    label: "settings.category.account.label",
+    description: "settings.category.account.description",
     icon: UserCircleIcon,
   },
   themes: {
-    label: "Themes",
-    description: "Color themes and custom theme files.",
+    label: "settings.category.themes.label",
+    description: "settings.category.themes.description",
     icon: PaintBrushIcon,
   },
   community: {
-    label: "Community",
-    description: "Presence, chat and activity notifications.",
+    label: "settings.category.community.label",
+    description: "settings.category.community.description",
     icon: UserGroupIcon,
   },
   integrations: {
-    label: "Integrations",
-    description: "Connections to other apps and services.",
+    label: "settings.category.integrations.label",
+    description: "settings.category.integrations.description",
     icon: PuzzlePieceIcon,
   },
   storage: {
-    label: "Storage",
-    description: "App data and caches.",
+    label: "settings.category.storage.label",
+    description: "settings.category.storage.description",
     icon: CircleStackIcon,
   },
   downloads: {
-    label: "Downloads",
-    description: "Where and how games are downloaded.",
+    label: "settings.category.downloads.label",
+    description: "settings.category.downloads.description",
     icon: FolderArrowDownIcon,
   },
   appearance: {
-    label: "Appearance",
-    description: "How the app looks.",
+    label: "settings.category.appearance.label",
+    description: "settings.category.appearance.description",
     icon: SwatchIcon,
   },
   sound: {
-    label: "Sound",
-    description: "Sound effects and volume.",
+    label: "settings.category.sound.label",
+    description: "settings.category.sound.description",
     icon: SpeakerWaveIcon,
   },
   startup: {
-    label: "Startup",
-    description: "How the app starts with your computer.",
+    label: "settings.category.startup.label",
+    description: "settings.category.startup.description",
     icon: ComputerDesktopIcon,
   },
   games: {
-    label: "Games",
-    description: "How the app behaves when you play games.",
+    label: "settings.category.games.label",
+    description: "settings.category.games.description",
     icon: GamepadIcon,
   },
   privacy: {
-    label: "Privacy",
-    description: "What information the app shares.",
+    label: "settings.category.privacy.label",
+    description: "settings.category.privacy.description",
     icon: ShieldCheckIcon,
   },
   about: {
-    label: "About",
-    description: "Version, licenses and system info.",
+    label: "settings.category.about.label",
+    description: "settings.category.about.description",
     icon: InformationCircleIcon,
   },
   developer: {
-    label: "Developer Tools",
-    description: "Tools for development.",
+    label: "settings.category.developer.label",
+    description: "settings.category.developer.description",
     icon: WrenchIcon,
   },
 };
@@ -385,8 +400,44 @@ function collectSystemInfo(isTauri: boolean): SystemInfo {
   };
 }
 
+/** A search entry with its title and description translated for display. */
+type LocalizedSearchableSetting = Omit<
+  SearchableSetting,
+  "title" | "description"
+> & { title: string; description?: string };
+
+/**
+ * Translate a search entry for the current locale. The English title and
+ * description stay searchable as hidden aliases, so English queries keep
+ * working in every language.
+ */
+function localizeSearchEntry(
+  entry: SearchableSetting,
+  locale: Locale,
+): LocalizedSearchableSetting {
+  const title = translate(entry.title, locale);
+  const description = entry.description
+    ? translate(entry.description, locale)
+    : undefined;
+  const englishAliases =
+    locale === "en"
+      ? []
+      : [
+          translate(entry.title, "en"),
+          entry.description ? translate(entry.description, "en") : "",
+        ]
+          .filter(Boolean)
+          .map((text) => text.toLowerCase());
+  return {
+    ...entry,
+    title,
+    description,
+    keywords: [...entry.keywords, ...englishAliases],
+  };
+}
+
 export default function Settings() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const {
     speedLimitKB,
     setSpeedLimitKB,
@@ -509,8 +560,13 @@ export default function Settings() {
     SETTINGS_SEARCH_INDEX,
     platformFlags,
   );
+  const localizedSearchIndex = useMemo(
+    () =>
+      SETTINGS_SEARCH_INDEX.map((entry) => localizeSearchEntry(entry, locale)),
+    [locale],
+  );
   const searchResults = searchSettings(
-    SETTINGS_SEARCH_INDEX,
+    localizedSearchIndex,
     searchQuery,
     platformFlags,
   );
@@ -521,7 +577,7 @@ export default function Settings() {
 
   const isSearching = trimmedQuery.length > 0;
 
-  const openSearchResult = (result: SearchableSetting) => {
+  const openSearchResult = (result: LocalizedSearchableSetting) => {
     setActiveCategory(result.category);
     setScrollToSetting(result.id);
     setHighlightedSetting(result.id);
@@ -804,7 +860,7 @@ export default function Settings() {
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Select Download Directory",
+        title: translate("settings.downloads.locations.dialogTitle"),
       });
       if (selected && typeof selected === "string") {
         const updated = addRootPath(selected);
@@ -831,7 +887,7 @@ export default function Settings() {
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Select Download Directory",
+        title: translate("settings.downloads.locations.dialogTitle"),
       });
       if (selected && typeof selected === "string") {
         const updated = updateRootPath(id, selected);
@@ -923,7 +979,7 @@ export default function Settings() {
       const selected = await open({
         directory: true,
         multiple: false,
-        title: "Select Wine/Proton Prefix Directory",
+        title: translate("settings.games.winePrefix.dialogTitle"),
       });
       if (selected && typeof selected === "string") {
         setWinePrefixBase(selected);
@@ -977,7 +1033,7 @@ export default function Settings() {
     try {
       await navigator.clipboard.writeText(dump);
       await showAlert({
-        title: "Settings dump copied to clipboard",
+        title: t("settings.developer.settingsDump.copied"),
         tone: "success",
       });
     } catch {
@@ -994,12 +1050,12 @@ export default function Settings() {
         anchor.remove();
         URL.revokeObjectURL(url);
         await showAlert({
-          title: "Settings dump downloaded as JSON",
+          title: t("settings.developer.settingsDump.downloaded"),
           tone: "success",
         });
       } catch {
         await showAlert({
-          title: "Couldn't export settings dump",
+          title: t("settings.developer.settingsDump.failed"),
           tone: "danger",
         });
       }
@@ -1013,8 +1069,8 @@ export default function Settings() {
     } catch (e) {
       console.error("Failed to open DevTools", e);
       await showAlert({
-        title: "Couldn't open DevTools",
-        description: "DevTools are only available in desktop builds.",
+        title: t("settings.developer.devtools.errorTitle"),
+        description: t("settings.developer.devtools.errorDescription"),
         tone: "warning",
       });
     }
@@ -1061,38 +1117,38 @@ export default function Settings() {
 
   const osLabel = (() => {
     const os = renderingDiagnostics?.os;
-    if (!os) return "Loading…";
+    if (!os) return t("common.loading");
     const base =
       os.long_os_version || `${os.name} ${os.os_version}`.trim() || os.name;
     return `${base} (${os.arch})`;
   })();
   const displayLabel = renderingDiagnostics
     ? formatDisplayLabel(renderingDiagnostics.display)
-    : "Loading…";
+    : t("common.loading");
   const monitorsLabel = renderingDiagnostics
     ? formatMonitorsLabel(renderingDiagnostics.monitors ?? [])
-    : "Loading…";
+    : t("common.loading");
   const gpuLabel = (() => {
     const gl = renderingDiagnostics?.webgl;
-    if (gl == null) return "Loading…";
-    if (!gl.supported) return "Unavailable";
-    return `${gl.renderer ?? "Unknown"}${gl.webgl2 ? " · WebGL2" : " · WebGL1"}`;
+    if (gl == null) return t("common.loading");
+    if (!gl.supported) return t("settings.about.unavailable");
+    return `${gl.renderer ?? t("common.unknown")}${gl.webgl2 ? " · WebGL2" : " · WebGL1"}`;
   })();
   const webgpuLabel = (() => {
     const wgpu = renderingDiagnostics?.webgpu;
-    if (wgpu == null) return "Loading…";
-    if (!wgpu.supported) return "Unavailable";
+    if (wgpu == null) return t("common.loading");
+    if (!wgpu.supported) return t("settings.about.unavailable");
     const parts = [
       wgpu.vendor,
       wgpu.architecture,
       wgpu.description,
       wgpu.device,
     ].filter(Boolean);
-    return parts.length ? parts.join(" · ") : "Available";
+    return parts.length ? parts.join(" · ") : t("settings.about.available");
   })();
   const cpuMemoryLabel = renderingDiagnostics
     ? formatCpuMemoryLabel(renderingDiagnostics.system)
-    : "Loading…";
+    : t("common.loading");
 
   const ignoreQuery = ignoreSearch.trim().toLowerCase();
   const filteredIgnoreList = ignoreQuery
@@ -1144,7 +1200,10 @@ export default function Settings() {
         } catch {
           // localStorage unavailable
         }
-        void showAlert({ title: "Developer Tools locked", tone: "warning" });
+        void showAlert({
+          title: t("settings.developer.locked"),
+          tone: "warning",
+        });
       } else {
         setDevToolsUnlocked(true);
         try {
@@ -1153,7 +1212,10 @@ export default function Settings() {
           // localStorage unavailable
         }
         playSound("unlock");
-        void showAlert({ title: "Developer Tools unlocked", tone: "success" });
+        void showAlert({
+          title: t("settings.developer.unlocked"),
+          tone: "success",
+        });
       }
     }
   };
@@ -1213,7 +1275,10 @@ export default function Settings() {
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ps-panel-soft text-ps-accent ring-1 ring-ps-line transition-colors group-hover:bg-ps-accent/15">
           <Icon className="size-4" />
         </span>
-        <SettingsLabel title={meta.label} description={meta.description} />
+        <SettingsLabel
+          title={t(meta.label)}
+          description={t(meta.description)}
+        />
         <ChevronRightIcon className="size-4 shrink-0 text-ps-muted" />
       </motion.button>
     );
@@ -1230,7 +1295,7 @@ export default function Settings() {
             handleSpeedChange(parseInt(e.target.value || "0", 10))
           }
           placeholder="0"
-          aria-label="Download speed limit in kilobytes per second"
+          aria-label={t("settings.downloads.speedLimit.ariaLabel")}
         />
         <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-ps-muted">
           KB/s
@@ -1252,7 +1317,7 @@ export default function Settings() {
         )}
         <div className="space-y-2">
           <Heading>{t("nav.settings")}</Heading>
-          <Text className="max-w-2xl">Tune PlayStash to your liking.</Text>
+          <Text className="max-w-2xl">{t("settings.page.subtitle")}</Text>
         </div>
         <Divider className="border-ps-line/80" />
 
@@ -1284,8 +1349,8 @@ export default function Settings() {
                                 setSearchQuery("");
                               }
                             }}
-                            placeholder="Search settings…"
-                            aria-label="Search settings"
+                            placeholder={t("settings.search.placeholder")}
+                            aria-label={t("settings.search.ariaLabel")}
                           />
                         </InputGroup>
                       </div>
@@ -1294,7 +1359,7 @@ export default function Settings() {
                           type="button"
                           onClick={() => setSearchQuery("")}
                           className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
-                          aria-label="Clear settings search"
+                          aria-label={t("settings.search.clear")}
                         >
                           <XMarkIcon className="size-4" />
                         </button>
@@ -1306,10 +1371,20 @@ export default function Settings() {
                 {isSearching ? (
                   <>
                     <SettingsGroup
-                      caption="Results"
+                      caption={t("settings.search.results")}
                       description={
                         searchResults.length > 0
-                          ? `${searchResults.length} setting${searchResults.length === 1 ? "" : "s"} matching “${searchQuery.trim()}”.`
+                          ? fillTemplate(
+                              t(
+                                searchResults.length === 1
+                                  ? "settings.search.resultCount.one"
+                                  : "settings.search.resultCount.other",
+                              ),
+                              {
+                                count: searchResults.length,
+                                query: searchQuery.trim(),
+                              },
+                            )
                           : undefined
                       }
                     >
@@ -1317,8 +1392,9 @@ export default function Settings() {
                         <SettingsRow>
                           <div className="flex items-center gap-2 text-sm text-ps-muted">
                             <MagnifyingGlassIcon className="size-4 shrink-0" />
-                            No settings match “{searchQuery.trim()}”. Try a
-                            different keyword.
+                            {fillTemplate(t("settings.search.empty"), {
+                              query: searchQuery.trim(),
+                            })}
                           </div>
                         </SettingsRow>
                       ) : (
@@ -1346,7 +1422,7 @@ export default function Settings() {
                                 </p>
                               )}
                               <p className="mt-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ps-accent">
-                                {CATEGORY_META[result.category].label}
+                                {t(CATEGORY_META[result.category].label)}
                               </p>
                             </div>
                             <ChevronRightIcon className="size-4 shrink-0 text-ps-muted transition-transform group-hover:translate-x-0.5" />
@@ -1356,7 +1432,7 @@ export default function Settings() {
                     </SettingsGroup>
 
                     {searchResultCategories.length > 0 && (
-                      <SettingsGroup caption="Areas">
+                      <SettingsGroup caption={t("settings.search.areas")}>
                         {orderedSearchCategories.map(renderCategoryRow)}
                       </SettingsGroup>
                     )}
@@ -1380,22 +1456,24 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={FolderArrowDownIcon}
-                      title="Downloads"
-                      description="Everything about storing and downloading your games."
+                      title={t("settings.category.downloads.label")}
+                      description={t("settings.downloads.description")}
                     />
 
                     {isTauri && (
                       <SettingsGroup
                         id="setting-downloads-locations"
                         className={rowHighlight("downloads-locations")}
-                        caption="Download locations"
-                        description="A PlayStash subfolder is created inside each location automatically."
+                        caption={t("settings.downloads.locations.caption")}
+                        description={t(
+                          "settings.downloads.locations.description",
+                        )}
                       >
                         {rootPaths.length === 0 && (
                           <SettingsRow>
                             <div className="flex items-center gap-2 text-sm text-ps-muted">
                               <FolderIcon className="size-4 shrink-0" />
-                              No download locations yet. Add one below.
+                              {t("settings.downloads.locations.empty")}
                             </div>
                           </SettingsRow>
                         )}
@@ -1404,7 +1482,7 @@ export default function Settings() {
                           const displayLabel =
                             root.label.trim() ||
                             root.path.split(/[\\/]/).filter(Boolean).pop() ||
-                            "Unnamed";
+                            t("settings.downloads.locations.unnamed");
                           const isRenaming = editingRootId === root.id;
                           return (
                             <SettingsRow key={root.id}>
@@ -1426,9 +1504,13 @@ export default function Settings() {
                                         cancelRenameRootPath();
                                       }
                                     }}
-                                    placeholder="Folder label"
+                                    placeholder={t(
+                                      "settings.downloads.locations.labelPlaceholder",
+                                    )}
                                     className="[&_input]:h-9 [&_input]:py-1 [&_input]:text-sm [&_input]:rounded-xl"
-                                    aria-label="Label for this download folder"
+                                    aria-label={t(
+                                      "settings.downloads.locations.labelAria",
+                                    )}
                                   />
                                 ) : (
                                   <div className="flex min-w-0 items-center gap-1.5">
@@ -1439,7 +1521,12 @@ export default function Settings() {
                                       type="button"
                                       onClick={() => startRenameRootPath(root)}
                                       className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text cursor-pointer"
-                                      aria-label={`Rename ${displayLabel}`}
+                                      aria-label={fillTemplate(
+                                        t(
+                                          "settings.downloads.locations.rename",
+                                        ),
+                                        { name: displayLabel },
+                                      )}
                                     >
                                       <PencilSquareIcon className="size-3.5" />
                                     </button>
@@ -1458,10 +1545,12 @@ export default function Settings() {
                                   color="zinc"
                                   className="text-xs"
                                   onClick={() => void handleOpenRootPath(root)}
-                                  title="Open this folder"
+                                  title={t(
+                                    "settings.downloads.locations.openTitle",
+                                  )}
                                 >
                                   <FolderOpenIcon className="size-3.5" />
-                                  Open
+                                  {t("common.open")}
                                 </Button>
                                 <Button
                                   type="button"
@@ -1470,13 +1559,15 @@ export default function Settings() {
                                   onClick={() => handleBrowseRootPath(root.id)}
                                 >
                                   <FolderArrowDownIcon className="size-3.5" />
-                                  Choose
+                                  {t("settings.downloads.locations.choose")}
                                 </Button>
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveRootPath(root.id)}
                                   className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
-                                  aria-label="Remove download folder"
+                                  aria-label={t(
+                                    "settings.downloads.locations.remove",
+                                  )}
                                 >
                                   <XMarkIcon className="size-4" />
                                 </button>
@@ -1491,7 +1582,7 @@ export default function Settings() {
                           className="flex min-h-12 w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-ps-accent transition-colors hover:bg-ps-panel-soft cursor-pointer"
                         >
                           <PlusIcon className="size-4" />
-                          Add Download Location
+                          {t("settings.downloads.locations.add")}
                         </button>
                       </SettingsGroup>
                     )}
@@ -1499,32 +1590,40 @@ export default function Settings() {
                     <SettingsGroup
                       id="setting-downloads-speed-limit"
                       className={rowHighlight("downloads-speed-limit")}
-                      caption="Download speed"
+                      caption={t("settings.downloads.speed.caption")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Download speed limit"
-                          description="Set to 0 for no limit."
+                          title={t("settings.downloads.speedLimit.title")}
+                          description={t(
+                            "settings.downloads.speedLimit.description",
+                          )}
                         />
                         {speedLimitControl}
                       </SettingsRow>
                     </SettingsGroup>
 
                     {isTauri && (
-                      <SettingsGroup caption="After downloading">
+                      <SettingsGroup
+                        caption={t("settings.downloads.after.caption")}
+                      >
                         <PostInstallSettings />
                         <SettingsRow
                           id="setting-downloads-auto-extract"
                           className={rowHighlight("downloads-auto-extract")}
                         >
                           <SettingsLabel
-                            title="Auto-Extract Downloads"
-                            description="Unpack archives right after downloading."
+                            title={t("settings.downloads.autoExtract.title")}
+                            description={t(
+                              "settings.downloads.autoExtract.description",
+                            )}
                           />
                           <Switch
                             name="autoExtract"
                             color="indigo"
-                            aria-label="Automatically extract downloaded archives"
+                            aria-label={t(
+                              "settings.downloads.autoExtract.ariaLabel",
+                            )}
                             checked={autoExtract}
                             onChange={(v: boolean) => setAutoExtract(v)}
                           />
@@ -1534,13 +1633,17 @@ export default function Settings() {
                           className={rowHighlight("downloads-auto-install")}
                         >
                           <SettingsLabel
-                            title="Auto-Install Games"
-                            description="Start installers or copy game files automatically after extraction, and make any files that need it executable."
+                            title={t("settings.downloads.autoInstall.title")}
+                            description={t(
+                              "settings.downloads.autoInstall.description",
+                            )}
                           />
                           <Switch
                             name="autoInstall"
                             color="indigo"
-                            aria-label="Automatically install games after extraction"
+                            aria-label={t(
+                              "settings.downloads.autoInstall.ariaLabel",
+                            )}
                             checked={autoInstall}
                             onChange={(v: boolean) => setAutoInstall(v)}
                           />
@@ -1552,13 +1655,19 @@ export default function Settings() {
                           )}
                         >
                           <SettingsLabel
-                            title="Auto-Delete Source Files"
-                            description="Clean up downloaded and extracted files after installation to free up space."
+                            title={t(
+                              "settings.downloads.autoDeleteSource.title",
+                            )}
+                            description={t(
+                              "settings.downloads.autoDeleteSource.description",
+                            )}
                           />
                           <Switch
                             name="autoDeleteSource"
                             color="indigo"
-                            aria-label="Delete downloaded and extracted files after game installation"
+                            aria-label={t(
+                              "settings.downloads.autoDeleteSource.ariaLabel",
+                            )}
                             checked={autoDeleteSource}
                             onChange={(v: boolean) => setAutoDeleteSource(v)}
                           />
@@ -1572,23 +1681,25 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={ComputerDesktopIcon}
-                      title="Startup"
-                      description="How PlayStash starts with your computer."
+                      title={t("settings.category.startup.label")}
+                      description={t("settings.startup.description")}
                     />
                     <SettingsGroup
                       id="setting-startup-autostart"
                       className={rowHighlight("startup-autostart")}
-                      caption="On login"
+                      caption={t("settings.startup.onLogin.caption")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Launch PlayStash on Computer Startup"
-                          description="Automatically start PlayStash when you log in to your computer."
+                          title={t("settings.startup.autostart.title")}
+                          description={t(
+                            "settings.startup.autostart.description",
+                          )}
                         />
                         <Switch
                           name="autostart"
                           color="indigo"
-                          aria-label="Launch PlayStash on computer startup"
+                          aria-label={t("settings.startup.autostart.ariaLabel")}
                           checked={autostartEnabled ?? false}
                           disabled={autostartEnabled === null}
                           onChange={async (v: boolean) => {
@@ -1615,17 +1726,21 @@ export default function Settings() {
                     <SettingsGroup
                       id="setting-startup-start-minimized"
                       className={rowHighlight("startup-start-minimized")}
-                      caption="Window"
+                      caption={t("settings.caption.window")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Minimize PlayStash to System Tray on Startup"
-                          description="When auto-start is enabled, PlayStash will start silently in the system tray instead of opening the full window."
+                          title={t("settings.startup.startMinimized.title")}
+                          description={t(
+                            "settings.startup.startMinimized.description",
+                          )}
                         />
                         <Switch
                           name="startMinimized"
                           color="indigo"
-                          aria-label="Minimize PlayStash to system tray on startup"
+                          aria-label={t(
+                            "settings.startup.startMinimized.ariaLabel",
+                          )}
                           checked={startMinimized}
                           disabled={!autostartEnabled}
                           onChange={(v: boolean) => setStartMinimized(v)}
@@ -1639,23 +1754,27 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={GamepadIcon}
-                      title="Games"
-                      description="How PlayStash behaves when you play games."
+                      title={t("settings.category.games.label")}
+                      description={t("settings.games.description")}
                     />
                     <SettingsGroup
                       id="setting-games-minimize-on-launch"
                       className={rowHighlight("games-minimize-on-launch")}
-                      caption="While playing"
+                      caption={t("settings.games.whilePlaying.caption")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Minimize PlayStash when launching a game"
-                          description="Hide PlayStash to the system tray while a game is running and bring it back when the game quits."
+                          title={t("settings.games.minimizeOnLaunch.title")}
+                          description={t(
+                            "settings.games.minimizeOnLaunch.description",
+                          )}
                         />
                         <Switch
                           name="minimizeOnGameLaunch"
                           color="indigo"
-                          aria-label="Minimize PlayStash when launching a game"
+                          aria-label={t(
+                            "settings.games.minimizeOnLaunch.title",
+                          )}
                           checked={minimizeOnGameLaunch}
                           onChange={(v: boolean) => setMinimizeOnGameLaunch(v)}
                         />
@@ -1665,14 +1784,14 @@ export default function Settings() {
                     <SettingsGroup
                       id="setting-games-ignore-list"
                       className={rowHighlight("games-ignore-list")}
-                      caption="Ignored executables"
-                      description="Names of installers or helper tools (e.g. setup) to skip, so they're not offered as a launch option and not counted as playtime. Enter the name without its file extension."
+                      caption={t("settings.games.ignoreList.caption")}
+                      description={t("settings.games.ignoreList.description")}
                     >
                       {ignoreList.length === 0 && (
                         <SettingsRow>
                           <div className="flex items-center gap-2 text-sm text-ps-muted">
                             <EyeSlashIcon className="size-4 shrink-0" />
-                            No executables ignored yet. Add one below.
+                            {t("settings.games.ignoreList.empty")}
                           </div>
                         </SettingsRow>
                       )}
@@ -1688,13 +1807,23 @@ export default function Settings() {
                                   onChange={(e: any) =>
                                     setIgnoreSearch(e.target.value)
                                   }
-                                  placeholder="Search hidden files…"
-                                  aria-label="Search hidden executables"
+                                  placeholder={t(
+                                    "settings.games.ignoreList.searchPlaceholder",
+                                  )}
+                                  aria-label={t(
+                                    "settings.games.ignoreList.searchAria",
+                                  )}
                                 />
                               </InputGroup>
                             </div>
                             <span className="shrink-0 whitespace-nowrap text-xs text-ps-muted">
-                              {filteredIgnoreList.length} of {ignoreList.length}
+                              {fillTemplate(
+                                t("settings.games.ignoreList.count"),
+                                {
+                                  shown: filteredIgnoreList.length,
+                                  total: ignoreList.length,
+                                },
+                              )}
                             </span>
                           </div>
                         </SettingsRow>
@@ -1704,7 +1833,12 @@ export default function Settings() {
                           <SettingsRow>
                             <div className="flex items-center gap-2 text-sm text-ps-muted">
                               <MagnifyingGlassIcon className="size-4 shrink-0" />
-                              No matches for “{ignoreSearch.trim()}”.
+                              {fillTemplate(
+                                t("settings.games.ignoreList.noMatches"),
+                                {
+                                  query: ignoreSearch.trim(),
+                                },
+                              )}
                             </div>
                           </SettingsRow>
                         )}
@@ -1719,7 +1853,10 @@ export default function Settings() {
                                 type="button"
                                 onClick={() => handleRemoveIgnore(name)}
                                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
-                                aria-label={`Remove ${name} from ignore list`}
+                                aria-label={fillTemplate(
+                                  t("settings.games.ignoreList.remove"),
+                                  { name },
+                                )}
                               >
                                 <XMarkIcon className="size-4" />
                               </button>
@@ -1739,9 +1876,13 @@ export default function Settings() {
                                 handleAddIgnore();
                               }
                             }}
-                            placeholder="e.g. setup"
+                            placeholder={t(
+                              "settings.games.ignoreList.placeholder",
+                            )}
                             className="min-w-0 flex-1"
-                            aria-label="Executable name to ignore (without file extension)"
+                            aria-label={t(
+                              "settings.games.ignoreList.inputAria",
+                            )}
                           />
                           <Button
                             type="button"
@@ -1750,7 +1891,7 @@ export default function Settings() {
                             onClick={handleAddIgnore}
                           >
                             <PlusIcon className="size-4" />
-                            Add
+                            {t("common.add")}
                           </Button>
                         </div>
                       </SettingsRow>
@@ -1759,25 +1900,31 @@ export default function Settings() {
                     <SettingsGroup
                       id="setting-games-launch-logs"
                       className={rowHighlight("games-launch-logs")}
-                      caption="Launch logs"
+                      caption={t("settings.games.launchLogs.title")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Always show launch logs"
-                          description="Open a log window automatically when a game starts, showing the full output (Proton/Wine/umu included). Logs are always recorded — a failed launch opens them regardless of this setting."
+                          title={t("settings.games.alwaysShowLaunchLogs.title")}
+                          description={t(
+                            "settings.games.alwaysShowLaunchLogs.description",
+                          )}
                         />
                         <Switch
                           name="alwaysShowLaunchLogs"
                           color="indigo"
-                          aria-label="Always show launch logs"
+                          aria-label={t(
+                            "settings.games.alwaysShowLaunchLogs.title",
+                          )}
                           checked={alwaysShowLaunchLogs}
                           onChange={(v: boolean) => setAlwaysShowLaunchLogs(v)}
                         />
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel
-                          title="Launch logs"
-                          description="Open the log window for the current (or last) launch, or browse earlier logs."
+                          title={t("settings.games.launchLogs.title")}
+                          description={t(
+                            "settings.games.launchLogs.description",
+                          )}
                         />
                         <Button
                           type="button"
@@ -1791,7 +1938,7 @@ export default function Settings() {
                             }
                           }}
                         >
-                          Open
+                          {t("common.open")}
                         </Button>
                       </SettingsRow>
                     </SettingsGroup>
@@ -1801,19 +1948,21 @@ export default function Settings() {
                         id="setting-games-wine-prefix"
                         className={rowHighlight("games-wine-prefix")}
                         caption="Wine / Proton"
-                        description="Where umu-launcher stores Wine/Proton prefixes for Windows games. Each game gets its own isolated subfolder, so the OS root drive stays clean."
+                        description={t("settings.games.winePrefix.description")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Prefix Base Directory"
-                            description="PlayStash creates a separate prefix subfolder per game inside this folder, named like the game's install folder. Leave empty for PlayStash's default location (~/.local/share/PlayStash/prefixes)."
+                            title={t("settings.games.winePrefix.title")}
+                            description={t(
+                              "settings.games.winePrefix.titleDescription",
+                            )}
                           />
                           <Button
                             outline
                             onClick={() => void handleSelectWinePrefix()}
                           >
                             <FolderOpenIcon className="size-4" />
-                            Choose folder
+                            {t("settings.games.winePrefix.choose")}
                           </Button>
                         </SettingsRow>
                         {winePrefixBase && (
@@ -1826,7 +1975,9 @@ export default function Settings() {
                                 type="button"
                                 onClick={() => void handleClearWinePrefix()}
                                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
-                                aria-label="Clear Wine/Proton prefix directory"
+                                aria-label={t(
+                                  "settings.games.winePrefix.clear",
+                                )}
                               >
                                 <XMarkIcon className="size-4" />
                               </button>
@@ -1842,20 +1993,24 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={ShieldCheckIcon}
-                      title="Privacy"
-                      description="Your data stays yours. Here's what PlayStash sends."
+                      title={t("settings.category.privacy.label")}
+                      description={t("settings.privacy.description")}
                     />
                     <SettingsGroup>
                       <AccountPrivacySettings />
                       <SettingsRow>
                         <SettingsLabel
-                          title="Help improve PlayStash"
-                          description={`We'd like to send a few anonymous usage stats — which features you use and whether something goes wrong — so we know what to fix. Nothing personal, no game names, no IP-tracked browsing. It just helps us improve the app. You can turn it off anytime. Changes take effect after ${isTauri ? "restarting the app" : "reloading"}.`}
+                          title={t("settings.privacy.analytics.title")}
+                          description={t(
+                            isTauri
+                              ? "settings.privacy.analytics.descriptionDesktop"
+                              : "settings.privacy.analytics.descriptionWeb",
+                          )}
                         />
                         <Switch
                           name="analyticsConsent"
                           color="indigo"
-                          aria-label="Help improve PlayStash with anonymous usage analytics"
+                          aria-label={t("settings.privacy.analytics.ariaLabel")}
                           checked={analyticsConsent}
                           onChange={(v: boolean) => {
                             setAnalyticsEnabled(v);
@@ -1925,8 +2080,10 @@ export default function Settings() {
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Streamer / OPSEC Mode"
-                          description="Replaces user names, emails and the server URL with funny placeholder text so your stream capture never leaks real identities or your server address. Tip: press Ctrl/Cmd+Shift+O to toggle it from anywhere."
+                          title={t("settings.appearance.streamerMode.title")}
+                          description={t(
+                            "settings.appearance.streamerMode.description",
+                          )}
                         />
                         <div className="shrink-0">
                           <StreamerModeToggle />
@@ -1941,17 +2098,21 @@ export default function Settings() {
                           rowHighlight("rendering-smooth-scroll"),
                           rowHighlight("rendering-hw-accel"),
                         )}
-                        caption="Rendering"
+                        caption={t("settings.appearance.rendering.caption")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Smooth Scrolling"
-                            description="WebKitGTK smooth-scroll animation. Disable if scrolling feels delayed or queued."
+                            title={t("settings.appearance.smoothScroll.title")}
+                            description={t(
+                              "settings.appearance.smoothScroll.description",
+                            )}
                           />
                           <Switch
                             name="webkitSmoothScroll"
                             color="indigo"
-                            aria-label="WebKitGTK smooth scrolling"
+                            aria-label={t(
+                              "settings.appearance.smoothScroll.ariaLabel",
+                            )}
                             checked={webkitSmoothScroll}
                             onChange={(v: boolean) =>
                               void handleSetWebkitSmoothScroll(v)
@@ -1960,8 +2121,10 @@ export default function Settings() {
                         </SettingsRow>
                         <SettingsRow id="setting-rendering-hw-accel">
                           <SettingsLabel
-                            title="Hardware Acceleration"
-                            description="WebKitGTK hardware acceleration policy. Only takes effect after restarting the app."
+                            title={t("settings.appearance.hwAccel.title")}
+                            description={t(
+                              "settings.appearance.hwAccel.description",
+                            )}
                           />
                           <div className="w-36 shrink-0">
                             <Listbox
@@ -1972,13 +2135,19 @@ export default function Settings() {
                               }
                             >
                               <ListboxOption value="Never">
-                                <ListboxLabel>Never</ListboxLabel>
+                                <ListboxLabel>
+                                  {t("settings.appearance.hwAccel.never")}
+                                </ListboxLabel>
                               </ListboxOption>
                               <ListboxOption value="OnDemand">
-                                <ListboxLabel>On-demand</ListboxLabel>
+                                <ListboxLabel>
+                                  {t("settings.appearance.hwAccel.onDemand")}
+                                </ListboxLabel>
                               </ListboxOption>
                               <ListboxOption value="Always">
-                                <ListboxLabel>Always</ListboxLabel>
+                                <ListboxLabel>
+                                  {t("settings.appearance.hwAccel.always")}
+                                </ListboxLabel>
                               </ListboxOption>
                             </Listbox>
                           </div>
@@ -1992,8 +2161,8 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={SpeakerWaveIcon}
-                      title="Sound"
-                      description="PlayStash sound effects and volume."
+                      title={t("settings.category.sound.label")}
+                      description={t("settings.sound.description")}
                     />
                     <SettingsGroup
                       id="setting-sound-volume"
@@ -2001,8 +2170,8 @@ export default function Settings() {
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Volume"
-                          description="Adjust the master volume of PlayStash sounds. Click the speaker to mute."
+                          title={t("settings.sound.volume.title")}
+                          description={t("settings.sound.volume.description")}
                         />
                         <div className="w-44 shrink-0">
                           <VolumeControl />
@@ -2016,8 +2185,8 @@ export default function Settings() {
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Test sound"
-                          description="Play a preview at the current volume."
+                          title={t("settings.sound.test.title")}
+                          description={t("settings.sound.test.description")}
                         />
                         <Button
                           color="zinc"
@@ -2028,7 +2197,7 @@ export default function Settings() {
                             className="h-4 w-4"
                             aria-hidden="true"
                           />
-                          Play
+                          {t("settings.sound.test.play")}
                         </Button>
                       </SettingsRow>
                     </SettingsGroup>
@@ -2040,18 +2209,22 @@ export default function Settings() {
                     <>
                       <SettingsSectionHeader
                         icon={ExclamationTriangleIcon}
-                        title="Developer Tools"
-                        description="Tools for development."
+                        title={t("settings.category.developer.label")}
+                        description={t(
+                          "settings.category.developer.description",
+                        )}
                       />
                       <SettingsGroup
                         id="setting-developer-open-devtools"
                         className={rowHighlight("developer-open-devtools")}
-                        caption="Window"
+                        caption={t("settings.caption.window")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Open Browser DevTools"
-                            description="Opens the WebView devtools for the desktop build."
+                            title={t("settings.developer.devtools.title")}
+                            description={t(
+                              "settings.developer.devtools.description",
+                            )}
                           />
                           <Button
                             type="button"
@@ -2059,7 +2232,7 @@ export default function Settings() {
                             className="shrink-0"
                             onClick={() => void handleOpenDevTools()}
                           >
-                            Open DevTools
+                            {t("settings.developer.devtools.button")}
                           </Button>
                         </SettingsRow>
                       </SettingsGroup>
@@ -2071,13 +2244,19 @@ export default function Settings() {
                         >
                           <SettingsRow>
                             <SettingsLabel
-                              title="Simulate Desktop App"
-                              description="Preview how PlayStash looks and behaves as a native desktop application."
+                              title={t(
+                                "settings.developer.simulateDesktop.title",
+                              )}
+                              description={t(
+                                "settings.developer.simulateDesktop.description",
+                              )}
                             />
                             <Switch
                               name="simulateDesktop"
                               color="indigo"
-                              aria-label="Simulate Tauri desktop app mode"
+                              aria-label={t(
+                                "settings.developer.simulateDesktop.ariaLabel",
+                              )}
                               checked={isDebugTauriOverride()}
                               onChange={(v: boolean) => {
                                 setDebugTauriOverride(v);
@@ -2091,17 +2270,21 @@ export default function Settings() {
                       <SettingsGroup
                         id="setting-developer-simulate-outage"
                         className={rowHighlight("developer-simulate-outage")}
-                        caption="Network"
+                        caption={t("settings.developer.network.caption")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Simulate Network Outage"
-                            description="Force an offline state to test error banners, retries and reconnection. Persists until you disable it."
+                            title={t("settings.developer.simulateOutage.title")}
+                            description={t(
+                              "settings.developer.simulateOutage.description",
+                            )}
                           />
                           <Switch
                             name="simulateOutage"
                             color="indigo"
-                            aria-label="Simulate network outage"
+                            aria-label={t(
+                              "settings.developer.simulateOutage.ariaLabel",
+                            )}
                             checked={forceOffline}
                             onChange={(v: boolean) => setForceOffline(v)}
                           />
@@ -2111,12 +2294,14 @@ export default function Settings() {
                       <SettingsGroup
                         id="setting-developer-toasts"
                         className={rowHighlight("developer-toasts")}
-                        caption="Toasts"
+                        caption={t("settings.developer.toasts.caption")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Toast Notifications"
-                            description="Preview each toast tone. Handy for checking the snackbar position and styling."
+                            title={t("settings.developer.toasts.title")}
+                            description={t(
+                              "settings.developer.toasts.description",
+                            )}
                           />
                         </SettingsRow>
                         <SettingsRow>
@@ -2125,45 +2310,53 @@ export default function Settings() {
                               color="zinc"
                               onClick={() =>
                                 void showAlert({
-                                  title: "Info toast",
+                                  title: t(
+                                    "settings.developer.toasts.infoToast",
+                                  ),
                                   tone: "info",
                                 })
                               }
                             >
-                              Info
+                              {t("settings.developer.toasts.info")}
                             </Button>
                             <Button
                               color="zinc"
                               onClick={() =>
                                 void showAlert({
-                                  title: "Success toast",
+                                  title: t(
+                                    "settings.developer.toasts.successToast",
+                                  ),
                                   tone: "success",
                                 })
                               }
                             >
-                              Success
+                              {t("settings.developer.toasts.success")}
                             </Button>
                             <Button
                               color="zinc"
                               onClick={() =>
                                 void showAlert({
-                                  title: "Warning toast",
+                                  title: t(
+                                    "settings.developer.toasts.warningToast",
+                                  ),
                                   tone: "warning",
                                 })
                               }
                             >
-                              Warning
+                              {t("settings.developer.toasts.warning")}
                             </Button>
                             <Button
                               color="zinc"
                               onClick={() =>
                                 void showAlert({
-                                  title: "Danger toast",
+                                  title: t(
+                                    "settings.developer.toasts.dangerToast",
+                                  ),
                                   tone: "danger",
                                 })
                               }
                             >
-                              Danger
+                              {t("settings.developer.toasts.danger")}
                             </Button>
                           </div>
                         </SettingsRow>
@@ -2172,12 +2365,16 @@ export default function Settings() {
                       <SettingsGroup
                         id="setting-developer-simulate-download"
                         className={rowHighlight("developer-simulate-download")}
-                        caption="Downloads"
+                        caption={t("settings.category.downloads.label")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Simulate Download Status"
-                            description="Adds a fake card to the Downloads page so you can preview each state without a real download."
+                            title={t(
+                              "settings.developer.simulateDownload.title",
+                            )}
+                            description={t(
+                              "settings.developer.simulateDownload.description",
+                            )}
                           />
                         </SettingsRow>
                         <SettingsRow>
@@ -2190,7 +2387,7 @@ export default function Settings() {
                                 className="px-3"
                                 onClick={() => simulateDownload(kind)}
                               >
-                                {label}
+                                {t(label)}
                               </Button>
                             ))}
                           </div>
@@ -2200,22 +2397,28 @@ export default function Settings() {
                       <SettingsGroup
                         id="setting-developer-build-info"
                         className={rowHighlight("developer-build-info")}
-                        caption="Build Info"
+                        caption={t("settings.developer.buildInfo.caption")}
                       >
                         <SettingsRow>
-                          <SettingsLabel title="Version" />
+                          <SettingsLabel title={t("common.version")} />
                           <span className="shrink-0 font-mono text-xs text-ps-text">
                             {__APP_VERSION__}
                           </span>
                         </SettingsRow>
                         <SettingsRow>
-                          <SettingsLabel title="Channel" />
+                          <SettingsLabel
+                            title={t("settings.developer.buildInfo.channel")}
+                          />
                           <span className="shrink-0 font-mono text-xs text-ps-muted">
                             {__BUILD_CHANNEL__}
                           </span>
                         </SettingsRow>
                         <SettingsRow>
-                          <SettingsLabel title="Environment" />
+                          <SettingsLabel
+                            title={t(
+                              "settings.developer.buildInfo.environment",
+                            )}
+                          />
                           <span className="shrink-0 font-mono text-xs text-ps-muted">
                             {import.meta.env.MODE} ·{" "}
                             {isTauri ? "desktop" : "web"}
@@ -2226,12 +2429,14 @@ export default function Settings() {
                       <SettingsGroup
                         id="setting-developer-settings-dump"
                         className={rowHighlight("developer-settings-dump")}
-                        caption="Diagnostics"
+                        caption={t("settings.developer.diagnostics.caption")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title="Copy Settings Dump"
-                            description="Copies all local preferences (sensitive values redacted) to the clipboard as JSON for bug reports."
+                            title={t("settings.developer.settingsDump.title")}
+                            description={t(
+                              "settings.developer.settingsDump.description",
+                            )}
                           />
                           <Button
                             type="button"
@@ -2240,18 +2445,22 @@ export default function Settings() {
                             onClick={() => void handleCopySettingsDump()}
                           >
                             <ClipboardDocumentIcon className="size-4" />
-                            Copy
+                            {t("common.copy")}
                           </Button>
                         </SettingsRow>
                         <SettingsRow>
                           <SettingsLabel
-                            title="Verbose diagnostics logging"
-                            description="Writes a periodic snapshot of the interface (page, memory, DOM size) and detailed activity breadcrumbs to the app log to help diagnose freezes. Enable it when a maintainer asks for it — PlayStash keeps detecting and automatically recovering from an unresponsive interface either way."
+                            title={t("settings.developer.verboseLogging.title")}
+                            description={t(
+                              "settings.developer.verboseLogging.description",
+                            )}
                           />
                           <Switch
                             name="verboseDiagnostics"
                             color="indigo"
-                            aria-label="Verbose diagnostics logging"
+                            aria-label={t(
+                              "settings.developer.verboseLogging.title",
+                            )}
                             checked={verboseDiagnostics}
                             onChange={(v: boolean) => setVerboseDiagnostics(v)}
                           />
@@ -2264,26 +2473,28 @@ export default function Settings() {
                   <>
                     <SettingsSectionHeader
                       icon={InformationCircleIcon}
-                      title="About"
-                      description="Version, licenses and system information."
+                      title={t("settings.category.about.label")}
+                      description={t("settings.about.description")}
                     />
                     <SettingsGroup
                       id="setting-about-version"
                       className={rowHighlight("about-version")}
                     >
                       <SettingsRow>
-                        <SettingsLabel title="Application Version" />
+                        <SettingsLabel
+                          title={t("settings.about.version.title")}
+                        />
                         <button
                           type="button"
                           onClick={handleVersionClick}
-                          title="Application version"
+                          title={t("settings.about.version.tooltip")}
                           className="inline-flex shrink-0 cursor-pointer items-center rounded-md bg-ps-panel-soft px-2 py-1 font-mono text-xs text-ps-text ring-1 ring-ps-line transition-colors hover:ring-ps-line-strong"
                         >
                           v{__APP_VERSION__}
                         </button>
                       </SettingsRow>
                       <AboutLinkRow
-                        title="Original authors"
+                        title={t("settings.about.authors")}
                         value="Phalcode"
                         href="https://phalco.de"
                       />
@@ -2297,7 +2508,9 @@ export default function Settings() {
                           aria-expanded={licenseExpanded}
                           className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
                         >
-                          <SettingsLabel title="License" />
+                          <SettingsLabel
+                            title={t("settings.about.license.title")}
+                          />
                           <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
                             <span className="truncate">CC BY-NC-SA 4.0</span>
                             <ChevronRightIcon
@@ -2315,7 +2528,7 @@ export default function Settings() {
                         )}
                       </div>
                       <AboutLinkRow
-                        title="Metadata Providers"
+                        title={t("settings.about.metadataProviders")}
                         value="IGDB"
                         href="https://www.igdb.com"
                       />
@@ -2328,12 +2541,19 @@ export default function Settings() {
                           onClick={() => void openLicenses()}
                           className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
                         >
-                          <SettingsLabel title="Open Source Licenses" />
+                          <SettingsLabel
+                            title={t("settings.about.openSourceLicenses.title")}
+                          />
                           <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
                             <span className="truncate">
                               {licenseData
-                                ? `${licenseData.packages.length} libraries`
-                                : "View"}
+                                ? fillTemplate(
+                                    t(
+                                      "settings.about.openSourceLicenses.count",
+                                    ),
+                                    { count: licenseData.packages.length },
+                                  )
+                                : t("settings.about.openSourceLicenses.view")}
                             </span>
                             <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
                           </span>
@@ -2344,12 +2564,12 @@ export default function Settings() {
                     <SettingsGroup
                       id="setting-about-system"
                       className={rowHighlight("about-system")}
-                      caption="System"
+                      caption={t("settings.about.system.caption")}
                     >
                       <SettingsRow>
                         <SettingsLabel
-                          title="Operating System"
-                          description="OS, version and architecture"
+                          title={t("settings.about.os.title")}
+                          description={t("settings.about.os.description")}
                         />
                         <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
                           {osLabel}
@@ -2357,8 +2577,8 @@ export default function Settings() {
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel
-                          title="Display"
-                          description="Screen the window is on: panel resolution, scale factor and colour depth"
+                          title={t("settings.about.display.title")}
+                          description={t("settings.about.display.description")}
                         />
                         <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted wrap-break-word">
                           {displayLabel}
@@ -2366,8 +2586,8 @@ export default function Settings() {
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel
-                          title="Monitors"
-                          description="Physical resolution and scale factor of every connected monitor"
+                          title={t("settings.about.monitors.title")}
+                          description={t("settings.about.monitors.description")}
                         />
                         <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
                           {monitorsLabel}
@@ -2376,7 +2596,7 @@ export default function Settings() {
                       <SettingsRow>
                         <SettingsLabel
                           title="GPU (WebGL)"
-                          description="GPU renderer reported by the WebGL context"
+                          description={t("settings.about.gpu.description")}
                         />
                         <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
                           {gpuLabel}
@@ -2390,27 +2610,29 @@ export default function Settings() {
                       </SettingsRow>
                       <SettingsRow>
                         <SettingsLabel
-                          title="CPU / Memory"
-                          description="Processor and installed memory reported by the operating system"
+                          title={t("settings.about.cpuMemory.title")}
+                          description={t(
+                            "settings.about.cpuMemory.description",
+                          )}
                         />
                         <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted wrap-break-word">
                           {cpuMemoryLabel}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
-                        <SettingsLabel title="Platform" />
+                        <SettingsLabel title={t("settings.about.platform")} />
                         <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
                           {systemInfo.platform}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
-                        <SettingsLabel title="Language" />
+                        <SettingsLabel title={t("settings.about.language")} />
                         <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
                           {systemInfo.language}
                         </span>
                       </SettingsRow>
                       <SettingsRow>
-                        <SettingsLabel title="User Agent" />
+                        <SettingsLabel title={t("settings.about.userAgent")} />
                         <span className="min-w-0 max-w-[55%] break-all text-right font-mono text-xs text-ps-muted">
                           {systemInfo.userAgent}
                         </span>
@@ -2419,12 +2641,14 @@ export default function Settings() {
                         <SettingsRow>
                           <SettingsLabel
                             title="WebGL (WebKit)"
-                            description="Whether WebKitGTK reports WebGL as enabled"
+                            description={t(
+                              "settings.about.webkitWebgl.description",
+                            )}
                           />
                           <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
                             {renderingDiagnostics.webkit.webgl_enabled
-                              ? "Enabled"
-                              : "Disabled"}
+                              ? t("common.enabled")
+                              : t("common.disabled")}
                           </span>
                         </SettingsRow>
                       )}
@@ -2435,13 +2659,17 @@ export default function Settings() {
                         <SettingsGroup
                           id="setting-about-updates"
                           className={rowHighlight("about-updates")}
-                          caption="Updates"
+                          caption={t("settings.about.updates.caption")}
                         >
                           {availableVersion && !isInstallingUpdate && (
                             <SettingsRow>
                               <SettingsLabel
-                                title="Available update"
-                                description="A newer version is available for this channel."
+                                title={t(
+                                  "settings.about.availableUpdate.title",
+                                )}
+                                description={t(
+                                  "settings.about.availableUpdate.description",
+                                )}
                               />
                               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-ps-accent/15 px-2 py-1 font-mono text-xs font-medium text-ps-accent-strong ring-1 ring-ps-accent/25">
                                 <SparklesIcon className="size-3.5" />v
@@ -2452,8 +2680,10 @@ export default function Settings() {
 
                           <SettingsRow>
                             <SettingsLabel
-                              title="Update channel"
-                              description="Choose which kind of releases you receive."
+                              title={t("settings.about.updateChannel.title")}
+                              description={t(
+                                "settings.about.updateChannel.description",
+                              )}
                             />
                             <div className="w-36 shrink-0">
                               <Listbox
@@ -2462,12 +2692,18 @@ export default function Settings() {
                                 onChange={setUpdateChannel}
                               >
                                 <ListboxOption value="stable">
-                                  <ListboxLabel>Stable</ListboxLabel>
+                                  <ListboxLabel>
+                                    {t("settings.about.updateChannel.stable")}
+                                  </ListboxLabel>
                                 </ListboxOption>
                                 {devToolsUnlocked && (
                                   <>
                                     <ListboxOption value="unstable">
-                                      <ListboxLabel>Unstable</ListboxLabel>
+                                      <ListboxLabel>
+                                        {t(
+                                          "settings.about.updateChannel.unstable",
+                                        )}
+                                      </ListboxLabel>
                                     </ListboxOption>
                                   </>
                                 )}
@@ -2477,16 +2713,22 @@ export default function Settings() {
 
                           <SettingsRow>
                             <SettingsLabel
-                              title="Auto-update status"
+                              title={t("settings.about.autoUpdate.title")}
                               description={
                                 updaterErrorText
                                   ? updaterErrorText
                                   : updaterStatusText ||
                                     (updaterReady
                                       ? updaterEnabled
-                                        ? `Enabled for the ${updateChannel === "unstable" ? "Unstable" : "Stable"} channel.`
-                                        : "Not configured for this build yet."
-                                      : "Checking availability...")
+                                        ? t(
+                                            updateChannel === "unstable"
+                                              ? "settings.about.autoUpdate.enabledUnstable"
+                                              : "settings.about.autoUpdate.enabledStable",
+                                          )
+                                        : t(
+                                            "settings.about.autoUpdate.notConfigured",
+                                          )
+                                      : t("settings.about.autoUpdate.checking"))
                               }
                             />
                             {updaterErrorText ? (
@@ -2510,8 +2752,10 @@ export default function Settings() {
                         >
                           <SettingsRow>
                             <SettingsLabel
-                              title="Check for updates"
-                              description="Look for a newer version now."
+                              title={t("settings.about.checkUpdates.title")}
+                              description={t(
+                                "settings.about.checkUpdates.description",
+                              )}
                             />
                             <Button
                               type="button"
@@ -2534,10 +2778,10 @@ export default function Settings() {
                                 }
                               />
                               {isCheckingUpdates
-                                ? "Checking..."
+                                ? t("settings.about.checkUpdates.checking")
                                 : isInstallingUpdate
-                                  ? "Updating..."
-                                  : "Check"}
+                                  ? t("settings.about.checkUpdates.updating")
+                                  : t("settings.about.checkUpdates.button")}
                             </Button>
                           </SettingsRow>
                         </SettingsGroup>
@@ -2551,8 +2795,8 @@ export default function Settings() {
                   !isBuiltInCategoryVisible(activeCategory) && (
                     <SettingsSectionHeader
                       icon={CATEGORY_META[activeCategory].icon}
-                      title={CATEGORY_META[activeCategory].label}
-                      description={CATEGORY_META[activeCategory].description}
+                      title={t(CATEGORY_META[activeCategory].label)}
+                      description={t(CATEGORY_META[activeCategory].description)}
                     />
                   )}
                 {activeSections.map(({ id, component: Section }) => (
@@ -2577,19 +2821,22 @@ export default function Settings() {
         className="h-[min(85vh,850px)]! flex flex-col"
       >
         <div className="flex items-start justify-between gap-4">
-          <DialogTitle>Open Source Licenses</DialogTitle>
+          <DialogTitle>
+            {t("settings.about.openSourceLicenses.title")}
+          </DialogTitle>
           <button
             type="button"
             onClick={() => setLicensesOpen(false)}
-            aria-label="Close licenses dialog"
+            aria-label={t("settings.licenses.close")}
             className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
           >
             <XMarkIcon className="size-5" />
           </button>
         </div>
         <DialogDescription>
-          PlayStash is built with {licenseData?.packages.length ?? "…"} open
-          source libraries. Tap a library to view its license.
+          {fillTemplate(t("settings.licenses.description"), {
+            count: licenseData?.packages.length ?? "…",
+          })}
         </DialogDescription>
         <DialogBody className="flex-1 min-h-0 overflow-y-auto">
           {licenseData ? (
@@ -2627,8 +2874,7 @@ export default function Settings() {
                     </button>
                     {expanded && (
                       <pre className="max-h-72 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-ps-line bg-ps-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-ps-muted">
-                        {pkg.licenseText ||
-                          "License text not included for this package."}
+                        {pkg.licenseText || t("settings.licenses.noText")}
                       </pre>
                     )}
                   </div>
@@ -2636,7 +2882,9 @@ export default function Settings() {
               })}
             </div>
           ) : (
-            <Text className="text-sm text-ps-muted">Loading licenses…</Text>
+            <Text className="text-sm text-ps-muted">
+              {t("settings.licenses.loading")}
+            </Text>
           )}
         </DialogBody>
       </Dialog>

@@ -1,5 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { translate } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 // Normalize runtime payloads from backend to match generated frontend user types.
 function normalizeUser<T>(u: T): T {
   if (!u || typeof u !== "object") return u;
@@ -57,7 +59,10 @@ export function useAdminUsers(): UseAdminUsersResult {
         });
         if (!res.ok)
           throw new Error(
-            `Fetching users failed (${res.status}): ${(await res.text()) || res.statusText}`,
+            formatMessage(translate("admin.users.fetchFailed"), {
+              status: res.status,
+              message: (await res.text()) || res.statusText,
+            }),
           );
         const list = await res.json();
         if (cancelled) return;
@@ -202,7 +207,8 @@ export function useAdminUsers(): UseAdminUsersResult {
     u: PlaystashUser,
     payload: Partial<PlaystashUser> & { password?: string | null },
   ) => {
-    if (!safeBase) return { ok: false, message: "No server base URL" };
+    if (!safeBase)
+      return { ok: false, message: translate("admin.users.noServer") };
     const id = u.id;
     try {
       const body: Record<string, any> = {
@@ -225,7 +231,10 @@ export function useAdminUsers(): UseAdminUsersResult {
       if (!res.ok)
         return {
           ok: false,
-          message: `Save failed (${res.status}): ${(await res.text()) || res.statusText}`,
+          message: formatMessage(translate("admin.users.saveFailed"), {
+            status: res.status,
+            message: (await res.text()) || res.statusText,
+          }),
         };
       const updated = await res.json();
       setUsers((prev) =>

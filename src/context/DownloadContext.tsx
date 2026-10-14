@@ -1035,8 +1035,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           if (!downloadPath) {
             updateDownload(gameId, {
               status: "error",
-              error:
-                "No download location configured. Please set one in Settings.",
+              error: translate("downloads.error.noDownloadLocation"),
             });
             return;
           }
@@ -1120,7 +1119,10 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               !(await folderMatchesVersion(collisionFolderName))
             ) {
               throw new Error(
-                `Version folder collision for ${resolvedVersionName}.`,
+                fillTemplate(
+                  translate("downloads.error.versionFolderCollision"),
+                  { name: resolvedVersionName },
+                ),
               );
             }
             versionFolderName = collisionFolderName;
@@ -1342,7 +1344,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
                 downloadfinished: false,
                 downloadprogress: `${received}/${total || 0}`,
               });
-              const message = payload.error || "Download failed";
+              const message =
+                payload.error || translate("downloads.error.downloadFailed");
               updateDownload(gameId, {
                 status: "error",
                 error: message,
@@ -1449,7 +1452,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             : contentLength;
         if (total > 0) updateDownload(gameId, { total });
         const reader = res.body?.getReader();
-        if (!reader) throw new Error("Streaming not supported");
+        if (!reader)
+          throw new Error(translate("downloads.error.streamingUnsupported"));
         const chunks: (Uint8Array | ArrayBuffer)[] = writer ? [] : [];
         let received =
           resumePosition && resumePosition > 0 ? resumePosition : 0;
@@ -2045,7 +2049,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             extractionPasswordRequired: true,
             extractionError:
               (typeof payload.error === "string" && payload.error) ||
-              "Archive password required.",
+              translate("downloads.error.passwordRequired"),
           });
         } else if (payload.status === "error") {
           updateDownload(gameId, {
@@ -2053,7 +2057,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             extractionProgress: null,
             extractionError:
               (typeof payload.error === "string" && payload.error) ||
-              "Extraction failed.",
+              translate("downloads.error.extractionFailed"),
           });
           // The invoke result reports attempts started from this page; this
           // covers extractions re-attached after a reload.
@@ -2265,7 +2269,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         updateDownload(gameId, {
           extractionStatus: "error",
           extractionProgress: null,
-          extractionError: loop.result.message || "Extraction failed.",
+          extractionError:
+            loop.result.message ||
+            translate("downloads.error.extractionFailed"),
         });
         void notifyPipeline("extraction-failed", downloadsRef.current[gameId]);
       } catch (err) {
@@ -2517,7 +2523,10 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           });
         } catch (error) {
           updateDownload(gameId, {
-            installationError: `Game installed, but post-install script failed: ${String(error)}`,
+            installationError: fillTemplate(
+              translate("downloads.error.postInstallScriptFailed"),
+              { error: String(error) },
+            ),
           });
           return;
         }
@@ -2772,7 +2781,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
                 installationStatus: "error",
                 installationError:
                   (typeof payload.error === "string" && payload.error) ||
-                  "Installer exited with an error.",
+                  translate("downloads.error.installerExited"),
                 installationExitCode:
                   typeof payload.exitCode === "number"
                     ? payload.exitCode
@@ -2971,7 +2980,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             extractionStatus: "needs-password",
             extractionProgress: null,
             extractionPasswordRequired: true,
-            extractionError: state.error || "Archive password required.",
+            extractionError:
+              state.error || translate("downloads.error.passwordRequired"),
           });
           continue;
         }
@@ -2982,7 +2992,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           patch(gameId, {
             extractionStatus: "error",
             extractionProgress: null,
-            extractionError: state.error || "Extraction failed.",
+            extractionError:
+              state.error || translate("downloads.error.extractionFailed"),
           });
         }
       }
@@ -3016,7 +3027,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             patch(gameId, {
               installationStatus: "error",
               installationProgress: null,
-              installationError: state.error || "Installation copy failed.",
+              installationError:
+                state.error || translate("downloads.error.installCopyFailed"),
             });
           }
           continue;
@@ -3047,7 +3059,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           patch(gameId, {
             installationStatus: "error",
             installationCurrentFile: undefined,
-            installationError: state.error || "Installer exited with an error.",
+            installationError:
+              state.error || translate("downloads.error.installerExited"),
             installationExitCode:
               typeof state.exitCode === "number" ? state.exitCode : null,
           });
@@ -3164,7 +3177,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             recovered[gameId] = {
               gameId,
               versionId: Number(card.versionId || 0),
-              gameTitle: String(card.gameTitle || "Unknown Game"),
+              gameTitle: String(
+                card.gameTitle || translate("downloads.card.unknownGame"),
+              ),
               gameMetadata: card.gameMetadata,
               gameType: card.gameType
                 ? (String(card.gameType) as PlaystashGameTypeEnum)

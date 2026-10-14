@@ -2,6 +2,7 @@ import {
   PlaystashGameTypeEnum,
   type PlaystashGameTypeEnum as GameType,
 } from "@/api/models/PlaystashGame";
+import { translate, type TranslationKey } from "@/i18n";
 
 export type InstallViewMode = "portable" | "setup" | "undetected";
 
@@ -14,14 +15,38 @@ export type InstallCardState = {
   installerLoadError?: string;
 };
 
-export const FORCE_INSTALL_TYPES: { label: string; value: GameType }[] = [
-  { label: "Windows Setup", value: PlaystashGameTypeEnum.windows_setup },
-  { label: "Windows Portable", value: PlaystashGameTypeEnum.windows_portable },
-  { label: "Linux Portable", value: PlaystashGameTypeEnum.linux_portable },
-];
+export const FORCE_INSTALL_TYPES: { label: TranslationKey; value: GameType }[] =
+  [
+    {
+      label: "downloads.gameType.windowsSetup",
+      value: PlaystashGameTypeEnum.windows_setup,
+    },
+    {
+      label: "downloads.gameType.windowsPortable",
+      value: PlaystashGameTypeEnum.windows_portable,
+    },
+    {
+      label: "downloads.gameType.linuxPortable",
+      value: PlaystashGameTypeEnum.linux_portable,
+    },
+  ];
 
+const GAME_TYPE_LABELS: Record<string, TranslationKey> = {
+  [PlaystashGameTypeEnum.undetectable]: "downloads.gameType.undetectable",
+  [PlaystashGameTypeEnum.windows_setup]: "downloads.gameType.windowsSetup",
+  [PlaystashGameTypeEnum.windows_portable]:
+    "downloads.gameType.windowsPortable",
+  [PlaystashGameTypeEnum.windows_software]:
+    "downloads.gameType.windowsSoftware",
+  [PlaystashGameTypeEnum.linux_portable]: "downloads.gameType.linuxPortable",
+  [PlaystashGameTypeEnum.linux_software]: "downloads.gameType.linuxSoftware",
+};
+
+/** Display label of a game type, translated at call time. */
 export function formatGameTypeLabel(gameType?: string) {
-  if (!gameType) return "Undetectable";
+  if (!gameType) return translate("downloads.gameType.undetectable");
+  const key = GAME_TYPE_LABELS[gameType];
+  if (key) return translate(key);
   return gameType
     .replaceAll("_", " ")
     .toLowerCase()

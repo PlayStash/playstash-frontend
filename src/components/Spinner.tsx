@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useTranslation } from "@/i18n";
 
 interface SpinnerProps {
   label?: string;
@@ -7,6 +8,7 @@ interface SpinnerProps {
 
 /** A centered spinner with optional label. Respects prefers-reduced-motion. */
 export function Spinner({ label, className }: SpinnerProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={clsx(
@@ -14,7 +16,7 @@ export function Spinner({ label, className }: SpinnerProps) {
         className,
       )}
       role="status"
-      aria-label={label || "Loading"}
+      aria-label={label || t("shell.spinner.loading")}
     >
       <svg
         className="h-8 w-8 text-ps-accent motion-safe:animate-spin"
@@ -37,9 +39,7 @@ export function Spinner({ label, className }: SpinnerProps) {
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         />
       </svg>
-      {label && (
-        <span className="text-sm text-ps-muted">{label}</span>
-      )}
+      {label && <span className="text-sm text-ps-muted">{label}</span>}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useAlertDialog } from "@/context/AlertDialogContext";
 import { getErrorMessage } from "@/utils/apiError";
 import { Button } from "./tailwind/button";
 import { Textarea } from "./tailwind/textarea";
+import { translate, useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 interface Review {
   id: number;
   username: string;
@@ -23,6 +25,7 @@ interface Reviews {
 export function GameReviews({ gameId }: { gameId: number }) {
   const { authFetch, serverUrl, user } = useAuth();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
   const [data, setData] = useState<Reviews | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -41,7 +44,7 @@ export function GameReviews({ gameId }: { gameId: number }) {
         );
         if (!response.ok)
           throw new Error(
-            await getErrorMessage(response, "Could not load reviews."),
+            await getErrorMessage(response, translate("reviews.loadFailed")),
           );
         const next: Reviews = await response.json();
         setData(next);
@@ -65,9 +68,9 @@ export function GameReviews({ gameId }: { gameId: number }) {
     if (
       remove &&
       !(await showAlert({
-        title: "Remove your review?",
-        affirmativeText: "Remove review",
-        negativeText: "Keep review",
+        title: t("reviews.removeConfirm"),
+        affirmativeText: t("reviews.removeConfirmAction"),
+        negativeText: t("reviews.keep"),
       }))
     )
       return;
@@ -84,11 +87,11 @@ export function GameReviews({ gameId }: { gameId: number }) {
       );
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not save your review."),
+          await getErrorMessage(response, t("reviews.saveFailed")),
         );
       await load(true);
       setConsent(false);
-      setMessage(remove ? "Review removed." : "Review published.");
+      setMessage(remove ? t("reviews.removed") : t("reviews.published"));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -99,13 +102,16 @@ export function GameReviews({ gameId }: { gameId: number }) {
     <section className="space-y-4">
       <p className="text-sm text-ps-muted">
         {data?.average_rating != null
-          ? `${data.average_rating.toFixed(1)} / 5 · ${data.total} reviews`
-          : "No community ratings yet."}
+          ? fillTemplate(t("reviews.summary"), {
+              average: data.average_rating.toFixed(1),
+              total: data.total,
+            })
+          : t("reviews.noRatings")}
       </p>
       <div className="space-y-3 rounded-xl bg-ps-panel-soft p-4">
-        <h4 className="font-medium">Your rating and review</h4>
+        <h4 className="font-medium">{t("reviews.yourReview")}</h4>
         <label className="block text-sm text-ps-muted">
-          Rating
+          {t("reviews.rating")}
           <select
             className="mt-1 block min-h-11 rounded-lg bg-ps-panel px-3 text-ps-text"
             value={rating}
@@ -114,13 +120,16 @@ export function GameReviews({ gameId }: { gameId: number }) {
           >
             {[5, 4, 3, 2, 1].map((value) => (
               <option key={value} value={value}>
-                {value} {value === 1 ? "star" : "stars"}
+                {fillTemplate(
+                  t(value === 1 ? "reviews.stars.one" : "reviews.stars.other"),
+                  { n: value },
+                )}
               </option>
             ))}
           </select>
         </label>
         <label className="block text-sm text-ps-muted">
-          Review (optional)
+          {t("reviews.comment")}
           <Textarea
             rows={4}
             maxLength={4000}
@@ -137,8 +146,9 @@ export function GameReviews({ gameId }: { gameId: number }) {
             disabled={busy}
             onChange={(event) => setConsent(event.target.checked)}
           />
-          Publish this rating and review with my library username (
-          {user?.username}).
+          {fillTemplate(t("reviews.consent"), {
+            username: user?.username ?? "",
+          })}
         </label>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -146,21 +156,21 @@ export function GameReviews({ gameId }: { gameId: number }) {
             disabled={busy || !consent}
             onClick={() => void save()}
           >
-            {data?.my_review ? "Update review" : "Publish review"}
+            {data?.my_review ? t("reviews.update") : t("reviews.publish")}
           </Button>
           {data?.my_review && (
             <Button outline disabled={busy} onClick={() => void save(true)}>
-              Remove my review
+              {t("reviews.removeMine")}
             </Button>
           )}
         </div>
       </div>
-      {loading && <p role="status">Loading reviews…</p>}
+      {loading && <p role="status">{t("reviews.loading")}</p>}
       {error && (
         <div role="alert" className="space-y-2">
           <p className="text-red-400">{error}</p>
           <Button outline onClick={() => void load()}>
-            Reload reviews
+            {t("reviews.reload")}
           </Button>
         </div>
       )}
@@ -168,7 +178,8 @@ export function GameReviews({ gameId }: { gameId: number }) {
       {data?.reviews.map((review) => (
         <article key={review.id} className="border-t border-ps-line pt-3">
           <p className="text-sm font-medium">
-            {review.username} · {review.rating}/5 {review.mine ? "· You" : ""}
+            {review.username} · {review.rating}/5{" "}
+            {review.mine ? `· ${t("reviews.you")}` : ""}
           </p>
           {review.comment && (
             <p className="mt-2 whitespace-pre-wrap break-words text-sm">
@@ -187,15 +198,15 @@ export function GameReviews({ gameId }: { gameId: number }) {
             disabled={page === 1 || loading}
             onClick={() => setPage(page - 1)}
           >
-            Previous
+            {t("common.previous")}
           </Button>
-          <span>Page {page}</span>
+          <span>{fillTemplate(t("reviews.page"), { page })}</span>
           <Button
             outline
             disabled={page * data.limit >= data.total || loading}
             onClick={() => setPage(page + 1)}
           >
-            Next
+            {t("common.next")}
           </Button>
         </div>
       )}

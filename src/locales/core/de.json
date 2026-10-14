@@ -21,7 +21,18 @@
   "appearance.zoom": "Zoom",
   "appearance.zoomDescription": "Vergrößere oder verkleinere die Oberfläche.",
   "language.title": "Sprache der Oberfläche",
-  "language.description": "Wähle Englisch, Deutsch oder die Gerätesprache. Einige Seiten und Servermeldungen bleiben auf Englisch.",
+  "language.description": "Wähle Englisch, Deutsch oder die Gerätesprache. Inhalte vom Server, etwa Spielbeschreibungen, bleiben in ihrer Originalsprache.",
   "language.system": "Gerätesprache",
-  "language.scope": "Navigation und Sprachauswahl sind übersetzt. Fehlende Übersetzungen erscheinen auf Englisch."
+  "appearance.themeToggle": "Dunkelmodus umschalten",
+  "appearance.zoom.out": "Verkleinern",
+  "appearance.zoom.outTitle": "Verkleinern (Ctrl/Cmd + -)",
+  "appearance.zoom.in": "Vergrößern",
+  "appearance.zoom.inTitle": "Vergrößern (Ctrl/Cmd + +)",
+  "appearance.zoom.resetTitle": "Auf 100 % zurücksetzen (Ctrl/Cmd + 0)",
+  "appearance.rows.label": "Zeilen",
+  "appearance.rows.decrease": "Weniger Zeilen",
+  "appearance.rows.increase": "Mehr Zeilen",
+  "appearance.streamerMode.toggle": "Streamer-/OPSEC-Modus",
+  "appearance.debug.simulateDesktop": "Desktop simulieren",
+  "appearance.debug.simulateDesktopToggle": "Tauri-Desktop-Simulation umschalten"
 }

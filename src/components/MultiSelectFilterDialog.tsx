@@ -5,6 +5,8 @@ import { Dialog, DialogActions, DialogBody, DialogTitle } from "@tw/dialog";
 import { Input } from "@tw/input";
 import { XMarkIcon } from "@heroicons/react/20/solid";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { translate, useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 // Badge color type from the badge component
 type BadgeColor =
@@ -36,6 +38,10 @@ interface MultiSelectFilterDialogProps {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** Placeholder of the search field (e.g. "Search tags..."). */
+  searchPlaceholder: string;
+  /** Shown when no item matches (e.g. "No tags found"). */
+  emptyText: string;
   /** API endpoint to fetch items from, or undefined for static items */
   endpoint?: string;
   /** Static items to use instead of fetching from API */
@@ -153,6 +159,8 @@ export default function MultiSelectFilterDialog({
   open,
   onClose,
   title,
+  searchPlaceholder,
+  emptyText,
   endpoint,
   staticItems,
   selectedItems,
@@ -160,6 +168,7 @@ export default function MultiSelectFilterDialog({
   badgeColor = "blue",
 }: MultiSelectFilterDialogProps) {
   const { serverUrl, authFetch } = useAuth();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [allItems, setAllItems] = useState<FilterItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -179,7 +188,13 @@ export default function MultiSelectFilterDialog({
       params.set("limit", "-1");
       const url = `${base}${endpoint}?${params.toString()}`;
       const res = await authFetch(url, { method: "GET" });
-      if (!res.ok) throw new Error(`Failed to fetch ${title} (${res.status})`);
+      if (!res.ok)
+        throw new Error(
+          fillTemplate(translate("libraryFilters.dialog.fetchFailed"), {
+            title,
+            status: res.status,
+          }),
+        );
       const json: PaginatedResponse<FilterItem> = await res.json();
       setAllItems(json.data || []);
     } catch (e: any) {
@@ -234,14 +249,21 @@ export default function MultiSelectFilterDialog({
   );
 
   return (
-    <Dialog open={open} onClose={onClose} size="lg" className="!h-[min(70vh,650px)] flex flex-col">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      size="lg"
+      className="!h-[min(70vh,650px)] flex flex-col"
+    >
       <DialogTitle>{title}</DialogTitle>
       <DialogBody className="flex-1 min-h-0 overflow-y-auto">
         {/* Selected items display */}
         {selectedItems.length > 0 && (
           <div className="mb-4">
             <label className="block text-xs font-medium text-fg-muted mb-2">
-              Selected ({selectedItems.length})
+              {fillTemplate(t("libraryFilters.dialog.selected"), {
+                count: selectedItems.length,
+              })}
             </label>
             <div className="flex flex-wrap gap-2">
               {selectedItems.map((item) => (
@@ -272,18 +294,22 @@ export default function MultiSelectFilterDialog({
             onChange={(e: any) => setSearchQuery(e.target.value)}
             clearable
             onClear={() => setSearchQuery("")}
-            placeholder={`Search ${title.toLowerCase()}...`}
+            placeholder={searchPlaceholder}
           />
         </div>
 
         {/* Items list */}
-        {loading && <div className="text-sm text-fg-muted">Loading...</div>}
+        {loading && (
+          <div className="text-sm text-fg-muted">
+            {t("libraryFilters.dialog.loading")}
+          </div>
+        )}
         {error && <div className="text-sm text-red-500">{error}</div>}
         {!loading && !error && (
           <div className="border border-ps-line rounded-lg">
             {filteredItems.length === 0 ? (
               <div className="p-4 text-sm text-ps-muted text-center">
-                No {title.toLowerCase()} found
+                {emptyText}
               </div>
             ) : (
               <div className="divide-y divide-ps-line">
@@ -325,7 +351,7 @@ export default function MultiSelectFilterDialog({
       </DialogBody>
       <DialogActions>
         <Button outline onClick={onClose}>
-          Done
+          {t("common.done")}
         </Button>
       </DialogActions>
     </Dialog>

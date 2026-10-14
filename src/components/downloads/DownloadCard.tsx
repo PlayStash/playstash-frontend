@@ -19,7 +19,8 @@ import { useShowMappedTitle } from "@/utils/mappedTitle";
 import { PhaseSteps, type StepState } from "./PhaseSteps";
 import { PhaseDetail } from "./PhaseDetail";
 import { useInstallFlow } from "./useInstallFlow";
-import { useTranslation } from "@/i18n";
+import { useTranslation, type TranslationKey } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   ArchiveBoxIcon,
   ArrowDownTrayIcon,
@@ -38,36 +39,68 @@ import {
 type ChipColor = "blue" | "green" | "red" | "amber";
 
 function getStatusChip(download: ActiveDownload): {
-  label: string;
+  label: TranslationKey;
   color: ChipColor;
   icon: ComponentType<{ className?: string }>;
 } {
   if (download.status === "downloading") {
-    return { label: "Downloading", color: "blue", icon: ArrowDownTrayIcon };
+    return {
+      label: "downloads.status.downloading",
+      color: "blue",
+      icon: ArrowDownTrayIcon,
+    };
   }
   if (download.status === "paused") {
-    return { label: "Paused", color: "amber", icon: PauseIcon };
+    return {
+      label: "downloads.status.paused",
+      color: "amber",
+      icon: PauseIcon,
+    };
   }
   if (download.status === "error") {
-    return { label: "Failed", color: "red", icon: ExclamationTriangleIcon };
+    return {
+      label: "downloads.status.failed",
+      color: "red",
+      icon: ExclamationTriangleIcon,
+    };
   }
   if (download.status === "aborted") {
-    return { label: "Cancelled", color: "red", icon: XMarkIcon };
+    return {
+      label: "downloads.status.cancelled",
+      color: "red",
+      icon: XMarkIcon,
+    };
   }
   if (download.installationStatus === "completed") {
-    return { label: "Installed", color: "green", icon: CheckCircleIcon };
+    return {
+      label: "downloads.status.installed",
+      color: "green",
+      icon: CheckCircleIcon,
+    };
   }
   if (
     download.installationStatus === "copying" ||
     download.installationStatus === "launching" ||
     download.installationStatus === "running"
   ) {
-    return { label: "Installing", color: "blue", icon: ComputerDesktopIcon };
+    return {
+      label: "downloads.status.installing",
+      color: "blue",
+      icon: ComputerDesktopIcon,
+    };
   }
   if (download.extractionStatus === "completed") {
-    return { label: "Extracted", color: "blue", icon: ArchiveBoxIcon };
+    return {
+      label: "downloads.status.extracted",
+      color: "blue",
+      icon: ArchiveBoxIcon,
+    };
   }
-  return { label: "Done", color: "green", icon: CheckCircleIcon };
+  return {
+    label: "downloads.status.done",
+    color: "green",
+    icon: CheckCircleIcon,
+  };
 }
 
 function getDownloadStepState(status: string): StepState {
@@ -206,11 +239,10 @@ export function DownloadCard({
 
   const handleDeleteCard = async () => {
     const confirmed = await showAlert({
-      title: "Delete download?",
-      description:
-        "Do you really want to delete this download card? This removes the Download and Extraction folders for this game version, and cleans up the empty installation folder if the game was never installed.",
-      affirmativeText: "Yes",
-      negativeText: "No",
+      title: t("downloads.card.deleteTitle"),
+      description: t("downloads.card.deleteMessage"),
+      affirmativeText: t("pipeline.dialog.yes"),
+      negativeText: t("pipeline.dialog.no"),
     });
     if (!confirmed) return;
     await deleteDownloadCard(download.gameId);
@@ -219,7 +251,7 @@ export function DownloadCard({
   const steps = [
     {
       id: "download",
-      label: "Download",
+      label: t("downloads.step.download"),
       state: downloadStep,
       valueText:
         downloadStep === "active" && download.progress !== null
@@ -228,7 +260,7 @@ export function DownloadCard({
     },
     {
       id: "extraction",
-      label: "Extraction",
+      label: t("downloads.step.extraction"),
       state: extractionStep,
       valueText:
         extractionStep === "active" &&
@@ -239,7 +271,7 @@ export function DownloadCard({
     },
     {
       id: "installation",
-      label: "Installation",
+      label: t("downloads.step.installation"),
       state: installationStep,
       valueText:
         installationStep === "active" &&
@@ -257,7 +289,7 @@ export function DownloadCard({
       return (
         <Button color="amber" onClick={() => pauseDownload(download.gameId)}>
           <PauseIcon className="h-4 w-4" aria-hidden="true" />
-          Pause
+          {t("downloads.action.pause")}
         </Button>
       );
     }
@@ -265,7 +297,7 @@ export function DownloadCard({
       return (
         <Button color="indigo" onClick={() => resumeDownload(download.gameId)}>
           <PlayIcon className="h-4 w-4" aria-hidden="true" />
-          Resume
+          {t("downloads.action.resume")}
         </Button>
       );
     }
@@ -273,7 +305,7 @@ export function DownloadCard({
       return (
         <Button color="indigo" onClick={() => retryDownload(download.gameId)}>
           <ArrowPathIcon className="h-4 w-4" aria-hidden="true" />
-          Try Again
+          {t("downloads.action.tryAgain")}
         </Button>
       );
     }
@@ -289,12 +321,12 @@ export function DownloadCard({
           disabled={isExtracting}
         >
           {isExtracting
-            ? "Extracting..."
+            ? t("downloads.action.extracting")
             : download.extractionStatus === "completed"
-              ? "Extract Again"
+              ? t("downloads.action.extractAgain")
               : needsPassword || download.extractionStatus === "error"
-                ? "Try Extraction Again"
-                : "Start Extraction"}
+                ? t("downloads.action.retryExtraction")
+                : t("downloads.action.startExtraction")}
         </Button>
       );
     }
@@ -302,20 +334,20 @@ export function DownloadCard({
       if (isInstalling) {
         return (
           <Button color="indigo" disabled>
-            Installing...
+            {t("downloads.action.installing")}
           </Button>
         );
       }
       if (isInstalled) {
         return (
           <Button color="indigo" href={`/library/${download.gameId}`}>
-            Go to Game
+            {t("downloads.action.goToGame")}
           </Button>
         );
       }
       return (
         <Button color="indigo" onClick={() => void openInstallFlow()}>
-          Install
+          {t("common.install")}
         </Button>
       );
     }
@@ -335,13 +367,13 @@ export function DownloadCard({
               width={112}
               height={150}
               square
-              alt={`${title} cover art`}
+              alt={fillTemplate(t("downloads.card.coverAlt"), { title })}
               className="overflow-hidden rounded-lg border border-ps-line bg-ps-panel-soft shadow-sm"
               gameId={download.gameId}
               mediaSlot="cover"
               fallback={
                 <CoverPlaceholder
-                  title={title || "Game"}
+                  title={title || t("downloads.card.gameFallback")}
                   size="large"
                   className="h-full w-full"
                 />
@@ -350,7 +382,7 @@ export function DownloadCard({
           ) : (
             <div className="aspect-3/4 w-28 overflow-hidden rounded-lg border border-dashed border-ps-line bg-ps-panel-soft">
               <CoverPlaceholder
-                title={title || "Game"}
+                title={title || t("downloads.card.gameFallback")}
                 size="large"
                 className="h-full w-full"
               />
@@ -376,7 +408,9 @@ export function DownloadCard({
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ps-muted">
                 <span className="tabular-nums">
                   {formatBytes(download.received)} /{" "}
-                  {download.total ? formatBytes(download.total) : "Unknown"}
+                  {download.total
+                    ? formatBytes(download.total)
+                    : t("common.unknown")}
                 </span>
                 {download.speedBps !== undefined &&
                   download.status === "downloading" && (
@@ -389,7 +423,7 @@ export function DownloadCard({
             <div className="flex shrink-0 flex-col items-end gap-1">
               <Badge color={status.color} className="shrink-0">
                 <status.icon className="size-4" aria-hidden="true" />
-                {status.label}
+                {t(status.label)}
               </Badge>
               {folderSize > 0 && (
                 <span
@@ -442,8 +476,8 @@ export function DownloadCard({
           <DropdownButton
             as={Button}
             plain
-            aria-label="More actions"
-            title="More actions"
+            aria-label={t("downloads.card.moreActions")}
+            title={t("downloads.card.moreActions")}
           >
             <EllipsisHorizontalIcon className="h-4 w-4" aria-hidden="true" />
           </DropdownButton>
@@ -454,31 +488,39 @@ export function DownloadCard({
                 disabled={!download.downloadDirectory}
               >
                 <FolderOpenIcon data-slot="icon" aria-hidden="true" />
-                <DropdownLabel>Open Folder</DropdownLabel>
+                <DropdownLabel>
+                  {t("downloads.action.openFolder")}
+                </DropdownLabel>
               </DropdownItem>
             )}
             {isExtracted && !download.sourceFilesDeleted && (
               <DropdownItem onClick={() => void handleExtract()}>
                 <ArchiveBoxIcon data-slot="icon" aria-hidden="true" />
-                <DropdownLabel>Extract Again</DropdownLabel>
+                <DropdownLabel>
+                  {t("downloads.action.extractAgain")}
+                </DropdownLabel>
               </DropdownItem>
             )}
             {download.status === "downloading" && (
               <DropdownItem onClick={() => cancelDownload(download.gameId)}>
                 <XMarkIcon data-slot="icon" aria-hidden="true" />
-                <DropdownLabel>Cancel Download</DropdownLabel>
+                <DropdownLabel>
+                  {t("downloads.action.cancelDownload")}
+                </DropdownLabel>
               </DropdownItem>
             )}
             {isInstalled && isTauri && (
               <DropdownItem onClick={() => void openInstallFlow()}>
                 <ArrowPathIcon data-slot="icon" aria-hidden="true" />
-                <DropdownLabel>Install Again</DropdownLabel>
+                <DropdownLabel>
+                  {t("downloads.action.installAgain")}
+                </DropdownLabel>
               </DropdownItem>
             )}
             <DropdownDivider />
             <DropdownItem onClick={() => void handleDeleteCard()}>
               <TrashIcon data-slot="icon" aria-hidden="true" />
-              <DropdownLabel>Delete</DropdownLabel>
+              <DropdownLabel>{t("common.delete")}</DropdownLabel>
             </DropdownItem>
           </DropdownMenu>
         </Dropdown>

@@ -1,6 +1,7 @@
 import { isTauriApp } from "@/utils/tauri";
 import { normalizeServerUrl } from "@/utils/authConfig";
-import { setLanguage } from "@/i18n";
+import { setLanguage, translate } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   createProfileId,
   findDuplicateProfile,
@@ -494,7 +495,11 @@ export async function importLegacyData(
     const serverUrl = normalizeServerUrl(values.ServerUrl ?? "");
     const username = (values.Username ?? "").trim();
     if (!serverUrl || !username) {
-      report.skipped.push(`${legacy.rootDir}: invalid server URL or username`);
+      report.skipped.push(
+        fillTemplate(translate("accounts.legacy.skip.invalidProfile"), {
+          path: legacy.rootDir,
+        }),
+      );
       continue;
     }
     const existing = findDuplicateProfile(
@@ -534,11 +539,18 @@ export async function importLegacyData(
           await storeRefreshTokenFor(id, refreshToken);
           report.sessionsRestored += 1;
         } catch {
-          report.skipped.push(`${username}: the session could not be stored`);
+          report.skipped.push(
+            fillTemplate(translate("accounts.legacy.skip.sessionNotStored"), {
+              username,
+            }),
+          );
         }
       } else {
         report.skipped.push(
-          `${username} (${serverUrl}): the session expired, sign in once`,
+          fillTemplate(translate("accounts.legacy.skip.sessionExpired"), {
+            username,
+            server: serverUrl,
+          }),
         );
       }
     }
@@ -557,7 +569,10 @@ export async function importLegacyData(
         themeDir = `${profileDir}${profileDir.includes("\\") ? "\\" : "/"}themes`;
       } catch (error) {
         report.skipped.push(
-          `${username}: themes could not be copied (${String(error)})`,
+          fillTemplate(translate("accounts.legacy.skip.themes"), {
+            username,
+            error: String(error),
+          }),
         );
       }
     }
@@ -588,7 +603,7 @@ export async function importLegacyData(
         await setDefaultExtractionPassword(values.ExtractionPassword, id);
       } catch {
         report.skipped.push(
-          `${username}: ExtractionPassword (the vault is unavailable)`,
+          fillTemplate(translate("accounts.legacy.skip.vault"), { username }),
         );
       }
     }

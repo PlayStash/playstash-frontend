@@ -30,24 +30,19 @@ function useInstalledHome() {
 }
 export function BigPictureButton() {
   const active = useBigPicture();
-  const [error, setError] = useState("");
+  const { t } = useTranslation();
+  const [error, setError] = useState(false);
   return (
     <div className="space-y-1">
       <Button
         outline
-        onClick={() =>
-          void setBigPicture(!active).catch(() =>
-            setError(
-              "Fullscreen is unavailable. Big Picture layout is still active.",
-            ),
-          )
-        }
+        onClick={() => void setBigPicture(!active).catch(() => setError(true))}
       >
-        {active ? "Exit Big Picture" : "Big Picture"}
+        {active ? t("bigPicture.exit") : t("bigPicture.enter")}
       </Button>
       {error && (
         <p role="status" className="text-xs text-ps-muted">
-          {error}
+          {t("bigPicture.fullscreenUnavailable")}
         </p>
       )}
     </div>
@@ -65,18 +60,20 @@ export function BigPictureShell({ children }: { children: ReactNode }) {
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-ps-line px-5 py-4">
         <Logo variant="sidebar" height="h-6" />
         <nav
-          aria-label="Big Picture navigation"
+          aria-label={t("bigPicture.navigation")}
           className="flex flex-wrap gap-3"
         >
-          {[
-            ["/library", "Library"],
-            ["/downloads", "Downloads"],
-            ["/requests", "Requests"],
-            ["/chat", "Chat"],
-            ["/settings", "Settings"],
-          ].map(([href, label]) => (
+          {(
+            [
+              ["/library", "nav.library"],
+              ["/downloads", "nav.downloads"],
+              ["/requests", "bigPicture.nav.requests"],
+              ["/chat", "nav.chat"],
+              ["/settings", "nav.settings"],
+            ] as const
+          ).map(([href, label]) => (
             <Button key={href} outline href={href}>
-              {label}
+              {t(label)}
             </Button>
           ))}
           <Button
@@ -96,15 +93,12 @@ export function BigPictureShell({ children }: { children: ReactNode }) {
       <footer className="flex flex-wrap justify-between gap-3 border-t border-ps-line px-5 py-3 text-sm text-ps-muted">
         <span>
           {connected
-            ? "Controller connected"
-            : "Connect a controller or use the keyboard"}
+            ? t("bigPicture.controllerConnected")
+            : t("bigPicture.controllerHint")}
         </span>
-        <span>
-          D-pad / left stick: navigate · A: select · B: back · Right stick:
-          scroll · Start: exit
-        </span>
+        <span>{t("bigPicture.controls")}</span>
         <Link to="/library" className="text-ps-accent-strong">
-          Library
+          {t("nav.library")}
         </Link>
       </footer>
     </div>

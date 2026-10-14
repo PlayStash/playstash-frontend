@@ -7,6 +7,15 @@ import { Button } from "@/components/tailwind/button";
 import { Input } from "@/components/tailwind/input";
 import { Textarea } from "@/components/tailwind/textarea";
 import { Heading } from "@/components/tailwind/heading";
+import { useTranslation, type TranslationKey } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
+
+const STATUS_LABELS: Record<GameRequest["status"], TranslationKey> = {
+  open: "requests.status.open",
+  approved: "requests.status.approved",
+  fulfilled: "requests.status.fulfilled",
+  rejected: "requests.status.rejected",
+};
 
 interface GameRequest {
   id: number;
@@ -31,6 +40,7 @@ interface RequestsPage {
 export default function Requests() {
   const { serverUrl, authFetch, user } = useAuth();
   const { showAlert } = useAlertDialog();
+  const { t, locale } = useTranslation();
   const admin = Number(user?.role) >= 3;
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
@@ -50,7 +60,7 @@ export default function Requests() {
       );
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not load game requests."),
+          await getErrorMessage(response, t("requests.error.load")),
         );
       setData(await response.json());
       setError("");
@@ -59,6 +69,7 @@ export default function Requests() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authFetch, serverUrl, page, mine]);
   useEffect(() => {
     void load();
@@ -76,7 +87,7 @@ export default function Requests() {
       });
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not update the request."),
+          await getErrorMessage(response, t("requests.error.update")),
         );
       await load();
       return true;
@@ -90,9 +101,9 @@ export default function Requests() {
   return (
     <div className="space-y-6">
       <div>
-        <Heading>Game requests</Heading>
+        <Heading>{t("nav.requests")}</Heading>
         <p className="mt-2 text-sm text-ps-muted">
-          Ask your library administrator to add a game. Updates appear here.
+          {t("requests.description")}
         </p>
       </div>
       <form
@@ -107,13 +118,13 @@ export default function Requests() {
             if (saved) {
               setTitle("");
               setNote("");
-              setMessage("Request sent to your library administrator.");
+              setMessage(t("requests.sent"));
             }
           });
         }}
       >
         <label className="block text-sm text-ps-muted">
-          Game title
+          {t("requests.gameTitle")}
           <Input
             required
             maxLength={256}
@@ -123,7 +134,7 @@ export default function Requests() {
           />
         </label>
         <label className="block text-sm text-ps-muted">
-          Note (optional)
+          {t("requests.note")}
           <Textarea
             rows={3}
             maxLength={4000}
@@ -141,15 +152,14 @@ export default function Requests() {
             onChange={(event) => setAnonymous(event.target.checked)}
           />
           <span>
-            Hide my identity from the administrator
+            {t("requests.anonymous")}
             <span className="block text-xs text-ps-muted">
-              Avoid identifying information in the title or note. You can still
-              receive status updates.
+              {t("requests.anonymousHint")}
             </span>
           </span>
         </label>
         <Button color="indigo" type="submit" disabled={busy || !title.trim()}>
-          Send request
+          {t("requests.send")}
         </Button>
       </form>
       {error && (
@@ -164,9 +174,12 @@ export default function Requests() {
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-semibold">
-          {admin && !mine ? "Administrator queue" : "Your requests"}{" "}
+          {admin && !mine ? t("requests.adminQueue") : t("requests.mine")}{" "}
           {data
-            ? `· ${data.open_count} open · ${data.unread_count} unread`
+            ? formatMessage(t("requests.counts"), {
+                open: data.open_count,
+                unread: data.unread_count,
+              })
             : ""}
         </h2>
         <div className="flex items-center gap-3">
@@ -180,19 +193,20 @@ export default function Requests() {
                   setPage(1);
                 }}
               />
-              Only my requests
+              {t("requests.onlyMine")}
             </label>
           )}
           <Button outline disabled={loading} onClick={() => void load()}>
-            Refresh
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
-      {loading && !data && <p role="status">Loading requests…</p>}
+      {loading && !data && <p role="status">{t("requests.loading")}</p>}
       {data?.requests.map((request) => (
         <RequestRow
           key={request.id}
           request={request}
+          locale={locale}
           admin={admin}
           busy={busy}
           onUpdate={(status, gameId) =>
@@ -204,10 +218,10 @@ export default function Requests() {
           onSeen={() => void mutate(`/${request.id}/seen`, "PUT")}
           onCancel={() =>
             void showAlert({
-              title: "Cancel this request?",
+              title: t("requests.cancel.title"),
               description: request.title,
-              affirmativeText: "Cancel request",
-              negativeText: "Keep request",
+              affirmativeText: t("requests.cancel.confirm"),
+              negativeText: t("requests.cancel.keep"),
             }).then((confirmed) => {
               if (confirmed) void mutate(`/${request.id}`, "DELETE");
             })
@@ -216,7 +230,7 @@ export default function Requests() {
       ))}
       {!loading && !data?.requests.length && !error && (
         <p className="surface-panel rounded-2xl p-5 text-ps-muted">
-          No requests yet.
+          {t("requests.empty")}
         </p>
       )}
       {data && data.total > data.limit && (
@@ -226,15 +240,17 @@ export default function Requests() {
             disabled={page === 1 || loading}
             onClick={() => setPage(page - 1)}
           >
-            Previous
+            {t("common.previous")}
           </Button>
-          <span className="text-sm">Page {page}</span>
+          <span className="text-sm">
+            {formatMessage(t("requests.page"), { page })}
+          </span>
           <Button
             outline
             disabled={page * data.limit >= data.total || loading}
             onClick={() => setPage(page + 1)}
           >
-            Next
+            {t("common.next")}
           </Button>
         </div>
       )}
@@ -243,6 +259,7 @@ export default function Requests() {
 }
 function RequestRow({
   request,
+  locale,
   admin,
   busy,
   onUpdate,
@@ -250,12 +267,14 @@ function RequestRow({
   onCancel,
 }: {
   request: GameRequest;
+  locale: string;
   admin: boolean;
   busy: boolean;
   onUpdate: (status: GameRequest["status"], gameId?: number) => void;
   onSeen: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState(request.status);
   const [gameId, setGameId] = useState(
     request.game_id ? String(request.game_id) : "",
@@ -271,14 +290,19 @@ function RequestRow({
           <h3 className="font-semibold">{request.title}</h3>
           <p className="text-xs text-ps-muted">
             {request.anonymous
-              ? "Anonymous requester"
-              : request.username || "Your request"}{" "}
-            · Updated {new Date(request.updated_at).toLocaleString()}
+              ? t("requests.anonymousRequester")
+              : request.username || t("requests.yourRequest")}{" "}
+            ·{" "}
+            {formatMessage(t("requests.updated"), {
+              date: new Date(request.updated_at).toLocaleString(locale),
+            })}
           </p>
         </div>
         <span className="rounded-lg bg-ps-panel-soft px-3 py-1 text-sm capitalize">
-          {request.status}
-          {request.unread ? " · New update" : ""}
+          {STATUS_LABELS[request.status]
+            ? t(STATUS_LABELS[request.status])
+            : request.status}
+          {request.unread ? ` · ${t("requests.newUpdate")}` : ""}
         </span>
       </div>
       {request.note && (
@@ -291,13 +315,13 @@ function RequestRow({
           className="text-sm text-ps-accent-strong underline"
           to={`/library/${request.game_id}`}
         >
-          Open added game
+          {t("requests.openGame")}
         </Link>
       )}
       {admin && (
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm text-ps-muted">
-            Status
+            {t("requests.status")}
             <select
               className="mt-1 block min-h-11 rounded-lg bg-ps-panel px-3 text-ps-text"
               value={status}
@@ -306,16 +330,18 @@ function RequestRow({
                 setStatus(event.target.value as GameRequest["status"])
               }
             >
-              {["open", "approved", "fulfilled", "rejected"].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
+              {(Object.keys(STATUS_LABELS) as GameRequest["status"][]).map(
+                (value) => (
+                  <option key={value} value={value}>
+                    {t(STATUS_LABELS[value])}
+                  </option>
+                ),
+              )}
             </select>
           </label>
           {status === "fulfilled" && (
             <label className="max-w-52 text-sm text-ps-muted">
-              Added game ID (optional)
+              {t("requests.addedGameId")}
               <Input
                 type="number"
                 min={1}
@@ -339,19 +365,19 @@ function RequestRow({
               )
             }
           >
-            Save status
+            {t("requests.saveStatus")}
           </Button>
         </div>
       )}
       <div className="flex gap-2">
         {request.mine && request.unread && (
           <Button outline disabled={busy} onClick={onSeen}>
-            Mark update as read
+            {t("requests.markRead")}
           </Button>
         )}
         {request.mine && request.status === "open" && (
           <Button outline disabled={busy} onClick={onCancel}>
-            Cancel request
+            {t("requests.cancel.confirm")}
           </Button>
         )}
       </div>

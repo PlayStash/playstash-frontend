@@ -1,4 +1,5 @@
 import type { LaunchProfileDto } from "@/api";
+import { translate } from "@/i18n";
 
 export function validateLaunchProfiles(
   profiles: LaunchProfileDto[],
@@ -12,7 +13,7 @@ export function validateLaunchProfiles(
       path.includes(":") ||
       path.split("/").some((part) => part === "..")
     ) {
-      return "Every profile needs a name and an executable path inside the installation.";
+      return translate("launch.profiles.invalid");
     }
   }
   return null;

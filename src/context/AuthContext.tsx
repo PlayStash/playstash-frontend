@@ -46,6 +46,8 @@ import {
 import { runProfileSwitchEffects } from "@/utils/profileSession";
 import { applyPendingConnection } from "@/utils/connectionFile";
 import { ProfilesProvider } from "@/context/ProfilesContext";
+import { translate } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 const AUTH_CACHED_USER_KEY = "app_cached_user";
 /** Dispatched when the active server changes (OfflineContext re-targets its poller). */
@@ -64,7 +66,7 @@ export class AuthRequestError extends Error {
 
 /** A stored profile has no usable session: the password must be entered. */
 export class CredentialsRequiredError extends Error {
-  constructor(message = "Please sign in again.") {
+  constructor(message = translate("auth.error.signInAgain")) {
     super(message);
     this.name = "CredentialsRequiredError";
   }
@@ -276,7 +278,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     if (!res.ok)
       throw new AuthRequestError(
-        `Login failed (${res.status}): ${(await res.text()) || res.statusText}`,
+        fillTemplate(translate("auth.error.loginFailed"), {
+          status: res.status,
+          details: (await res.text()) || res.statusText,
+        }),
         res.status,
       );
     return res.json();
@@ -299,7 +304,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     if (!res.ok)
       throw new AuthRequestError(
-        `Refresh failed (${res.status}): ${(await res.text()) || res.statusText}`,
+        fillTemplate(translate("auth.error.refreshFailed"), {
+          status: res.status,
+          details: (await res.text()) || res.statusText,
+        }),
         res.status,
       );
     return res.json();
@@ -308,7 +316,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authFetch(`${serverRef.current}/api/users/me`);
     if (!res.ok)
       throw new AuthRequestError(
-        `GET /api/users/me failed (${res.status}): ${(await res.text()) || res.statusText}`,
+        fillTemplate(translate("auth.error.currentUserFailed"), {
+          status: res.status,
+          details: (await res.text()) || res.statusText,
+        }),
         res.status,
       );
     const me: PlaystashUser = await res.json();
@@ -414,7 +425,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSessionState();
     await removeRefreshToken();
     localStorage.removeItem(cachedUserKey(profileIdRef.current));
-    setError("Your session has expired. Please log in again.");
+    setError(translate("auth.error.sessionExpired"));
   }, []);
 
   const ensureFreshToken = useCallback(async () => {
@@ -605,7 +616,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       try {
         if (!server || !username || !password)
-          throw new Error("All fields are required.");
+          throw new Error(translate("auth.error.fieldsRequired"));
         const authData = await loginBasicRequest(username, password);
         authRef.current = authData;
         setAuth(authData);
@@ -650,7 +661,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profilesEnabled() ? (options?.profileId ?? createProfileId()) : null,
       );
       try {
-        if (!tokens?.access_token) throw new Error("Missing access token");
+        if (!tokens?.access_token)
+          throw new Error(translate("auth.error.missingAccessToken"));
         authRef.current = tokens;
         setAuth(tokens);
         if (tokens.refresh_token) await setRefreshToken(tokens.refresh_token);
@@ -678,7 +690,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginStoredSession = useCallback(async (profileId: string) => {
     const profile = getProfile(profileId);
-    if (!profile) throw new Error("User Profile not found");
+    if (!profile) throw new Error(translate("auth.error.profileNotFound"));
     setError(null);
     setLoading(true);
     clearSessionState();
@@ -694,7 +706,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isAuthError(e)) {
           await removeRefreshToken();
           throw new CredentialsRequiredError(
-            "Your session has expired. Please log in again.",
+            translate("auth.error.sessionExpired"),
           );
         }
         // Server unreachable: like the WPF client, open the profile offline
@@ -1028,9 +1040,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await removeRefreshToken();
       let revokeError: string | undefined;
       try {
-        if (!server) throw new Error("Not connected to a server.");
-        if (!accessToken)
-          throw new Error("The server is not reachable (offline mode).");
+        if (!server) throw new Error(translate("auth.error.notConnected"));
+        if (!accessToken) throw new Error(translate("auth.error.offline"));
         const response = await fetchWithToken(`${server}${path}`, accessToken, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1042,7 +1053,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!response.ok) {
           const text = await response.text().catch(() => "");
           throw new Error(
-            `Logout on the server failed (${response.status}): ${text || response.statusText}`,
+            fillTemplate(translate("auth.error.logoutFailed"), {
+              status: response.status,
+              details: text || response.statusText,
+            }),
           );
         }
       } catch (e) {

@@ -3,15 +3,19 @@ import {
   Cog6ToothIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslation, type TranslationKey } from "@/i18n";
+
+const labels: Record<string, TranslationKey> = {
+  WINDOWS_SETUP: "library.installed.type.windowsSetup",
+  WINDOWS_PORTABLE: "library.installed.type.windowsPortable",
+  LINUX_PORTABLE: "library.installed.type.linuxPortable",
+};
 
 export function GameTypeBadge({ type }: { type?: string }) {
-  const labels: Record<string, string> = {
-    WINDOWS_SETUP: "Windows setup",
-    WINDOWS_PORTABLE: "Windows portable",
-    LINUX_PORTABLE: "Linux portable",
-  };
-  const label = labels[String(type).toUpperCase()];
-  if (!label) return null;
+  const { t } = useTranslation();
+  const labelKey = labels[String(type).toUpperCase()];
+  if (!labelKey) return null;
+  const label = t(labelKey);
   const setup = String(type).toUpperCase() === "WINDOWS_SETUP";
   const linux = String(type).toUpperCase() === "LINUX_PORTABLE";
   const InstallIcon = setup ? Cog6ToothIcon : ArchiveBoxIcon;

@@ -50,6 +50,7 @@ import { Label } from "../components/tailwind/fieldset";
 import { FolderTagRules } from "@/components/admin/FolderTagRules";
 import { ServerDiagnostics } from "@/components/admin/ServerDiagnostics";
 import { getErrorMessage } from "@/utils/apiError";
+import { formatMessage } from "@/utils/formatMessage";
 
 const USER_SORT_LABELS: Record<UserSort, TranslationKey> = {
   username: "admin.sort.username",
@@ -128,15 +129,13 @@ export default function Administration() {
   try {
     return (
       <div className="flex min-h-full flex-col gap-6">
-        <Heading>Administration</Heading>
-        <Text className="mt-1 max-w-2xl">
-          Manage users, monitor server health, and configure system settings.
-        </Text>
+        <Heading>{t("nav.admin")}</Heading>
+        <Text className="mt-1 max-w-2xl">{t("admin.page.description")}</Text>
         <Divider />
         <div className="flex flex-col gap-6">
-          <Card title="Server Information">
+          <Card title={t("admin.server.title")}>
             <DescriptionList>
-              <DescriptionTerm>Address</DescriptionTerm>
+              <DescriptionTerm>{t("admin.server.address")}</DescriptionTerm>
               <DescriptionDetails>
                 {connected ? (
                   <Link
@@ -146,10 +145,12 @@ export default function Administration() {
                     {streamerMode ? maskUrl(serverUrl) : serverUrl}
                   </Link>
                 ) : (
-                  <span className="text-ps-muted">Not connected</span>
+                  <span className="text-ps-muted">
+                    {t("admin.server.notConnected")}
+                  </span>
                 )}
               </DescriptionDetails>
-              <DescriptionTerm>Version</DescriptionTerm>
+              <DescriptionTerm>{t("common.version")}</DescriptionTerm>
               <DescriptionDetails>
                 {version ? (
                   <Link
@@ -175,26 +176,31 @@ export default function Administration() {
                   </>
                 )}
               </DescriptionDetails>
-              <DescriptionTerm>Users</DescriptionTerm>
+              <DescriptionTerm>{t("admin.users.title")}</DescriptionTerm>
               <DescriptionDetails>
                 {users.length}{" "}
                 {users.length > 0 && filteredUsers.length !== users.length && (
                   <span className="text-ps-muted">
-                    ({filteredUsers.length} shown)
+                    {formatMessage(t("admin.server.shown"), {
+                      count: filteredUsers.length,
+                    })}
                   </span>
                 )}
               </DescriptionDetails>
             </DescriptionList>
           </Card>
           {connected && (
-            <Card className="grid md:grid-cols-2 gap-4" title="Actions">
+            <Card
+              className="grid md:grid-cols-2 gap-4"
+              title={t("admin.actions.title")}
+            >
               <Button
                 color="indigo"
                 onClick={() => setShowBackupRestoreDialog(true)}
-                title="Backup & Restore Database"
+                title={t("admin.backup.title")}
                 className="items-center"
               >
-                Backup & Restore Database
+                {t("admin.backup.title")}
               </Button>
               <Button
                 color="indigo"
@@ -213,7 +219,9 @@ export default function Administration() {
                       throw new Error(
                         await getErrorMessage(
                           res,
-                          `Reindex failed (${res.status})`,
+                          formatMessage(t("admin.reindex.failed"), {
+                            status: res.status,
+                          }),
                         ),
                       );
                     }
@@ -229,10 +237,12 @@ export default function Administration() {
                     invalidateGamesCache();
                   }
                 }}
-                title="Reindex Games"
+                title={t("admin.reindex.button")}
                 className="items-center"
               >
-                {reindexing ? "Reindexing…" : "Reindex Games"}
+                {reindexing
+                  ? t("admin.reindex.running")
+                  : t("admin.reindex.button")}
               </Button>
               {reindexError && (
                 <p
@@ -243,18 +253,17 @@ export default function Administration() {
                 </p>
               )}
               <Text className="col-span-full text-sm">
-                Update the web interface by pulling and recreating the frontend
-                container in your deployment.
+                {t("admin.actions.frontendUpdate")}
               </Text>
             </Card>
           )}
-          <Card title="Automatic folder tags">
+          <Card title={t("admin.folderTags.title")}>
             <FolderTagRules />
           </Card>
-          <Card title="Server diagnostics">
+          <Card title={t("admin.diagnostics.title")}>
             <ServerDiagnostics />
           </Card>
-          <Card title="Users">
+          <Card title={t("admin.users.title")}>
             {error && (
               <div className="mb-4 rounded-md bg-red-500/10 p-3 text-sm text-red-500">
                 {error}
@@ -268,7 +277,7 @@ export default function Administration() {
                   checked={showDeleted}
                   onChange={() => setShowDeleted((v) => !v)}
                 />
-                <Label>Show Deleted Users</Label>
+                <Label>{t("admin.users.showDeleted")}</Label>
               </SwitchField>
               <div className="ml-auto w-52">
                 <Listbox
@@ -287,20 +296,22 @@ export default function Administration() {
               <Button
                 color="indigo"
                 onClick={() => setShowRegister(true)}
-                title="Register new user"
+                title={t("admin.register.title")}
                 className="items-center"
               >
                 <UserPlusIcon className="size-5" />
-                <span className="text-sm leading-none">Register User</span>
+                <span className="text-sm leading-none">
+                  {t("admin.users.register")}
+                </span>
               </Button>
             </div>
             <Table className="[--gutter:--spacing(6)] sm:[--gutter:--spacing(8)]">
               <TableHead>
                 <TableRow>
-                  <TableHeader>Name</TableHeader>
-                  <TableHeader>Activated</TableHeader>
-                  <TableHeader>Role</TableHeader>
-                  <TableHeader>Actions</TableHeader>
+                  <TableHeader>{t("common.name")}</TableHeader>
+                  <TableHeader>{t("admin.users.activated")}</TableHeader>
+                  <TableHeader>{t("admin.users.role")}</TableHeader>
+                  <TableHeader>{t("admin.actions.title")}</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -329,7 +340,7 @@ export default function Administration() {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           />
                         </svg>
-                        Loading users…
+                        {t("admin.users.loading")}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -338,7 +349,7 @@ export default function Administration() {
                   <TableRow>
                     <TableCell colSpan={4}>
                       <div className="py-6 text-center text-sm text-ps-muted">
-                        No users found.
+                        {t("admin.users.empty")}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -347,7 +358,7 @@ export default function Administration() {
                   const id = u.id;
                   const deleted = u.deleted_at;
                   const busy = opBusy[String(id)];
-                  const name = u.username || "Unknown User";
+                  const name = u.username || t("admin.users.unknown");
                   const first_name = u.first_name;
                   const last_name = u.last_name;
                   const email = u.email;
@@ -389,7 +400,7 @@ export default function Administration() {
                               </span>
                               {deleted && (
                                 <span className="rounded bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-400">
-                                  Deleted
+                                  {t("admin.users.deleted")}
                                 </span>
                               )}
                             </div>
@@ -431,11 +442,14 @@ export default function Administration() {
                               nextRole !== roleNumeric
                             ) {
                               const proceed = await showAlert({
-                                title: "Change your own role?",
-                                description:
-                                  "You're about to change your own permission role. If you lower your permissions you may lose access to parts of the administration panel immediately.",
-                                affirmativeText: "Yes, change it",
-                                negativeText: "Cancel",
+                                title: t("admin.users.ownRole.title"),
+                                description: t(
+                                  "admin.users.ownRole.description",
+                                ),
+                                affirmativeText: t(
+                                  "admin.users.ownRole.confirm",
+                                ),
+                                negativeText: t("common.cancel"),
                               });
                               if (!proceed) return; // abort
                             }
@@ -446,7 +460,9 @@ export default function Administration() {
                           {Object.values(PlaystashUserRoleEnum).map((r) => (
                             <ListboxOption key={r} value={r}>
                               <ListboxLabel>
-                                {ROLE_LABELS[Number(r)] ?? r}
+                                {ROLE_LABELS[Number(r)]
+                                  ? t(ROLE_LABELS[Number(r)])
+                                  : r}
                               </ListboxLabel>
                             </ListboxOption>
                           ))}
@@ -459,10 +475,12 @@ export default function Administration() {
                               color="rose"
                               disabled={busy}
                               onClick={() => deleteUser(u)}
-                              title="Delete User"
+                              title={t("admin.users.delete")}
                             >
                               <TrashIcon />{" "}
-                              <span className="sr-only">Delete</span>
+                              <span className="sr-only">
+                                {t("common.delete")}
+                              </span>
                             </Button>
                           )}
                           {deleted && (
@@ -470,21 +488,23 @@ export default function Administration() {
                               color="green"
                               disabled={busy}
                               onClick={() => recoverUser(u)}
-                              title="Recover User"
+                              title={t("admin.users.recover")}
                             >
                               <ArrowPathIcon />{" "}
-                              <span className="sr-only">Recover</span>
+                              <span className="sr-only">
+                                {t("admin.users.recoverShort")}
+                              </span>
                             </Button>
                           )}
                           <Button
                             color="indigo"
                             onClick={() => setEditingUserId(Number(id))}
-                            title="Edit User"
+                            title={t("admin.users.edit")}
                             className="bg-ps-accent!"
                             disabled={busy}
                           >
                             <PencilSquareIcon />{" "}
-                            <span className="sr-only">Edit</span>
+                            <span className="sr-only">{t("common.edit")}</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -538,7 +558,7 @@ export default function Administration() {
   } catch (e: any) {
     return (
       <div className="p-8 text-sm text-red-500 space-y-4">
-        <p>Failed to render Administration page.</p>
+        <p>{t("admin.page.renderFailed")}</p>
         <pre className="whitespace-pre-wrap bg-red-500/10 p-4 rounded">
           {e?.message || String(e)}
         </pre>

@@ -21,6 +21,7 @@ import {
   gameIdFromRoom,
 } from "@/utils/chatLinks";
 import {
+  ACTIVITY_STATE_LABELS,
   COMMUNITY_PRESENCES,
   normalizePresence,
   type CommunityPresence,
@@ -65,7 +66,7 @@ export default function Chat() {
     setOpenConversation,
     reconnect,
   } = useCommunity();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.toString();
   const linkTarget = useMemo(
@@ -349,7 +350,10 @@ export default function Chat() {
           const name =
             userNames.get(userId) ??
             t("community.userFallback").replace("{id}", String(userId));
-          const state = entry.state || "ONLINE";
+          const rawState = entry.state || "ONLINE";
+          const state = ACTIVITY_STATE_LABELS[rawState]
+            ? t(ACTIVITY_STATE_LABELS[rawState])
+            : rawState;
           const game = entry.gameId ? ` — ${gameLabel(entry.gameId)}` : "";
           return {
             userId,
@@ -535,7 +539,7 @@ export default function Chat() {
                 <span className="font-medium text-ps-text">
                   {message.username}
                 </span>{" "}
-                · {new Date(message.created_at).toLocaleString()}
+                · {new Date(message.created_at).toLocaleString(locale)}
               </p>
               <p className="mt-1 whitespace-pre-wrap break-words text-sm">
                 {message.text}

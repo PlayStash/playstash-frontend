@@ -4,17 +4,16 @@ import type { SearchableSetting } from "@/settings/types";
 export const launchSearchEntries: SearchableSetting[] = [
   {
     id: "games-ignore-list-reset",
-    title: "Reset ignored executables",
-    description:
-      "Replace the ignored executables with the server's default list.",
+    title: "ignoreList.resetTitle",
+    description: "settings.search.gamesIgnoreListReset.description",
     category: "games",
     keywords: ["ignore", "ignored", "executables", "reset", "default", "exe"],
     desktopOnly: true,
   },
   {
     id: "games-fullscreen-library",
-    title: "Open fullscreen library when the client starts",
-    description: "Start in Big Picture on the installed games.",
+    title: "fullscreenLibrary.onStart",
+    description: "settings.search.gamesFullscreenLibrary.description",
     category: "games",
     keywords: [
       "big picture",

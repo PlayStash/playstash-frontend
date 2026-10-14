@@ -43,10 +43,8 @@ export default function Downloads() {
     <div className="flex min-h-full flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <Heading>Downloads</Heading>
-          <Text className="max-w-2xl">
-            Track active, queued, and completed game downloads.
-          </Text>
+          <Heading>{t("nav.downloads")}</Heading>
+          <Text className="max-w-2xl">{t("downloads.page.description")}</Text>
         </div>
         {downloadArray.length > 0 && (
           <Button
@@ -90,7 +88,7 @@ export default function Downloads() {
             {t("pipeline.downloads.empty")}
           </h3>
           <p className="mt-1 text-sm text-ps-muted">
-            Start downloading games from your library
+            {t("downloads.page.emptyHint")}
           </p>
         </div>
       )}

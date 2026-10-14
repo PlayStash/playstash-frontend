@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchProfileDto } from "@/api";
 import type { PlaystashGame } from "@/api/models/PlaystashGame";
 import { isWindowsExecutablePath } from "@/components/downloads/install-utils";
@@ -29,6 +29,7 @@ import { isTauriApp } from "@/utils/tauri";
 import { EmulatorLaunchDialog } from "./EmulatorLaunchDialog";
 import type { SettingsInstalledGame } from "./types";
 import { tauriInvoke } from "@/utils/tauriInvoke";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 interface Props {
   installedGame: SettingsInstalledGame;
@@ -295,16 +296,15 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
         setUmuStatus(await checkUmuStatus());
       } else {
         await showAlert({
-          title: "Failed to install umu-launcher",
-          description:
-            "umu-launcher could not be installed. Check your connection and try again.",
-          affirmativeText: "OK",
+          title: t("launchOptions.umu.installFailedTitle"),
+          description: t("launchOptions.umu.installFailed"),
+          affirmativeText: t("common.ok"),
         });
       }
     } finally {
       setInstallingUmu(false);
     }
-  }, [installUmu, checkUmuStatus, showAlert, gameTitle]);
+  }, [installUmu, checkUmuStatus, showAlert, gameTitle, t]);
 
   /** Absolute path of the executable Play starts (emulator or game). */
   const launchTargetPath = useCallback(
@@ -499,14 +499,18 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-ps-text">Launch Options</h3>
+        <h3 className="text-lg font-semibold text-ps-text">
+          {t("launchOptions.title")}
+        </h3>
         <p className="mt-1 text-sm text-ps-muted">
-          Configure how this game is launched when you click the play button.
+          {t("launchOptions.description")}
         </p>
       </div>
 
       {loadingLaunchOptions ? (
-        <div className="text-sm text-ps-muted">Loading executables…</div>
+        <div className="text-sm text-ps-muted">
+          {t("launchOptions.loadingExecutables")}
+        </div>
       ) : (
         <>
           {launchProfiles.length > 0 && (
@@ -539,22 +543,31 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
           {/* Launch Executable Picker */}
           <div>
             <label className="block text-sm font-medium text-ps-muted mb-1">
-              Launch Executable
+              {t("launchOptions.executable")}
             </label>
             {launchExecutables.length === 0 ? (
               <div className="space-y-3">
                 <p className="text-sm text-ps-muted">
-                  No executables found in the installation folder.
+                  {t("launchOptions.noExecutables")}
                 </p>
                 {nonExecutableScripts.length > 0 && (
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
                     <p className="text-sm text-amber-700 dark:text-amber-300">
-                      Found {nonExecutableScripts.length}{" "}
-                      {nonExecutableScripts.length === 1
-                        ? "shell script"
-                        : "shell scripts"}{" "}
-                      that is missing the executable (
-                      <code className="font-mono">+x</code>) permission.
+                      {fillTemplate(
+                        t(
+                          nonExecutableScripts.length === 1
+                            ? "launchOptions.scriptsNotExecutable.one"
+                            : "launchOptions.scriptsNotExecutable.other",
+                        ),
+                        { count: nonExecutableScripts.length },
+                      )
+                        .split("{flag}")
+                        .map((part, index) => (
+                          <Fragment key={index}>
+                            {index > 0 && <code className="font-mono">+x</code>}
+                            {part}
+                          </Fragment>
+                        ))}
                     </p>
                     <Button
                       color="amber"
@@ -563,8 +576,8 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                       className="mt-3"
                     >
                       {makingExecutable
-                        ? "Making executable…"
-                        : "Make executable"}
+                        ? t("launchOptions.makingExecutable")
+                        : t("launchOptions.makeExecutable")}
                     </Button>
                   </div>
                 )}
@@ -585,7 +598,9 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                   onChange={(v: any) => setSelectedLaunchExe(String(v))}
                 >
                   <ListboxOption value="">
-                    <ListboxLabel>-- Select executable --</ListboxLabel>
+                    <ListboxLabel>
+                      {t("launchOptions.selectExecutable")}
+                    </ListboxLabel>
                   </ListboxOption>
                   {launchExecutables.map((exe) => (
                     <ListboxOption key={exe} value={exe}>
@@ -600,8 +615,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
             </p>
             {launchScanTruncated && (
               <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-                This installation folder is very large — the scan stopped early,
-                so some executables may be missing.
+                {t("launchOptions.scanTruncated")}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-2">
@@ -632,8 +646,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
             <>
               <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3">
                 <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                  This is a Windows executable — it will be run with
-                  umu-launcher (Wine/Proton) on Linux.
+                  {t("launchOptions.umu.windowsExecutable")}
                 </p>
                 {!umuStatus?.installed && (
                   <Button
@@ -643,8 +656,8 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                     className="mt-3"
                   >
                     {installingUmu
-                      ? "Installing umu-launcher…"
-                      : "Install umu-launcher"}
+                      ? t("launchOptions.umu.installing")
+                      : t("launchOptions.umu.install")}
                   </Button>
                 )}
               </div>
@@ -652,7 +665,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-ps-muted mb-1">
-                    Game ID (GAMEID)
+                    {t("launchOptions.umu.gameId")}
                   </label>
                   <Input
                     name="umuGameId"
@@ -661,21 +674,21 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                     placeholder="umu-default"
                   />
                   <p className="mt-1 text-xs text-ps-muted">
-                    Optional umu-database ID so protonfixes apply automatically.
+                    {t("launchOptions.umu.gameIdHint")}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-ps-muted mb-1">
-                    Store (STORE)
+                    {t("launchOptions.umu.store")}
                   </label>
                   <Input
                     name="umuStore"
                     value={umuStore}
                     onChange={(e: any) => setUmuStore(e.target.value)}
-                    placeholder="e.g. gog, epic, ubisoft-connect"
+                    placeholder={t("launchOptions.umu.storePlaceholder")}
                   />
                   <p className="mt-1 text-xs text-ps-muted">
-                    Storefront used together with GAMEID to look up fixes.
+                    {t("launchOptions.umu.storeHint")}
                   </p>
                 </div>
                 <div>
@@ -699,7 +712,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                       >
                         <ListboxOption value="">
                           <ListboxLabel>
-                            -- Installed Proton builds --
+                            {t("launchOptions.umu.installedBuilds")}
                           </ListboxLabel>
                         </ListboxOption>
                         {protonBuilds.map((build) => (
@@ -711,49 +724,46 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                     </div>
                   )}
                   <p className="mt-1 text-xs text-ps-muted">
-                    Proton directory, version name (GE-Proton9-5) or codename
-                    (GE-Proton).
+                    {t("launchOptions.umu.protonHint")}
                     {protonBuilds.length === 0 &&
-                      " Builds installed in compatibilitytools.d (e.g. via ProtonUp-Qt) are offered here for selection."}
+                      ` ${t("launchOptions.umu.protonBuildsHint")}`}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-ps-muted mb-1">
-                    Wine Prefix (WINEPREFIX)
+                    {t("launchOptions.umu.winePrefix")}
                   </label>
                   <Input
                     name="umuWinePrefix"
                     value={umuWinePrefix}
                     onChange={(e: any) => setUmuWinePrefix(e.target.value)}
-                    placeholder="Automatic (per game)"
+                    placeholder={t("launchOptions.umu.winePrefixPlaceholder")}
                   />
                   <p className="mt-1 text-xs text-ps-muted">
-                    Leave empty to let PlayStash use its own folder per game
-                    (named like the game's install folder) inside the
-                    Wine/Proton Prefix Directory from the settings.
+                    {t("launchOptions.umu.winePrefixHint")}
                     {resolvedPrefixPath && (
                       <>
                         {" "}
-                        Currently:{" "}
+                        {t("launchOptions.umu.currently")}{" "}
                         <button
                           type="button"
                           className="underline decoration-dotted hover:text-ps-text"
-                          title="Copy path"
+                          title={t("launchOptions.umu.copyPath")}
                           onClick={async () => {
                             try {
                               await navigator.clipboard.writeText(
                                 resolvedPrefixPath,
                               );
                               await showAlert({
-                                title: "Prefix path copied",
+                                title: t("launchOptions.umu.prefixCopied"),
                                 description: resolvedPrefixPath,
-                                affirmativeText: "OK",
+                                affirmativeText: t("common.ok"),
                               });
                             } catch {
                               await showAlert({
-                                title: "Wine/Proton prefix",
+                                title: t("launchOptions.umu.prefixTitle"),
                                 description: resolvedPrefixPath,
-                                affirmativeText: "OK",
+                                affirmativeText: t("common.ok"),
                               });
                             }
                           }}
@@ -770,14 +780,14 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
                               });
                             } catch (error: any) {
                               await showAlert({
-                                title: "Could not open the prefix folder",
+                                title: t("launchOptions.umu.openPrefixFailed"),
                                 description: error?.message || String(error),
-                                affirmativeText: "OK",
+                                affirmativeText: t("common.ok"),
                               });
                             }
                           }}
                         >
-                          Open folder
+                          {t("launchOptions.umu.openFolder")}
                         </button>
                       </>
                     )}
@@ -790,16 +800,16 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
           {/* Launch Parameters */}
           <div>
             <label className="block text-sm font-medium text-ps-muted mb-1">
-              Launch Parameters
+              {t("launchOptions.parameters")}
             </label>
             <Input
               name="launchParams"
               value={launchParams}
               onChange={(e: any) => setLaunchParams(e.target.value)}
-              placeholder="e.g. -fullscreen -width 1920"
+              placeholder={t("launchOptions.parametersPlaceholder")}
             />
             <p className="mt-1 text-xs text-ps-muted">
-              Optional command-line arguments passed to the executable.
+              {t("launchOptions.parametersHint")}
             </p>
           </div>
 
@@ -809,15 +819,14 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
               <Switch
                 name="launchAsAdmin"
                 color="indigo"
-                aria-label="Run as Administrator"
+                aria-label={t("launchOptions.runAsAdmin")}
                 checked={launchAsAdmin}
                 onChange={(v: boolean) => setLaunchAsAdmin(v)}
               />
-              <Label>Run as Administrator</Label>
+              <Label>{t("launchOptions.runAsAdmin")}</Label>
             </SwitchField>
             <p className="mt-1 ml-0 text-xs text-ps-muted">
-              Launch the game with elevated privileges (UAC on Windows, root
-              prompt on Linux).
+              {t("launchOptions.runAsAdminHint")}
             </p>
           </div>
 

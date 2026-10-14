@@ -48,6 +48,9 @@ import {
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { PaintBrushIcon } from "@heroicons/react/16/solid";
+import { translate, useTranslation } from "@/i18n";
+import type { TranslationKey } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 interface Props {
   game: PlaystashGame;
@@ -122,6 +125,16 @@ interface ImageState {
   loadedId?: number | null;
 }
 
+const IMAGE_SOURCE_LABELS: Record<
+  Exclude<ImageState["via"], "none">,
+  TranslationKey
+> = {
+  file: "gameEditor.images.via.file",
+  url: "gameEditor.images.via.url",
+  paste: "gameEditor.images.via.paste",
+  drag: "gameEditor.images.via.drag",
+};
+
 type TabKey =
   | "images"
   | "metadata"
@@ -138,6 +151,7 @@ export function GameSettings({
 }: Props) {
   const { serverUrl, authFetch, user } = useAuth() as any;
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
   const isAdmin = Number(user?.role) >= Number(PlaystashUserRoleEnum._3);
   const [activeTab, setActiveTab] = useState<TabKey>("images");
   const [saving, setSaving] = useState(false);
@@ -171,7 +185,10 @@ export function GameSettings({
     loadedId: undefined,
   });
   const [savingImages, setSavingImages] = useState(false);
-  const [imagesMsg, setImagesMsg] = useState<string | null>(null);
+  const [imagesMsg, setImagesMsg] = useState<{
+    text: string;
+    ok: boolean;
+  } | null>(null);
   const revokeRef = useRef<string[]>([]);
   const dragTargetRef = useRef<"cover" | "bg" | null>(null);
   const nativeDragHandledRef = useRef(false);
@@ -279,13 +296,13 @@ export function GameSettings({
       } catch (error) {
         console.error("Failed to open image search:", error);
         await showAlert({
-          title: "Unable to open image search",
+          title: t("gameEditor.images.searchFailed"),
           description: error instanceof Error ? error.message : String(error),
-          affirmativeText: "OK",
+          affirmativeText: t("common.ok"),
         });
       }
     },
-    [isTauri, showAlert, workingGame.metadata?.title, workingGame.title],
+    [isTauri, showAlert, t, workingGame.metadata?.title, workingGame.title],
   );
 
   const findInstalledGame =
@@ -431,15 +448,22 @@ export function GameSettings({
 
   const handleDeleteGameVersion = useCallback(
     async (version: GameVersion) => {
-      const versionLabel = version.version || `Version ${version.id}`;
+      const versionLabel =
+        version.version ||
+        fillTemplate(t("gameEditor.files.versionFallback"), {
+          id: version.id,
+        });
 
       const confirmed = await showAlert({
-        title: `Delete game file "${versionLabel}"?`,
-        description:
-          `This will permanently delete "${version.file_path}" from the server. ` +
-          `The game's metadata is kept, but this file can no longer be downloaded.`,
-        affirmativeText: "Delete",
-        negativeText: "Cancel",
+        title: fillTemplate(t("gameEditor.files.deleteConfirm.title"), {
+          version: versionLabel,
+        }),
+        description: fillTemplate(
+          t("gameEditor.files.deleteConfirm.description"),
+          { path: version.file_path ?? "" },
+        ),
+        affirmativeText: t("common.delete"),
+        negativeText: t("common.cancel"),
       });
       if (!confirmed) return;
 
@@ -449,7 +473,7 @@ export function GameSettings({
         const wasLastVersion = (workingGame.versions?.length ?? 0) <= 1;
 
         const base = serverUrl?.replace(/\/+$/, "");
-        if (!base) throw new Error("Missing server URL");
+        if (!base) throw new Error(t("gameEditor.error.missingServerUrl"));
         const res = await authFetch(
           `${base}/api/game/${workingGame.id}/versions/${version.id}`,
           { method: "DELETE" },
@@ -457,7 +481,7 @@ export function GameSettings({
         if (!res.ok) {
           const message = await getErrorMessage(
             res,
-            "The server could not delete this game file.",
+            t("gameEditor.files.deleteFailedFallback"),
           );
           throw new Error(message);
         }
@@ -489,16 +513,17 @@ export function GameSettings({
         }
 
         await showAlert({
-          title: "Game file deleted",
-          description: `"${versionLabel}" was removed from the server.`,
-          affirmativeText: "OK",
+          title: t("gameEditor.files.deleted.title"),
+          description: fillTemplate(t("gameEditor.files.deleted.description"), {
+            version: versionLabel,
+          }),
+          affirmativeText: t("common.ok"),
         });
       } catch (e: any) {
         await showAlert({
-          title: "Unable to delete game file",
-          description:
-            e?.message || "The server could not delete this game file.",
-          affirmativeText: "OK",
+          title: t("gameEditor.files.deleteFailed"),
+          description: e?.message || t("gameEditor.files.deleteFailedFallback"),
+          affirmativeText: t("common.ok"),
         });
       } finally {
         setDeletingVersionId(null);
@@ -512,6 +537,7 @@ export function GameSettings({
       refetchGame,
       serverUrl,
       showAlert,
+      t,
       workingGame.id,
       workingGame.metadata?.title,
       workingGame.title,
@@ -548,11 +574,19 @@ export function GameSettings({
         setLoadingProviders(true);
         try {
           const base = serverUrl?.replace(/\/+$/, "");
-          if (!base) throw new Error("Missing server URL");
+          if (!base)
+            throw new Error(translate("gameEditor.error.missingServerUrl"));
 
           const res = await authFetch(`${base}/api/metadata/providers`);
           if (!res.ok) {
-            throw new Error(`Failed to fetch providers (${res.status})`);
+            throw new Error(
+              fillTemplate(
+                translate("gameEditor.metadata.providersFetchFailed"),
+                {
+                  status: res.status,
+                },
+              ),
+            );
           }
 
           let providers: MetadataProviderDto[] = await res.json();
@@ -607,9 +641,11 @@ export function GameSettings({
         } catch (e: any) {
           console.error("Failed to fetch metadata providers:", e);
           await showAlert({
-            title: "Error",
-            description: e?.message || "Failed to load metadata providers",
-            affirmativeText: "OK",
+            title: translate("common.error"),
+            description:
+              e?.message ||
+              translate("gameEditor.metadata.providersLoadFailed"),
+            affirmativeText: translate("common.ok"),
           });
         } finally {
           setLoadingProviders(false);
@@ -660,7 +696,8 @@ export function GameSettings({
       setSearching(true);
       try {
         const base = serverUrl?.replace(/\/+$/, "");
-        if (!base) throw new Error("Missing server URL");
+        if (!base)
+          throw new Error(translate("gameEditor.error.missingServerUrl"));
 
         const res = await authFetch(
           `${base}/api/metadata/providers/${selectedProvider.slug}/search?query=${encodeURIComponent(searchQuery)}`,
@@ -704,7 +741,7 @@ export function GameSettings({
     setRemapping(true);
     try {
       const base = serverUrl?.replace(/\/+$/, "");
-      if (!base) throw new Error("Missing server URL");
+      if (!base) throw new Error(t("gameEditor.error.missingServerUrl"));
 
       const mappingRequest: MapGameDto = {
         provider_slug: selectedProvider.slug,
@@ -729,7 +766,10 @@ export function GameSettings({
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(
-          `Remap failed (${res.status}): ${txt || res.statusText}`,
+          fillTemplate(t("gameEditor.metadata.remapFailedStatus"), {
+            status: res.status,
+            details: txt || res.statusText,
+          }),
         );
       }
 
@@ -742,17 +782,17 @@ export function GameSettings({
       setMetadataProviders([]);
 
       await showAlert({
-        title: "Success",
+        title: t("gameEditor.success"),
         description: providerDataId
-          ? "Game remapped successfully"
-          : "Game unmapped successfully",
-        affirmativeText: "OK",
+          ? t("gameEditor.metadata.remapped")
+          : t("gameEditor.metadata.unmapped"),
+        affirmativeText: t("common.ok"),
       });
     } catch (e: any) {
       await showAlert({
-        title: "Error",
-        description: e?.message || "Failed to remap game",
-        affirmativeText: "OK",
+        title: t("common.error"),
+        description: e?.message || t("gameEditor.metadata.remapFailed"),
+        affirmativeText: t("common.ok"),
       });
     } finally {
       setRemapping(false);
@@ -763,18 +803,18 @@ export function GameSettings({
     const priority = parseInt(customPriority, 10);
     if (isNaN(priority)) {
       await showAlert({
-        title: "Invalid Priority",
-        description: "Please enter a valid number for priority",
-        affirmativeText: "OK",
+        title: t("gameEditor.metadata.invalidPriority.title"),
+        description: t("gameEditor.metadata.invalidPriority.description"),
+        affirmativeText: t("common.ok"),
       });
       return;
     }
 
     if (!currentShownMappedGame?.provider_data_id) {
       await showAlert({
-        title: "No Mapping",
-        description: "This game is not mapped to the selected provider",
-        affirmativeText: "OK",
+        title: t("gameEditor.metadata.noMapping.title"),
+        description: t("gameEditor.metadata.noMapping.description"),
+        affirmativeText: t("common.ok"),
       });
       return;
     }
@@ -785,11 +825,10 @@ export function GameSettings({
 
   const handleUnmap = async () => {
     const result = await showAlert({
-      title: "Unmap Provider",
-      description:
-        "Are you sure you want to unmap this game from the selected provider?",
-      affirmativeText: "Yes",
-      negativeText: "Cancel",
+      title: t("gameEditor.metadata.unmapConfirm.title"),
+      description: t("gameEditor.metadata.unmapConfirm.description"),
+      affirmativeText: t("common.yes"),
+      negativeText: t("common.cancel"),
     });
 
     if (result) {
@@ -1087,14 +1126,12 @@ export function GameSettings({
   ): Promise<File> => {
     const f = await obtainFileForState(state, fallbackName);
     if (!f) {
-      throw new Error(
-        "Could not download image from URL — the site blocks cross-origin downloads.",
-      );
+      throw new Error(t("gameEditor.images.urlDownloadFailed"));
     }
     return f;
   };
   const uploadImage = async (file: File): Promise<number> => {
-    if (!serverUrl) throw new Error("No server URL");
+    if (!serverUrl) throw new Error(t("gameEditor.error.noServerUrl"));
     const base = serverUrl.replace(/\/+$/, "");
     const formData = new FormData();
     formData.append("file", file, file.name);
@@ -1105,12 +1142,15 @@ export function GameSettings({
     if (!res.ok) {
       const txt = await res.text();
       throw new Error(
-        `Upload failed (${res.status}): ${txt || res.statusText}`,
+        fillTemplate(t("gameEditor.images.uploadFailed"), {
+          status: res.status,
+          details: txt || res.statusText,
+        }),
       );
     }
     const media = await res.json();
     const mid = media?.id ?? media?.ID;
-    if (!mid) throw new Error("Upload response missing id");
+    if (!mid) throw new Error(t("gameEditor.images.uploadMissingId"));
     return mid;
   };
 
@@ -1134,7 +1174,7 @@ export function GameSettings({
       // Update game with new media IDs
       if (coverId || backgroundId) {
         const base = serverUrl?.replace(/\/+$/, "");
-        if (!base) throw new Error("Missing server URL");
+        if (!base) throw new Error(t("gameEditor.error.missingServerUrl"));
 
         const updateGame: UpdateGameDto = {
           user_metadata: {},
@@ -1156,7 +1196,10 @@ export function GameSettings({
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(
-            `Game update failed (${res.status}): ${txt || res.statusText}`,
+            fillTemplate(t("gameEditor.images.gameUpdateFailed"), {
+              status: res.status,
+              details: txt || res.statusText,
+            }),
           );
         }
 
@@ -1167,7 +1210,7 @@ export function GameSettings({
       }
 
       // Update local state to mark as saved
-      setImagesMsg("Images saved successfully");
+      setImagesMsg({ text: t("gameEditor.images.saved"), ok: true });
       if (newCover) {
         setCoverImg((s) => ({
           ...s,
@@ -1189,7 +1232,10 @@ export function GameSettings({
         }));
       }
     } catch (e: any) {
-      setImagesMsg(e?.message || "Failed to save images");
+      setImagesMsg({
+        text: e?.message || t("gameEditor.images.saveFailed"),
+        ok: false,
+      });
     } finally {
       setSavingImages(false);
     }
@@ -1406,7 +1452,7 @@ export function GameSettings({
     setSavingCustomMetadata(true);
     try {
       const base = serverUrl?.replace(/\/+$/, "");
-      if (!base) throw new Error("Missing server URL");
+      if (!base) throw new Error(t("gameEditor.error.missingServerUrl"));
 
       const updateDto: any = {};
 
@@ -1505,7 +1551,7 @@ export function GameSettings({
       if (!res.ok) {
         const message = await getErrorMessage(
           res,
-          "The server could not save your custom metadata.",
+          t("gameEditor.custom.saveFailedFallback"),
         );
         throw new Error(message);
       }
@@ -1516,19 +1562,18 @@ export function GameSettings({
       emitGameUpdated(updatedGame);
 
       await showAlert({
-        title: "Success",
-        description: "Custom metadata has been saved successfully.",
-        affirmativeText: "OK",
+        title: t("gameEditor.success"),
+        description: t("gameEditor.custom.saved"),
+        affirmativeText: t("common.ok"),
       });
 
       // Reset form
       setCustomMetadata(getEmptyCustomMetadata());
     } catch (e: any) {
       await showAlert({
-        title: "Unable to save custom metadata",
-        description:
-          e?.message || "The server could not save your custom metadata.",
-        affirmativeText: "OK",
+        title: t("gameEditor.custom.saveFailed"),
+        description: e?.message || t("gameEditor.custom.saveFailedFallback"),
+        affirmativeText: t("common.ok"),
       });
     } finally {
       setSavingCustomMetadata(false);
@@ -1537,19 +1582,17 @@ export function GameSettings({
 
   const handleWipeCustomMetadata = async () => {
     const result = await showAlert({
-      title:
-        "Are you sure you want to wipe all manually edited custom metadata and images?",
-      description:
-        "All fields will revert to the merged provider metadata (if available).\n\nThis action cannot be undone.",
-      affirmativeText: "Yes",
-      negativeText: "No",
+      title: t("gameEditor.custom.wipeConfirm.title"),
+      description: t("gameEditor.custom.wipeConfirm.description"),
+      affirmativeText: t("common.yes"),
+      negativeText: t("common.no"),
     });
 
     if (result) {
       setSaving(true);
       try {
         const base = serverUrl?.replace(/\/+$/, "");
-        if (!base) throw new Error("Missing server URL");
+        if (!base) throw new Error(t("gameEditor.error.missingServerUrl"));
 
         const updateGame: UpdateGameDto = {
           mapping_requests: [
@@ -1572,7 +1615,7 @@ export function GameSettings({
         if (!res.ok) {
           const message = await getErrorMessage(
             res,
-            "The server could not wipe your custom metadata.",
+            t("gameEditor.custom.wipeFailedFallback"),
           );
           throw new Error(message);
         }
@@ -1583,16 +1626,15 @@ export function GameSettings({
         emitGameUpdated(updatedGame);
 
         await showAlert({
-          title: "Success",
-          description: "Custom metadata has been wiped successfully.",
-          affirmativeText: "OK",
+          title: t("gameEditor.success"),
+          description: t("gameEditor.custom.wiped"),
+          affirmativeText: t("common.ok"),
         });
       } catch (e: any) {
         await showAlert({
-          title: "Unable to wipe custom metadata",
-          description:
-            e?.message || "The server could not wipe your custom metadata.",
-          affirmativeText: "OK",
+          title: t("gameEditor.custom.wipeFailed"),
+          description: e?.message || t("gameEditor.custom.wipeFailedFallback"),
+          affirmativeText: t("common.ok"),
         });
       } finally {
         setSaving(false);
@@ -1608,12 +1650,12 @@ export function GameSettings({
       className="!max-w-[min(95vw,1200px)] sm:!max-w-[min(85vw,1200px)] !h-[min(90vh,900px)] !w-full flex flex-col"
     >
       <DialogTitle className="flex items-center justify-between gap-2 sm:gap-4 pb-1 flex-shrink-0">
-        <span>Game Settings</span>
+        <span>{t("gameEditor.title")}</span>
         <button
           type="button"
           onClick={onClose}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft transition-colors"
-          aria-label="Close"
+          aria-label={t("common.close")}
           disabled={saving}
         >
           <svg
@@ -1631,7 +1673,9 @@ export function GameSettings({
 
       {loadingFullGame ? (
         <div className="flex items-center justify-center p-8">
-          <div className="text-sm text-fg-muted">Loading game data...</div>
+          <div className="text-sm text-fg-muted">
+            {t("gameEditor.loadingGame")}
+          </div>
         </div>
       ) : (
         <>
@@ -1652,7 +1696,7 @@ export function GameSettings({
                       }
                     >
                       <PhotoIcon className="w-5 h-5 flex-shrink-0" />
-                      <span>Edit Images</span>
+                      <span>{t("gameEditor.tabs.images")}</span>
                     </button>
                     <button
                       onClick={() => setActiveTab("metadata")}
@@ -1664,7 +1708,7 @@ export function GameSettings({
                       }
                     >
                       <CircleStackIcon className="w-5 h-5 flex-shrink-0" />
-                      <span>Metadata</span>
+                      <span>{t("gameEditor.tabs.metadata")}</span>
                     </button>
                     <button
                       onClick={() => setActiveTab("custom-metadata")}
@@ -1676,7 +1720,9 @@ export function GameSettings({
                       }
                     >
                       <PencilIcon className="w-5 h-5 flex-shrink-0" />
-                      <span className="whitespace-nowrap">Custom Metadata</span>
+                      <span className="whitespace-nowrap">
+                        {t("gameEditor.tabs.customMetadata")}
+                      </span>
                     </button>
                     {isAdmin && (
                       <button
@@ -1689,7 +1735,7 @@ export function GameSettings({
                         }
                       >
                         <DocumentTextIcon className="w-5 h-5 flex-shrink-0" />
-                        <span>Game Files</span>
+                        <span>{t("gameEditor.tabs.gameFiles")}</span>
                       </button>
                     )}
                   </>
@@ -1706,7 +1752,7 @@ export function GameSettings({
                       }
                     >
                       <FolderOpenIcon className="w-5 h-5 flex-shrink-0" />
-                      <span>Installation</span>
+                      <span>{t("gameEditor.tabs.installation")}</span>
                     </button>
                     <button
                       onClick={() => setActiveTab("launch-options")}
@@ -1718,7 +1764,7 @@ export function GameSettings({
                       }
                     >
                       <SparklesIcon className="w-5 h-5 flex-shrink-0" />
-                      <span>Launch options</span>
+                      <span>{t("gameEditor.tabs.launchOptions")}</span>
                     </button>
                   </>
                 )}
@@ -1733,10 +1779,10 @@ export function GameSettings({
                     {/* Cover zone */}
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-ps-muted">
-                        <span>Cover</span>
+                        <span>{t("gameEditor.images.cover")}</span>
                         {coverImg.via !== "none" && (
                           <span className="rounded-full bg-ps-panel px-2 py-0.5 text-[10px] font-semibold text-ps-muted">
-                            {coverImg.via}
+                            {t(IMAGE_SOURCE_LABELS[coverImg.via])}
                           </span>
                         )}
                       </div>
@@ -1752,22 +1798,22 @@ export function GameSettings({
                         {coverImg.preview ? (
                           <img
                             src={coverImg.preview}
-                            alt="Cover preview"
+                            alt={t("gameEditor.images.coverPreview")}
                             className="object-contain w-full h-full"
                             draggable={false}
                           />
                         ) : (
                           <div className="text-xs text-ps-muted text-center px-4">
                             {coverMediaId
-                              ? "Loading…"
-                              : "Drag & Drop / Click / Paste"}
+                              ? t("common.loading")
+                              : t("gameEditor.images.dropHint")}
                           </div>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
                           type="text"
-                          placeholder="Paste image URL"
+                          placeholder={t("gameEditor.images.urlPlaceholder")}
                           value={coverImg.urlInput}
                           onChange={(e) =>
                             setCoverImg((p) => ({
@@ -1803,7 +1849,7 @@ export function GameSettings({
                                 }))
                               }
                             >
-                              Reset
+                              {t("common.reset")}
                             </Button>
                           )}
                       </div>
@@ -1825,7 +1871,7 @@ export function GameSettings({
                         className="w-full"
                       >
                         <MagnifyingGlassIcon className="w-4 h-4" />
-                        Find Images
+                        {t("gameEditor.images.find")}
                       </Button>
                       <ArtworkSearchButton
                         title={workingGame.title || "Game"}
@@ -1834,10 +1880,10 @@ export function GameSettings({
                     {/* Background zone */}
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-ps-muted">
-                        <span>Background</span>
+                        <span>{t("gameEditor.images.background")}</span>
                         {bgImg.via !== "none" && (
                           <span className="rounded-full bg-ps-panel px-2 py-0.5 text-[10px] font-semibold text-ps-muted">
-                            {bgImg.via}
+                            {t(IMAGE_SOURCE_LABELS[bgImg.via])}
                           </span>
                         )}
                       </div>
@@ -1853,15 +1899,15 @@ export function GameSettings({
                         {bgImg.preview ? (
                           <img
                             src={bgImg.preview}
-                            alt="Background preview"
+                            alt={t("gameEditor.images.backgroundPreview")}
                             className="object-cover w-full h-full"
                             draggable={false}
                           />
                         ) : (
                           <div className="text-xs text-ps-muted text-center px-4">
                             {backgroundMediaId
-                              ? "Loading…"
-                              : "Drag & Drop / Click / Paste"}
+                              ? t("common.loading")
+                              : t("gameEditor.images.dropHint")}
                           </div>
                         )}
                       </div>
@@ -1869,7 +1915,7 @@ export function GameSettings({
                       <div className="flex items-center gap-2">
                         <Input
                           type="text"
-                          placeholder="Paste image URL"
+                          placeholder={t("gameEditor.images.urlPlaceholder")}
                           value={bgImg.urlInput}
                           onChange={(e) =>
                             setBgImg((p) => ({
@@ -1904,7 +1950,7 @@ export function GameSettings({
                               }))
                             }
                           >
-                            Reset
+                            {t("common.reset")}
                           </Button>
                         )}
                       </div>
@@ -1928,7 +1974,7 @@ export function GameSettings({
                         className="w-full"
                       >
                         <MagnifyingGlassIcon className="w-4 h-4" />
-                        Find Images
+                        {t("gameEditor.images.find")}
                       </Button>
                     </div>
                     {/* Save button for images tab */}
@@ -1937,12 +1983,12 @@ export function GameSettings({
                         <Text
                           className={
                             "text-xs " +
-                            (imagesMsg.includes("successfully")
+                            (imagesMsg.ok
                               ? "text-emerald-400"
                               : "text-rose-400")
                           }
                         >
-                          {imagesMsg}
+                          {imagesMsg.text}
                         </Text>
                       )}
                       <div className="flex-1" />
@@ -1951,7 +1997,9 @@ export function GameSettings({
                         disabled={!imagesDirty || savingImages}
                         onClick={saveImages}
                       >
-                        {savingImages ? "Saving Images…" : "Save Images"}
+                        {savingImages
+                          ? t("gameEditor.images.saving")
+                          : t("gameEditor.images.save")}
                       </Button>
                     </div>
                   </div>
@@ -1962,13 +2010,13 @@ export function GameSettings({
                     {loadingProviders ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-sm text-ps-muted">
-                          Loading providers...
+                          {t("gameEditor.metadata.loadingProviders")}
                         </div>
                       </div>
                     ) : metadataProviders.length === 0 ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-sm text-ps-muted">
-                          No metadata providers available
+                          {t("gameEditor.metadata.noProviders")}
                         </div>
                       </div>
                     ) : (
@@ -2013,7 +2061,7 @@ export function GameSettings({
                                     PlayStash
                                   </h4>
                                   <div className="text-xs text-ps-muted">
-                                    Source file and imported game data
+                                    {t("gameEditor.metadata.sourceDescription")}
                                   </div>
                                 </div>
 
@@ -2023,7 +2071,7 @@ export function GameSettings({
                                       <CopyImageButton src={gameCoverUrl} />
                                       <img
                                         src={gameCoverUrl}
-                                        alt="Cover"
+                                        alt={t("gameEditor.metadata.coverAlt")}
                                         className="w-32 h-44 object-cover"
                                         style={{ aspectRatio: "2/3" }}
                                         onError={(e) => {
@@ -2038,28 +2086,32 @@ export function GameSettings({
                                   <div className="grid flex-1 gap-3 text-sm min-w-0 sm:grid-cols-2">
                                     <div className="sm:col-span-2">
                                       <div className="mb-1 text-ps-muted">
-                                        File Path:
+                                        {t("gameEditor.metadata.filePath")}
                                       </div>
                                       <div
                                         className="font-mono text-xs leading-relaxed text-ps-text break-all"
-                                        title={workingGame.file_path || "N/A"}
+                                        title={
+                                          workingGame.file_path ||
+                                          t("gameEditor.notAvailable")
+                                        }
                                       >
-                                        {workingGame.file_path || "N/A"}
+                                        {workingGame.file_path ||
+                                          t("gameEditor.notAvailable")}
                                       </div>
                                     </div>
                                     <div>
                                       <div className="mb-1 text-ps-muted">
-                                        Release Date:
+                                        {t("gameEditor.metadata.releaseDate")}
                                       </div>
                                       <div className="text-ps-text">
                                         {workingGame.release_date
                                           ? formatDate(workingGame.release_date)
-                                          : "N/A"}
+                                          : t("gameEditor.notAvailable")}
                                       </div>
                                     </div>
                                     <div>
                                       <div className="mb-1 text-ps-muted">
-                                        Added:
+                                        {t("gameEditor.metadata.added")}
                                       </div>
                                       <div className="text-ps-text">
                                         {formatDate(workingGame.created_at)}
@@ -2072,10 +2124,12 @@ export function GameSettings({
                               <div className="surface-panel-soft rounded-2xl p-4">
                                 <div className="mb-4">
                                   <h4 className="text-base font-semibold text-ps-text">
-                                    Mapped Game
+                                    {t("gameEditor.metadata.mappedGame")}
                                   </h4>
                                   <div className="text-xs text-ps-muted">
-                                    Current provider match and cached metadata
+                                    {t(
+                                      "gameEditor.metadata.mappedGameDescription",
+                                    )}
                                   </div>
                                 </div>
 
@@ -2088,7 +2142,9 @@ export function GameSettings({
                                         />
                                         <img
                                           src={mappedGameCoverUrl}
-                                          alt="Provider Cover"
+                                          alt={t(
+                                            "gameEditor.metadata.providerCoverAlt",
+                                          )}
                                           className="w-32 h-44 object-cover"
                                           style={{ aspectRatio: "2/3" }}
                                           onError={(e) => {
@@ -2103,35 +2159,35 @@ export function GameSettings({
                                     <div className="grid flex-1 gap-3 text-sm min-w-0 sm:grid-cols-2">
                                       <div className="sm:col-span-2">
                                         <div className="mb-1 text-ps-muted">
-                                          Title:
+                                          {t("gameEditor.metadata.titleLabel")}
                                         </div>
                                         <div className="leading-relaxed text-ps-text">
                                           {currentShownMappedGame.title ||
-                                            "N/A"}
+                                            t("gameEditor.notAvailable")}
                                         </div>
                                       </div>
                                       <div>
                                         <div className="mb-1 text-ps-muted">
-                                          Release Date:
+                                          {t("gameEditor.metadata.releaseDate")}
                                         </div>
                                         <div className="text-ps-text">
                                           {currentShownMappedGame.release_date
                                             ? formatDate(
                                                 currentShownMappedGame.release_date,
                                               )
-                                            : "N/A"}
+                                            : t("gameEditor.notAvailable")}
                                         </div>
                                       </div>
                                       <div>
                                         <div className="mb-1 text-ps-muted">
-                                          Last Cached:
+                                          {t("gameEditor.metadata.lastCached")}
                                         </div>
                                         <div className="text-ps-text">
                                           {currentShownMappedGame.updated_at
                                             ? formatDate(
                                                 currentShownMappedGame.updated_at,
                                               )
-                                            : "N/A"}
+                                            : t("gameEditor.notAvailable")}
                                         </div>
                                       </div>
                                       {currentShownMappedGame.provider_data_url && (
@@ -2144,12 +2200,15 @@ export function GameSettings({
                                             rel="noopener noreferrer"
                                             className="text-xs text-ps-accent hover:underline"
                                           >
-                                            View on{" "}
-                                            {
-                                              metadataProviders[
-                                                selectedMetadataProviderIndex
-                                              ]?.name
-                                            }
+                                            {fillTemplate(
+                                              t("gameEditor.metadata.viewOn"),
+                                              {
+                                                provider:
+                                                  metadataProviders[
+                                                    selectedMetadataProviderIndex
+                                                  ]?.name ?? "",
+                                              },
+                                            )}
                                           </a>
                                         </div>
                                       )}
@@ -2157,7 +2216,7 @@ export function GameSettings({
                                   </div>
                                 ) : (
                                   <div className="flex min-h-24 items-center justify-center text-sm text-ps-muted">
-                                    Not mapped to this provider
+                                    {t("gameEditor.metadata.notMapped")}
                                   </div>
                                 )}
                               </div>
@@ -2166,10 +2225,10 @@ export function GameSettings({
                             <div className="flex flex-col gap-4 surface-panel-soft rounded-2xl p-4 w-full max-w-full 2xl:max-w-none">
                               <div>
                                 <h4 className="text-base font-semibold text-ps-text">
-                                  Actions
+                                  {t("gameEditor.metadata.actions")}
                                 </h4>
                                 <div className="text-xs text-ps-muted">
-                                  Adjust match priority or refresh mapping
+                                  {t("gameEditor.metadata.actionsDescription")}
                                 </div>
                               </div>
 
@@ -2177,7 +2236,7 @@ export function GameSettings({
                                 <div className="space-y-3 w-full max-w-full">
                                   <div className="w-full max-w-full">
                                     <label className="block text-xs font-medium text-ps-muted mb-2">
-                                      Priority
+                                      {t("gameEditor.metadata.priority")}
                                     </label>
                                     <div className="flex gap-2 w-full max-w-full">
                                       <Input
@@ -2195,7 +2254,7 @@ export function GameSettings({
                                         onClick={handleSavePriority}
                                         disabled={!customPriority || remapping}
                                       >
-                                        Save
+                                        {t("common.save")}
                                       </Button>
                                     </div>
                                   </div>
@@ -2207,7 +2266,7 @@ export function GameSettings({
                                     className="w-full"
                                   >
                                     <ArrowPathIcon className="w-4 h-4" />
-                                    Recache
+                                    {t("gameEditor.metadata.recache")}
                                   </Button>
                                   <Button
                                     color="rose"
@@ -2216,12 +2275,12 @@ export function GameSettings({
                                     className="w-full"
                                   >
                                     <LinkSlashIcon className="w-4 h-4" />
-                                    Unmap
+                                    {t("gameEditor.metadata.unmap")}
                                   </Button>
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-center flex-1 text-sm text-ps-muted text-center">
-                                  No actions available
+                                  {t("gameEditor.metadata.noActions")}
                                 </div>
                               )}
                             </div>
@@ -2231,11 +2290,19 @@ export function GameSettings({
                           <div className="flex-1 min-h-[300px] flex flex-col space-y-4 pt-4 border-t border-ps-line min-w-0 max-w-full">
                             <div className="flex-shrink-0">
                               <h4 className="text-base font-semibold mb-3 text-ps-text">
-                                Search & Remap
+                                {t("gameEditor.metadata.searchRemap")}
                               </h4>
                               <Input
                                 type="text"
-                                placeholder={`Search ${metadataProviders[selectedMetadataProviderIndex]?.name}...`}
+                                placeholder={fillTemplate(
+                                  t("gameEditor.metadata.searchPlaceholder"),
+                                  {
+                                    provider:
+                                      metadataProviders[
+                                        selectedMetadataProviderIndex
+                                      ]?.name ?? "",
+                                  },
+                                )}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 disabled={remapping}
@@ -2244,7 +2311,7 @@ export function GameSettings({
 
                             {searching && (
                               <div className="text-center py-4 text-sm text-ps-muted">
-                                Searching...
+                                {t("gameEditor.metadata.searching")}
                               </div>
                             )}
 
@@ -2274,7 +2341,8 @@ export function GameSettings({
                                     )}
                                     <div className="flex-1 min-w-0 pr-20">
                                       <div className="font-medium text-sm text-ps-text truncate">
-                                        {result.title || "Untitled"}
+                                        {result.title ||
+                                          t("gameEditor.metadata.untitled")}
                                       </div>
                                       {result.release_date && (
                                         <div className="text-xs text-ps-muted">
@@ -2299,7 +2367,7 @@ export function GameSettings({
                                           remapping || !result.provider_data_id
                                         }
                                       >
-                                        Remap
+                                        {t("gameEditor.metadata.remap")}
                                       </Button>
                                     </div>
                                   </div>
@@ -2319,11 +2387,10 @@ export function GameSettings({
                     <div className="flex justify-between items-start mb-6">
                       <div>
                         <h3 className="text-lg font-semibold mb-4 text-ps-text">
-                          Custom Metadata
+                          {t("gameEditor.custom.heading")}
                         </h3>
                         <p className="text-sm text-ps-muted">
-                          Add custom fields and override metadata for this
-                          workingGame.
+                          {t("gameEditor.custom.description")}
                         </p>
                       </div>
                       <Button
@@ -2332,7 +2399,7 @@ export function GameSettings({
                         disabled={saving}
                       >
                         <PaintBrushIcon className="w-4 h-4" />
-                        Wipe CustomMetadata
+                        {t("gameEditor.custom.wipe")}
                       </Button>
                     </div>
 
@@ -2358,7 +2425,7 @@ export function GameSettings({
                         {/* Title */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Title
+                            {t("gameEditor.custom.title")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2378,7 +2445,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("title")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2389,7 +2456,7 @@ export function GameSettings({
                         {/* Sort Title */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Sort Title
+                            {t("gameEditor.custom.sortTitle")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2409,7 +2476,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("sort_title")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2420,7 +2487,7 @@ export function GameSettings({
                         {/* Description */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Description
+                            {t("common.description")}
                           </label>
                           <div className="relative">
                             <textarea
@@ -2440,7 +2507,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("description")}
                                 className="absolute right-2 top-2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2451,7 +2518,7 @@ export function GameSettings({
                         {/* Notes */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Notes
+                            {t("common.notes")}
                           </label>
                           <div className="relative">
                             <textarea
@@ -2471,7 +2538,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("notes")}
                                 className="absolute right-2 top-2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2483,7 +2550,7 @@ export function GameSettings({
                           {/* Average Playtime */}
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Avg Playtime (minutes)
+                              {t("gameEditor.custom.avgPlaytime")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2505,7 +2572,7 @@ export function GameSettings({
                                     applyWatermark("average_playtime")
                                   }
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2516,7 +2583,7 @@ export function GameSettings({
                           {/* Age Rating */}
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Age Rating
+                              {t("gameEditor.custom.ageRating")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2536,7 +2603,7 @@ export function GameSettings({
                                   type="button"
                                   onClick={() => applyWatermark("age_rating")}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2547,7 +2614,7 @@ export function GameSettings({
                           {/* Release Date */}
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Release Date
+                              {t("gameEditor.custom.releaseDate")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2567,7 +2634,7 @@ export function GameSettings({
                                   type="button"
                                   onClick={() => applyWatermark("release_date")}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2576,8 +2643,14 @@ export function GameSettings({
                             {getWatermark("release_date") &&
                               !customMetadata.release_date && (
                                 <p className="mt-1 text-xs text-ps-muted">
-                                  Current:{" "}
-                                  {formatDate(getWatermark("release_date"))}
+                                  {fillTemplate(
+                                    t("gameEditor.custom.current"),
+                                    {
+                                      value: formatDate(
+                                        getWatermark("release_date"),
+                                      ),
+                                    },
+                                  )}
                                 </p>
                               )}
                           </div>
@@ -2585,7 +2658,7 @@ export function GameSettings({
                           {/* Rating */}
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Rating
+                              {t("gameEditor.custom.rating")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2606,7 +2679,7 @@ export function GameSettings({
                                   type="button"
                                   onClick={() => applyWatermark("rating")}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2618,7 +2691,7 @@ export function GameSettings({
                         {/* Early Access */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Early Access
+                            {t("gameEditor.custom.earlyAccess")}
                           </label>
                           <Listbox
                             value={customMetadata.early_access || null}
@@ -2630,15 +2703,25 @@ export function GameSettings({
                             }
                             placeholder={
                               getWatermark("early_access")
-                                ? `Current: ${getWatermark("early_access")}`
-                                : "Select..."
+                                ? fillTemplate(t("gameEditor.custom.current"), {
+                                    value: t(
+                                      getWatermark("early_access") === "true"
+                                        ? "gameEditor.custom.true"
+                                        : "gameEditor.custom.false",
+                                    ),
+                                  })
+                                : t("gameEditor.custom.selectPlaceholder")
                             }
                           >
                             <ListboxOption value="true">
-                              <ListboxLabel>True</ListboxLabel>
+                              <ListboxLabel>
+                                {t("gameEditor.custom.true")}
+                              </ListboxLabel>
                             </ListboxOption>
                             <ListboxOption value="false">
-                              <ListboxLabel>False</ListboxLabel>
+                              <ListboxLabel>
+                                {t("gameEditor.custom.false")}
+                              </ListboxLabel>
                             </ListboxOption>
                           </Listbox>
                         </div>
@@ -2646,7 +2729,7 @@ export function GameSettings({
                         {/* Launch Executable */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Default Launch Executable
+                            {t("gameEditor.custom.launchExecutable")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2668,7 +2751,7 @@ export function GameSettings({
                                   applyWatermark("launch_executable")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2679,7 +2762,7 @@ export function GameSettings({
                         {/* Launch Parameters */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Default Launch Parameters
+                            {t("gameEditor.custom.launchParameters")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2701,7 +2784,7 @@ export function GameSettings({
                                   applyWatermark("launch_parameters")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2715,14 +2798,12 @@ export function GameSettings({
                             umu-launcher (Linux)
                           </p>
                           <p className="text-xs text-ps-muted">
-                            Applied by Linux clients when running this game
-                            through umu-launcher/Proton. Leave empty for umu's
-                            defaults.
+                            {t("gameEditor.custom.umu.description")}
                           </p>
 
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Game ID (GAMEID)
+                              {t("gameEditor.custom.umu.gameId")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2744,7 +2825,7 @@ export function GameSettings({
                                   type="button"
                                   onClick={() => applyWatermark("umu_game_id")}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2754,7 +2835,7 @@ export function GameSettings({
 
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Store (STORE)
+                              {t("gameEditor.custom.umu.store")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2774,7 +2855,7 @@ export function GameSettings({
                                   type="button"
                                   onClick={() => applyWatermark("umu_store")}
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2784,7 +2865,7 @@ export function GameSettings({
 
                           <div>
                             <label className="block text-sm font-medium text-ps-muted mb-1">
-                              Proton Version (PROTONPATH)
+                              {t("gameEditor.custom.umu.protonPath")}
                             </label>
                             <div className="relative">
                               <Input
@@ -2809,7 +2890,7 @@ export function GameSettings({
                                     applyWatermark("umu_proton_path")
                                   }
                                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                  title="Apply current value"
+                                  title={t("gameEditor.custom.applyCurrent")}
                                 >
                                   <ArrowUturnLeftIcon className="w-4 h-4" />
                                 </button>
@@ -2821,7 +2902,7 @@ export function GameSettings({
                         {/* Installer Executable */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Default Installer Executable
+                            {t("gameEditor.custom.installerExecutable")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2843,7 +2924,7 @@ export function GameSettings({
                                   applyWatermark("installer_executable")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2854,7 +2935,7 @@ export function GameSettings({
                         {/* Installer Parameters */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Default Installer Parameters
+                            {t("gameEditor.custom.installerParameters")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2876,7 +2957,7 @@ export function GameSettings({
                                   applyWatermark("installer_parameters")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2887,7 +2968,7 @@ export function GameSettings({
                         {/* Uninstaller Executable */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Default Uninstaller Executable
+                            {t("gameEditor.custom.uninstallerExecutable")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2911,7 +2992,7 @@ export function GameSettings({
                                   applyWatermark("uninstaller_executable")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2922,7 +3003,7 @@ export function GameSettings({
                         {/* Uninstaller Parameters */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Default Uninstaller Parameters
+                            {t("gameEditor.custom.uninstallerParameters")}
                           </label>
                           <div className="relative">
                             <Input
@@ -2946,7 +3027,7 @@ export function GameSettings({
                                   applyWatermark("uninstaller_parameters")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2957,9 +3038,9 @@ export function GameSettings({
                         {/* Website URLs */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Website URLs{" "}
+                            {t("gameEditor.custom.websiteUrls")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -2980,7 +3061,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("url_websites")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -2991,9 +3072,9 @@ export function GameSettings({
                         {/* Genres */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Genres{" "}
+                            {t("common.genres")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3014,7 +3095,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("genres")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3025,9 +3106,9 @@ export function GameSettings({
                         {/* Tags */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Tags{" "}
+                            {t("common.tags")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3048,7 +3129,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("tags")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3059,9 +3140,9 @@ export function GameSettings({
                         {/* Publishers */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Publishers{" "}
+                            {t("gameEditor.custom.publishers")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3082,7 +3163,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("publishers")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3093,9 +3174,9 @@ export function GameSettings({
                         {/* Developers */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Developers{" "}
+                            {t("gameEditor.custom.developers")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3116,7 +3197,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("developers")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3127,9 +3208,9 @@ export function GameSettings({
                         {/* Trailer URLs */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Trailer URLs{" "}
+                            {t("gameEditor.custom.trailerUrls")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3150,7 +3231,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("url_trailers")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3161,9 +3242,9 @@ export function GameSettings({
                         {/* Gameplay URLs */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Gameplay URLs{" "}
+                            {t("gameEditor.custom.gameplayUrls")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3184,7 +3265,7 @@ export function GameSettings({
                                 type="button"
                                 onClick={() => applyWatermark("url_gameplays")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3195,9 +3276,9 @@ export function GameSettings({
                         {/* Screenshot URLs */}
                         <div>
                           <label className="block text-sm font-medium text-ps-muted mb-1">
-                            Screenshot URLs{" "}
+                            {t("gameEditor.custom.screenshotUrls")}{" "}
                             <span className="text-xs text-ps-muted">
-                              (comma-separated)
+                              {t("gameEditor.custom.commaSeparated")}
                             </span>
                           </label>
                           <div className="relative">
@@ -3220,7 +3301,7 @@ export function GameSettings({
                                   applyWatermark("url_screenshots")
                                 }
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ps-muted hover:text-ps-text"
-                                title="Apply current value"
+                                title={t("gameEditor.custom.applyCurrent")}
                               >
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
@@ -3238,8 +3319,8 @@ export function GameSettings({
                         disabled={savingCustomMetadata}
                       >
                         {savingCustomMetadata
-                          ? "Saving..."
-                          : "Save Custom Metadata"}
+                          ? t("gameEditor.custom.saving")
+                          : t("gameEditor.custom.save")}
                       </Button>
                     </div>
                   </div>
@@ -3264,19 +3345,17 @@ export function GameSettings({
                   <div className="max-w-3xl space-y-6">
                     <div>
                       <h3 className="text-lg font-semibold text-ps-text">
-                        Game Files
+                        {t("gameEditor.files.heading")}
                       </h3>
                       <p className="mt-1 text-sm text-ps-muted">
-                        View the files that make up this game on the server.
-                        Only admins can delete a file; the game's metadata is
-                        kept after deletion.
+                        {t("gameEditor.files.description")}
                       </p>
                     </div>
 
                     {!workingGame.versions ||
                     workingGame.versions.length === 0 ? (
                       <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-6 text-center text-sm text-ps-muted">
-                        No indexed game files found for this game.
+                        {t("gameEditor.files.empty")}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -3288,19 +3367,20 @@ export function GameSettings({
                           )
                           .map((version) => {
                             const versionLabel =
-                              version.version || "Unspecified";
+                              version.version ||
+                              t("gameEditor.files.unspecified");
                             const isDeleting = deletingVersionId === version.id;
                             const bytes = Number(version.size);
                             const fileSize = Number.isFinite(bytes)
                               ? formatBytes(bytes)
-                              : "Unknown";
+                              : t("common.unknown");
                             const filePath = version.file_path || "";
                             const gameType = version.type
                               ? version.type
                                   .replace(/_/g, " ")
                                   .toLowerCase()
                                   .replace(/\b\w/g, (c) => c.toUpperCase())
-                              : "Undetectable";
+                              : t("gameEditor.files.undetectable");
                             const indexedAt = (() => {
                               const d = new Date(version.indexed_at);
                               return Number.isNaN(d.getTime())
@@ -3321,7 +3401,7 @@ export function GameSettings({
                                       </span>
                                       {version.early_access && (
                                         <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-300">
-                                          Early Access
+                                          {t("gameEditor.files.earlyAccess")}
                                         </span>
                                       )}
                                     </div>
@@ -3340,28 +3420,41 @@ export function GameSettings({
                                     disabled={
                                       isDeleting || deletingVersionId !== null
                                     }
-                                    aria-label={`Delete ${versionLabel}`}
+                                    aria-label={fillTemplate(
+                                      t("gameEditor.files.deleteAria"),
+                                      {
+                                        version: versionLabel,
+                                      },
+                                    )}
                                   >
                                     <TrashIcon className="w-4 h-4" />
-                                    {isDeleting ? "Deleting..." : "Delete"}
+                                    {isDeleting
+                                      ? t("gameEditor.files.deleting")
+                                      : t("common.delete")}
                                   </Button>
                                 </div>
 
                                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-ps-line pt-3 text-xs sm:grid-cols-3">
                                   <div>
-                                    <dt className="text-ps-muted">Size</dt>
+                                    <dt className="text-ps-muted">
+                                      {t("common.size")}
+                                    </dt>
                                     <dd className="mt-0.5 text-ps-text">
                                       {fileSize}
                                     </dd>
                                   </div>
                                   <div>
-                                    <dt className="text-ps-muted">Type</dt>
+                                    <dt className="text-ps-muted">
+                                      {t("gameEditor.files.type")}
+                                    </dt>
                                     <dd className="mt-0.5 text-ps-text">
                                       {gameType}
                                     </dd>
                                   </div>
                                   <div>
-                                    <dt className="text-ps-muted">Added</dt>
+                                    <dt className="text-ps-muted">
+                                      {t("gameEditor.files.added")}
+                                    </dt>
                                     <dd className="mt-0.5 text-ps-text">
                                       {indexedAt}
                                     </dd>
@@ -3381,17 +3474,28 @@ export function GameSettings({
           {/* Bottom left info */}
           <div className="absolute bottom-4 left-4 text-xs text-ps-muted flex flex-row gap-4 lg:flex-col lg:gap-0 lg:space-y-0.5">
             <div className="truncate max-w-[200px] lg:max-w-none">
-              {workingGame.metadata?.title || workingGame.title || "Unknown"}
+              {workingGame.metadata?.title ||
+                workingGame.title ||
+                t("common.unknown")}
             </div>
-            <div>ID: {workingGame.id}</div>
             <div>
-              Latest version:{" "}
-              {workingGame.versions?.[0]?.version ||
-                workingGame.version ||
-                "N/A"}
+              {fillTemplate(t("gameEditor.footer.id"), { id: workingGame.id })}
+            </div>
+            <div>
+              {fillTemplate(t("gameEditor.footer.latestVersion"), {
+                version:
+                  workingGame.versions?.[0]?.version ||
+                  workingGame.version ||
+                  t("gameEditor.notAvailable"),
+              })}
             </div>
             {installedGame && (
-              <div>Installed version: {installedGame.versionName || "N/A"}</div>
+              <div>
+                {fillTemplate(t("gameEditor.footer.installedVersion"), {
+                  version:
+                    installedGame.versionName || t("gameEditor.notAvailable"),
+                })}
+              </div>
             )}
           </div>
         </>

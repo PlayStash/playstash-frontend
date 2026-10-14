@@ -1,4 +1,5 @@
 import { normalizeServerUrl } from "@/utils/authConfig";
+import { translate } from "@/i18n";
 import {
   getDefaultExtractionPassword,
   setDefaultExtractionPassword,
@@ -78,18 +79,15 @@ export function parseConnectionFile(text: string): ConnectionFile {
   try {
     raw = JSON.parse(text) as Record<string, unknown>;
   } catch {
-    throw new Error("Unsupported connection file.");
+    throw new Error(translate("accounts.connection.unsupported"));
   }
   if (!raw || typeof raw !== "object" || raw.schema_version !== 1)
-    throw new Error("Unsupported connection file.");
+    throw new Error(translate("accounts.connection.unsupported"));
   const serverUrl =
     typeof raw.server_url === "string"
       ? normalizeServerUrl(raw.server_url)
       : "";
-  if (!serverUrl)
-    throw new Error(
-      "Enter a valid HTTP or HTTPS server URL, such as https://server.example.",
-    );
+  if (!serverUrl) throw new Error(translate("accounts.form.invalidServer"));
   const password = raw.archive_password;
   return {
     schema_version: 1,

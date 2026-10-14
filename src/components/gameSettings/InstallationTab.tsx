@@ -8,6 +8,8 @@ import { useDiskUsage } from "@/hooks/useDiskUsage";
 import { getRootPaths } from "@/utils/rootPaths";
 import { uninstallInstalledGame } from "@/utils/uninstallInstalledGame";
 import type { SettingsInstalledGame } from "./types";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 interface Props {
   installedGame: SettingsInstalledGame;
@@ -21,6 +23,7 @@ interface Props {
  * uninstall (through the shared uninstall path) and the disk usage chart.
  */
 export function InstallationTab({ installedGame, game, onUninstalled }: Props) {
+  const { t } = useTranslation();
   const { showAlert } = useAlertDialog();
   const [uninstalling, setUninstalling] = useState(false);
 
@@ -53,12 +56,12 @@ export function InstallationTab({ installedGame, game, onUninstalled }: Props) {
       });
     } catch (error: any) {
       await showAlert({
-        title: "Error",
+        title: t("common.error"),
         description: error?.message || String(error),
-        affirmativeText: "OK",
+        affirmativeText: t("common.ok"),
       });
     }
-  }, [installedGame.installationDirectory, showAlert]);
+  }, [installedGame.installationDirectory, showAlert, t]);
 
   const handleUninstallGame = useCallback(async () => {
     setUninstalling(true);
@@ -78,22 +81,26 @@ export function InstallationTab({ installedGame, game, onUninstalled }: Props) {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-ps-text">Installation</h3>
+        <h3 className="text-lg font-semibold text-ps-text">
+          {t("game.installation.title")}
+        </h3>
         <p className="mt-2 text-sm text-ps-muted">
-          here you can manage your Game Installation
+          {t("game.installation.description")}
         </p>
       </div>
 
       <div className="rounded-xl border border-ps-line bg-ps-panel-soft p-4">
         <div className="text-sm font-medium text-ps-text">
-          This Game was installed to
+          {t("game.installation.installedTo")}
         </div>
         <div className="mt-3 rounded-lg border border-ps-line bg-ps-panel px-3 py-2 font-mono text-xs text-ps-text">
           {installedGame.installationDirectory}
         </div>
         {installedGame.versionName && (
           <p className="mt-3 text-xs text-ps-muted">
-            Installed version: {installedGame.versionName}
+            {fillTemplate(t("game.installation.installedVersion"), {
+              version: installedGame.versionName,
+            })}
           </p>
         )}
       </div>
@@ -105,7 +112,7 @@ export function InstallationTab({ installedGame, game, onUninstalled }: Props) {
           disabled={uninstalling}
         >
           <FolderOpenIcon className="w-4 h-4" />
-          Open Directory
+          {t("game.installation.openDirectory")}
         </Button>
         <Button
           color="rose"
@@ -113,7 +120,9 @@ export function InstallationTab({ installedGame, game, onUninstalled }: Props) {
           disabled={uninstalling}
         >
           <TrashIcon className="w-4 h-4" />
-          {uninstalling ? "Uninstalling..." : "Uninstall Game"}
+          {uninstalling
+            ? t("game.installation.uninstalling")
+            : t("game.installation.uninstall")}
         </Button>
       </div>
 

@@ -11,6 +11,8 @@ import { Text } from "@/components/tailwind/text";
 import { useAuth } from "@/context/AuthContext";
 import { useRegistrationRequirements } from "@/hooks/useRegistrationRequirements";
 import { useCallback, useState } from "react";
+import { useTranslation } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 import { PlaystashUser } from "../../api";
 
 interface Props {
@@ -20,6 +22,7 @@ interface Props {
 
 export function RegisterUserModal({ onClose, onRegistered }: Props) {
   const { serverUrl, authFetch } = useAuth();
+  const { t } = useTranslation();
   const {
     loading: reqLoading,
     error: reqError,
@@ -79,7 +82,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
       e?.preventDefault();
       if (!canSubmit() || submitting) return;
       if (!serverUrl) {
-        setMsg("Missing server URL");
+        setMsg(t("admin.register.missingServer"));
         return;
       }
       setSubmitting(true);
@@ -108,33 +111,36 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(
-            `Register failed (${res.status}): ${txt || res.statusText}`,
+            formatMessage(t("admin.register.failed"), {
+              status: res.status,
+              message: txt || res.statusText,
+            }),
           );
         }
         const createdUser: PlaystashUser = await res.json();
         onRegistered(createdUser);
         setSuccess(true);
-        setMsg("User registered successfully");
+        setMsg(t("admin.register.success"));
         setTimeout(() => onClose(), 800);
       } catch (e: any) {
-        setMsg(e?.message || "Registration error");
+        setMsg(e?.message || t("admin.register.error"));
       } finally {
         setSubmitting(false);
       }
     },
-    [form, serverUrl, submitting, authFetch, onRegistered, onClose],
+    [form, serverUrl, submitting, authFetch, onRegistered, onClose, t],
   );
 
   return (
     <Dialog open onClose={onClose} size="lg" className="">
       <DialogTitle className="flex items-center justify-between gap-4">
-        <span>Register new user</span>
+        <span>{t("admin.register.title")}</span>
         <button
           type="button"
           onClick={onClose}
           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
           disabled={submitting}
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <svg
             width="16"
@@ -155,7 +161,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
         >
           <Field className="sm:col-span-2">
             <Label>
-              Username{" "}
+              {t("common.username")}{" "}
               {!reqLoading && !reqError && required.has("username") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -174,7 +180,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           </Field>
           <Field>
             <Label>
-              First name{" "}
+              {t("admin.form.firstName")}{" "}
               {!reqLoading && !reqError && required.has("first_name") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -193,7 +199,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           </Field>
           <Field>
             <Label>
-              Last name{" "}
+              {t("admin.form.lastName")}{" "}
               {!reqLoading && !reqError && required.has("last_name") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -212,7 +218,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           </Field>
           <Field className="sm:col-span-2">
             <Label>
-              Email{" "}
+              {t("admin.form.email")}{" "}
               {!reqLoading && !reqError && required.has("email") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -232,7 +238,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           </Field>
           <Field>
             <Label>
-              Birth date{" "}
+              {t("admin.form.birthDate")}{" "}
               {!reqLoading && !reqError && required.has("birth_date") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -252,7 +258,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           </Field>
           <Field>
             <Label>
-              Password{" "}
+              {t("common.password")}{" "}
               {!reqLoading && !reqError && required.has("password") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -272,7 +278,7 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           </Field>
           <Field>
             <Label>
-              Repeat password{" "}
+              {t("admin.form.repeatPassword")}{" "}
               {!reqLoading && !reqError && required.has("password") && (
                 <span className="text-rose-400" aria-hidden>
                   *
@@ -299,19 +305,19 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
           <div className="sm:col-span-2 flex flex-col gap-2 -mt-2">
             {reqLoading && (
               <Text className="text-xs text-fg-muted">
-                Loading registration requirements…
+                {t("admin.register.loadingRequirements")}
               </Text>
             )}
             {reqError && !reqLoading && (
               <Text className="text-xs text-rose-400">
-                Failed to load registration requirements. Cannot submit.
+                {t("admin.register.requirementsFailed")}
               </Text>
             )}
             {form.password &&
               form.repeat_password &&
               form.password !== form.repeat_password && (
                 <Text className="text-xs text-rose-400">
-                  Passwords do not match
+                  {t("admin.register.passwordMismatch")}
                 </Text>
               )}
             {msg && (
@@ -329,10 +335,12 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
               disabled={submitting}
               className="bg-transparent border border-ps-line hover:bg-ps-panel-soft text-ps-text"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={!canSubmit() || submitting}>
-              {submitting ? "Registering…" : "Register"}
+              {submitting
+                ? t("admin.register.registering")
+                : t("admin.register.submit")}
             </Button>
           </DialogActions>
         </form>

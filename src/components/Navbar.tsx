@@ -2,10 +2,12 @@ import { NavbarSection, Navbar as TailwindNavbar } from "@tw/navbar";
 import { Logo } from "./Logo";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { isTauriApp } from "@/utils/tauri";
+import { useTranslation } from "@/i18n";
 
 export function Navbar() {
   const { isOnline } = useOnlineStatus();
   const isTauri = isTauriApp();
+  const { t } = useTranslation();
 
   return (
     <TailwindNavbar>
@@ -17,7 +19,7 @@ export function Navbar() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
             </span>
-            Offline
+            {t("shell.navbar.offline")}
           </span>
         )}
       </NavbarSection>

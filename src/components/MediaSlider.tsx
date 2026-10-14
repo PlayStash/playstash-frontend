@@ -13,6 +13,8 @@ import {
   SpeakerXMarkIcon,
 } from "@heroicons/react/24/solid";
 import { isTauriApp } from "@/utils/tauri";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   getMediaVolume,
   setMediaVolume,
@@ -91,6 +93,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
   autoPlay = false,
   loop = false,
 }) => {
+  const { t: tr } = useTranslation();
   // Merge trailers + screenshots list
   const rawList = useMemo(() => {
     const t = trailers || [];
@@ -286,7 +289,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       <div
         className={`relative w-full ${aspect} bg-ps-panel rounded-3xl flex items-center justify-center text-xs text-ps-muted ${className}`}
       >
-        No media
+        {tr("game.media.empty")}
       </div>
     );
   }
@@ -299,7 +302,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       {isImageOnly ? (
         <img
           src={current.poster || current.video}
-          alt={current.title || "Screenshot"}
+          alt={current.title || tr("game.media.screenshot")}
           className="absolute inset-0 w-full h-full object-contain"
           draggable={false}
         />
@@ -308,7 +311,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
           key={ytId}
           className="absolute inset-0 w-full h-full"
           src={ytEmbedUrl || undefined}
-          title={current.title || "Trailer"}
+          title={current.title || tr("game.media.trailer")}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
           onLoad={() => {
@@ -377,7 +380,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
             type="button"
             onClick={prev}
             className="absolute top-1/2 left-2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 text-white hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-ps-accent-cool cursor-pointer"
-            aria-label="Previous media"
+            aria-label={tr("game.media.previous")}
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
@@ -385,7 +388,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
             type="button"
             onClick={next}
             className="absolute top-1/2 right-2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 text-white hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-ps-accent-cool cursor-pointer"
-            aria-label="Next media"
+            aria-label={tr("game.media.next")}
           >
             <ChevronRightIcon className="w-5 h-5" />
           </button>
@@ -396,12 +399,15 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
         className={`absolute left-0 right-0 pointer-events-none p-2 flex items-center justify-between text-[11px] text-white ${isImageOnly ? "bottom-0 bg-linear-to-t from-black/70 to-transparent" : "top-0 bg-linear-to-b from-black/70 to-transparent"}`}
       >
         <div>
-          Media {index + 1} / {list.length}
+          {fillTemplate(tr("game.media.position"), {
+            index: index + 1,
+            total: list.length,
+          })}
         </div>
         <div className="flex items-center gap-2">
           {isYT && !ytId && (
             <span className="text-rose-300 pointer-events-none">
-              Unrecognized YouTube URL
+              {tr("game.media.unrecognizedYoutube")}
             </span>
           )}
           {!isImageOnly && (
@@ -410,7 +416,9 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
                 type="button"
                 onClick={() => changeVolume(volume > 0 ? 0 : 0.5)}
                 className="focus:outline-none focus:ring-2 focus:ring-ps-accent-cool rounded"
-                aria-label={volume > 0 ? "Mute" : "Unmute"}
+                aria-label={
+                  volume > 0 ? tr("game.media.mute") : tr("game.media.unmute")
+                }
               >
                 {volume > 0 ? (
                   <SpeakerWaveIcon className="w-4 h-4" />
@@ -424,7 +432,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
                 max={1}
                 step={0.05}
                 value={volume}
-                aria-label="Media volume"
+                aria-label={tr("game.media.volume")}
                 onChange={(event) => changeVolume(Number(event.target.value))}
                 className="h-1 w-20 cursor-pointer accent-white"
               />
@@ -434,8 +442,12 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
             type="button"
             onClick={toggleFullscreen}
             className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-ps-accent-cool pointer-events-auto"
-            aria-label="Toggle fullscreen"
-            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            aria-label={tr("game.media.toggleFullscreen")}
+            title={
+              isFullscreen
+                ? tr("game.media.exitFullscreen")
+                : tr("game.media.fullscreen")
+            }
             aria-pressed={isFullscreen}
           >
             <ArrowsPointingOutIcon

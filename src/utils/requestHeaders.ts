@@ -1,4 +1,6 @@
 import { isTauriApp, isTauriDesktop } from "@/utils/tauri";
+import { translate } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 /**
  * Additional request headers ("Client Settings"), e.g. Cloudflare Access
@@ -35,9 +37,13 @@ let loadPromise: Promise<void> | null = null;
 export function validateHeaderName(name: string): string | null {
   const trimmed = name.trim();
   if (!trimmed || !TOKEN_PATTERN.test(trimmed))
-    return `"${trimmed}" is not a valid header name.`;
+    return fillTemplate(translate("accounts.headers.invalidName"), {
+      name: trimmed,
+    });
   if (FORBIDDEN_HEADER_NAMES.has(trimmed.toLowerCase()))
-    return `The header "${trimmed}" cannot be overridden.`;
+    return fillTemplate(translate("accounts.headers.forbidden"), {
+      name: trimmed,
+    });
   return null;
 }
 
@@ -49,7 +55,9 @@ export function validateHeaderValue(
   // Header values are visible ASCII plus spaces and tabs (fetch and reqwest
   // reject anything else).
   if (/[^\t\x20-\x7e]/.test(value.trim()))
-    return `The value of "${name.trim()}" contains unsupported characters.`;
+    return fillTemplate(translate("accounts.headers.invalidValue"), {
+      name: name.trim(),
+    });
   return null;
 }
 

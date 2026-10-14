@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { translate } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import { serverFetch } from "@/utils/serverFetch"; // sends the additional request headers
 
 export interface ServerInfo {
@@ -39,7 +41,10 @@ export function useServerStatus(): UseServerStatusResult {
         });
         if (!res.ok)
           throw new Error(
-            `Status failed (${res.status}): ${(await res.text()) || res.statusText}`,
+            fillTemplate(translate("shell.serverStatus.failed"), {
+              status: res.status,
+              detail: (await res.text()) || res.statusText,
+            }),
           );
         const data = await res.json();
         if (!cancelled) setInfo(data);

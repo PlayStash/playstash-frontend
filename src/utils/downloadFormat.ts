@@ -1,4 +1,5 @@
 import { formatTrimmedNumber } from "./number";
+import { translate } from "@/i18n";
 
 const SKIP_AUTO_RESUME_KEY = "skip_auto_resume_downloads";
 
@@ -93,7 +94,7 @@ export function formatKBps(bps?: number): string {
 }
 
 export function formatLimit(kbPerSec: number): string {
-  if (!kbPerSec || kbPerSec <= 0) return "Unlimited";
+  if (!kbPerSec || kbPerSec <= 0) return translate("downloads.speed.unlimited");
   let { value: v, unit } = scaleDecimal(kbPerSec, 1000, [
     "KB/s",
     "MB/s",

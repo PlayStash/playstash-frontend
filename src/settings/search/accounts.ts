@@ -4,8 +4,8 @@ import type { SearchableSetting } from "@/settings/types";
 export const accountsSearchEntries: SearchableSetting[] = [
   {
     id: "account-session",
-    title: "Logout and profiles",
-    description: "Change profile, log out from this device or from all devices",
+    title: "settings.search.accountSession.title",
+    description: "settings.search.accountSession.description",
     category: "account",
     keywords: [
       "logout",
@@ -21,9 +21,8 @@ export const accountsSearchEntries: SearchableSetting[] = [
   },
   {
     id: "account-connection",
-    title: "Additional request headers and server connection",
-    description:
-      "Headers sent with every server request, export of the server connection",
+    title: "settings.search.accountConnection.title",
+    description: "settings.search.accountConnection.description",
     category: "account",
     keywords: [
       "headers",
@@ -39,8 +38,8 @@ export const accountsSearchEntries: SearchableSetting[] = [
   },
   {
     id: "account-legacy",
-    title: "Import from the previous PlayStash client",
-    description: "Profiles, settings and installed games of PlayStash 1.x",
+    title: "settings.search.accountLegacy.title",
+    description: "settings.search.accountLegacy.description",
     category: "account",
     keywords: ["import", "legacy", "previous", "old client", "wpf", "migrate"],
     desktopOnly: true,

@@ -11,6 +11,8 @@ import {
   KeyIcon,
 } from "@heroicons/react/24/outline";
 import { formatDecimal } from "@/utils/number";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 type PhaseDetailProps = {
   download: ActiveDownload;
@@ -47,6 +49,7 @@ export function PhaseDetail({
   onSetUndetectedMode,
   onForceInstall,
 }: Readonly<PhaseDetailProps>) {
+  const { t } = useTranslation();
   const isDownloadingOrPaused =
     download.status === "downloading" || download.status === "paused";
   const isFailed = download.status === "error" || download.status === "aborted";
@@ -58,7 +61,7 @@ export function PhaseDetail({
     download.installationStatus === "copying" ||
     download.installationStatus === "launching";
 
-  let extractionProgressText = "In progress";
+  let extractionProgressText = t("downloads.detail.inProgress");
   if (
     download.extractionProgress !== null &&
     download.extractionProgress !== undefined
@@ -66,7 +69,7 @@ export function PhaseDetail({
     extractionProgressText = `${formatDecimal(download.extractionProgress, 1)}%`;
   }
 
-  let installProgressText = "In progress";
+  let installProgressText = t("downloads.detail.inProgress");
   if (
     download.installationStatus === "copying" &&
     download.installationProgress !== null &&
@@ -74,7 +77,7 @@ export function PhaseDetail({
   ) {
     installProgressText = `${formatDecimal(download.installationProgress, 1)}%`;
   } else if (download.installationStatus === "launching") {
-    installProgressText = "Starting";
+    installProgressText = t("downloads.detail.starting");
   }
 
   return (
@@ -90,11 +93,11 @@ export function PhaseDetail({
         />
       ) : isDownloadingOrPaused ? (
         <ProgressBar
-          label="Download progress"
+          label={t("downloads.detail.downloadProgress")}
           value={download.progress}
           valueText={
             download.status === "paused"
-              ? "Paused"
+              ? t("downloads.status.paused")
               : `${formatDecimal(download.progress ?? 0, 1)}%`
           }
         />
@@ -104,8 +107,8 @@ export function PhaseDetail({
         ) : (
           <p className="text-xs text-ps-muted">
             {download.status === "aborted"
-              ? "Download was cancelled."
-              : "Download failed."}
+              ? t("downloads.detail.cancelled")
+              : t("downloads.detail.failed")}
           </p>
         )
       ) : download.status === "completed" ? (
@@ -117,13 +120,19 @@ export function PhaseDetail({
                   className="size-4 shrink-0 text-ps-accent"
                   aria-hidden="true"
                 />
-                <span className="truncate">Extraction</span>
+                <span className="truncate">
+                  {t("downloads.step.extraction")}
+                </span>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {download.extractionStatus === "completed" && (
-                  <Badge color="green">Extracted</Badge>
+                  <Badge color="green">{t("downloads.status.extracted")}</Badge>
                 )}
-                {needsPassword && <Badge color="amber">Password needed</Badge>}
+                {needsPassword && (
+                  <Badge color="amber">
+                    {t("downloads.detail.passwordNeeded")}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -134,21 +143,21 @@ export function PhaseDetail({
                   className="flex items-center gap-1.5 text-xs text-ps-muted"
                 >
                   <KeyIcon className="size-4" aria-hidden="true" />
-                  Archive password
+                  {t("pipeline.password.title")}
                 </label>
                 <Input
                   id={`archive-password-${download.gameId}`}
                   type="password"
                   value={password}
                   onChange={(event) => onPasswordChange(event.target.value)}
-                  placeholder="Enter archive password"
+                  placeholder={t("downloads.detail.passwordPlaceholder")}
                 />
               </div>
             )}
 
             {isExtracting && (
               <ProgressBar
-                label="Extracting"
+                label={t("downloads.detail.extracting")}
                 value={download.extractionProgress}
                 valueText={extractionProgressText}
                 currentFile={download.extractionCurrentFile}
@@ -167,8 +176,7 @@ export function PhaseDetail({
 
             {download.sourceFilesDeleted && (
               <p className="text-xs text-ps-muted">
-                Source files were deleted, so this download can no longer be
-                extracted.
+                {t("downloads.detail.sourceDeleted")}
               </p>
             )}
           </div>
@@ -181,41 +189,45 @@ export function PhaseDetail({
                     className="size-4 shrink-0 text-ps-accent"
                     aria-hidden="true"
                   />
-                  <span className="truncate">Installation</span>
+                  <span className="truncate">
+                    {t("downloads.step.installation")}
+                  </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {download.installationStatus === "completed" && (
-                    <Badge color="green">Installed</Badge>
+                    <Badge color="green">
+                      {t("downloads.status.installed")}
+                    </Badge>
                   )}
                   {download.installationStatus === "running" && (
-                    <Badge color="blue">Running</Badge>
+                    <Badge color="blue">{t("downloads.detail.running")}</Badge>
                   )}
                   {download.installationStatus === "copying" && (
-                    <Badge color="blue">Copying</Badge>
+                    <Badge color="blue">{t("downloads.detail.copying")}</Badge>
                   )}
                 </div>
               </div>
 
               <p className="text-xs text-ps-muted">
                 {download.installationStatus === "completed"
-                  ? "The game is installed and ready to play."
+                  ? t("downloads.detail.installReady")
                   : download.installationStatus === "copying"
-                    ? "Copying the game files to the installation folder…"
+                    ? t("downloads.detail.installCopying")
                     : download.installationStatus === "launching"
-                      ? "Launching the game's installer…"
+                      ? t("downloads.detail.installLaunching")
                       : download.installationStatus === "running"
-                        ? "The installer is running. Follow its steps to finish the setup."
+                        ? t("downloads.detail.installRunning")
                         : download.sourceFilesDeleted
-                          ? "Source files were deleted after installation."
-                          : "Start the installation process for this extracted game."}
+                          ? t("downloads.detail.sourceDeletedAfterInstall")
+                          : t("downloads.detail.installStart")}
               </p>
 
               {isInstallCopyingOrLaunching && (
                 <ProgressBar
                   label={
                     download.installationStatus === "copying"
-                      ? "Installation Copy"
-                      : "Installer Launch"
+                      ? t("downloads.detail.installationCopy")
+                      : t("downloads.detail.installerLaunch")
                   }
                   value={download.installationProgress}
                   valueText={installProgressText}
@@ -233,7 +245,9 @@ export function PhaseDetail({
                     className="truncate text-xs text-ps-muted"
                     title={download.installationDirectory}
                   >
-                    Installed to {download.installationDirectory}.
+                    {fillTemplate(t("downloads.detail.installedTo"), {
+                      path: download.installationDirectory,
+                    })}
                   </p>
                 )}
             </div>

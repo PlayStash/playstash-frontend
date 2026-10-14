@@ -3,6 +3,8 @@
  * backend update detection and the uptime text.
  */
 import type { PlaystashUser } from "@/api";
+import { translate } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 
 export type UserSort = "username" | "activation" | "role";
 
@@ -121,5 +123,8 @@ export function formatUptime(seconds: unknown): string | null {
   const hours = Math.floor((total % 86400) / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
-  return `${days} days ${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  return formatMessage(translate("admin.health.uptime"), {
+    days,
+    time: `${pad(hours)}:${pad(minutes)}:${pad(secs)}`,
+  });
 }

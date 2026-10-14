@@ -1,3 +1,6 @@
+import { translate } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
+
 export type UpdateChannel = "stable" | "unstable";
 
 export const SKIPPED_UPDATE_KEY = "playstash_skipped_update_version";
@@ -76,15 +79,24 @@ export function formatUpdatePrompt(
 ): string {
   const releaseNotes = formatReleaseNotes(notes);
   const parts = [
-    `You are running PlayStash v${__APP_VERSION__}.`,
-    `PlayStash v${version} is available on the ${channelLabel(channel)} channel and can be downloaded from GitHub now.`,
+    fillTemplate(translate("updater.prompt.running"), {
+      version: __APP_VERSION__,
+    }),
+    fillTemplate(translate("updater.prompt.available"), {
+      version,
+      channel: channelLabel(channel),
+    }),
   ];
 
   if (releaseNotes) {
-    parts.push(`Release notes: ${releaseNotes}`);
+    parts.push(
+      fillTemplate(translate("updater.prompt.releaseNotes"), {
+        notes: releaseNotes,
+      }),
+    );
   }
 
-  parts.push("Do you want to download and install this update now?");
+  parts.push(translate("updater.prompt.question"));
   return parts.join(" ");
 }
 
@@ -97,7 +109,7 @@ export function formatUpdateError(error: unknown): string {
     return error.trim();
   }
 
-  return "PlayStash could not complete the update check.";
+  return translate("updater.error.generic");
 }
 
 export function normalizeVersion(version: string): string {

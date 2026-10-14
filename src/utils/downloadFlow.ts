@@ -97,7 +97,11 @@ export function registerDownloadFlowHost(next: DownloadFlowHost): () => void {
 }
 
 export function gameDisplayTitle(game: PlaystashGame): string {
-  return game.metadata?.title || game.title || `Game ${game.id}`;
+  return (
+    game.metadata?.title ||
+    game.title ||
+    fill(translate("downloads.flow.gameFallback"), { id: game.id })
+  );
 }
 
 function indexedAtMs(version: GameVersion): number {

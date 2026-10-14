@@ -1,6 +1,7 @@
 import * as Headless from "@headlessui/react";
 import clsx from "clsx";
 import React, { forwardRef } from "react";
+import { useTranslation } from "@/i18n";
 
 export function InputGroup({
   children,
@@ -46,6 +47,7 @@ export const Input = forwardRef(function Input(
   } & Omit<Headless.InputProps, "as" | "className">,
   ref: React.ForwardedRef<HTMLInputElement>,
 ) {
+  const { t } = useTranslation();
   const currentValue = (props as any)?.value;
   return (
     <span
@@ -107,7 +109,7 @@ export const Input = forwardRef(function Input(
             "text-ps-muted hover:text-ps-text",
             "focus:outline-hidden",
           ])}
-          aria-label="Clear input"
+          aria-label={t("shell.input.clear")}
           tabIndex={-1}
         >
           <svg

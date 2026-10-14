@@ -1,3 +1,5 @@
+import { translate } from "@/i18n";
+import { fillTemplate } from "./downloadPipeline";
 import { isTauriApp } from "./tauri";
 import { defaultChannelForBuild, type UpdateChannel } from "./updater";
 
@@ -108,9 +110,6 @@ export interface PrereleaseNoticeContent {
   description: string;
 }
 
-const SHARED_ADVICE =
-  "Keep a backup of anything important, report issues on GitHub, and switch back to the Stable update channel in Settings → About → Updates if you need a reliable build.";
-
 /**
  * Warning copy for the first launch of a pre-release build. The wording makes
  * it clear that these builds are for testers/developers, that extra setup may
@@ -121,11 +120,9 @@ export function prereleaseNoticeContent(
   version: string,
 ): PrereleaseNoticeContent {
   return {
-    title: "You are running an unstable build",
-    description:
-      `You are using PlayStash v${version}, an unstable development build that tracks the development branch. ` +
-      "It is meant for developers and testers who are comfortable troubleshooting, not for everyday use: " +
-      "additional setup steps may be necessary, features can change or disappear at any time, and crashes, " +
-      `broken downloads or lost settings/progress are expected rather than rare. ${SHARED_ADVICE}`,
+    title: translate("updater.prerelease.title"),
+    description: fillTemplate(translate("updater.prerelease.description"), {
+      version,
+    }),
   };
 }

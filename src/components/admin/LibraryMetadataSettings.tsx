@@ -3,6 +3,8 @@ import type { LaunchProfileDto, PlaystashGame } from "@/api";
 import { useAuth } from "@/context/AuthContext";
 import { emitGameUpdated } from "@/utils/gameUpdates";
 import { getErrorMessage } from "@/utils/apiError";
+import { formatMessage } from "@/utils/formatMessage";
+import { useTranslation } from "@/i18n";
 import { validateLaunchProfiles } from "@/utils/launchProfiles";
 import { Button } from "../tailwind/button";
 import { Input } from "../tailwind/input";
@@ -16,6 +18,7 @@ export function LibraryMetadataSettings({
   onGameUpdated: (game: PlaystashGame) => void;
 }) {
   const { serverUrl, authFetch } = useAuth();
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [minimum, setMinimum] = useState("");
   const [recommended, setRecommended] = useState("");
@@ -55,12 +58,15 @@ export function LibraryMetadataSettings({
       });
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not save library defaults."),
+          await getErrorMessage(
+            response,
+            t("admin.libraryDefaults.saveFailed"),
+          ),
         );
       const updated = await response.json();
       onGameUpdated(updated);
       emitGameUpdated(updated);
-      setMessage("Library defaults saved.");
+      setMessage(t("admin.libraryDefaults.saved"));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -70,14 +76,15 @@ export function LibraryMetadataSettings({
   return (
     <section className="space-y-4 rounded-2xl border border-ps-line p-4">
       <div>
-        <h4 className="font-semibold text-ps-text">Library defaults</h4>
+        <h4 className="font-semibold text-ps-text">
+          {t("admin.libraryDefaults.title")}
+        </h4>
         <p className="text-sm text-ps-muted">
-          Shared with users who can access this game. Empty values clear a saved
-          default.
+          {t("admin.libraryDefaults.description")}
         </p>
       </div>
       <label className="block text-sm text-ps-muted">
-        Archive password
+        {t("admin.libraryDefaults.archivePassword")}
         <Input
           type="password"
           autoComplete="new-password"
@@ -88,7 +95,7 @@ export function LibraryMetadataSettings({
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm text-ps-muted">
-          Minimum requirements · Markdown
+          {t("admin.libraryDefaults.minimum")}
           <Textarea
             rows={4}
             value={minimum}
@@ -97,7 +104,7 @@ export function LibraryMetadataSettings({
           />
         </label>
         <label className="text-sm text-ps-muted">
-          Recommended requirements · Markdown
+          {t("admin.libraryDefaults.recommended")}
           <Textarea
             rows={4}
             value={recommended}
@@ -107,15 +114,22 @@ export function LibraryMetadataSettings({
         </label>
       </div>
       <div className="space-y-3">
-        <h5 className="text-sm font-medium text-ps-text">Launch profiles</h5>
+        <h5 className="text-sm font-medium text-ps-text">
+          {t("admin.libraryDefaults.launchProfiles")}
+        </h5>
         {profiles.map((profile, index) => (
           <div
             key={index}
             className="grid gap-2 rounded-xl bg-ps-panel-soft p-3 sm:grid-cols-2"
           >
             <Input
-              aria-label={`Profile ${index + 1} name`}
-              placeholder="Single player"
+              aria-label={formatMessage(
+                t("admin.libraryDefaults.profileName"),
+                {
+                  index: index + 1,
+                },
+              )}
+              placeholder={t("admin.libraryDefaults.namePlaceholder")}
               value={profile.name}
               disabled={busy}
               onChange={(event) =>
@@ -127,7 +141,10 @@ export function LibraryMetadataSettings({
               }
             />
             <Input
-              aria-label={`Profile ${index + 1} executable`}
+              aria-label={formatMessage(
+                t("admin.libraryDefaults.profileExecutable"),
+                { index: index + 1 },
+              )}
               placeholder="bin/game.exe"
               value={profile.executable}
               disabled={busy}
@@ -142,8 +159,11 @@ export function LibraryMetadataSettings({
               }
             />
             <Input
-              aria-label={`Profile ${index + 1} arguments`}
-              placeholder="Arguments (optional)"
+              aria-label={formatMessage(
+                t("admin.libraryDefaults.profileArguments"),
+                { index: index + 1 },
+              )}
+              placeholder={t("admin.libraryDefaults.argumentsPlaceholder")}
               value={profile.parameters || ""}
               disabled={busy}
               onChange={(event) =>
@@ -163,7 +183,9 @@ export function LibraryMetadataSettings({
                 setProfiles(profiles.filter((_, i) => i !== index))
               }
             >
-              Remove profile {index + 1}
+              {formatMessage(t("admin.libraryDefaults.removeProfile"), {
+                index: index + 1,
+              })}
             </Button>
           </div>
         ))}
@@ -174,11 +196,11 @@ export function LibraryMetadataSettings({
             setProfiles([...profiles, { name: "", executable: "" }])
           }
         >
-          Add launch profile
+          {t("admin.libraryDefaults.addProfile")}
         </Button>
       </div>
       <Button color="indigo" disabled={busy} onClick={() => void save()}>
-        {busy ? "Saving…" : "Save library defaults"}
+        {busy ? t("common.saving") : t("admin.libraryDefaults.save")}
       </Button>
       {error && (
         <p role="alert" className="text-sm text-red-400">

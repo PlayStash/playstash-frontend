@@ -40,6 +40,8 @@ import { memo, useCallback, useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { GameVersion } from "@/api/models/GameVersion";
 import { useMappedTitle } from "@/utils/mappedTitle";
+import { useTranslation } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 
 const GameCard = memo(function GameCard({
   game,
@@ -52,6 +54,7 @@ const GameCard = memo(function GameCard({
 }) {
   const { serverUrl, user, authFetch } = useAuth();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
   // Detect if this is a locally installed game (set by Library for installed games)
   const installedInfo = (game as any)?._installedInfo as
     | {
@@ -117,9 +120,8 @@ const GameCard = memo(function GameCard({
         // failing silently (e.g. when the game no longer exists on the server).
         setBookmarked(!next);
         showAlert({
-          title: "Couldn't update bookmark",
-          description:
-            "The bookmark couldn't be updated. The game may no longer exist on the server.",
+          title: t("gameCard.bookmark.failedTitle"),
+          description: t("gameCard.bookmark.failedDescription"),
         });
       } finally {
         setBookmarkBusy(false);
@@ -133,6 +135,7 @@ const GameCard = memo(function GameCard({
       game.id,
       bookmarked,
       showAlert,
+      t,
     ],
   );
   const { startDownload } = useDownloads() as any;
@@ -206,10 +209,12 @@ const GameCard = memo(function GameCard({
       });
 
       showAlert({
-        title: `Added ${resolvedTitle} to the download queue`,
+        title: fillTemplate(t("gameCard.queued"), {
+          title: String(resolvedTitle),
+        }),
       });
     },
-    [game.id, localGame, showAlert, startDownload],
+    [game.id, localGame, showAlert, startDownload, t],
   );
 
   const selectVersionAndRun = useCallback(
@@ -218,9 +223,8 @@ const GameCard = memo(function GameCard({
 
       if (!versions.length) {
         showAlert({
-          title: "No downloadable version found",
-          description:
-            "This game currently has no available version to download.",
+          title: t("gameCard.noVersion.title"),
+          description: t("gameCard.noVersion.description"),
         });
         return;
       }
@@ -235,7 +239,7 @@ const GameCard = memo(function GameCard({
       setPendingRootPath(rootPath ?? null);
       setVersionDialogOpen(true);
     },
-    [resolveVersions, showAlert, executeDownloadAction],
+    [resolveVersions, showAlert, executeDownloadAction, t],
   );
 
   const handleDirectDownload = useCallback(async () => {
@@ -304,6 +308,14 @@ const GameCard = memo(function GameCard({
   );
 
   const gameViewUrl = `/library/${game.id}`;
+  const fallbackTitle =
+    localGame.metadata?.title || localGame.title || t("gameCard.fallbackTitle");
+  const downloadLabel = formattedSize
+    ? fillTemplate(t("gameCard.downloadWithSize"), {
+        title: String(localGame.title),
+        size: formattedSize,
+      })
+    : fillTemplate(t("gameCard.download"), { title: String(localGame.title) });
 
   const handleOpenSettings = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -370,9 +382,7 @@ const GameCard = memo(function GameCard({
                   mediaSlot="cover"
                   fallback={
                     <CoverPlaceholder
-                      title={
-                        localGame.metadata?.title || localGame.title || "Game"
-                      }
+                      title={fallbackTitle}
                       size="large"
                       className="h-full w-full"
                     />
@@ -380,7 +390,7 @@ const GameCard = memo(function GameCard({
                 />
               ) : (
                 <CoverPlaceholder
-                  title={localGame.metadata?.title || localGame.title || "Game"}
+                  title={fallbackTitle}
                   size="large"
                   className="h-full w-full"
                 />
@@ -401,8 +411,16 @@ const GameCard = memo(function GameCard({
               clashes with the centered Play/Download action button. */}
             {isInstalled && !hideInstalledBadge && (
               <span
-                title={updateAvailable ? "Update available" : "Installed"}
-                aria-label={updateAvailable ? "Update available" : "Installed"}
+                title={
+                  updateAvailable
+                    ? t("gameCard.updateAvailable")
+                    : t("gameCard.installed")
+                }
+                aria-label={
+                  updateAvailable
+                    ? t("gameCard.updateAvailable")
+                    : t("gameCard.installed")
+                }
                 className={clsx(
                   "pointer-events-none absolute bottom-2 right-2 z-10 flex size-6 items-center justify-center rounded-full border backdrop-blur-sm transition-opacity duration-200 group-hover/card:opacity-0! group-focus-within/card:opacity-0!",
                   updateAvailable
@@ -440,7 +458,11 @@ const GameCard = memo(function GameCard({
             <button
               type="button"
               onClick={toggleBookmark}
-              aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
+              aria-label={
+                bookmarked
+                  ? t("gameCard.bookmark.remove")
+                  : t("gameCard.bookmark.add")
+              }
               aria-pressed={bookmarked}
               disabled={!currentUserId || bookmarkBusy}
               className={clsx(
@@ -464,14 +486,14 @@ const GameCard = memo(function GameCard({
             <button
               type="button"
               onClick={handleOpenSettings}
-              aria-label="Settings"
+              aria-label={t("nav.settings")}
               className={clsx(
                 "absolute top-2 left-2 flex size-11 cursor-pointer items-center justify-center rounded-lg border border-ps-line bg-ps-panel-soft/80 text-ps-muted backdrop-blur-xl transition-all duration-200",
                 "opacity-0 translate-y-1 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
                 "hover:border-ps-line-strong hover:bg-ps-panel hover:text-ps-text",
                 "active:scale-95",
               )}
-              title="Settings"
+              title={t("nav.settings")}
             >
               <Cog8ToothIcon className="h-5 w-5" />
             </button>
@@ -480,7 +502,7 @@ const GameCard = memo(function GameCard({
             {isInstalled ? (
               <button
                 type="button"
-                aria-label="Play"
+                aria-label={t("common.play")}
                 onClick={handlePlayGame}
                 className={clsx(
                   "absolute bottom-3 left-1/2 -translate-x-1/2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-indigo-400/40 bg-indigo-500/90 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-200",
@@ -495,7 +517,7 @@ const GameCard = memo(function GameCard({
                 >
                   <path d="M8 17.175V6.825q0-.425.3-.713t.7-.287q.125 0 .263.037t.262.113l8.15 5.175q.225.15.338.375t.112.475t-.112.475t-.338.375l-8.15 5.175q-.125.075-.262.113T9 18.175q-.4 0-.7-.288t-.3-.712" />
                 </svg>
-                Play
+                {t("common.play")}
               </button>
             ) : (
               <div
@@ -507,9 +529,9 @@ const GameCard = memo(function GameCard({
                 {isTauri ? (
                   <Button
                     color="indigo"
-                    aria-label={`Download ${localGame.title}${formattedSize ? ` (${formattedSize})` : ""}`}
+                    aria-label={downloadLabel}
                     className="h-9 px-3 gap-2 flex items-center justify-center"
-                    title={`Download ${localGame.title}${formattedSize ? ` (${formattedSize})` : ""}`}
+                    title={downloadLabel}
                     onClick={handleTauriDownload}
                   >
                     <CloudArrowDownIcon className="w-5 h-5 shrink-0" />
@@ -519,7 +541,7 @@ const GameCard = memo(function GameCard({
                       </span>
                     ) : (
                       <span className="text-xs font-medium whitespace-nowrap">
-                        Download
+                        {t("common.download")}
                       </span>
                     )}
                   </Button>
@@ -528,7 +550,7 @@ const GameCard = memo(function GameCard({
                     <DropdownButton
                       as={Button}
                       color="indigo"
-                      aria-label={`Download ${localGame.title}${formattedSize ? ` (${formattedSize})` : ""}`}
+                      aria-label={downloadLabel}
                       className="h-9 px-3 gap-2 flex items-center justify-center"
                       onClick={(e: React.MouseEvent) => {
                         e.preventDefault();
@@ -542,7 +564,7 @@ const GameCard = memo(function GameCard({
                         </span>
                       ) : (
                         <span className="text-xs font-medium whitespace-nowrap">
-                          Download
+                          {t("common.download")}
                         </span>
                       )}
                     </DropdownButton>
@@ -554,7 +576,9 @@ const GameCard = memo(function GameCard({
                           void handleDirectDownload();
                         }}
                       >
-                        <DropdownLabel>Direct Download</DropdownLabel>
+                        <DropdownLabel>
+                          {t("gameCard.directDownload")}
+                        </DropdownLabel>
                       </DropdownItem>
                       <DropdownItem
                         onClick={(e: React.MouseEvent) => {
@@ -564,7 +588,7 @@ const GameCard = memo(function GameCard({
                         }}
                       >
                         <DropdownLabel>
-                          Download via PlayStash Client
+                          {t("gameCard.clientDownload")}
                         </DropdownLabel>
                       </DropdownItem>
                     </DropdownMenu>
@@ -598,7 +622,7 @@ const GameCard = memo(function GameCard({
       )}
       <RootPathSelectDialog
         open={rootSelectOpen}
-        gameTitle={localGame.metadata?.title || localGame.title || "Game"}
+        gameTitle={fallbackTitle}
         rootPaths={(() => {
           try {
             return getRootPaths();
@@ -612,7 +636,7 @@ const GameCard = memo(function GameCard({
       />
       <VersionSelectDialog
         open={versionDialogOpen}
-        gameTitle={localGame.metadata?.title || localGame.title || "Game"}
+        gameTitle={fallbackTitle}
         versions={selectableVersions}
         onClose={() => {
           setVersionDialogOpen(false);

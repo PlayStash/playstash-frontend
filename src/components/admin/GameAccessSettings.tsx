@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { getErrorMessage } from "@/utils/apiError";
 import { emitGameUpdated } from "@/utils/gameUpdates";
+import { useTranslation } from "@/i18n";
 import { Button } from "../tailwind/button";
 import { Input } from "../tailwind/input";
 import { Switch } from "../tailwind/switch";
@@ -15,6 +16,7 @@ export function GameAccessSettings({
   onGameUpdated: (game: PlaystashGame) => void;
 }) {
   const { serverUrl, authFetch } = useAuth();
+  const { t } = useTranslation();
   const { users, loading, error: usersError, refresh } = useAdminUsers();
   const [restricted, setRestricted] = useState(!!game.access_restricted);
   const [allowed, setAllowed] = useState(game.allowed_user_ids || []);
@@ -41,12 +43,12 @@ export function GameAccessSettings({
       });
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not save access rights."),
+          await getErrorMessage(response, t("admin.access.saveFailed")),
         );
       const updated = await response.json();
       onGameUpdated(updated);
       emitGameUpdated(updated);
-      setMessage("Access rights saved.");
+      setMessage(t("admin.access.saved"));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -60,7 +62,7 @@ export function GameAccessSettings({
           htmlFor="restrict-game-access"
           className="font-medium text-ps-text"
         >
-          Restrict game access
+          {t("admin.access.restrict")}
         </label>
         <Switch
           id="restrict-game-access"
@@ -70,21 +72,18 @@ export function GameAccessSettings({
           onChange={setRestricted}
         />
       </div>
-      <p className="text-sm text-ps-muted">
-        Restricted games are visible only to administrators and the selected
-        users. With no selected users, only administrators have access.
-      </p>
+      <p className="text-sm text-ps-muted">{t("admin.access.description")}</p>
       {restricted && (
         <>
           <Input
-            aria-label="Find allowed users"
-            placeholder="Find users…"
+            aria-label={t("admin.access.findLabel")}
+            placeholder={t("admin.access.findPlaceholder")}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
           <div className="max-h-60 overflow-y-auto space-y-2">
             {loading ? (
-              <p role="status">Loading users…</p>
+              <p role="status">{t("admin.users.loading")}</p>
             ) : (
               users
                 .filter((user) =>
@@ -117,7 +116,7 @@ export function GameAccessSettings({
             <div role="alert">
               <p className="text-red-400">{usersError}</p>
               <Button outline onClick={() => refresh()}>
-                Reload users
+                {t("admin.access.reloadUsers")}
               </Button>
             </div>
           )}
@@ -128,7 +127,7 @@ export function GameAccessSettings({
         disabled={busy || loading || (!!usersError && restricted)}
         onClick={() => void save()}
       >
-        {busy ? "Saving…" : "Save access rights"}
+        {busy ? t("common.saving") : t("admin.access.save")}
       </Button>
       {error && (
         <p role="alert" className="text-sm text-red-400">

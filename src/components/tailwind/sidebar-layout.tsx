@@ -3,6 +3,7 @@
 import * as Headless from "@headlessui/react";
 import React, { useState } from "react";
 import { NavbarItem } from "./navbar";
+import { useTranslation } from "@/i18n";
 import WindowTitlebar from "../WindowTitlebar";
 import { isTauriApp } from "@/utils/tauri";
 
@@ -27,6 +28,7 @@ function MobileSidebar({
   close,
   children,
 }: React.PropsWithChildren<{ open: boolean; close: () => void }>) {
+  const { t } = useTranslation();
   return (
     <Headless.Dialog open={open} onClose={close} className="lg:hidden">
       <Headless.DialogBackdrop
@@ -39,7 +41,10 @@ function MobileSidebar({
       >
         <div className="relative h-full">
           <span className="absolute top-5 right-2 z-10">
-            <Headless.CloseButton as={NavbarItem} aria-label="Close navigation">
+            <Headless.CloseButton
+              as={NavbarItem}
+              aria-label={t("shell.navigation.close")}
+            >
               <CloseMenuIcon />
             </Headless.CloseButton>
           </span>
@@ -63,6 +68,7 @@ export function SidebarLayout({
   fullBleed?: boolean;
 }>) {
   let [showSidebar, setShowSidebar] = useState(false);
+  const { t } = useTranslation();
 
   // In the desktop app the custom window titlebar owns the top edge, so the
   // dashboard and sidebar should sit flush against it (no top margin).
@@ -102,7 +108,7 @@ export function SidebarLayout({
           <div className="py-3">
             <NavbarItem
               onClick={() => setShowSidebar(true)}
-              aria-label="Open navigation"
+              aria-label={t("shell.navigation.open")}
             >
               <OpenMenuIcon />
             </NavbarItem>

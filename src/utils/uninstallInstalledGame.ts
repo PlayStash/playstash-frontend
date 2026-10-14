@@ -11,6 +11,7 @@ import { PlaystashGameTypeEnum } from "@/api/models/PlaystashGame";
 import { translate } from "@/i18n";
 import { removeDesktopShortcut } from "@/utils/desktopShortcut";
 import { formatBytes } from "@/utils/downloadFormat";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   configString,
   readGameConfig,
@@ -187,12 +188,10 @@ async function cleanupLeftoverFiles(versionDirectory: string) {
   if (!hasLeftovers) return;
 
   const confirmed = await alert({
-    title: "Delete leftover files?",
-    description:
-      "Some files from the uninstall could not be removed automatically. " +
-      "Do you want to permanently delete the remaining files?",
-    affirmativeText: "Delete",
-    negativeText: "Keep",
+    title: translate("uninstall.leftover.title"),
+    description: translate("uninstall.leftover.description"),
+    affirmativeText: translate("common.delete"),
+    negativeText: translate("uninstall.leftover.keep"),
   });
   if (!confirmed) return;
 
@@ -229,13 +228,13 @@ async function offerPrefixCleanup(
 
     const size = info.sizeBytes ? ` (${formatBytes(info.sizeBytes)})` : "";
     const keepPrefix = await alert({
-      title: "Delete the Wine/Proton prefix too?",
-      description:
-        `This game was installed into its own Wine/Proton prefix:\n${info.path}${size}\n\n` +
-        "Local save games, game settings and installed runtime files can live inside it. " +
-        "Keep it unless you want the disk space back.",
-      affirmativeText: "Keep prefix",
-      negativeText: "Delete prefix",
+      title: translate("uninstall.prefix.title"),
+      description: fillTemplate(translate("uninstall.prefix.description"), {
+        path: info.path,
+        size,
+      }),
+      affirmativeText: translate("uninstall.prefix.keep"),
+      negativeText: translate("uninstall.prefix.delete"),
       tone: "warning",
     });
     if (keepPrefix) return;
@@ -291,7 +290,10 @@ async function finishUninstall(
     // No shortcut, or shortcuts are not supported here.
   }
   notifyInstalledGamesChanged();
-  void alert({ title: "Game uninstalled", affirmativeText: "OK" });
+  void alert({
+    title: translate("uninstall.done"),
+    affirmativeText: translate("common.ok"),
+  });
 }
 
 /**
@@ -308,7 +310,7 @@ export async function uninstallInstalledGame(
   if (!target) {
     await alert({
       title: translate("launch.installFirst"),
-      affirmativeText: "OK",
+      affirmativeText: translate("common.ok"),
     });
     return false;
   }
@@ -316,7 +318,10 @@ export async function uninstallInstalledGame(
   const cached = (target.cachedMetadata ?? null) as PlaystashGame | null;
   const game = options.game ?? cached;
   const title =
-    game?.metadata?.title || game?.title || target.gameTitle || "Game";
+    game?.metadata?.title ||
+    game?.title ||
+    target.gameTitle ||
+    translate("gameView.fallbackTitle");
   const config = await readGameConfig(target.versionDirectory);
   const installType = effectiveInstallType(config, target.gameType, game?.type);
   const hookContext: PreUninstallContext = {
@@ -329,9 +334,9 @@ export async function uninstallInstalledGame(
   if (isPortableInstallType(installType)) {
     if (options.confirm) {
       const confirmed = await alert({
-        title: `Are you sure you want to uninstall ${title} ?`,
-        affirmativeText: "Yes",
-        negativeText: "No",
+        title: fillTemplate(translate("uninstall.confirm"), { title }),
+        affirmativeText: translate("common.yes"),
+        negativeText: translate("common.no"),
       });
       if (!confirmed) return false;
     }
@@ -352,11 +357,11 @@ export async function uninstallInstalledGame(
       return true;
     } catch (error) {
       await alert({
-        title: "Error",
+        title: translate("common.error"),
         description:
           (error instanceof Error ? error.message : String(error)) ||
-          "Failed to uninstall game",
-        affirmativeText: "OK",
+          translate("uninstall.failed"),
+        affirmativeText: translate("common.ok"),
       });
       return false;
     }
@@ -370,16 +375,19 @@ export async function uninstallInstalledGame(
       const confirmed = await alert(
         configuredUninstaller
           ? {
-              title: `Are you sure you want to uninstall '${title}' ?`,
-              affirmativeText: "Yes",
-              negativeText: "No",
+              title: fillTemplate(translate("uninstall.confirmQuoted"), {
+                title,
+              }),
+              affirmativeText: translate("common.yes"),
+              negativeText: translate("common.no"),
             }
           : {
-              title: `Are you sure you want to uninstall '${title}' ?`,
-              description:
-                "As this is a Windows Setup Game, you will need to select an uninstall executable manually",
-              affirmativeText: "Yes",
-              negativeText: "No",
+              title: fillTemplate(translate("uninstall.confirmQuoted"), {
+                title,
+              }),
+              description: translate("uninstall.setupHint"),
+              affirmativeText: translate("common.yes"),
+              negativeText: translate("common.no"),
             },
       );
       if (!confirmed) return false;
@@ -398,10 +406,10 @@ export async function uninstallInstalledGame(
         directory: false,
         multiple: false,
         defaultPath: target.installationDirectory,
-        title: "Select Uninstall Executable",
+        title: translate("uninstall.selectExecutable"),
         filters: [
           {
-            name: "Executables",
+            name: translate("uninstall.executablesFilter"),
             extensions: ["exe", "msi", "bat", "cmd", "com"],
           },
         ],
@@ -417,8 +425,8 @@ export async function uninstallInstalledGame(
             "{fileName}",
             fileName,
           ),
-          affirmativeText: "Yes",
-          negativeText: "No",
+          affirmativeText: translate("common.yes"),
+          negativeText: translate("common.no"),
         });
         if (!confirmed) return false;
       }
@@ -441,13 +449,13 @@ export async function uninstallInstalledGame(
     } catch (error) {
       const code = exitCodeFromError(error);
       await alert({
-        title: "Error",
+        title: translate("common.error"),
         description:
           code !== null && !isUninstallSuccessCode(code)
             ? translate("uninstall.exitCode").replace("{code}", String(code))
             : (error instanceof Error ? error.message : String(error)) ||
-              "Failed to run uninstall executable",
-        affirmativeText: "OK",
+              translate("uninstall.runFailed"),
+        affirmativeText: translate("common.ok"),
       });
       return false;
     }
@@ -455,12 +463,12 @@ export async function uninstallInstalledGame(
     // An elevated uninstaller reports its exit code instead of failing.
     if (!isUninstallSuccessCode(exitCode)) {
       await alert({
-        title: "Error",
+        title: translate("common.error"),
         description: translate("uninstall.exitCode").replace(
           "{code}",
           String(exitCode),
         ),
-        affirmativeText: "OK",
+        affirmativeText: translate("common.ok"),
       });
       return false;
     }
@@ -474,9 +482,9 @@ export async function uninstallInstalledGame(
   }
 
   await alert({
-    title: "Unsupported game type",
-    description: "Only portable and setup games can be uninstalled right now.",
-    affirmativeText: "OK",
+    title: translate("uninstall.unsupportedTitle"),
+    description: translate("uninstall.unsupported"),
+    affirmativeText: translate("common.ok"),
   });
   return false;
 }

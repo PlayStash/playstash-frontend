@@ -77,7 +77,8 @@ import {
 import { LayoutGroup, motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
 import { GameChatButton } from "@/components/GameChatButton";
-import { useTranslation } from "@/i18n";
+import { translate, useTranslation, type TranslationKey } from "@/i18n";
+import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   displayTitle,
   setShowMappedTitle,
@@ -86,6 +87,21 @@ import {
 } from "@/utils/mappedTitle";
 import { libraryFilterLink } from "@/utils/libraryLinks";
 import { CloudSaveRow } from "@/components/CloudSaveRow";
+
+const PROGRESS_LABEL: Record<string, TranslationKey> = {
+  UNPLAYED: "gameView.progress.unplayed",
+  INFINITE: "gameView.progress.infinite",
+  PLAYING: "gameView.progress.playing",
+  COMPLETED: "gameView.progress.completed",
+  ABORTED_TEMPORARY: "gameView.progress.abortedTemporary",
+  ABORTED_PERMANENT: "gameView.progress.abortedPermanent",
+};
+
+const GAME_TYPE_LABEL: Record<string, TranslationKey> = {
+  WINDOWS_SETUP: "gameView.type.windowsSetup",
+  WINDOWS_PORTABLE: "gameView.type.windowsPortable",
+  LINUX_PORTABLE: "gameView.type.linuxPortable",
+};
 
 export default function GameView() {
   const { id } = useParams<{ id: string }>();
@@ -172,7 +188,12 @@ export default function GameView() {
         const res = await authFetch(`${base}/api/games/${numericId}`, {
           method: "GET",
         });
-        if (!res.ok) throw new Error(`Failed to load game (${res.status})`);
+        if (!res.ok)
+          throw new Error(
+            fillTemplate(translate("gameView.loadFailedStatus"), {
+              status: res.status,
+            }),
+          );
         const json = await res.json();
         if (!cancelled) setGame(json);
       } catch (e: any) {
@@ -192,7 +213,8 @@ export default function GameView() {
             /* cache not available */
           }
         }
-        if (!cancelled) setError(e?.message || "Failed to load game");
+        if (!cancelled)
+          setError(e?.message || translate("gameView.loadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -378,9 +400,8 @@ export default function GameView() {
     } catch {
       setBookmarked(!next);
       showAlert({
-        title: "Couldn't update bookmark",
-        description:
-          "The bookmark couldn't be updated. The game may no longer exist on the server.",
+        title: t("gameView.bookmark.failedTitle"),
+        description: t("gameView.bookmark.failed"),
       });
     } finally {
       setBookmarkBusy(false);
@@ -393,6 +414,7 @@ export default function GameView() {
     authFetch,
     bookmarkBusy,
     showAlert,
+    t,
   ]);
 
   const handleShare = useCallback(async () => {
@@ -418,7 +440,10 @@ export default function GameView() {
           },
         });
       } catch {
-        showAlert({ title: "Couldn't copy link", description: shareUrl });
+        showAlert({
+          title: t("gameView.share.copyFailed"),
+          description: shareUrl,
+        });
       }
       return;
     }
@@ -426,11 +451,11 @@ export default function GameView() {
       await navigator.clipboard.writeText(shareUrl);
       // Show global alert notification
       showAlert({
-        title: "Link copied",
+        title: t("gameView.share.linkCopied"),
       });
     } catch {
       showAlert({
-        title: "Couldn't copy link",
+        title: t("gameView.share.copyFailed"),
         description: shareUrl,
       });
     }
@@ -490,10 +515,12 @@ export default function GameView() {
       });
 
       showAlert({
-        title: `Added ${resolvedTitle} to the download queue`,
+        title: fillTemplate(t("gameView.download.queued"), {
+          title: resolvedTitle ?? "",
+        }),
       });
     },
-    [game, title, startDownload, showAlert],
+    [game, title, startDownload, showAlert, t],
   );
 
   const selectVersionAndRun = useCallback(
@@ -502,9 +529,8 @@ export default function GameView() {
 
       if (!versions.length) {
         showAlert({
-          title: "No downloadable version found",
-          description:
-            "This game currently has no available version to download.",
+          title: t("pipeline.flow.noVersionTitle"),
+          description: t("pipeline.flow.noVersionMessage"),
         });
         return;
       }
@@ -519,7 +545,7 @@ export default function GameView() {
       setPendingRootPath(rootPath ?? null);
       setVersionDialogOpen(true);
     },
-    [resolveVersions, showAlert, executeDownloadAction],
+    [resolveVersions, showAlert, executeDownloadAction, t],
   );
 
   const handleDirectDownload = useCallback(() => {
@@ -586,17 +612,12 @@ export default function GameView() {
     [pendingDownloadAction, pendingRootPath, executeDownloadAction],
   );
 
-  const PROGRESS_LABEL: Record<string, string> = {
-    UNPLAYED: "Unplayed",
-    INFINITE: "Infinite",
-    PLAYING: "Playing",
-    COMPLETED: "Completed",
-    ABORTED_TEMPORARY: "Temporarily Aborted",
-    ABORTED_PERMANENT: "Permanently Aborted",
-  };
-
   const progressStateOptions = Object.entries(ProgressStateEnum).map(
-    ([k, v]) => ({ key: k, value: v, label: PROGRESS_LABEL[v] || v }),
+    ([k, v]) => ({
+      key: k,
+      value: v,
+      label: PROGRESS_LABEL[v] ? t(PROGRESS_LABEL[v]) : v,
+    }),
   );
 
   const updateProgressState = useCallback(
@@ -677,6 +698,9 @@ export default function GameView() {
     () => (gameSizeBytes !== null ? formatBytes(gameSizeBytes) : null),
     [gameSizeBytes],
   );
+  const downloadLabel = formattedSize
+    ? `${t("common.download")} (${formattedSize})`
+    : t("common.download");
 
   const glassPanelClassName =
     "border border-white/35 bg-white/[0.42] backdrop-blur-md dark:border-white/10 dark:bg-ps-panel/80 dark:backdrop-blur-md";
@@ -763,7 +787,7 @@ export default function GameView() {
         </div>
         {loading && (
           <div className="flex flex-1 items-center justify-center py-20">
-            <Spinner label="Loading game…" />
+            <Spinner label={t("gameView.loading")} />
           </div>
         )}
         {error && (
@@ -787,7 +811,9 @@ export default function GameView() {
                     mediaSlot="cover"
                     fallback={
                       <CoverPlaceholder
-                        title={title || game.title || "Game"}
+                        title={
+                          title || game.title || t("gameView.fallbackTitle")
+                        }
                         size="large"
                         className="h-full w-full"
                       />
@@ -795,7 +821,7 @@ export default function GameView() {
                   />
                 ) : (
                   <CoverPlaceholder
-                    title={title || game.title || "Game"}
+                    title={title || game.title || t("gameView.fallbackTitle")}
                     size="large"
                     className="h-full w-full"
                   />
@@ -827,7 +853,7 @@ export default function GameView() {
                     title={
                       installedInfo?.versionName && serverVersionTag
                         ? `${installedInfo.versionName} → ${serverVersionTag}`
-                        : "A newer version is available on the server"
+                        : t("gameView.update.tooltip")
                     }
                     className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-300"
                   >
@@ -835,7 +861,7 @@ export default function GameView() {
                       className="h-3.5 w-3.5"
                       aria-hidden="true"
                     />
-                    Update available
+                    {t("gameView.update.available")}
                   </span>
                 )}
                 {/* Added flex-wrap to allow buttons to wrap on extremely narrow viewports, preventing horizontal overflow that could push the media slider and cause cutoff */}
@@ -848,8 +874,8 @@ export default function GameView() {
                   {isTauri && installedInfo && (
                     <Button
                       color="indigo"
-                      aria-label="Play"
-                      title="Play"
+                      aria-label={t("common.play")}
+                      title={t("common.play")}
                       className="h-9 px-3 gap-2 flex items-center justify-center"
                       onClick={handlePlayGame}
                     >
@@ -860,7 +886,7 @@ export default function GameView() {
                       >
                         <path d="M8 17.175V6.825q0-.425.3-.713t.7-.287q.125 0 .263.037t.262.113l8.15 5.175q.225.15.338.375t.112.475t-.112.475t-.338.375l-8.15 5.175q-.125.075-.262.113T9 18.175q-.4 0-.7-.288t-.3-.712" />
                       </svg>
-                      Play
+                      {t("common.play")}
                     </Button>
                   )}
                   {isTauri ? (
@@ -868,9 +894,9 @@ export default function GameView() {
                       {...(installedInfo
                         ? { outline: true }
                         : { color: "indigo" })}
-                      aria-label={`Download${formattedSize ? ` (${formattedSize})` : ""}`}
+                      aria-label={downloadLabel}
                       className="h-9 px-3 gap-2 flex items-center justify-center"
-                      title={`Download${formattedSize ? ` (${formattedSize})` : ""}`}
+                      title={downloadLabel}
                       onClick={handleTauriDownload}
                       disabled={isTauri && !isOnline}
                     >
@@ -886,9 +912,9 @@ export default function GameView() {
                       <DropdownButton
                         as={Button}
                         color="indigo"
-                        aria-label={`Download${formattedSize ? ` (${formattedSize})` : ""}`}
+                        aria-label={downloadLabel}
                         className="h-9 px-3 gap-2 flex items-center justify-center"
-                        title={`Download${formattedSize ? ` (${formattedSize})` : ""}`}
+                        title={downloadLabel}
                         disabled={isTauri && !isOnline}
                         onClick={(e: React.MouseEvent) => {
                           e.preventDefault();
@@ -904,11 +930,13 @@ export default function GameView() {
                       </DropdownButton>
                       <DropdownMenu className="min-w-48" anchor="bottom start">
                         <DropdownItem onClick={handleDirectDownload}>
-                          <DropdownLabel>Direct Download</DropdownLabel>
+                          <DropdownLabel>
+                            {t("gameView.download.direct")}
+                          </DropdownLabel>
                         </DropdownItem>
                         <DropdownItem onClick={handleClientDownload}>
                           <DropdownLabel>
-                            Download via PlayStash Client
+                            {t("gameView.download.client")}
                           </DropdownLabel>
                         </DropdownItem>
                       </DropdownMenu>
@@ -918,7 +946,7 @@ export default function GameView() {
                     outline
                     onClick={() => setSettingsOpen(true)}
                     className={floatingIconButtonClassName}
-                    title="Settings"
+                    title={t("gameView.settings")}
                   >
                     <Cog8ToothIcon className="w-5 h-5" />
                   </Button>
@@ -931,7 +959,11 @@ export default function GameView() {
                         ? "size-11 p-0 flex items-center justify-center bg-yellow-400/20! border-yellow-400! text-yellow-400! backdrop-blur-md shadow-sm dark:bg-yellow-400/20! dark:border-yellow-400! dark:text-yellow-400!"
                         : floatingIconButtonClassName,
                     )}
-                    title={bookmarked ? "Remove bookmark" : "Add bookmark"}
+                    title={
+                      bookmarked
+                        ? t("gameView.bookmark.remove")
+                        : t("gameView.bookmark.add")
+                    }
                     aria-pressed={bookmarked}
                   >
                     {bookmarked ? (
@@ -944,7 +976,7 @@ export default function GameView() {
                     outline
                     onClick={handleShare}
                     className={floatingIconButtonClassName}
-                    title="Copy link"
+                    title={t("gameView.share.copyLink")}
                   >
                     <ShareIcon className="w-5 h-5" />
                   </Button>
@@ -965,16 +997,18 @@ export default function GameView() {
                         title={t("gameView.pill.filter")}
                         className="px-2 py-0.5 rounded-full bg-ps-accent/15 text-ps-accent-strong text-[10px] font-medium cursor-pointer hover:bg-ps-accent/25"
                       >
-                        {game.type
-                          .replace(/_/g, " ")
-                          .toLowerCase()
-                          .replace(/\b\w/g, (c) => c.toUpperCase())}
+                        {GAME_TYPE_LABEL[game.type]
+                          ? t(GAME_TYPE_LABEL[game.type])
+                          : game.type
+                              .replace(/_/g, " ")
+                              .toLowerCase()
+                              .replace(/\b\w/g, (c) => c.toUpperCase())}
                       </button>
                     )}
                     {(game as any)?.early_access ||
                     (game as any)?.metadata?.early_access ? (
                       <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300 text-[10px] font-medium">
-                        Early Access
+                        {t("gameView.earlyAccess")}
                       </span>
                     ) : null}
                     {genres.map((g: string) => (
@@ -998,7 +1032,7 @@ export default function GameView() {
               <div className="grid grid-cols-3 gap-2 animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none">
                 <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
                   <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
-                    Playtime
+                    {t("gameView.stats.playtime")}
                   </div>
                   <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-ps-text">
                     {playtimeHours >= 1
@@ -1008,7 +1042,7 @@ export default function GameView() {
                 </div>
                 <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
                   <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
-                    Last Played
+                    {t("gameView.stats.lastPlayed")}
                   </div>
                   <div
                     className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight text-ps-text"
@@ -1032,7 +1066,7 @@ export default function GameView() {
                 </div>
                 <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
                   <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
-                    Avg Time
+                    {t("gameView.stats.avgTime")}
                   </div>
                   <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-ps-text">
                     {avgPlaytime
@@ -1044,7 +1078,7 @@ export default function GameView() {
               <CloudSaveRow game={game} installed={installedInfo} />
               <div>
                 <div className="text-xs font-medium text-ps-muted mb-1">
-                  Progress State
+                  {t("gameView.progress.label")}
                 </div>
                 <Listbox
                   name="progressState"
@@ -1079,7 +1113,7 @@ export default function GameView() {
               )}
               <div ref={detailsCardRef} className="contents">
                 <Card
-                  title="Details"
+                  title={t("gameView.details.title")}
                   className="mb-0!"
                   surfaceClassName="surface-panel"
                 >
@@ -1096,7 +1130,7 @@ export default function GameView() {
                               : "border-transparent text-ps-muted hover:text-ps-text",
                           )}
                         >
-                          Metrics
+                          {t("gameView.tab.metrics")}
                         </button>
                       )}
                       {(
@@ -1114,12 +1148,12 @@ export default function GameView() {
                           )}
                         >
                           {tab === "package"
-                            ? "Package & extras"
+                            ? t("gameView.tab.package")
                             : tab === "reviews"
-                              ? "Reviews"
+                              ? t("gameView.tab.reviews")
                               : tab === "saves"
-                                ? "Saves"
-                                : "Requirements"}
+                                ? t("gameView.tab.saves")
+                                : t("gameView.tab.requirements")}
                         </button>
                       ))}
                       <button
@@ -1131,7 +1165,7 @@ export default function GameView() {
                             : "border-transparent text-ps-muted hover:text-ps-text",
                         )}
                       >
-                        Description
+                        {t("common.description")}
                         {detailsTab === "description" && (
                           <motion.span
                             layoutId="details-tab-underline"
@@ -1149,7 +1183,7 @@ export default function GameView() {
                             : "border-transparent text-ps-muted hover:text-ps-text",
                         )}
                       >
-                        Notes
+                        {t("common.notes")}
                         {detailsTab === "notes" && (
                           <motion.span
                             layoutId="details-tab-underline"
@@ -1167,7 +1201,7 @@ export default function GameView() {
                             : "border-transparent text-ps-muted hover:text-ps-text",
                         )}
                       >
-                        Tags
+                        {t("common.tags")}
                         {detailsTab === "tags" && (
                           <motion.span
                             layoutId="details-tab-underline"
@@ -1220,8 +1254,7 @@ export default function GameView() {
                               : previous,
                           );
                           void showAlert({
-                            title:
-                              "Package installer selected for the next download",
+                            title: t("gameView.package.recipeSelected"),
                           });
                         }}
                       />
@@ -1233,7 +1266,9 @@ export default function GameView() {
                           <>
                             {game?.metadata?.system_requirements_minimum && (
                               <div>
-                                <h4 className="mb-2 font-semibold">Minimum</h4>
+                                <h4 className="mb-2 font-semibold">
+                                  {t("gameView.requirements.minimum")}
+                                </h4>
                                 <MarkdownContent
                                   content={
                                     game.metadata.system_requirements_minimum
@@ -1245,7 +1280,7 @@ export default function GameView() {
                               ?.system_requirements_recommended && (
                               <div>
                                 <h4 className="mb-2 font-semibold">
-                                  Recommended
+                                  {t("gameView.requirements.recommended")}
                                 </h4>
                                 <MarkdownContent
                                   content={
@@ -1258,7 +1293,7 @@ export default function GameView() {
                           </>
                         ) : (
                           <p className="italic text-ps-muted">
-                            No system requirements provided.
+                            {t("gameView.requirements.empty")}
                           </p>
                         )}
                       </div>
@@ -1268,14 +1303,16 @@ export default function GameView() {
                         <MarkdownContent content={description} />
                       ) : (
                         <p className="italic text-ps-muted">
-                          No description available.
+                          {t("gameView.description.empty")}
                         </p>
                       ))}
                     {detailsTab === "notes" &&
                       (notes ? (
                         <MarkdownContent content={notes} />
                       ) : (
-                        <p className="italic text-ps-muted">No notes.</p>
+                        <p className="italic text-ps-muted">
+                          {t("gameView.notes.empty")}
+                        </p>
                       ))}
                     {detailsTab === "tags" &&
                       (tags && tags.length ? (
@@ -1293,7 +1330,9 @@ export default function GameView() {
                           ))}
                         </div>
                       ) : (
-                        <p className="italic text-ps-muted">No tags.</p>
+                        <p className="italic text-ps-muted">
+                          {t("gameView.tags.empty")}
+                        </p>
                       ))}
                   </motion.div>
                 </Card>
@@ -1303,7 +1342,7 @@ export default function GameView() {
             {/* Row 2 Right: Additional Metadata + Activity */}
             <div className="flex flex-col gap-6 xl:col-start-2 xl:row-start-2 min-w-0">
               <Card
-                title="Additional Metadata"
+                title={t("gameView.metadata.title")}
                 className="min-h-40"
                 surfaceClassName="surface-panel"
               >
@@ -1312,7 +1351,7 @@ export default function GameView() {
                     <CalendarDaysIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Release Year
+                        {t("gameView.metadata.releaseYear")}
                       </div>
                       <div
                         className="font-medium whitespace-nowrap truncate"
@@ -1326,7 +1365,7 @@ export default function GameView() {
                     <StarOutline className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Rating
+                        {t("gameView.metadata.rating")}
                       </div>
                       <div
                         className="font-medium whitespace-nowrap"
@@ -1340,7 +1379,7 @@ export default function GameView() {
                     <HashtagIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Version
+                        {t("common.version")}
                       </div>
                       <div
                         className="font-medium whitespace-nowrap truncate"
@@ -1354,7 +1393,7 @@ export default function GameView() {
                     <GlobeAltIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Websites
+                        {t("gameView.metadata.websites")}
                       </div>
                       <GameWebsites urls={websites} />
                     </div>
@@ -1363,7 +1402,9 @@ export default function GameView() {
                     <WrenchScrewdriverIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Developer{devNames.length > 1 ? "s" : ""}
+                        {devNames.length > 1
+                          ? t("gameView.metadata.developers")
+                          : t("gameView.metadata.developer")}
                       </div>
                       <div
                         className="font-medium whitespace-nowrap truncate"
@@ -1392,7 +1433,9 @@ export default function GameView() {
                     <BuildingOffice2Icon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Publisher{publisherNames.length > 1 ? "s" : ""}
+                        {publisherNames.length > 1
+                          ? t("gameView.metadata.publishers")
+                          : t("gameView.metadata.publisher")}
                       </div>
                       <div
                         className="font-medium whitespace-nowrap truncate"
@@ -1425,7 +1468,7 @@ export default function GameView() {
                     <ShieldCheckIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        Age Rating
+                        {t("gameView.metadata.ageRating")}
                       </div>
                       <div
                         className="font-medium whitespace-nowrap"
@@ -1438,7 +1481,7 @@ export default function GameView() {
                 </ul>
               </Card>
               <Card
-                title="Activity"
+                title={t("gameView.activity.title")}
                 className="min-h-40"
                 surfaceClassName="surface-panel"
               >
@@ -1454,21 +1497,26 @@ export default function GameView() {
                   if (!others.length) {
                     return (
                       <div className="text-xs text-ps-muted italic">
-                        No activity from other users.
+                        {t("gameView.activity.empty")}
                       </div>
                     );
                   }
                   const formatState = (s: string) =>
-                    s
-                      .replace(/_/g, " ")
-                      .toLowerCase()
-                      .replace(/\b\w/g, (c) => c.toUpperCase());
+                    PROGRESS_LABEL[s]
+                      ? t(PROGRESS_LABEL[s])
+                      : s
+                          .replace(/_/g, " ")
+                          .toLowerCase()
+                          .replace(/\b\w/g, (c) => c.toUpperCase());
                   return (
                     <ul className="flex flex-col gap-3 text-sm">
                       {others.map((p) => {
                         const uid = p.user?.id ?? (p.user as any)?.ID;
                         const rawUname =
-                          (p.user as any)?.username || `User #${uid}`;
+                          (p.user as any)?.username ||
+                          fillTemplate(t("community.userFallback"), {
+                            id: uid,
+                          });
                         const userSeed = uid != null ? String(uid) : rawUname;
                         const uname = streamerMode
                           ? maskDisplayName(userSeed)
@@ -1503,13 +1551,17 @@ export default function GameView() {
                               </div>
                               <div className="text-[11px] text-ps-muted mt-0.5 flex items-center justify-between gap-4">
                                 <span className="truncate">
-                                  Played:{" "}
-                                  {hours >= 1
-                                    ? `${formatDecimal(hours, hours < 10 ? 1 : 0)} h`
-                                    : `${minutes} m`}
+                                  {fillTemplate(t("gameView.activity.played"), {
+                                    time:
+                                      hours >= 1
+                                        ? `${formatDecimal(hours, hours < 10 ? 1 : 0)} h`
+                                        : `${minutes} m`,
+                                  })}
                                 </span>
                                 <span className="shrink-0 text-right">
-                                  Last: {lastPlayedStr}
+                                  {fillTemplate(t("gameView.activity.last"), {
+                                    date: lastPlayedStr,
+                                  })}
                                 </span>
                               </div>
                             </div>
@@ -1535,7 +1587,7 @@ export default function GameView() {
         )}
         <RootPathSelectDialog
           open={rootSelectOpen}
-          gameTitle={title || game?.title || "Game"}
+          gameTitle={title || game?.title || t("gameView.fallbackTitle")}
           rootPaths={(() => {
             try {
               return getRootPaths();
@@ -1549,7 +1601,7 @@ export default function GameView() {
         />
         <VersionSelectDialog
           open={versionDialogOpen}
-          gameTitle={title || game?.title || "Game"}
+          gameTitle={title || game?.title || t("gameView.fallbackTitle")}
           versions={selectableVersions}
           onClose={() => {
             setVersionDialogOpen(false);

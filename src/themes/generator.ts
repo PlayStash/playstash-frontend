@@ -2,6 +2,8 @@
  * Theme generator ("Create a Theme"), a port of the WPF
  * `ThemeGeneratorUserControl`: palette arithmetic and the exported XAML.
  */
+import { translate } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
 import { parseWpfColor, toArgbHex, type ArgbColor } from "./wpfColors";
 
 export const GENERATOR_DEFAULTS = {
@@ -85,7 +87,7 @@ function readColor(value: string): ArgbColor {
   const color = parseWpfColor(value);
   if (!color) {
     throw new GeneratorColorError(
-      `Token is not valid. ('${value}' is not a valid color.)`,
+      formatMessage(translate("themes.generator.invalidToken"), { value }),
     );
   }
   return color;

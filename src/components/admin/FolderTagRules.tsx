@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/apiError";
+import { formatMessage } from "@/utils/formatMessage";
+import { translate, useTranslation } from "@/i18n";
 import { Button } from "../tailwind/button";
 import { Input } from "../tailwind/input";
 interface Rule {
@@ -36,17 +38,22 @@ export function normalizeFolderTagRules(drafts: DraftRule[]): Rule[] {
       folder.split("/").some((part) => !part || part === ".." || part === ".")
     )
       throw new Error(
-        `Rule ${index + 1}: enter a relative library folder without traversal.`,
+        formatMessage(translate("admin.folderTags.error.folder"), {
+          index: index + 1,
+        }),
       );
     if (!tags.length || tags.length > 20 || tags.some((tag) => tag.length > 64))
       throw new Error(
-        `Rule ${index + 1}: enter 1–20 tags of at most 64 characters.`,
+        formatMessage(translate("admin.folderTags.error.tags"), {
+          index: index + 1,
+        }),
       );
     return { folder_prefix: folder, tags, enabled: draft.enabled };
   });
 }
 export function FolderTagRules() {
   const { serverUrl, authFetch } = useAuth();
+  const { t } = useTranslation();
   const [rules, setRules] = useState<DraftRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
@@ -62,7 +69,10 @@ export function FolderTagRules() {
       .then(async (response) => {
         if (!response.ok)
           throw new Error(
-            await getErrorMessage(response, "Could not load folder rules."),
+            await getErrorMessage(
+              response,
+              translate("admin.folderTags.loadFailed"),
+            ),
           );
         const data: RuleResult = await response.json();
         if (active) {
@@ -110,7 +120,7 @@ export function FolderTagRules() {
       );
       if (!response.ok)
         throw new Error(
-          await getErrorMessage(response, "Could not save folder rules."),
+          await getErrorMessage(response, t("admin.folderTags.saveFailed")),
         );
       const data: RuleResult = await response.json();
       setRules(
@@ -121,7 +131,14 @@ export function FolderTagRules() {
         })),
       );
       setMessage(
-        `Rules saved. Refreshed ${data.applied_games} games.${data.failed_games ? ` ${data.failed_games} games could not be refreshed; reindex to retry.` : ""}`,
+        formatMessage(
+          t(
+            data.failed_games
+              ? "admin.folderTags.savedWithFailures"
+              : "admin.folderTags.saved",
+          ),
+          { applied: data.applied_games, failed: data.failed_games },
+        ),
       );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -132,18 +149,16 @@ export function FolderTagRules() {
   return (
     <section className="space-y-4">
       <p className="text-sm text-ps-muted">
-        Apply tags automatically to games in a library folder and its
-        descendants. Rules are stored on the server and apply to every game
-        version, including future imports. Saving refreshes existing games.
+        {t("admin.folderTags.description")}
       </p>
-      {loading && <p role="status">Loading rules…</p>}
+      {loading && <p role="status">{t("admin.folderTags.loading")}</p>}
       {rules.map((rule, index) => (
         <div
           key={index}
           className="flex flex-wrap items-end gap-3 rounded-xl border border-ps-line p-3"
         >
           <label className="min-w-44 flex-1 text-sm text-ps-muted">
-            Library folder
+            {t("admin.folderTags.folder")}
             <Input
               maxLength={1024}
               placeholder="Classics/Arcade"
@@ -155,7 +170,7 @@ export function FolderTagRules() {
             />
           </label>
           <label className="min-w-44 flex-1 text-sm text-ps-muted">
-            Tags, separated by commas
+            {t("admin.folderTags.tags")}
             <Input
               value={rule.tags}
               disabled={busy}
@@ -171,22 +186,24 @@ export function FolderTagRules() {
                 change(index, { enabled: event.target.checked })
               }
             />
-            Enabled
+            {t("common.enabled")}
           </label>
           <Button
             outline
             disabled={busy}
-            aria-label={`Remove rule ${index + 1}`}
+            aria-label={formatMessage(t("admin.folderTags.removeRule"), {
+              index: index + 1,
+            })}
             onClick={() =>
               setRules(rules.filter((_, position) => index !== position))
             }
           >
-            Remove
+            {t("common.remove")}
           </Button>
         </div>
       ))}
       {!loading && !rules.length && !error && (
-        <p className="text-sm text-ps-muted">No automatic tagging rules.</p>
+        <p className="text-sm text-ps-muted">{t("admin.folderTags.empty")}</p>
       )}
       <div className="flex flex-wrap gap-3">
         <Button
@@ -196,14 +213,14 @@ export function FolderTagRules() {
             setRules([...rules, { folder: "", tags: "", enabled: true }])
           }
         >
-          Add rule
+          {t("admin.folderTags.add")}
         </Button>
         <Button
           color="indigo"
           disabled={busy || !loaded}
           onClick={() => void save()}
         >
-          {busy ? "Applying…" : "Save and apply rules"}
+          {busy ? t("admin.folderTags.applying") : t("admin.folderTags.save")}
         </Button>
       </div>
       {error && (
@@ -215,7 +232,7 @@ export function FolderTagRules() {
               disabled={loading}
               onClick={() => setReload(reload + 1)}
             >
-              Reload rules
+              {t("admin.folderTags.reload")}
             </Button>
           )}
         </div>

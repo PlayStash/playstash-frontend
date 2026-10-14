@@ -4,6 +4,7 @@ import { Button } from "@tw/button";
 import { useRef, useState } from "react";
 import { useAlertDialog } from "../../context/AlertDialogContext";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "@/i18n";
 import { Field } from "../tailwind/fieldset";
 import { Input } from "../tailwind/input";
 
@@ -18,14 +19,15 @@ const Backup = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
 
   const startBackup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password)
       return showAlert({
-        title: "No password entered",
-        description: "Please enter the database password.",
-        affirmativeText: "OK",
+        title: t("admin.backup.noPassword.title"),
+        description: t("admin.backup.noPassword.description"),
+        affirmativeText: t("common.ok"),
       });
 
     setLoading(true);
@@ -40,9 +42,9 @@ const Backup = () => {
       });
 
       if (!response.ok) {
-        throw (
-          new Error(((await response.json()) as any).message) ||
-          "Backup failed for unknown reason."
+        throw new Error(
+          ((await response.json()) as any).message ||
+            t("admin.backup.backupFailedUnknown"),
         );
       }
 
@@ -67,9 +69,9 @@ const Backup = () => {
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
       showAlert({
-        title: "Backup failed",
+        title: t("admin.backup.backupFailed"),
         description: error.message,
-        affirmativeText: "OK",
+        affirmativeText: t("common.ok"),
       });
     } finally {
       setLoading(false);
@@ -78,13 +80,9 @@ const Backup = () => {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={startBackup}>
-      <p>
-        Create and download a Database Backup. This process will generate an
-        unencrypted file containing all the data currently stored in the
-        database, which can be restored at a later time.
-      </p>
+      <p>{t("admin.backup.backupDescription")}</p>
       <Field>
-        <Label>Database Password</Label>
+        <Label>{t("admin.backup.databasePassword")}</Label>
         <Input
           type="password"
           name="Database Password"
@@ -94,7 +92,7 @@ const Backup = () => {
         />
       </Field>
       <Button type="submit" disabled={loading || !password.length}>
-        {loading ? "Backing Up..." : "Start Backup"}
+        {loading ? t("admin.backup.backingUp") : t("admin.backup.startBackup")}
       </Button>
     </form>
   );
@@ -106,6 +104,7 @@ const Restore = () => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,15 +112,15 @@ const Restore = () => {
     e.preventDefault();
     if (!file)
       return showAlert({
-        title: "No file selected",
-        description: "Please select a backup file.",
-        affirmativeText: "OK",
+        title: t("admin.backup.noFile.title"),
+        description: t("admin.backup.noFile.description"),
+        affirmativeText: t("common.ok"),
       });
     if (!password)
       return showAlert({
-        title: "No password entered",
-        description: "Please enter the database password.",
-        affirmativeText: "OK",
+        title: t("admin.backup.noPassword.title"),
+        description: t("admin.backup.noPassword.description"),
+        affirmativeText: t("common.ok"),
       });
 
     setLoading(true);
@@ -140,21 +139,21 @@ const Restore = () => {
       });
 
       if (!response.ok) {
-        throw (
-          new Error(((await response.json()) as any).message) ||
-          "Restore failed for unknown reason."
+        throw new Error(
+          ((await response.json()) as any).message ||
+            t("admin.backup.restoreFailedUnknown"),
         );
       }
 
       return showAlert({
-        title: "Database restored successfully",
-        affirmativeText: "OK",
+        title: t("admin.backup.restored"),
+        affirmativeText: t("common.ok"),
       });
     } catch (error: any) {
       showAlert({
-        title: "Restore failed",
+        title: t("admin.backup.restoreFailed"),
         description: error.message,
-        affirmativeText: "OK",
+        affirmativeText: t("common.ok"),
       });
     } finally {
       setLoading(false);
@@ -163,14 +162,9 @@ const Restore = () => {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={startRestore}>
-      <p>
-        Restoring your database from a file will completely replace your
-        existing database. It is strongly discouraged to restore a database from
-        another version and it is not possible to restore databases from
-        different database systems.
-      </p>
+      <p>{t("admin.backup.restoreDescription")}</p>
       <Field>
-        <Label>Backup File</Label>
+        <Label>{t("admin.backup.file")}</Label>
         <Input
           type="file"
           name="Backup File"
@@ -180,7 +174,7 @@ const Restore = () => {
         />
       </Field>
       <Field>
-        <Label>Database Password</Label>
+        <Label>{t("admin.backup.databasePassword")}</Label>
         <Input
           type="password"
           name="Database Password"
@@ -190,7 +184,7 @@ const Restore = () => {
         />
       </Field>
       <Button type="submit" disabled={loading || !password.length}>
-        {loading ? "Restoring..." : "Start Restore"}
+        {loading ? t("admin.backup.restoring") : t("admin.backup.startRestore")}
       </Button>
     </form>
   );
@@ -198,16 +192,22 @@ const Restore = () => {
 
 export function BackupRestoreDialog({ onClose }: BackupRestoreDialogProps) {
   const [tab, setTab] = useState<TabKey>("backup");
+  const { t } = useTranslation();
 
   return (
-    <Dialog open onClose={onClose} size="3xl" className="!h-[min(70vh,650px)] flex flex-col">
+    <Dialog
+      open
+      onClose={onClose}
+      size="3xl"
+      className="!h-[min(70vh,650px)] flex flex-col"
+    >
       <DialogTitle className="flex items-center justify-between gap-4 pb-1">
-        <span>Backup & Restore Database</span>
+        <span>{t("admin.backup.title")}</span>
         <button
           type="button"
           onClick={onClose}
           className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <svg
             width="16"
@@ -231,7 +231,7 @@ export function BackupRestoreDialog({ onClose }: BackupRestoreDialogProps) {
               : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
-          Backup
+          {t("admin.backup.tab.backup")}
         </button>
         <button
           onClick={() => setTab("restore")}
@@ -242,7 +242,7 @@ export function BackupRestoreDialog({ onClose }: BackupRestoreDialogProps) {
               : "border-transparent text-ps-muted hover:text-ps-text")
           }
         >
-          Restore
+          {t("admin.backup.tab.restore")}
         </button>
       </div>
       <DialogBody className="pt-4 overflow-y-auto flex-1 min-h-0">

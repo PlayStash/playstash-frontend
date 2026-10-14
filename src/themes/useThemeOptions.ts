@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "@/i18n";
 import {
+  BUILTIN_THEME_TEXT,
   CLASSIC_THEME_IDS,
   getBuiltinThemes,
   SYSTEM_THEME_ID,
@@ -120,13 +121,21 @@ export function useThemeOptions() {
       ),
     },
   ];
-  const builtins = getBuiltinThemes().map((theme) =>
-    definitionOption(
+  const builtins = getBuiltinThemes().map((theme) => {
+    const text = BUILTIN_THEME_TEXT[theme.id];
+    const definition = text
+      ? {
+          ...theme.definition,
+          displayName: t(text.name),
+          description: t(text.description),
+        }
+      : theme.definition;
+    return definitionOption(
       `builtin:${theme.id}`,
-      theme.definition,
-      builtinSelection(theme.id, theme.definition.displayName),
-    ),
-  );
+      definition,
+      builtinSelection(theme.id, definition.displayName),
+    );
+  });
   const files = installed.map((theme) =>
     definitionOption(
       `file:${theme.path}`,

@@ -29,6 +29,7 @@ import {
 import { removeStoredRefreshToken } from "@/utils/tokenStorage";
 import { removeDefaultExtractionPassword } from "@/utils/extractionPassword";
 import { isTauriDesktop } from "@/utils/tauri";
+import { translate } from "@/i18n";
 
 export interface ProfileDraft {
   serverUrl: string;
@@ -71,10 +72,10 @@ const DISABLED: ProfilesContextValue = {
   currentProfileId: null,
   setRememberMe: async () => {},
   createProfile: async () => {
-    throw new Error("Profiles are only available in the desktop app.");
+    throw new Error(translate("auth.error.desktopOnly"));
   },
   editProfile: async () => {
-    throw new Error("Profiles are only available in the desktop app.");
+    throw new Error(translate("auth.error.desktopOnly"));
   },
   deleteProfile: async () => {},
   changeProfile: async () => {},
@@ -120,14 +121,15 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
 
   const createProfile = useCallback(async (draft: ProfileDraft) => {
     const serverUrl = normalizeServerUrl(draft.serverUrl);
-    if (!serverUrl) throw new Error("Enter the server URL.");
+    if (!serverUrl) throw new Error(translate("accounts.form.serverRequired"));
     const username = draft.username.trim();
-    if (!draft.sso && !username) throw new Error("Username is not set");
+    if (!draft.sso && !username)
+      throw new Error(translate("accounts.form.usernameRequired"));
     if (
       username &&
       findDuplicateProfile(getProfilesState().profiles, serverUrl, username)
     )
-      throw new Error("Profile with this name already exists");
+      throw new Error(translate("accounts.form.duplicate"));
     const now = Date.now();
     const profile: Profile = {
       id: createProfileId(),
@@ -150,11 +152,13 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       changes: { serverUrl: string; username: string },
     ) => {
       const existing = getProfile(profileId);
-      if (!existing) throw new Error("User Profile not found");
+      if (!existing) throw new Error(translate("auth.error.profileNotFound"));
       const serverUrl = normalizeServerUrl(changes.serverUrl);
-      if (!serverUrl) throw new Error("Enter the server URL.");
+      if (!serverUrl)
+        throw new Error(translate("accounts.form.serverRequired"));
       const username = changes.username.trim();
-      if (!existing.sso && !username) throw new Error("Username is not set");
+      if (!existing.sso && !username)
+        throw new Error(translate("accounts.form.usernameRequired"));
       if (
         username &&
         findDuplicateProfile(
@@ -164,7 +168,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
           profileId,
         )
       )
-        throw new Error("Profile with this name already exists");
+        throw new Error(translate("accounts.form.duplicate"));
       const serverChanged =
         serverUrl !== normalizeServerUrl(existing.serverUrl);
       const usernameChanged =
