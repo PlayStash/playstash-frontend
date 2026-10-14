@@ -79,6 +79,16 @@ Any future job on a self-hosted runner must require `vars.PLAYSTASH_RUN_SELF_HOS
 
 Optional integrations use your own accounts: enable Discord release notices with `PLAYSTASH_DISCORD_NOTIFICATIONS=true` and the `DISCORD_RELEASE_BOT_WEBHOOK` secret. SonarCloud scans run only when `PLAYSTASH_SONAR_PROJECT_KEY`, `PLAYSTASH_SONAR_ORGANIZATION` and the `SONAR_TOKEN` secret are configured.
 
+## Separate frontend runtime
+
+`Dockerfile.runtime` serves an already-built `dist/` with Nginx. Its build context contains `dist/`, `Dockerfile.runtime`, `nginx.runtime.conf`, `start-runtime.sh`, `LICENSE`, `NOTICE.txt` and `provenance.json`. The release publishes the web ZIP and all three runtime definitions; the image publisher preserves the license, original-author notice and pinned-release provenance under `/opt/playstash/frontend/`. The runtime contains no backend or Node.js.
+
+The image publisher passes a fresh `SECURITY_REFRESH` build argument on every run so Alpine security updates are not skipped by a cached Docker layer. The frontend CSP blocks remote scripts and unsafe evaluation while permitting its existing Inter stylesheet/fonts at `rsms.me`; browsers contact that font host independently of analytics. API documentation and OAuth responses retain the backend CSP and cache policy.
+
+Run it as UID/GID `101:101`, with a read-only filesystem and writable `/tmp` tmpfs (mode `1777`). It listens on `8080`; `/healthz` checks Nginx. The backend must be reachable as `playstash-backend:8080` on the same private container network. `/api/` and `/socket.io/` retain their paths and query strings; uploads and downloads stream without proxy disk buffering, including range downloads and WebSockets. Docker DNS is refreshed when the backend container is replaced. `pnpm test:runtime` builds and checks this runtime against an isolated fixture after `pnpm build`.
+
+For an outer HTTPS reverse proxy, set `PLAYSTASH_TRUSTED_PROXY_CIDRS` to its explicit peer IP addresses/CIDRs, separated by spaces. The proxy must overwrite `Host`, `X-Forwarded-Proto` and `X-Forwarded-For` with the public authority, scheme and actual client address. The default trusts no forwarded client IPs or schemes. Do not use `0.0.0.0/0` or `::/0`: untrusted clients could then forge these headers. Request logs omit query strings and credentials; TLS certificates and HTTPS redirect/HSTS policy belong to the outer proxy.
+
 ## Desktop Auto-Updates
 
 The desktop app (Tauri) updates itself from GitHub Releases.
@@ -94,7 +104,7 @@ The choice is persisted in `localStorage` (`playstash_update_channel`).
 
 **How it works** – on startup or via `Check for updates`, the frontend calls the Tauri updater through Rust commands in `src-tauri/src/lib.rs`. The app confirms with the user, downloads, verifies the signature, and installs. If the feed is not published yet, it falls back to the GitHub release page.
 
-**Versioning** – stable uses the plain `package.json`/`Cargo.toml` version. Unstable builds get a CI-generated unique version `17.2.1-unstable.<run>.<attempt>` (same semver core, only the `unstable` suffix bumps), injected into both the web and Rust builds and into the feed.
+**Versioning** – stable uses the plain `package.json`/`Cargo.toml` version. Unstable builds get a CI-generated unique version `17.2.2-unstable.<run>.<attempt>` (same semver core, only the `unstable` suffix bumps), injected into both the web and Rust builds and into the feed.
 
 The [17.2.1 security audit](docs/security-audit.md) records dependency repairs, credential and installation hardening, the GLib source backport, and remaining maintenance warnings.
 

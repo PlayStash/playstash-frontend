@@ -2801,29 +2801,6 @@
         ]
       }
     },
-    "/api/admin/web-ui/restart": {
-      "post": {
-        "operationId": "postAdminWebUIRestart",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Completely restarts the Web User Interface. The current instance will be stopped, cached data deleted, the Web UI will be re-downloaded according to the config, and then restarted.",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
     "/api/status": {
       "get": {
         "operationId": "getStatus",
@@ -3302,7 +3279,7 @@
   "info": {
     "title": "PlayStash Backend Server",
     "description": "Backend for PlayStash, the self-hosted gaming platform for drm-free games",
-    "version": "17.1.0",
+    "version": "17.1.4",
     "contact": {
       "name": "PlayStash",
       "url": "https://github.com/PlayStash/playstash-backend",
@@ -4908,7 +4885,7 @@
             "type": "boolean",
             "pattern": "boolean",
             "example": true,
-            "description": "wether or not the user is activated. Not yet working."
+            "description": "Whether the user is activated. Inactive accounts cannot authenticate, including administrators."
           },
           "role": {
             "type": "string",

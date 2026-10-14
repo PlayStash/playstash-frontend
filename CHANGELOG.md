@@ -1,5 +1,19 @@
 # PlayStash Frontend Changelog
 
+## 17.2.2
+
+Status: Released on 2026-10-14.
+
+### Changes
+
+- Added a separate frontend runtime container serving the prebuilt web UI and forwarding API requests, uploads, downloads and WebSockets to the backend.
+- Published the runtime Dockerfile, Nginx configuration and startup script with each web release; the runtime supports a read-only filesystem and explicitly trusted HTTPS reverse proxies.
+- Replaced the backend web-UI restart action with guidance to update the separate frontend container.
+
+### Breaking Changes & Migration
+
+- Web UI updates are deployed through the separate frontend runtime instead of the backend restart endpoint. -> **Update the frontend container through your Compose deployment.**
+
 ## 17.2.1
 
 Status: Released on 2026-10-13.

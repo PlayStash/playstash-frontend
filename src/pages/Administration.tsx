@@ -68,8 +68,6 @@ export default function Administration() {
   const connected = !!serverUrl && !!info && !statusLoading && !statusError;
   const [reindexing, setReindexing] = useState(false);
   const [reindexError, setReindexError] = useState<string | null>(null);
-  const [restarting, setRestarting] = useState(false);
-  const [restartError, setRestartError] = useState<string | null>(null);
 
   // State: show deleted users toggle
   const [showDeleted, setShowDeleted] = useState(false);
@@ -173,44 +171,10 @@ export default function Administration() {
               >
                 {reindexing ? "Reindexing…" : "Reindex Games"}
               </Button>
-              <Button
-                color="rose"
-                disabled={restarting}
-                onClick={async () => {
-                  if (restarting) return;
-                  try {
-                    setRestartError(null);
-                    setRestarting(true);
-                    const base = serverUrl.replace(/\/+$/, "");
-
-                    const res = await authFetch(
-                      `${base}/api/admin/web-ui/restart`,
-                      {
-                        method: "POST",
-                      },
-                    );
-                    if (!res.ok) {
-                      const txt = await res.text();
-                      throw new Error(txt || `Restart failed (${res.status})`);
-                    } else {
-                      window.location.reload();
-                    }
-                  } catch (e: any) {
-                    setRestartError(e.message || String(e));
-                  } finally {
-                    setRestarting(false);
-                  }
-                }}
-                title="Update & Restart Web UI"
-                className="items-center"
-              >
-                {restarting ? "Restarting..." : "Update & Restart Web UI"}
-              </Button>
-              {restartError && (
-                <div className="col-span-full text-xs text-red-500 bg-red-500/10 rounded-md px-3 py-2">
-                  {restartError}
-                </div>
-              )}
+              <Text className="col-span-full text-sm">
+                Update the web interface by pulling and recreating the frontend
+                container in your deployment.
+              </Text>
             </Card>
           )}
           <Card title="Automatic folder tags">

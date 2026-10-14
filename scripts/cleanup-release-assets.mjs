@@ -22,6 +22,9 @@ if (!token) {
 // Assets that must always survive a prerelease cleanup.
 const ALWAYS_KEEP = new Set([
   "playstash-frontend.zip",
+  "Dockerfile.runtime",
+  "nginx.runtime.conf",
+  "start-runtime.sh",
   "unstable.json",
   "latest.json",
   "updater-channels.json",

@@ -24,6 +24,9 @@ execFileSync("gh", ["release", "download", tag, "--dir", dir, "--clobber"], {
 const names = await readdir(dir);
 for (const expected of [
   "playstash-frontend.zip",
+  "Dockerfile.runtime",
+  "nginx.runtime.conf",
+  "start-runtime.sh",
   "unstable.json",
   "updater-channels.json",
 ])

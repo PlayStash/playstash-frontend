@@ -110,13 +110,17 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playstash-web-${{ steps.build-info.outputs.build_commit }}
-          path: playstash-frontend.zip
+          path: |
+            playstash-frontend.zip
+            Dockerfile.runtime
+            nginx.runtime.conf
+            start-runtime.sh
 
       - name: Upload web build to new draft release
         if: steps.publish-plan.outputs.upload_draft == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.publish-plan.outputs.release_tag }}" playstash-frontend.zip --clobber
+        run: gh release upload "${{ steps.publish-plan.outputs.release_tag }}" playstash-frontend.zip Dockerfile.runtime nginx.runtime.conf start-runtime.sh --clobber
 
       - name: Download coverage report
         if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
