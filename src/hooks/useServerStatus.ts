@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { serverFetch } from "@/utils/serverFetch"; // WP6: additional request headers
+import { serverFetch } from "@/utils/serverFetch"; // sends the additional request headers
 
 export interface ServerInfo {
   status: string;

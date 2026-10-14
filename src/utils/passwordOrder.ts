@@ -1,5 +1,5 @@
 /**
- * Archive password order (WP5, pure).
+ * Archive password order (pure).
  *
  * An encrypted archive is tried with, in order:
  * 1. a password the user typed on the card (if any),

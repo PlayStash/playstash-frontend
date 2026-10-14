@@ -82,7 +82,7 @@ async function isTrackerRunning(): Promise<boolean> {
 }
 
 /**
- * Automatic cloud saves on desktop (WP3 F8): restore before every launch,
+ * Automatic cloud saves on desktop: restore before every launch,
  * back up after a game exits, offer a backup before uninstalling, and queue
  * backups while offline until the client reconnects.
  */

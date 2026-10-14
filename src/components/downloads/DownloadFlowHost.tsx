@@ -42,8 +42,8 @@ async function invokeOrNull<T>(
 
 /**
  * Connects {@link requestGameDownload} to the running app: auth, the download
- * context, dialogs and navigation. Mounted once inside the router (WP5 entry
- * in `DesktopProviders`).
+ * context, dialogs and navigation. Mounted once inside the router (entry in
+ * `DesktopProviders`).
  */
 export function DownloadFlowHost() {
   const { serverUrl, auth, authFetch } = useAuth();

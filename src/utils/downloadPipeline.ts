@@ -1,4 +1,4 @@
-/** Small pure helpers of the download pipeline (WP5). */
+/** Small pure helpers of the download pipeline. */
 
 /** Replaces `{name}` placeholders in a translated template. */
 export function fillTemplate(

@@ -1,5 +1,5 @@
 /**
- * OS notifications (WP1 contract).
+ * OS notifications.
  *
  * Desktop only: notifications go through `tauri-plugin-notification` on the
  * Rust side (`os_notify`), which asks for permission on first use. On the web

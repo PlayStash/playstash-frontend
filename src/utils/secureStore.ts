@@ -9,7 +9,7 @@ import { isTauriApp } from "@/utils/tauri";
  *
  * Record keys used today:
  * - `app_refresh_token`: the pre-profile session (web, and desktop before migration)
- * - `refresh_token:<profileId>`: each desktop profile's session (WP6)
+ * - `refresh_token:<profileId>`: each desktop profile's session
  * - `default_extraction_password:<profileId>`: a profile's default archive
  *   password (see `extractionPassword.ts`)
  *

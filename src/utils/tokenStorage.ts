@@ -16,7 +16,7 @@ import {
  * `localStorage`. The vault protects persisted data; frontend code with native
  * IPC access can still access the user's session and must remain trusted.
  *
- * Desktop profiles (WP6) each keep their own token under
+ * Desktop profiles each keep their own token under
  * `refresh_token:<profileId>`; `setTokenProfile` selects the active one. Without
  * a profile (web build, or before the desktop migration) the single legacy
  * record `app_refresh_token` is used.

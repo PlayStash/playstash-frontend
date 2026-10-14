@@ -83,7 +83,7 @@ export function InstallFlow({
     if (!path) return;
     try {
       await navigator.clipboard.writeText(path);
-      await showAlert({ title: t("wp5.install.copiedDirectory") });
+      await showAlert({ title: t("pipeline.install.copiedDirectory") });
     } catch {
       await showAlert({ title: "Could not copy path", description: path });
     }
@@ -211,7 +211,7 @@ export function InstallFlow({
                   </p>
                   <Button
                     color="indigo"
-                    title={t("wp5.install.copyToClipboard")}
+                    title={t("pipeline.install.copyToClipboard")}
                     onClick={() =>
                       void handleCopyInstallPath(windowsInstallPath)
                     }
@@ -241,7 +241,7 @@ export function InstallFlow({
                 </p>
                 <Button
                   color="zinc"
-                  title={t("wp5.install.copyToClipboard")}
+                  title={t("pipeline.install.copyToClipboard")}
                   onClick={() =>
                     void handleCopyInstallPath(download.installationDirectory)
                   }
@@ -294,11 +294,11 @@ export function InstallFlow({
 
       {installState.mode !== "undetected" && !installationBusy && (
         <label className="flex items-center justify-between gap-3 text-sm text-ps-text">
-          <span>{t("wp5.install.createShortcut")}</span>
+          <span>{t("pipeline.install.createShortcut")}</span>
           <Switch
             color="indigo"
             name="createDesktopShortcut"
-            aria-label={t("wp5.install.createShortcut")}
+            aria-label={t("pipeline.install.createShortcut")}
             checked={createShortcut}
             onChange={handleCreateShortcutChange}
           />

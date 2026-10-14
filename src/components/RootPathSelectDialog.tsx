@@ -85,9 +85,9 @@ export function RootPathSelectDialog({
     <Dialog open onClose={onClose} size="lg">
       <div className="flex items-start justify-between">
         <div>
-          <DialogTitle>{t("wp5.rootPicker.title")}</DialogTitle>
+          <DialogTitle>{t("pipeline.rootPicker.title")}</DialogTitle>
           <DialogDescription>
-            {t("wp5.rootPicker.description")} <strong>{gameTitle}</strong>
+            {t("pipeline.rootPicker.description")} <strong>{gameTitle}</strong>
           </DialogDescription>
         </div>
         <button
@@ -97,8 +97,8 @@ export function RootPathSelectDialog({
             onGoToSettings();
           }}
           className="cursor-pointer rounded-xl p-2 text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
-          aria-label={t("wp5.rootPicker.settings")}
-          title={t("wp5.rootPicker.settings")}
+          aria-label={t("pipeline.rootPicker.settings")}
+          title={t("pipeline.rootPicker.settings")}
         >
           <Cog6ToothIcon className="h-5 w-5" />
         </button>
@@ -107,7 +107,7 @@ export function RootPathSelectDialog({
         <div
           className="space-y-2"
           role="radiogroup"
-          aria-label={t("wp5.rootPicker.title")}
+          aria-label={t("pipeline.rootPicker.title")}
         >
           {rootPaths.map((root) => {
             const isSelected = root.id === selectedId;
@@ -143,8 +143,8 @@ export function RootPathSelectDialog({
                   {bytes === undefined
                     ? ""
                     : bytes === null
-                      ? t("wp5.rootPicker.freeUnknown")
-                      : `${formatDriveSpace(bytes, locale)} ${t("wp5.rootPicker.free")}`}
+                      ? t("pipeline.rootPicker.freeUnknown")
+                      : `${formatDriveSpace(bytes, locale)} ${t("pipeline.rootPicker.free")}`}
                 </span>
                 {isSelected && (
                   <CheckCircleIcon
@@ -159,14 +159,14 @@ export function RootPathSelectDialog({
       </DialogBody>
       <DialogActions>
         <Button plain onClick={onClose}>
-          {t("wp5.dialog.cancel")}
+          {t("pipeline.dialog.cancel")}
         </Button>
         <Button
           color="indigo"
           disabled={!selected}
           onClick={() => selected && onSelect(selected.path)}
         >
-          {t("wp5.rootPicker.proceed")}
+          {t("pipeline.rootPicker.proceed")}
         </Button>
       </DialogActions>
     </Dialog>

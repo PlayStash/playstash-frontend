@@ -1,25 +1,25 @@
 import type { SearchableSetting } from "@/settings/types";
 import { coreSearchEntries } from "@/settings/search/core";
-import { wp1SearchEntries } from "@/settings/search/wp1";
-import { wp2SearchEntries } from "@/settings/search/wp2";
-import { wp3SearchEntries } from "@/settings/search/wp3";
-import { wp4SearchEntries } from "@/settings/search/wp4";
-import { wp5SearchEntries } from "@/settings/search/wp5";
-import { wp6SearchEntries } from "@/settings/search/wp6";
-import { wp7SearchEntries } from "@/settings/search/wp7";
+import { osIntegrationSearchEntries } from "@/settings/search/osIntegration";
+import { communitySearchEntries } from "@/settings/search/community";
+import { cloudSavesSearchEntries } from "@/settings/search/cloudSaves";
+import { launchSearchEntries } from "@/settings/search/launch";
+import { downloadsSearchEntries } from "@/settings/search/downloads";
+import { accountsSearchEntries } from "@/settings/search/accounts";
+import { appearanceSearchEntries } from "@/settings/search/appearance";
 
 /**
  * Flat index of every individual setting, used by the settings search bar to
- * surface results that map back to their owning category. Each feature
- * package keeps its entries in its own `search/<wp>.ts` file.
+ * surface results that map back to their owning category. Each settings area
+ * keeps its entries in its own `search/<area>.ts` file.
  */
 export const SETTINGS_SEARCH_INDEX: SearchableSetting[] = [
   ...coreSearchEntries,
-  ...wp1SearchEntries,
-  ...wp2SearchEntries,
-  ...wp3SearchEntries,
-  ...wp4SearchEntries,
-  ...wp5SearchEntries,
-  ...wp6SearchEntries,
-  ...wp7SearchEntries,
+  ...osIntegrationSearchEntries,
+  ...communitySearchEntries,
+  ...cloudSavesSearchEntries,
+  ...launchSearchEntries,
+  ...downloadsSearchEntries,
+  ...accountsSearchEntries,
+  ...appearanceSearchEntries,
 ];

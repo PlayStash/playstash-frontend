@@ -1,4 +1,4 @@
-//! Helpers for launching and uninstalling local games (WP4): argument
+//! Helpers for launching and uninstalling local games: argument
 //! splitting, uninstaller exit codes, "last played" bookkeeping and path
 //! checks used by the Launch Options and Emulator dialogs.
 
@@ -291,7 +291,7 @@ mod tests {
   impl ScratchDir {
     fn new(name: &str) -> Self {
       let dir = std::env::temp_dir().join(format!(
-        "playstash-wp4-{name}-{}-{}",
+        "playstash-launch-{name}-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
           .duration_since(std::time::UNIX_EPOCH)

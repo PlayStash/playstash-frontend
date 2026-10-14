@@ -40,7 +40,7 @@ export interface ProfilesState {
   legacyImportOffered: boolean;
 }
 
-/** Dispatched on `window` with `detail: {profileId, previousProfileId}` (WP7 listens). */
+/** Dispatched on `window` with `detail: {profileId, previousProfileId}` (the theme manager listens). */
 export const PROFILE_CHANGED_EVENT = "playstash:profile-changed";
 export const PROFILES_STORAGE_KEY = "playstash_profiles";
 const PROFILE_NAMESPACE_PREFIX = "playstash:profile:";

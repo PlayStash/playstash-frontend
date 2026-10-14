@@ -1160,7 +1160,7 @@ mod tests {
         let root = std::env::temp_dir();
         assert!(resolve_launch_executable(&root, "missing.exe", None).is_err());
         assert!(resolve_launch_executable(&root, "", Some("relative/emu.exe")).is_err());
-        let missing = root.join("playstash-wp4-missing-emulator.exe");
+        let missing = root.join("playstash-missing-emulator.exe");
         assert!(resolve_launch_executable(
             Path::new("/unused"),
             "game.exe",
@@ -1168,7 +1168,7 @@ mod tests {
         )
         .is_err());
 
-        let exe = root.join(format!("playstash-wp4-emu-{}.exe", std::process::id()));
+        let exe = root.join(format!("playstash-test-emu-{}.exe", std::process::id()));
         std::fs::write(&exe, "x").unwrap();
         let resolved =
             resolve_launch_executable(Path::new("/unused"), "game.exe", Some(exe.to_string_lossy().as_ref()))

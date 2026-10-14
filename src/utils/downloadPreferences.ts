@@ -1,5 +1,5 @@
 /**
- * Download pipeline preferences (WP5). Plain localStorage keys, booleans as
+ * Download pipeline preferences. Plain localStorage keys, booleans as
  * "1"/"0", wrapped in try/catch. Each setter dispatches
  * `playstash:download-preferences-change` so open views can follow along.
  */

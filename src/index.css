@@ -29,7 +29,7 @@
   --color-ps-success: #56d692;
   --color-ps-warning: #f1c56c;
   --color-ps-danger: #ef7373;
-  /* WP7 theme tokens (set by themes; classic values below) */
+  /* Theme tokens (set by themes; classic values below) */
   --color-ps-on-accent: #ffffff;
   --color-ps-accent-hover: color-mix(in srgb, #6d7cff 60%, transparent);
   --color-ps-accent-pressed: color-mix(in srgb, #6d7cff 40%, transparent);
@@ -196,7 +196,7 @@
     color: var(--color-ps-text);
   }
 
-  /* A selected theme (WP7) tints the page glow with its own accent. */
+  /* A selected theme tints the page glow with its own accent. */
   html[data-ps-theme] body {
     background:
       radial-gradient(

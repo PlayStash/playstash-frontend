@@ -1,7 +1,7 @@
 import type { SearchableSetting } from "@/settings/types";
 
-/** Settings search entries owned by WP5 (download-pipeline). */
-export const wp5SearchEntries: SearchableSetting[] = [
+/** Settings search entries for the download pipeline settings. */
+export const downloadsSearchEntries: SearchableSetting[] = [
   {
     id: "downloads-default-extraction-password",
     title: "Default extraction password",

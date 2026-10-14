@@ -52,7 +52,7 @@ export interface SettingsSectionProps {
  * visible on the current platform.
  */
 export interface SettingsSection {
-  /** Unique id, e.g. "wp2-community". */
+  /** Unique id, e.g. "community". */
   id: string;
   component: ComponentType<SettingsSectionProps>;
   /** Only shown in the desktop (Tauri) app, including the dev override. */

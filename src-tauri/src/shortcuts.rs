@@ -1,4 +1,4 @@
-//! Desktop shortcuts that start a game through PlayStash (WP1).
+//! Desktop shortcuts that start a game through PlayStash.
 //!
 //! - Windows: `<Desktop>\<name>.url` pointing at `playstash://start?gameid=<id>`
 //!   (identical to the WPF `DesktopHelper`).

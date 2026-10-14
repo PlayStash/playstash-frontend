@@ -1,5 +1,5 @@
 /**
- * Automatic retry of failed downloads (WP5).
+ * Automatic retry of failed downloads.
  *
  * After a download error the card resumes on its own: first after 10 s, and
  * the delay doubles after every failure (10, 20, 40 s, ...). The delay is not

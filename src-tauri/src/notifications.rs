@@ -1,4 +1,4 @@
-//! OS notifications (WP1), the infrastructure behind `src/utils/osNotify.ts`.
+//! OS notifications, the infrastructure behind `src/utils/osNotify.ts`.
 //!
 //! Like the WPF `ToastMessageHelper`, every error is swallowed (and logged):
 //! a notification must never break the feature that triggered it.

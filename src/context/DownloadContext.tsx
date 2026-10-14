@@ -268,7 +268,7 @@ async function readIsoMountPath(versionDirectory?: string): Promise<string> {
 
 /** Portable install failure: the old client's hint plus the cause. */
 function portableInstallError(detail: string) {
-  const hint = translate("wp5.install.portableFailed");
+  const hint = translate("pipeline.install.portableFailed");
   return detail.trim() ? `${hint} (${detail.trim()})` : hint;
 }
 
@@ -778,7 +778,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const writeVersionConfig = useCallback(
     async (
       versionDirectory: string,
-      // WP5 keys (`isomountpath`, `forcedgametype`) live next to the typed ones.
+      // Pipeline keys (`isomountpath`, `forcedgametype`) live next to the typed ones.
       patch: Partial<PlayStashConfig> & {
         isomountpath?: string;
         forcedgametype?: string;
@@ -2137,7 +2137,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         extractionCurrentFile: undefined,
         extractionError: undefined,
         extractionPasswordRequired: false,
-        extractionNotice: translate("wp5.iso.mounting"),
+        extractionNotice: translate("pipeline.iso.mounting"),
       });
       try {
         const { invoke } = await import("@tauri-apps/api/core");
@@ -2154,7 +2154,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         }
         updateDownload(gameId, {
           isoMountPath: mountRoot,
-          extractionNotice: fillTemplate(translate("wp5.iso.mounted"), {
+          extractionNotice: fillTemplate(translate("pipeline.iso.mounted"), {
             path: mountRoot,
           }),
         });
@@ -2168,7 +2168,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         if (isLinux) {
           // udisks2 may be missing (e.g. sandboxed builds): extract instead.
           updateDownload(gameId, {
-            extractionNotice: translate("wp5.iso.mountFailedExtracting"),
+            extractionNotice: translate("pipeline.iso.mountFailedExtracting"),
           });
           return false;
         }
@@ -2176,7 +2176,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           extractionStatus: "error",
           extractionProgress: null,
           extractionNotice: undefined,
-          extractionError: `${translate("wp5.iso.mountFailed")}: ${String(error)}`,
+          extractionError: `${translate("pipeline.iso.mountFailed")}: ${String(error)}`,
         });
         return "failed";
       }
@@ -2235,14 +2235,14 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
                 promptPipelinePassword({
                   title,
                   message,
-                  placeholder: translate("wp5.password.placeholder"),
-                  confirmText: translate("wp5.password.extract"),
-                  cancelText: translate("wp5.dialog.cancel"),
+                  placeholder: translate("pipeline.password.placeholder"),
+                  confirmText: translate("pipeline.password.extract"),
+                  cancelText: translate("pipeline.dialog.cancel"),
                 }),
           texts: {
-            title: translate("wp5.password.title"),
-            enterMessage: translate("wp5.password.enter"),
-            savedFailedMessage: translate("wp5.password.savedFailed"),
+            title: translate("pipeline.password.title"),
+            enterMessage: translate("pipeline.password.enter"),
+            savedFailedMessage: translate("pipeline.password.savedFailed"),
           },
         });
 
@@ -2256,7 +2256,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             extractionStatus: "needs-password",
             extractionProgress: null,
             extractionPasswordRequired: true,
-            extractionError: translate("wp5.password.wrong"),
+            extractionError: translate("pipeline.password.wrong"),
           });
           return;
         }
@@ -2444,7 +2444,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         executable = executables[0] ?? "";
       }
       if (!executable) {
-        pipelineToast(translate("wp5.shortcut.noExecutable"));
+        pipelineToast(translate("pipeline.shortcut.noExecutable"));
         return;
       }
 
@@ -2455,7 +2455,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         ask: false,
       });
       if (result === "exists") {
-        pipelineToast(translate("wp5.shortcut.exists"));
+        pipelineToast(translate("pipeline.shortcut.exists"));
       }
     } catch (error) {
       console.warn("Creating the desktop shortcut failed:", error);
@@ -2575,7 +2575,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         updateDownload(gameId, {
           installationStatus: "error",
           installationCurrentFile: undefined,
-          installationError: translate("wp5.install.noFilesFound"),
+          installationError: translate("pipeline.install.noFilesFound"),
           installationExitCode: exitCode,
         });
         return;
@@ -2868,13 +2868,16 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     const existing = isInstalledAt(installed, gameId, d.versionDirectory);
     if (!existing) return true;
     return confirmPipeline({
-      title: translate("wp5.install.alreadyInstalledTitle"),
-      message: fillTemplate(translate("wp5.install.alreadyInstalledMessage"), {
-        title: d.gameTitle,
-        path: existing.installationDirectory || d.installationDirectory || "",
-      }),
-      confirmText: translate("wp5.install.continue"),
-      cancelText: translate("wp5.dialog.cancel"),
+      title: translate("pipeline.install.alreadyInstalledTitle"),
+      message: fillTemplate(
+        translate("pipeline.install.alreadyInstalledMessage"),
+        {
+          title: d.gameTitle,
+          path: existing.installationDirectory || d.installationDirectory || "",
+        },
+      ),
+      confirmText: translate("pipeline.install.continue"),
+      cancelText: translate("pipeline.dialog.cancel"),
       tone: "danger",
     });
   }, []);
@@ -3221,7 +3224,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
                 isoMountRef.current[gameId] = mountPath;
                 restored.isoMountPath = mountPath;
                 restored.extractionNotice = fillTemplate(
-                  translate("wp5.iso.mounted"),
+                  translate("pipeline.iso.mounted"),
                   { path: mountPath },
                 );
               } else if (restored.installationStatus !== "completed") {

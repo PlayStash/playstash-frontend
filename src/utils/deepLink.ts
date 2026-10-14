@@ -1,5 +1,5 @@
 /**
- * `playstash://` deep links and desktop command handling (WP1).
+ * `playstash://` deep links and desktop command handling.
  *
  * The URI grammar itself is parsed in Rust (`cli.rs`); this module builds
  * links and turns a {@link DesktopCommand} into UI actions. The handler is

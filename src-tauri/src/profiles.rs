@@ -125,7 +125,7 @@ pub(crate) async fn save_profiles_state(app: tauri::AppHandle, state: ProfilesSt
 }
 
 /// `<app_data_dir>/profiles/<profileId>`: per-profile files such as the
-/// cloud-save config (WP3) and custom themes (WP7).
+/// cloud-save config and custom themes.
 pub(crate) fn profile_dir(app: &tauri::AppHandle, profile_id: &str) -> Result<PathBuf, String> {
   if !is_valid_profile_id(profile_id) {
     return Err("Invalid profile id.".into());

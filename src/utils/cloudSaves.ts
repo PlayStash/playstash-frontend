@@ -1,5 +1,5 @@
 /**
- * Cloud saves (WP3): pure helpers plus thin wrappers around the Rust
+ * Cloud saves: pure helpers plus thin wrappers around the Rust
  * `cloud_saves` commands. Ludusavi runs in Rust; this module maps results to
  * messages, persists the offline backup queue and builds request payloads.
  */

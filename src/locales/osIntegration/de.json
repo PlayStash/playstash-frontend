@@ -1,0 +1,23 @@
+{
+  "desktop.tray.library": "Bibliothek",
+  "desktop.tray.downloads": "Downloads",
+  "desktop.tray.community": "Community",
+  "desktop.tray.settings": "Einstellungen",
+  "desktop.tray.exit": "Beenden",
+  "desktop.tray.libraryDescription": "Bibliothek öffnen",
+  "desktop.tray.downloadsDescription": "Downloads öffnen",
+  "desktop.tray.communityDescription": "Community öffnen",
+  "desktop.tray.settingsDescription": "Einstellungen öffnen",
+  "desktop.tray.exitDescription": "PlayStash beenden",
+  "desktop.tray.noticeTitle": "Information",
+  "desktop.tray.noticeBody": "PlayStash läuft im Hintergrund weiter",
+  "desktop.jumpList.actions": "Aktionen",
+  "desktop.jumpList.lastPlayed": "Zuletzt gespielt",
+  "desktop.exit.downloadsRunning": "Im Hintergrund laufen noch Downloads. Möchtest du die App trotzdem beenden?",
+  "desktop.common.yes": "Ja",
+  "desktop.common.no": "Nein",
+  "desktop.command.gameNotFound": "Spiel mit der ID {id} wurde nicht gefunden",
+  "desktop.command.failed": "PlayStash konnte die angeforderte Aktion nicht ausführen",
+  "desktop.shortcut.confirm": "Möchtest du eine Desktop-Verknüpfung für {title} erstellen?",
+  "desktop.shortcut.exists": "Die Desktop-Verknüpfung existiert bereits"
+}

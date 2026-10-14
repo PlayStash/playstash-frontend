@@ -6,21 +6,24 @@ import {
 } from "./StartupExtrasSettings";
 import { StorageSettings, UserCacheFolderSettings } from "./StorageSettings";
 
-/** WP7 settings sections, spread into `CATEGORY_SECTIONS` (Settings.tsx). */
-export const WP7_SECTIONS = {
-  themes: [{ id: "wp7-themes", component: ThemeSettings }],
+/**
+ * Theme, startup, storage and developer sections, spread into
+ * `CATEGORY_SECTIONS` (Settings.tsx).
+ */
+export const EXTRA_SECTIONS = {
+  themes: [{ id: "themes", component: ThemeSettings }],
   startup: [
-    { id: "wp7-library-startup", component: LibraryStartupSettings },
+    { id: "library-startup", component: LibraryStartupSettings },
     {
-      id: "wp7-startup-sound",
+      id: "startup-sound",
       component: StartupSoundSettings,
       desktopOnly: true,
     },
   ],
-  storage: [{ id: "wp7-storage", component: StorageSettings }],
+  storage: [{ id: "storage", component: StorageSettings }],
   developer: [
     {
-      id: "wp7-user-cache-folder",
+      id: "user-cache-folder",
       component: UserCacheFolderSettings,
       desktopOnly: true,
     },

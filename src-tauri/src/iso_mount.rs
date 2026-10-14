@@ -1,4 +1,4 @@
-//! "Mount ISO instead of extracting" (WP5).
+//! "Mount ISO instead of extracting".
 //!
 //! A downloaded `.iso` can be attached as a virtual drive instead of being
 //! unpacked. The game is then installed straight from the mounted volume. The
@@ -300,7 +300,7 @@ mod tests {
     assert!(validate_iso_path(Path::new("game.iso")).is_err());
     let absolute = std::env::temp_dir().join("playstash-not-an-image.zip");
     assert!(validate_iso_path(&absolute).is_err());
-    let missing = std::env::temp_dir().join("playstash-missing-image-wp5.iso");
+    let missing = std::env::temp_dir().join("playstash-missing-image.iso");
     assert!(validate_iso_path(&missing).is_err());
   }
 }

@@ -1,4 +1,4 @@
-//! Helper commands for the download pipeline extras (WP5): free space per
+//! Helper commands for the download pipeline extras: free space per
 //! download location, folder sizes for the download cards, the cached cover
 //! for OS notifications and the duplicate-installation scan.
 
@@ -277,7 +277,7 @@ mod tests {
         let _ = fs::remove_dir_all(&self.0);
       }
     }
-    let dir = std::env::temp_dir().join(format!("playstash-wp5-size-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("playstash-download-size-{}", std::process::id()));
     let _guard = Scratch(dir.clone());
     fs::create_dir_all(dir.join("nested")).unwrap();
     fs::write(dir.join("a.bin"), [0u8; 10]).unwrap();

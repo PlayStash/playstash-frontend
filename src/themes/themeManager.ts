@@ -2,7 +2,7 @@
  * Theme selection and application.
  *
  * The selection is persisted in localStorage `playstash_theme` (namespaced
- * per profile once WP6 reports one) as
+ * per profile once a desktop profile is active) as
  * `{source: "builtin"|"file"|"community", id|path, displayName, colors?}`.
  * File themes also store their resolved colors so the theme can be applied
  * synchronously before the first render; the file is re-validated in the

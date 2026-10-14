@@ -1,7 +1,7 @@
 import type { SearchableSetting } from "@/settings/types";
 
-/** Settings search entries owned by WP4 (launch). */
-export const wp4SearchEntries: SearchableSetting[] = [
+/** Settings search entries for the game launch settings. */
+export const launchSearchEntries: SearchableSetting[] = [
   {
     id: "games-ignore-list-reset",
     title: "Reset ignored executables",

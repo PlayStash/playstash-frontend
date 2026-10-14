@@ -1,4 +1,4 @@
-//! Cloud saves through Ludusavi (WP3), the port of the WPF client's
+//! Cloud saves through Ludusavi, the port of the WPF client's
 //! `SaveGameHelper` / `LudusaviCommand`.
 //!
 //! - Ludusavi ships as a sidecar next to the PlayStash executable (see
@@ -967,7 +967,7 @@ pub(crate) struct CloudSaveRequest {
   pub wine_prefix: Option<String>,
   /// Download roots for the Ludusavi config.
   pub roots: Vec<String>,
-  /// Profile the Ludusavi config belongs to (WP6).
+  /// Profile the Ludusavi config belongs to.
   pub profile_key: Option<String>,
 }
 

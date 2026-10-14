@@ -1,7 +1,7 @@
 import type { SearchableSetting } from "@/settings/types";
 
-/** Settings search entries owned by WP3 (cloud-saves). */
-export const wp3SearchEntries: SearchableSetting[] = [
+/** Settings search entries for the cloud save settings. */
+export const cloudSavesSearchEntries: SearchableSetting[] = [
   {
     id: "integrations-cloud-saves",
     title: "Sync cloud saves",

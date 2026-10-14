@@ -1,5 +1,5 @@
 //! Command model shared by the command line, `playstash://` deep links, the
-//! IPC pipe/socket, the jump list and the tray (WP1).
+//! IPC pipe/socket, the jump list and the tray.
 //!
 //! Everything in here is pure and unit-tested. The wire format is the one the
 //! WPF client (`Models/CommandOptions.cs`) and the Playnite extension use:

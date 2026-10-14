@@ -394,7 +394,7 @@ export function DownloadCard({
               {folderSize > 0 && (
                 <span
                   className="text-xs tabular-nums text-ps-muted"
-                  title={t("wp5.card.folderSize")}
+                  title={t("pipeline.card.folderSize")}
                 >
                   {formatBytes(folderSize)}
                 </span>

@@ -1,7 +1,7 @@
 import type { SearchableSetting } from "@/settings/types";
 
-/** Settings search entries owned by WP2 (community). */
-export const wp2SearchEntries: SearchableSetting[] = [
+/** Settings search entries for the community and integration settings. */
+export const communitySearchEntries: SearchableSetting[] = [
   {
     id: "community-chat-notifications",
     title: "Show notifications for new chat messages",

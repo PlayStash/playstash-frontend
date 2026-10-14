@@ -24,21 +24,21 @@ import { uninstallInstalledGame } from "@/utils/uninstallInstalledGame";
 /** Native labels (tray, jump list, notices) in the current language. */
 export function trayLabels(t: (key: TranslationKey) => string) {
   return {
-    library: t("wp1.tray.library"),
-    downloads: t("wp1.tray.downloads"),
-    community: t("wp1.tray.community"),
-    settings: t("wp1.tray.settings"),
-    exit: t("wp1.tray.exit"),
-    libraryDescription: t("wp1.tray.libraryDescription"),
-    downloadsDescription: t("wp1.tray.downloadsDescription"),
-    communityDescription: t("wp1.tray.communityDescription"),
-    settingsDescription: t("wp1.tray.settingsDescription"),
-    exitDescription: t("wp1.tray.exitDescription"),
-    actionsCategory: t("wp1.jumpList.actions"),
-    lastPlayedCategory: t("wp1.jumpList.lastPlayed"),
-    noticeTitle: t("wp1.tray.noticeTitle"),
-    noticeBody: t("wp1.tray.noticeBody"),
-    exitConfirm: t("wp1.exit.downloadsRunning"),
+    library: t("desktop.tray.library"),
+    downloads: t("desktop.tray.downloads"),
+    community: t("desktop.tray.community"),
+    settings: t("desktop.tray.settings"),
+    exit: t("desktop.tray.exit"),
+    libraryDescription: t("desktop.tray.libraryDescription"),
+    downloadsDescription: t("desktop.tray.downloadsDescription"),
+    communityDescription: t("desktop.tray.communityDescription"),
+    settingsDescription: t("desktop.tray.settingsDescription"),
+    exitDescription: t("desktop.tray.exitDescription"),
+    actionsCategory: t("desktop.jumpList.actions"),
+    lastPlayedCategory: t("desktop.jumpList.lastPlayed"),
+    noticeTitle: t("desktop.tray.noticeTitle"),
+    noticeBody: t("desktop.tray.noticeBody"),
+    exitConfirm: t("desktop.exit.downloadsRunning"),
   };
 }
 
@@ -143,7 +143,7 @@ export function DesktopCommandProvider({ children }: { children: ReactNode }) {
       },
       gameNotFoundMessage: (gameId) =>
         latest.current
-          .t("wp1.command.gameNotFound")
+          .t("desktop.command.gameNotFound")
           .replace("{id}", String(gameId)),
       requestGameDownload,
       uninstallInstalledGame,
@@ -162,7 +162,7 @@ export function DesktopCommandProvider({ children }: { children: ReactNode }) {
           message = error instanceof Error ? error.message : String(error);
           console.error("[desktop] command failed:", command, error);
           await latest.current.showAlert({
-            title: latest.current.t("wp1.command.failed"),
+            title: latest.current.t("desktop.command.failed"),
             description: message,
             tone: "danger",
           });
@@ -182,9 +182,9 @@ export function DesktopCommandProvider({ children }: { children: ReactNode }) {
         downloads: current,
       } = latest.current;
       const accepted = await ask({
-        title: translate("wp1.exit.downloadsRunning"),
-        affirmativeText: translate("wp1.common.yes"),
-        negativeText: translate("wp1.common.no"),
+        title: translate("desktop.exit.downloadsRunning"),
+        affirmativeText: translate("desktop.common.yes"),
+        negativeText: translate("desktop.common.no"),
       });
       if (!accepted) return;
       try {

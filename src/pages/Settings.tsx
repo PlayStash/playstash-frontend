@@ -61,7 +61,7 @@ import {
 } from "@/components/tailwind/dialog";
 import { isAnalyticsEnabled, setAnalyticsEnabled } from "@/utils/analytics";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
-import { WP7_SECTIONS } from "@/components/settings/wp7Sections";
+import { EXTRA_SECTIONS } from "@/components/settings/extraSections";
 import {
   formatCpuMemoryLabel,
   formatDisplayLabel,
@@ -258,40 +258,40 @@ const CATEGORY_ORDER: SettingsCategory[] = [
  * `src/components/settings/`.
  */
 const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
-  account: [{ id: "wp6-account", component: AccountSettings }],
+  account: [{ id: "account", component: AccountSettings }],
   appearance: [],
-  themes: [...WP7_SECTIONS.themes],
+  themes: [...EXTRA_SECTIONS.themes],
   sound: [],
   downloads: [
     {
-      id: "wp5-download-extras",
+      id: "download-extras",
       component: DownloadExtrasSettings,
       desktopOnly: true,
     },
   ],
   games: [
     {
-      id: "wp4-games-launch",
+      id: "games-launch",
       component: GamesLaunchSettings,
       desktopOnly: true,
     },
   ],
-  startup: [...WP7_SECTIONS.startup],
+  startup: [...EXTRA_SECTIONS.startup],
   community: [
-    { id: "wp2-community", component: CommunitySettings, desktopOnly: true },
+    { id: "community", component: CommunitySettings, desktopOnly: true },
   ],
   integrations: [
     {
-      id: "wp2-integrations",
+      id: "integrations",
       component: IntegrationsSettings,
       desktopOnly: true,
     },
-    { id: "wp3-cloud-saves", component: CloudSaveSettings, desktopOnly: true },
+    { id: "cloud-saves", component: CloudSaveSettings, desktopOnly: true },
   ],
-  storage: [...WP7_SECTIONS.storage],
+  storage: [...EXTRA_SECTIONS.storage],
   privacy: [],
   about: [],
-  developer: [...WP7_SECTIONS.developer],
+  developer: [...EXTRA_SECTIONS.developer],
 };
 
 function visibleCategorySections(

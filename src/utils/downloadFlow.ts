@@ -1,5 +1,5 @@
 /**
- * Reusable download flow (WP5 contract): root pick, version pick, free-space
+ * Reusable download flow: root pick, version pick, free-space
  * check and overwrite confirmation, then queue the download.
  * Used by GameView, GameCard and desktop commands (CLI `install`).
  *
@@ -157,10 +157,10 @@ async function chooseRoot(
   const roots = getRootPaths();
   if (roots.length === 0) {
     const openSettings = await flowHost.confirm({
-      title: translate("wp5.flow.noRootTitle"),
-      message: translate("wp5.flow.noRootMessage"),
-      confirmText: translate("wp5.flow.openSettings"),
-      cancelText: translate("wp5.dialog.cancel"),
+      title: translate("pipeline.flow.noRootTitle"),
+      message: translate("pipeline.flow.noRootMessage"),
+      confirmText: translate("pipeline.flow.openSettings"),
+      cancelText: translate("pipeline.dialog.cancel"),
     });
     if (openSettings) flowHost.navigate("/settings?section=downloads");
     return "error";
@@ -199,9 +199,9 @@ async function chooseVersion(
   }
   if (!versions.length) {
     await flowHost.confirm({
-      title: translate("wp5.flow.noVersionTitle"),
-      message: translate("wp5.flow.noVersionMessage"),
-      confirmText: translate("wp5.dialog.ok"),
+      title: translate("pipeline.flow.noVersionTitle"),
+      message: translate("pipeline.flow.noVersionMessage"),
+      confirmText: translate("pipeline.dialog.ok"),
     });
     return "error";
   }
@@ -220,7 +220,7 @@ export async function runDownloadFlow(
   const background = options.background ?? false;
 
   if (!flowHost.isReady()) {
-    flowHost.toast(translate("wp5.flow.offline"));
+    flowHost.toast(translate("pipeline.flow.offline"));
     return "error";
   }
 
@@ -231,7 +231,9 @@ export async function runDownloadFlow(
     game = null;
   }
   if (!game) {
-    flowHost.toast(fill(translate("wp5.flow.gameNotFound"), { id: gameId }));
+    flowHost.toast(
+      fill(translate("pipeline.flow.gameNotFound"), { id: gameId }),
+    );
     return "error";
   }
   const gameTitle = gameDisplayTitle(game);
@@ -239,7 +241,7 @@ export async function runDownloadFlow(
   const existing = flowHost.getDownloads()[gameId];
   if (existing?.status === "downloading") {
     flowHost.toast(
-      fill(translate("wp5.flow.alreadyQueued"), { title: gameTitle }),
+      fill(translate("pipeline.flow.alreadyQueued"), { title: gameTitle }),
     );
     return "cancelled";
   }
@@ -248,7 +250,7 @@ export async function runDownloadFlow(
   if (root === "cancelled" || root === "error") return root;
 
   if ((await flowHost.pathExists(root.path)) === false) {
-    flowHost.toast(translate("wp5.flow.directoryMissing"));
+    flowHost.toast(translate("pipeline.flow.directoryMissing"));
     return "error";
   }
 
@@ -260,20 +262,20 @@ export async function runDownloadFlow(
   if (card) {
     if (card.status === "downloading") {
       flowHost.toast(
-        fill(translate("wp5.flow.alreadyQueued"), { title: gameTitle }),
+        fill(translate("pipeline.flow.alreadyQueued"), { title: gameTitle }),
       );
       return "cancelled";
     }
     if (isCardBusy(card)) {
-      flowHost.toast(translate("wp5.delete.busy"));
+      flowHost.toast(translate("pipeline.delete.busy"));
       return "cancelled";
     }
     if (!background) {
       const overwrite = await flowHost.confirm({
-        title: translate("wp5.flow.overwriteTitle"),
-        message: translate("wp5.flow.overwriteMessage"),
-        confirmText: translate("wp5.dialog.yes"),
-        cancelText: translate("wp5.dialog.no"),
+        title: translate("pipeline.flow.overwriteTitle"),
+        message: translate("pipeline.flow.overwriteMessage"),
+        confirmText: translate("pipeline.dialog.yes"),
+        cancelText: translate("pipeline.dialog.no"),
       });
       if (!overwrite) return "cancelled";
     }
@@ -283,7 +285,7 @@ export async function runDownloadFlow(
   const size = versionSizeBytes(version);
   if (free !== null && !hasEnoughSpace(free, size)) {
     flowHost.toast(
-      fill(translate("wp5.flow.notEnoughSpace"), {
+      fill(translate("pipeline.flow.notEnoughSpace"), {
         drive: driveLabel(root.path),
       }),
     );
@@ -307,7 +309,7 @@ export async function runDownloadFlow(
     downloadRootPath: root.path,
     autoInstall: options.autoInstall ?? false,
   });
-  flowHost.toast(fill(translate("wp5.flow.queued"), { title: gameTitle }));
+  flowHost.toast(fill(translate("pipeline.flow.queued"), { title: gameTitle }));
   return "queued";
 }
 

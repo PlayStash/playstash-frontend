@@ -68,7 +68,7 @@ describe("big picture installed list", () => {
   });
 });
 
-describe("small WP4 helpers", () => {
+describe("small launch and uninstall helpers", () => {
   it("parses the server ignore file and drops empty entries", () => {
     expect(parseIgnoreFile(["setup", " ", "", 3, " unins "])).toEqual([
       "setup",

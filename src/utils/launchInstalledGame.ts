@@ -1,5 +1,5 @@
 /**
- * Shared launch path for installed games (WP4 contract).
+ * Shared launch path for installed games.
  *
  * Used by GameView, GameCard, Big Picture, desktop commands (CLI `start`,
  * jump list) and integrations. Errors are shown as alerts unless the caller

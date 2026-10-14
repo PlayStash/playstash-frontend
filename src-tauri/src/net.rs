@@ -104,9 +104,9 @@ pub(crate) async fn fs_read_binary_file(path: String) -> Result<String, String> 
 // `server_request`, which adds the headers only when the request targets the
 // configured server (same scheme, host, port and path prefix). They are never
 // sent to any other host.
-pub(crate) use wp6::*;
+pub(crate) use request_headers::*;
 
-pub(crate) mod wp6 {
+pub(crate) mod request_headers {
   use serde::{Deserialize, Serialize};
   use std::sync::{OnceLock, RwLock};
 

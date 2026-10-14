@@ -1,4 +1,4 @@
-//! Custom theme files (WP7): the per-profile themes folder, file listing,
+//! Custom theme files: the per-profile themes folder, file listing,
 //! install/export/delete and the overlay image.
 //!
 //! The XAML itself is validated in TypeScript (`src/themes/xamlTheme.ts`,

@@ -1,5 +1,5 @@
 /**
- * Duplicate installation detection (WP5): after a download location was
+ * Duplicate installation detection: after a download location was
  * added or removed, a game installed under more than one location is
  * reported, like the old client did.
  */

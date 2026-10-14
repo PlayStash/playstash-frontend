@@ -32,12 +32,12 @@ export function DuplicateInstallWatcher() {
           const duplicates = await scanDuplicateInstallations(roots);
           if (cancelled || !duplicates.length) return;
           await confirmPipeline({
-            title: translate("wp5.duplicates.title"),
+            title: translate("pipeline.duplicates.title"),
             message: formatDuplicateInstallations(
               duplicates,
-              translate("wp5.duplicates.entry"),
+              translate("pipeline.duplicates.entry"),
             ),
-            confirmText: translate("wp5.dialog.ok"),
+            confirmText: translate("pipeline.dialog.ok"),
           });
         } catch (error) {
           console.warn("Duplicate installation scan failed:", error);

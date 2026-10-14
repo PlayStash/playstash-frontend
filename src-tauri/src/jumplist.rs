@@ -1,4 +1,4 @@
-//! Windows taskbar jump list (WP1).
+//! Windows taskbar jump list.
 //!
 //! Category "Actions": Library, Downloads, Community, Settings and Exit, each
 //! `show --jumplistcommand=<n>` on the current executable. Category "Last

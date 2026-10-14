@@ -1,7 +1,7 @@
 import type { SearchableSetting } from "@/settings/types";
 
-/** Settings search entries owned by WP6 (accounts). */
-export const wp6SearchEntries: SearchableSetting[] = [
+/** Settings search entries for the account settings. */
+export const accountsSearchEntries: SearchableSetting[] = [
   {
     id: "account-session",
     title: "Logout and profiles",

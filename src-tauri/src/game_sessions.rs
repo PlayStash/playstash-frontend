@@ -1,4 +1,4 @@
-//! Game session and exit events (WP4).
+//! Game session and exit events.
 //!
 //! - `game-session` is emitted by the time tracker when a game starts or stops
 //!   being matched (`state: "started" | "ended"`). It follows the game across

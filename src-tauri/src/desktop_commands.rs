@@ -1,4 +1,4 @@
-//! Desktop command dispatch (WP1).
+//! Desktop command dispatch.
 //!
 //! Rust resolves CLI arguments, `playstash://` deep links, pipe messages,
 //! jump-list entries and tray menu items into a [`CommandOptions`]. Whatever

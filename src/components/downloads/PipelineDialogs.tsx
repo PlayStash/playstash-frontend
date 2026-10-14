@@ -11,7 +11,7 @@ import { Input } from "@tw/input";
 import { useTranslation } from "@/i18n";
 
 /**
- * Modal dialogs of the download pipeline (WP5): confirmations with
+ * Modal dialogs of the download pipeline: confirmations with
  * multi-line messages and the archive password prompt.
  *
  * The global `showAlert` collapses line breaks and has no text input, and
@@ -165,7 +165,7 @@ export function PipelineDialogHost() {
           disabled={!!active.passwordInput && !value}
           autoFocus={!active.passwordInput}
         >
-          {active.confirmText || t("wp5.dialog.ok")}
+          {active.confirmText || t("pipeline.dialog.ok")}
         </Button>
       </AlertActions>
     </Alert>

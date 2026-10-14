@@ -108,7 +108,7 @@ export function buildAdoptedConfig(
     config.launchparameters = installation.launchParameter.trim();
   if (installation.forcedGameType)
     config.forcedgametype = installation.forcedGameType;
-  // Cloud saves keep their identity (WP3 `installationid`).
+  // Cloud saves keep their identity (`installationid`).
   if (installation.installationId.trim())
     config.installationid = installation.installationId.trim();
   return config;

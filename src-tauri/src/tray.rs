@@ -1,4 +1,4 @@
-//! System tray, close-to-tray and the translated native labels (WP1).
+//! System tray, close-to-tray and the translated native labels.
 //!
 //! Menu order matches the WPF client: Library, Downloads, Community,
 //! Settings, Exit. The first four show the window and open their page through

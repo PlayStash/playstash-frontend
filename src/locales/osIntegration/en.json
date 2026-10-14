@@ -1,0 +1,23 @@
+{
+  "desktop.tray.library": "Library",
+  "desktop.tray.downloads": "Downloads",
+  "desktop.tray.community": "Community",
+  "desktop.tray.settings": "Settings",
+  "desktop.tray.exit": "Exit",
+  "desktop.tray.libraryDescription": "Open Library",
+  "desktop.tray.downloadsDescription": "Open Downloads",
+  "desktop.tray.communityDescription": "Open Community",
+  "desktop.tray.settingsDescription": "Open Settings",
+  "desktop.tray.exitDescription": "Exit PlayStash",
+  "desktop.tray.noticeTitle": "Information",
+  "desktop.tray.noticeBody": "PlayStash is still running in the background",
+  "desktop.jumpList.actions": "Actions",
+  "desktop.jumpList.lastPlayed": "Last Played",
+  "desktop.exit.downloadsRunning": "Downloads are still running in the background, are you sure you want to exit the app anyway?",
+  "desktop.common.yes": "Yes",
+  "desktop.common.no": "No",
+  "desktop.command.gameNotFound": "Game with ID {id} not found",
+  "desktop.command.failed": "PlayStash could not complete the requested action",
+  "desktop.shortcut.confirm": "Do you want to create a desktop shortcut for {title}?",
+  "desktop.shortcut.exists": "Desktop shortcut already exists"
+}

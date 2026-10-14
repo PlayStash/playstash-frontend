@@ -1,4 +1,4 @@
-//! Storage / data settings (WP7): cache sizes, clearing the offline game
+//! Storage / data settings: cache sizes, clearing the offline game
 //! cache and the app data folder.
 
 use serde::Serialize;

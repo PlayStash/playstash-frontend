@@ -254,7 +254,7 @@ fn is_inside(path: &Path, parent: &Path) -> bool {
 }
 
 /// Copies a WPF profile's custom themes (`*.xaml` plus overlay images) into
-/// `<app_data_dir>/profiles/<profileId>/themes/` (the WP7 per-profile themes
+/// `<app_data_dir>/profiles/<profileId>/themes/` (the per-profile themes
 /// dir), keeping sub folders: the WPF client loaded themes recursively.
 #[tauri::command]
 pub(crate) async fn legacy_import_copy_themes(

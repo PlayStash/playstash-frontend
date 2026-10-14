@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { isTauriApp } from "@/utils/tauri";
-import { serverFetch } from "@/utils/serverFetch"; // WP6: additional request headers
+import { serverFetch } from "@/utils/serverFetch"; // sends the additional request headers
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -1,9 +1,9 @@
 /**
  * Desktop commands from the CLI, `playstash://` deep links, the IPC pipe
- * (Playnite), the jump list and the tray (WP1 contract).
+ * (Playnite), the jump list and the tray.
  *
  * Rust emits {@link DESKTOP_COMMAND_EVENT} and queues commands until the
- * frontend calls {@link markDesktopCommandsReady}. WP1's
+ * frontend calls {@link markDesktopCommandsReady}. The
  * `DesktopCommandProvider` listens and dispatches them.
  */
 export const DESKTOP_COMMAND_EVENT = "desktop-command";

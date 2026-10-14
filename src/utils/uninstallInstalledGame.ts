@@ -1,5 +1,5 @@
 /**
- * Shared uninstall path for installed games (WP4 contract).
+ * Shared uninstall path for installed games.
  *
  * Used by Game Settings → Installation and by desktop commands (CLI
  * `uninstall`). Pre-uninstall hooks run once the uninstall is confirmed and

@@ -107,33 +107,32 @@ const artworkProviders: Converter = (value) => {
 };
 
 /**
- * WPF key → destination. Keys of other packages follow their specs:
- * WP2 (notifications, integrations section), WP3 (cloudsaves section),
- * WP4 (big picture on start), WP5 (install flags, ISO mount, shortcut),
- * WP7 (theme, library, startup section, artwork providers, media volume).
+ * WPF key → destination: notifications, integrations section, cloudsaves
+ * section, big picture on start, install flags, ISO mount, shortcut, theme,
+ * library, startup section, artwork providers and media volume.
  */
 export const LEGACY_SETTING_TARGETS: Record<string, LegacyTarget> = {
-  LoginRememberMe: { kind: "special", owner: "WP6 profiles.rememberMe" },
-  LastUserProfile: { kind: "special", owner: "WP6 profiles.lastProfileId" },
-  AdditionalRequestHeaders: { kind: "special", owner: "WP6 request headers" },
+  LoginRememberMe: { kind: "special", owner: "profiles.rememberMe" },
+  LastUserProfile: { kind: "special", owner: "profiles.lastProfileId" },
+  AdditionalRequestHeaders: { kind: "special", owner: "request headers" },
   ApplicationLanguage: {
     kind: "special",
     owner: "playstash_interface_language",
   },
-  ServerUrl: { kind: "special", owner: "WP6 profile.serverUrl" },
-  Username: { kind: "special", owner: "WP6 profile.username" },
-  IsLoggedInWithSSO: { kind: "special", owner: "WP6 profile.sso" },
-  UserID: { kind: "special", owner: "WP6 profile.userId" },
-  SessionToken: { kind: "special", owner: "WP6 refresh_token:<profileId>" },
+  ServerUrl: { kind: "special", owner: "profile.serverUrl" },
+  Username: { kind: "special", owner: "profile.username" },
+  IsLoggedInWithSSO: { kind: "special", owner: "profile.sso" },
+  UserID: { kind: "special", owner: "profile.userId" },
+  SessionToken: { kind: "special", owner: "refresh_token:<profileId>" },
   ExtractionPassword: {
     kind: "special",
     owner: "default_extraction_password:<profileId> (extractionPassword.ts)",
   },
-  Theme: { kind: "special", owner: "WP7 playstash_theme (per profile)" },
+  Theme: { kind: "special", owner: "playstash_theme (per profile)" },
   RootDirectories: { kind: "special", owner: "tauri_download_paths" },
   CommunityPresence: {
     kind: "special",
-    owner: "WP2 presence (per profile and account)",
+    owner: "presence (per profile and account)",
   },
   BackgroundStart: {
     kind: "special",
@@ -332,13 +331,13 @@ function relativeToDir(path: string, dir: string): string | null {
  * WPF `Theme`: JSON `ThemeItem {DisplayName, Description, Author, Path}`.
  *
  * - Built-in themes have a `pack://…/Themes/<Id>.xaml` path; `<Id>` is the
- *   WP7 built-in id (`ThemeDefaultDark`, …). Other values fall back to a
+ *   built-in theme id (`ThemeDefaultDark`, …). Other values fall back to a
  *   built-in theme with the same display name.
  * - Custom themes point into the WPF profile's `themes` folder
  *   (`legacyThemesDir`), which was copied to `copiedThemeDir` keeping its
  *   sub folders.
  *
- * Returns the WP7 `playstash_theme` selection JSON, or null (default theme).
+ * Returns the `playstash_theme` selection JSON, or null (default theme).
  */
 export function mapLegacyTheme(
   value: string | undefined,

@@ -1,5 +1,5 @@
 /**
- * Desktop shortcuts that start a game through PlayStash (WP1 contract).
+ * Desktop shortcuts that start a game through PlayStash.
  *
  * Windows gets a `.url` file, Linux a `.desktop` entry and macOS a `.webloc`,
  * all starting the game through `playstash://start?gameid=<id>` (or
@@ -17,7 +17,7 @@ export type CreateDesktopShortcutResult = "created" | "exists" | "cancelled";
 
 /** "Desktop shortcut already exists", for callers that got `"exists"`. */
 export function desktopShortcutExistsMessage(): string {
-  return translate("wp1.shortcut.exists");
+  return translate("desktop.shortcut.exists");
 }
 
 export async function createDesktopShortcut(options: {
@@ -35,12 +35,12 @@ export async function createDesktopShortcut(options: {
       typeof window === "undefined" ? undefined : window.showAlertDialog;
     if (confirm) {
       const accepted = await confirm({
-        title: translate("wp1.shortcut.confirm").replace(
+        title: translate("desktop.shortcut.confirm").replace(
           "{title}",
           options.title,
         ),
-        affirmativeText: translate("wp1.common.yes"),
-        negativeText: translate("wp1.common.no"),
+        affirmativeText: translate("desktop.common.yes"),
+        negativeText: translate("desktop.common.no"),
       });
       if (!accepted) return "cancelled";
     }

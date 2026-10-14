@@ -1,6 +1,6 @@
 /**
  * Maps the 10 colors of a WPF theme onto the `--color-ps-*` CSS variables,
- * the only theming surface of the frontend (WP7 contract).
+ * the only theming surface of the frontend.
  */
 import type { ThemeColors } from "./xamlTheme";
 import { mixColors, relativeLuminance, toCssColor } from "./wpfColors";

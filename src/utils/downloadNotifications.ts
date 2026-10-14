@@ -1,6 +1,6 @@
 /**
- * OS notifications for the download pipeline (WP5), shown through the WP1
- * `notify` contract. Like the old client they only appear when the user does
+ * OS notifications for the download pipeline, shown through the shared
+ * `notify` helper. Like the old client they only appear when the user does
  * not already look at the Downloads page: the main window is not focused, or
  * another page is open.
  */
@@ -19,10 +19,10 @@ export type DownloadNotificationKind =
   | "extraction-failed";
 
 const TITLE_KEYS = {
-  "download-failed": "wp5.notify.downloadFailed",
-  "download-complete": "wp5.notify.downloadComplete",
-  "extraction-complete": "wp5.notify.extractionComplete",
-  "extraction-failed": "wp5.notify.extractionFailed",
+  "download-failed": "pipeline.notify.downloadFailed",
+  "download-complete": "pipeline.notify.downloadComplete",
+  "extraction-complete": "pipeline.notify.extractionComplete",
+  "extraction-failed": "pipeline.notify.extractionFailed",
 } as const;
 
 export function isDownloadsRoute(route: string): boolean {

@@ -2286,7 +2286,7 @@ mod tests {
   }
 
   fn rule() -> EmulatorRule {
-    let base = std::env::temp_dir().join("playstash-wp4-emulator-test");
+    let base = std::env::temp_dir().join("playstash-emulator-session-test");
     EmulatorRule {
       emulator: base.join("RetroArch").join("retroarch.exe"),
       rom: base.join("Game").join("Installation").join("roms").join("Super Game.sfc"),

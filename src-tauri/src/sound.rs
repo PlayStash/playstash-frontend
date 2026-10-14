@@ -1,4 +1,4 @@
-//! Startup sound (WP7): the chosen audio file is stored in the settings
+//! Startup sound: the chosen audio file is stored in the settings
 //! section `startup.json` and played once after login at volume 0.5 for at
 //! most 10 seconds.
 //!

@@ -19,7 +19,7 @@ export interface ConnectionFile {
   auto_delete_portable_files: boolean;
 }
 
-/** WP5 keys the imported preferences are applied to ("1"/"0"). */
+/** Download pipeline keys the imported preferences are applied to ("1"/"0"). */
 export const AUTO_EXTRACT_KEY = "tauri_auto_extract";
 export const AUTO_INSTALL_KEY = "tauri_auto_install";
 export const AUTO_DELETE_SOURCE_KEY = "tauri_auto_delete_source";

@@ -1,4 +1,4 @@
-//! Single instance forwarding, the IPC server and the query API (WP1).
+//! Single instance forwarding, the IPC server and the query API.
 //!
 //! Wire-compatible with the WPF client and the Playnite extension
 //! (`PlayStash/playstash-playnite-integration`, `Helper/PipelineHelper.cs`):
@@ -865,7 +865,7 @@ fn handle_deep_link(app: &AppHandle, url: &str) {
   );
 }
 
-/// WP1 setup: tray, close-to-tray, startup visibility, IPC server, deep
+/// Desktop setup: tray, close-to-tray, startup visibility, IPC server, deep
 /// links, jump list, autostart arguments and the startup command.
 pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
   let handle = app.handle().clone();

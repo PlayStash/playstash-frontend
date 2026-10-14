@@ -1,5 +1,5 @@
 /**
- * Library preferences (WP7): auto-load on startup, retain sorting/filters,
+ * Library preferences: auto-load on startup, retain sorting/filters,
  * cover size and the installed games section state.
  */
 

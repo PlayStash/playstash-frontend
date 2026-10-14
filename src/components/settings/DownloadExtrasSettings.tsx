@@ -21,7 +21,7 @@ import {
 } from "@/utils/downloadPreferences";
 
 /**
- * Downloads → "Extraction" extras (WP5): the default extraction password
+ * Downloads → "Extraction" extras: the default extraction password
  * (kept encrypted) and "Mount ISO instead of extracting".
  */
 export function DownloadExtrasSettings({ rowHighlight }: SettingsSectionProps) {
@@ -51,10 +51,10 @@ export function DownloadExtrasSettings({ rowHighlight }: SettingsSectionProps) {
     setSaving(true);
     try {
       await setDefaultExtractionPassword(password);
-      void showAlert({ title: t("wp5.settings.passwordSaved") });
+      void showAlert({ title: t("pipeline.settings.passwordSaved") });
     } catch (error) {
       void showAlert({
-        title: t("wp5.settings.passwordSaveFailed"),
+        title: t("pipeline.settings.passwordSaveFailed"),
         description: String(error),
         tone: "danger",
       });
@@ -64,15 +64,15 @@ export function DownloadExtrasSettings({ rowHighlight }: SettingsSectionProps) {
   };
 
   return (
-    <SettingsGroup caption={t("wp5.settings.extraction")}>
+    <SettingsGroup caption={t("pipeline.settings.extraction")}>
       <div
         id="setting-downloads-default-extraction-password"
         className={rowHighlight("downloads-default-extraction-password")}
       >
         <SettingsRow className="flex-wrap gap-y-2">
           <SettingsLabel
-            title={t("wp5.settings.passwordTitle")}
-            description={t("wp5.settings.passwordDescription")}
+            title={t("pipeline.settings.passwordTitle")}
+            description={t("pipeline.settings.passwordDescription")}
           />
           <form
             className="flex w-full items-center gap-2 sm:w-auto"
@@ -84,14 +84,14 @@ export function DownloadExtrasSettings({ rowHighlight }: SettingsSectionProps) {
             <Input
               type="password"
               autoComplete="off"
-              aria-label={t("wp5.settings.passwordTitle")}
-              placeholder={t("wp5.settings.passwordPlaceholder")}
+              aria-label={t("pipeline.settings.passwordTitle")}
+              placeholder={t("pipeline.settings.passwordPlaceholder")}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="sm:w-56"
             />
             <Button type="submit" outline disabled={saving}>
-              {t("wp5.settings.save")}
+              {t("pipeline.settings.save")}
             </Button>
           </form>
         </SettingsRow>
@@ -102,13 +102,13 @@ export function DownloadExtrasSettings({ rowHighlight }: SettingsSectionProps) {
       >
         <SettingsRow>
           <SettingsLabel
-            title={t("wp5.settings.mountIsoTitle")}
-            description={t("wp5.settings.mountIsoDescription")}
+            title={t("pipeline.settings.mountIsoTitle")}
+            description={t("pipeline.settings.mountIsoDescription")}
           />
           <Switch
             name="mountIso"
             color="indigo"
-            aria-label={t("wp5.settings.mountIsoTitle")}
+            aria-label={t("pipeline.settings.mountIsoTitle")}
             checked={mountIso}
             onChange={(enabled: boolean) => {
               setMountIso(enabled);

@@ -20,10 +20,10 @@ export default function Downloads() {
 
   const handleDeleteAll = async () => {
     const confirmed = await confirmPipeline({
-      title: t("wp5.deleteAll.title"),
-      message: t("wp5.deleteAll.message"),
-      confirmText: t("wp5.dialog.yes"),
-      cancelText: t("wp5.dialog.no"),
+      title: t("pipeline.deleteAll.title"),
+      message: t("pipeline.deleteAll.message"),
+      confirmText: t("pipeline.dialog.yes"),
+      cancelText: t("pipeline.dialog.no"),
       tone: "danger",
     });
     if (!confirmed) return;
@@ -33,7 +33,7 @@ export default function Downloads() {
         downloadArray,
         deleteDownloadCard,
       );
-      if (skipped > 0) void showAlert({ title: t("wp5.delete.busy") });
+      if (skipped > 0) void showAlert({ title: t("pipeline.delete.busy") });
     } finally {
       setDeletingAll(false);
     }
@@ -53,13 +53,13 @@ export default function Downloads() {
             plain
             onClick={() => void handleDeleteAll()}
             disabled={deletingAll}
-            aria-label={t("wp5.deleteAll.button")}
-            title={t("wp5.deleteAll.button")}
+            aria-label={t("pipeline.deleteAll.button")}
+            title={t("pipeline.deleteAll.button")}
             className="shrink-0 text-ps-danger!"
           >
             <TrashIcon className="h-5 w-5 text-ps-danger!" aria-hidden="true" />
             <span className="hidden sm:inline">
-              {t("wp5.deleteAll.button")}
+              {t("pipeline.deleteAll.button")}
             </span>
           </Button>
         )}
@@ -87,7 +87,7 @@ export default function Downloads() {
             />
           </div>
           <h3 className="mt-4 text-sm font-semibold text-ps-text">
-            {t("wp5.downloads.empty")}
+            {t("pipeline.downloads.empty")}
           </h3>
           <p className="mt-1 text-sm text-ps-muted">
             Start downloading games from your library

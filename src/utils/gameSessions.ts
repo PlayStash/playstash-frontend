@@ -1,9 +1,9 @@
 /**
- * Game session and exit events (WP4 contract, Step 0 stub).
+ * Game session and exit events.
  *
  * `game-session` comes from the time tracker (survives launcher hand-off),
- * `game-exited` from the launch monitors. The listeners already work; Rust
- * starts emitting the events once WP4 lands.
+ * `game-exited` from the launch monitors. Both are emitted by
+ * Rust (`game_sessions.rs`).
  */
 export const GAME_SESSION_EVENT = "game-session";
 export const GAME_EXITED_EVENT = "game-exited";

@@ -120,9 +120,9 @@ export function getAdditionalRequestHeaderList(): RequestHeader[] {
 }
 
 /**
- * Additional request headers sent with every request to the PlayStash server
- * (WP6 contract). Applied inside `authFetch` and to the unauthenticated server
- * calls; the community socket uses them through `socketIoHeaderOptions`
+ * Additional request headers sent with every request to the PlayStash server.
+ * Applied inside `authFetch` and to the unauthenticated server calls; the
+ * community socket uses them through `socketIoHeaderOptions`
  * (`serverSocketTransport.ts`).
  */
 export function getAdditionalRequestHeaders(): Record<string, string> {

@@ -4,9 +4,9 @@ import { isTauriApp } from "@/utils/tauri";
  * Native clean-up when the active desktop profile ends (logout, Change
  * Profile, switching to another profile):
  * - `desktop_commands_not_ready`: CLI/deep-link commands queue again until
- *   the next login (WP1)
+ *   the next login
  * - `reset_jump_list_games`: the jump list must not show the previous
- *   account's games (WP1)
+ *   account's games
  * - `stop_game_time_tracker`: playtime is credited to the logged-in account
  * - `kill_child_processes`: helper processes (Ludusavi) of the old session
  * - `discord_clear_presence`: no "playing" status for a signed-out account
