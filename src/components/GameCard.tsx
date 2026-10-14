@@ -1,5 +1,4 @@
 import { GameTypeBadge } from "./GameTypeBadge";
-import { useGameMetrics } from "@/hooks/useGameMetrics";
 import { PlaystashGame } from "@/api/models/PlaystashGame";
 import { Media } from "@/components/Media";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
@@ -26,6 +25,7 @@ import {
   resolveSortMetric,
 } from "@/utils/gameCard";
 import { isGameUpdateAvailable } from "@/utils/gameUpdate";
+import { launchInstalledGame } from "@/utils/launchInstalledGame";
 import { Alert, AlertTitle } from "@tw/alert";
 import {
   Dropdown,
@@ -49,7 +49,6 @@ const GameCard = memo(function GameCard({
   hideInstalledBadge?: boolean;
 }) {
   const { serverUrl, user, authFetch } = useAuth();
-  const reportGameEvent = useGameMetrics();
   const { showAlert } = useAlertDialog();
   // Detect if this is a locally installed game (set by Library for installed games)
   const installedInfo = (game as any)?._installedInfo as
@@ -297,72 +296,14 @@ const GameCard = memo(function GameCard({
       e.preventDefault();
       e.stopPropagation();
       if (!installedInfo) return;
-
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const { join } = await import("@tauri-apps/api/path");
-
-        const configPath = await join(
-          installedInfo.versionDirectory,
-          ".playstash.game.config.json",
-        );
-
-        let launchExe: string | undefined;
-        let launchParams: string | undefined;
-        let launchAsAdmin = false;
-        let umuGameId: string | undefined;
-        let umuStore: string | undefined;
-        let umuProtonPath: string | undefined;
-        let umuWinePrefix: string | undefined;
-
-        if (await invoke<boolean>("fs_path_exists", { path: configPath })) {
-          try {
-            const raw = JSON.parse(
-              await invoke<string>("fs_read_text_file", { path: configPath }),
-            );
-            launchExe = raw.launchexecutable;
-            launchParams = raw.launchparameters;
-            launchAsAdmin = !!raw.launchasadmin;
-            umuGameId = raw.umugameid;
-            umuStore = raw.umustore;
-            umuProtonPath = raw.umuprotonpath;
-            umuWinePrefix = raw.umuwineprefix;
-          } catch {
-            console.warn("Failed to parse game config:", configPath);
-          }
-        }
-
-        if (!launchExe) {
-          showAlert({
-            title: "No launch executable configured",
-            description:
-              "Open Game Settings → Launch Options to select an executable first.",
-          });
-          return;
-        }
-
-        await invoke("launch_game", {
-          gameTitle: localGame.metadata?.title || localGame.title || "Game",
-          gameId: game.id,
-          versionDirectory: installedInfo.versionDirectory,
-          installationPath: installedInfo.installationDirectory,
-          executableRelativePath: launchExe,
-          launchParameters: launchParams || null,
-          runAsAdmin: launchAsAdmin,
-          umuGameId: umuGameId || null,
-          umuStore: umuStore || null,
-          umuProtonPath: umuProtonPath || null,
-          umuWinePrefix: umuWinePrefix || null,
-        });
-        reportGameEvent(game.id, "played", installedInfo.versionId);
-      } catch (err: any) {
-        showAlert({
-          title: "Failed to launch game",
-          description: err?.message || String(err),
-        });
-      }
+      await launchInstalledGame({
+        gameId: game.id,
+        source: "game-card",
+        game: localGame,
+        installed: installedInfo,
+      });
     },
-    [installedInfo, showAlert, reportGameEvent],
+    [installedInfo, game.id, localGame],
   );
 
   const handleClientDownload = useCallback(async () => {

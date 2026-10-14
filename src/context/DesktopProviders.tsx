@@ -1,4 +1,10 @@
 import type { ComponentType, ReactNode } from "react";
+// ── WP4 launch: begin ──
+import {
+  BigPictureStartupEffect,
+  GameSessionProvider,
+} from "@/context/GameSessionProvider";
+// ── WP4 launch: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -19,6 +25,7 @@ const PROVIDERS: ComponentType<{ children: ReactNode }>[] = [
   // ── WP3 cloud-saves: begin ──
   // ── WP3 cloud-saves: end ──
   // ── WP4 launch: begin ──
+  GameSessionProvider,
   // ── WP4 launch: end ──
   // ── WP5 download-pipeline: begin ──
   // ── WP5 download-pipeline: end ──
@@ -40,6 +47,7 @@ const EFFECTS: ComponentType[] = [
   // ── WP3 cloud-saves: begin ──
   // ── WP3 cloud-saves: end ──
   // ── WP4 launch: begin ──
+  BigPictureStartupEffect,
   // ── WP4 launch: end ──
   // ── WP5 download-pipeline: begin ──
   // ── WP5 download-pipeline: end ──

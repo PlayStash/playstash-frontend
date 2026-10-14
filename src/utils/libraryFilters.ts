@@ -169,8 +169,16 @@ export function filterAndSortInstalledGames(
   return [...filtered].sort((a, b) => {
     const ia = a._installedInfo;
     const ib = b._installedInfo;
-    const ra = Math.max(Number(ia?.installedAt) || 0, Number(ia?.lastPlayedAt) || 0);
-    const rb = Math.max(Number(ib?.installedAt) || 0, Number(ib?.lastPlayedAt) || 0);
+    const ra = Math.max(
+      Number(ia?.installedAt) || 0,
+      Number(ia?.lastPlayedAt) || 0,
+      Number(ia?.lastLaunchedAt) || 0,
+    );
+    const rb = Math.max(
+      Number(ib?.installedAt) || 0,
+      Number(ib?.lastPlayedAt) || 0,
+      Number(ib?.lastLaunchedAt) || 0,
+    );
     if (rb !== ra) return rb - ra;
     return (a.sort_title ?? a.title ?? "").localeCompare(
       b.sort_title ?? b.title ?? "",
