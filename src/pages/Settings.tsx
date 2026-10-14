@@ -120,6 +120,9 @@ import { DownloadExtrasSettings } from "@/components/settings/DownloadExtrasSett
 // ── WP6 accounts: begin ──
 import AccountSettings from "@/components/settings/AccountSettings";
 // ── WP6 accounts: end ──
+// ── WP3 cloud-saves: begin ──
+import { CloudSaveSettings } from "@/components/settings/CloudSaveSettings";
+// ── WP3 cloud-saves: end ──
 
 const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
 const MINIMIZE_ON_GAME_LAUNCH_KEY = "tauri_minimize_on_game_launch";
@@ -324,6 +327,7 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
     },
     // ── WP2 community: end ──
     // ── WP3 cloud-saves: begin ──
+    { id: "wp3-cloud-saves", component: CloudSaveSettings, desktopOnly: true },
     // ── WP3 cloud-saves: end ──
   ],
   storage: [

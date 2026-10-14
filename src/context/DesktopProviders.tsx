@@ -28,6 +28,9 @@ import {
   LegacyInstallsPrompt,
 } from "@/components/login/AccountEffects";
 // ── WP6 accounts: end ──
+// ── WP3 cloud-saves: begin ──
+import { CloudSaveSync } from "@/hooks/useCloudSaveSync";
+// ── WP3 cloud-saves: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -74,6 +77,7 @@ const EFFECTS: ComponentType[] = [
   SteamShortcutSyncEffect,
   // ── WP2 community: end ──
   // ── WP3 cloud-saves: begin ──
+  CloudSaveSync,
   // ── WP3 cloud-saves: end ──
   // ── WP4 launch: begin ──
   BigPictureStartupEffect,

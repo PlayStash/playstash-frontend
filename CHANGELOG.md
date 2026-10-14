@@ -96,6 +96,19 @@ Status: Unreleased.
 - The client no longer logs in to PlayStash servers older than 15.0.0. -> **Update the server to 15.0.0 or newer.**
 <!-- /WP6 -->
 
+<!-- WP3 -->
+- Added cloud saves to the desktop app: with "Sync cloud saves" enabled under Settings → Integrations, PlayStash restores your latest cloud save before a game starts and uploads your saves after the game exits, using the bundled Ludusavi save tool.
+- Cloud save backups made while offline are queued and uploaded automatically once you are back online.
+- Before overwriting a local save that is newer than the cloud save, the desktop app asks whether to keep the local save or use the cloud save; launches started in the background keep the local save.
+- Added a Cloud Saves row on installed games to restore or back up saves manually, and an offer to back up the cloud save before uninstalling a game.
+- Added custom Ludusavi manifests (file paths or URLs) and a "Use Primary Manifest" option to the cloud save settings.
+- Cloud saves of Proton/umu games on Linux are backed up from and restored into the game's Wine prefix, and archives move between Windows and Linux installations.
+- Archives created by the previous Windows client restore in the new desktop app and vice versa.
+- Reworked the Saves tab into a cloud save version list with created date, size and installation, marking archives uploaded from this device; administrators can browse the saves of every user.
+- Desktop downloads of save archives now stream straight to the chosen file, and manual uploads from the desktop app record this installation.
+- Fixed the Saves tab requesting save archives for an unknown user before the account had loaded.
+<!-- /WP3 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.

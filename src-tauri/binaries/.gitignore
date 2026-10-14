@@ -1,0 +1,5 @@
+# Ludusavi sidecars and their notices are downloaded and verified by
+# `pnpm ludusavi:fetch` (scripts/fetch-ludusavi.mjs). Never commit binaries.
+*
+!.gitignore
+!ludusavi-LICENSE.txt

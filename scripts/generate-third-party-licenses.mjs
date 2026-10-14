@@ -20,6 +20,21 @@ import { join } from "node:path";
 const require = createRequire(import.meta.url);
 const checker = require("license-checker-rseidelsohn");
 
+/**
+ * Native tools bundled with the desktop app (not npm packages). Their
+ * license texts are committed next to the sidecars.
+ */
+const BUNDLED_TOOLS = [
+  {
+    name: "ludusavi",
+    version: "0.31.0",
+    licenses: "MIT",
+    repository: "https://github.com/mtkennerly/ludusavi",
+    url: null,
+    licenseFile: "src-tauri/binaries/ludusavi-LICENSE.txt",
+  },
+];
+
 checker.init({ start: process.cwd(), production: true }, (err, json) => {
   if (err) {
     console.error("license-checker failed:", err.message ?? err);
@@ -53,6 +68,12 @@ checker.init({ start: process.cwd(), production: true }, (err, json) => {
         licenseText,
       };
     })
+    .concat(
+      BUNDLED_TOOLS.map(({ licenseFile, ...tool }) => ({
+        ...tool,
+        licenseText: readFileSync(join(process.cwd(), licenseFile), "utf8"),
+      })),
+    )
     .sort(
       (a, b) =>
         a.name.localeCompare(b.name) || a.version.localeCompare(b.version),
