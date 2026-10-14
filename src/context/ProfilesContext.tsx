@@ -27,6 +27,7 @@ import {
   type Profile,
 } from "@/utils/profiles";
 import { removeStoredRefreshToken } from "@/utils/tokenStorage";
+import { removeDefaultExtractionPassword } from "@/utils/extractionPassword";
 import { isTauriDesktop } from "@/utils/tauri";
 
 export interface ProfileDraft {
@@ -196,6 +197,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       removeProfileFromState(current, profileId),
     );
     await removeStoredRefreshToken(profileId);
+    await removeDefaultExtractionPassword(profileId);
     clearProfileNamespace(profileId);
     try {
       localStorage.removeItem(`app_cached_user:${profileId}`);

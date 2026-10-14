@@ -10,7 +10,12 @@ import { isTauriApp } from "@/utils/tauri";
  * Record keys used today:
  * - `app_refresh_token`: the pre-profile session (web, and desktop before migration)
  * - `refresh_token:<profileId>`: each desktop profile's session (WP6)
- * - `default_extraction_password`: the default archive password (WP5)
+ * - `default_extraction_password:<profileId>`: a profile's default archive
+ *   password (see `extractionPassword.ts`)
+ *
+ * The vault must be opened only once per snapshot file (the Stronghold plugin
+ * keys open vaults by path; loading it again drops the loaded clients), so
+ * every secret goes through `ensureVault()`.
  */
 interface VaultHandle {
   store: import("@tauri-apps/plugin-stronghold").Store;
@@ -20,9 +25,6 @@ interface VaultHandle {
 const VAULT_PATH = "vault.hold";
 const CLIENT_NAME = "playstash";
 const WEB_PREFIX = "playstash_secret:";
-
-/** WP5 default extraction password (also written by connection import / legacy import). */
-export const EXTRACTION_PASSWORD_SECRET = "default_extraction_password";
 
 /** Vault record key of a profile's refresh token. */
 export function refreshTokenSecretKey(profileId: string): string {
@@ -100,10 +102,3 @@ export async function secureRemove(key: string): Promise<void> {
   await store.remove(key);
   await stronghold.save();
 }
-
-/** `secureStore.get/set/remove(key)` (WP5 contract name). */
-export const secureStore = {
-  get: secureGet,
-  set: secureSet,
-  remove: secureRemove,
-};

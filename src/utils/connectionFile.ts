@@ -1,9 +1,8 @@
 import { normalizeServerUrl } from "@/utils/authConfig";
 import {
-  EXTRACTION_PASSWORD_SECRET,
-  secureGet,
-  secureSet,
-} from "@/utils/secureStore";
+  getDefaultExtractionPassword,
+  setDefaultExtractionPassword,
+} from "@/utils/extractionPassword";
 
 /**
  * Server connection files (WPF `ConnectionProfile`, schema 1): the server URL
@@ -131,11 +130,14 @@ export function clearPendingConnection(): void {
 
 /**
  * Applies a pending import after a successful login, but only when the login
- * went to the imported server. Returns whether it was applied.
+ * went to the imported server. The archive password becomes the default
+ * extraction password of the profile that just logged in. Returns whether it
+ * was applied.
  */
 export async function applyPendingConnection(
   loggedInServer: string,
-  setSecret: (key: string, value: string) => Promise<void> = secureSet,
+  setPassword: (password: string) => Promise<void> = (password) =>
+    setDefaultExtractionPassword(password),
 ): Promise<boolean> {
   const pending = getPendingConnection();
   if (!pending) return false;
@@ -153,16 +155,12 @@ export async function applyPendingConnection(
   } catch {
     /* storage unavailable */
   }
-  await setSecret(EXTRACTION_PASSWORD_SECRET, pending.archive_password ?? "");
+  await setPassword(pending.archive_password ?? "");
   clearPendingConnection();
   return true;
 }
 
-/** The default archive password for an opt-in export. */
+/** The active profile's default archive password for an opt-in export. */
 export async function readDefaultArchivePassword(): Promise<string | null> {
-  try {
-    return await secureGet(EXTRACTION_PASSWORD_SECRET);
-  } catch {
-    return null;
-  }
+  return (await getDefaultExtractionPassword()) || null;
 }

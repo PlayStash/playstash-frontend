@@ -91,21 +91,21 @@ describe("connection import", () => {
         }),
       ),
     );
-    const setSecret = vi.fn().mockResolvedValue(undefined);
+    const setPassword = vi.fn().mockResolvedValue(undefined);
     expect(
-      await applyPendingConnection("https://other.example", setSecret),
+      await applyPendingConnection("https://other.example", setPassword),
     ).toBe(false);
     expect(localStorage.getItem("tauri_auto_extract")).toBeNull();
-    expect(setSecret).not.toHaveBeenCalled();
+    expect(setPassword).not.toHaveBeenCalled();
     expect(getPendingConnection()).not.toBeNull();
 
     expect(
-      await applyPendingConnection("https://server.example/", setSecret),
+      await applyPendingConnection("https://server.example/", setPassword),
     ).toBe(true);
     expect(localStorage.getItem("tauri_auto_extract")).toBe("1");
     expect(localStorage.getItem("tauri_auto_install")).toBe("1");
     expect(localStorage.getItem("tauri_auto_delete_source")).toBe("0");
-    expect(setSecret).toHaveBeenCalledWith("default_extraction_password", "");
+    expect(setPassword).toHaveBeenCalledWith("");
     expect(getPendingConnection()).toBeNull();
   });
 });
