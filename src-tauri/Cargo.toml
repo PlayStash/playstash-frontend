@@ -55,6 +55,9 @@ isomage = "2.1.0"
 # ── WP1 os-integration: begin ──
 # ── WP1 os-integration: end ──
 # ── WP2 community: begin ──
+discord-rich-presence = "0.2"
+md-5 = "0.10"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp"] }
 # ── WP2 community: end ──
 # ── WP3 cloud-saves: begin ──
 # ── WP3 cloud-saves: end ──
@@ -72,6 +75,7 @@ winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser
 # ── WP1 os-integration: begin ──
 # ── WP1 os-integration: end ──
 # ── WP2 community: begin ──
+winreg = "0.55"
 # ── WP2 community: end ──
 # ── WP3 cloud-saves: begin ──
 # ── WP3 cloud-saves: end ──

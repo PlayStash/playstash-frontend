@@ -28,6 +28,10 @@ mod desktop_commands;
 mod shortcuts;
 // ── WP1 os-integration: end ──
 // ── WP2 community: begin ──
+mod discord;
+mod integrations;
+mod steam;
+mod vdf;
 // ── WP2 community: end ──
 // ── WP3 cloud-saves: begin ──
 // ── WP3 cloud-saves: end ──
@@ -728,6 +732,15 @@ pub fn run() {
       shortcuts::desktop_shortcut_exists,
       // ── WP1 os-integration: end ──
       // ── WP2 community: begin ──
+      integrations::get_integrations_settings,
+      integrations::set_integrations_settings,
+      discord::discord_set_presence,
+      discord::discord_clear_presence,
+      steam::steam_user_config_dir,
+      steam::steam_sync_shortcuts,
+      steam::steam_remove_shortcuts,
+      steam::steam_restore_backup,
+      steam::steam_missing_cached_media,
       // ── WP2 community: end ──
       // ── WP3 cloud-saves: begin ──
       // ── WP3 cloud-saves: end ──
