@@ -1,7 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
-import { appDataDir } from "@tauri-apps/api/path";
 import { isTauriApp } from "@/utils/tauri";
 import { AUTH_REFRESH_STORAGE_KEY } from "@/utils/authConfig";
+import {
+  ensureVault,
+  refreshTokenSecretKey,
+  secureGet,
+  secureRemove,
+} from "@/utils/secureStore";
 
 /**
  * Token storage abstraction.
@@ -12,6 +16,11 @@ import { AUTH_REFRESH_STORAGE_KEY } from "@/utils/authConfig";
  * `localStorage`. The vault protects persisted data; frontend code with native
  * IPC access can still access the user's session and must remain trusted.
  *
+ * Desktop profiles (WP6) each keep their own token under
+ * `refresh_token:<profileId>`; `setTokenProfile` selects the active one. Without
+ * a profile (web build, or before the desktop migration) the single legacy
+ * record `app_refresh_token` is used.
+ *
  * On the plain web build we fall back to `localStorage`, which is the norm for
  * browser-delivered SPAs.
  *
@@ -19,52 +28,40 @@ import { AUTH_REFRESH_STORAGE_KEY } from "@/utils/authConfig";
  * writes update the cache immediately and persist in the background (still
  * awaited by callers so a close right after login doesn't lose the token).
  */
-interface VaultHandle {
-  store: import("@tauri-apps/plugin-stronghold").Store;
-  stronghold: import("@tauri-apps/plugin-stronghold").Stronghold;
-}
-
-const VAULT_PATH = "vault.hold";
-const CLIENT_NAME = "playstash";
 const NATIVE_TOKEN_BLOCKED_KEY = "app_native_token_blocked";
 
-function blockNativeRestore(blocked: boolean) {
+let activeProfileId: string | null = null;
+let cachedRefreshToken: string | null = null;
+let cacheLoaded = false;
+let initPromise: Promise<void> | null = null;
+
+function vaultKey(profileId: string | null = activeProfileId): string {
+  return profileId
+    ? refreshTokenSecretKey(profileId)
+    : AUTH_REFRESH_STORAGE_KEY;
+}
+
+function blockedKey(profileId: string | null = activeProfileId): string {
+  return profileId
+    ? `${NATIVE_TOKEN_BLOCKED_KEY}:${profileId}`
+    : NATIVE_TOKEN_BLOCKED_KEY;
+}
+
+function blockNativeRestore(blocked: boolean, profileId = activeProfileId) {
   try {
-    if (blocked) localStorage.setItem(NATIVE_TOKEN_BLOCKED_KEY, "true");
-    else localStorage.removeItem(NATIVE_TOKEN_BLOCKED_KEY);
+    if (blocked) localStorage.setItem(blockedKey(profileId), "true");
+    else localStorage.removeItem(blockedKey(profileId));
   } catch {
     /* non-secret restore marker cannot be written */
   }
 }
 
-let cachedRefreshToken: string | null = null;
-let cacheLoaded = false;
-let initPromise: Promise<void> | null = null;
-let vaultReady: Promise<VaultHandle> | null = null;
-
-async function ensureVault(): Promise<VaultHandle> {
-  if (!vaultReady) {
-    vaultReady = (async () => {
-      const { Stronghold } = await import("@tauri-apps/plugin-stronghold");
-      const dir = await appDataDir();
-      const vaultPath = `${dir}/${VAULT_PATH}`;
-      const password = await invoke<string>("get_or_create_vault_password");
-      const stronghold = await Stronghold.load(vaultPath, password);
-      let client;
-      try {
-        client = await stronghold.loadClient(CLIENT_NAME);
-      } catch {
-        client = await stronghold.createClient(CLIENT_NAME);
-      }
-      return { store: client.getStore(), stronghold };
-    })();
-    // If the vault can't be initialised, drop the cached promise so a later
-    // call can retry.
-    vaultReady.catch(() => {
-      vaultReady = null;
-    });
+function isNativeRestoreBlocked(profileId = activeProfileId): boolean {
+  try {
+    return localStorage.getItem(blockedKey(profileId)) === "true";
+  } catch {
+    return false;
   }
-  return vaultReady;
 }
 
 function readLocal() {
@@ -91,33 +88,52 @@ function clearLocal() {
   }
 }
 
+/**
+ * Selects whose refresh token the other functions read and write (desktop
+ * profiles). `null` selects the legacy single-session record. Resets the
+ * cache; call `initTokenStorage()` afterwards.
+ */
+export function setTokenProfile(profileId: string | null): void {
+  if (profileId === activeProfileId && cacheLoaded) return;
+  activeProfileId = profileId;
+  cachedRefreshToken = null;
+  cacheLoaded = false;
+  initPromise = null;
+}
+
+export function getTokenProfile(): string | null {
+  return activeProfileId;
+}
+
 /** Loads the refresh token into memory. Call once before reading it. */
 export function initTokenStorage(): Promise<void> {
   // Deduplicate concurrent initialisations (e.g. bootstrap vs a component's
   // first authenticated request racing at startup).
   if (initPromise) return initPromise;
+  const profileId = activeProfileId;
   initPromise = (async () => {
     if (cacheLoaded) return;
+    let token: string | null = null;
     try {
       if (isTauriApp()) {
         clearLocal();
-        if (localStorage.getItem(NATIVE_TOKEN_BLOCKED_KEY) === "true") {
-          cachedRefreshToken = null;
-          cacheLoaded = true;
-          return;
+        if (!isNativeRestoreBlocked(profileId)) {
+          const { store } = await ensureVault();
+          const data = await store.get(vaultKey(profileId));
+          token = data ? new TextDecoder().decode(data) : null;
         }
-        const { store } = await ensureVault();
-        const data = await store.get(AUTH_REFRESH_STORAGE_KEY);
-        cachedRefreshToken = data ? new TextDecoder().decode(data) : null;
         clearLocal();
       } else {
-        cachedRefreshToken = readLocal();
+        token = readLocal();
       }
     } catch (e) {
       console.warn("[tokenStorage] init failed", e);
-      cachedRefreshToken = isTauriApp() ? null : readLocal();
+      token = isTauriApp() ? null : readLocal();
       if (isTauriApp()) clearLocal();
     }
+    // The active profile may have changed while the vault was loading.
+    if (profileId !== activeProfileId) return;
+    cachedRefreshToken = token;
     cacheLoaded = true;
   })();
   return initPromise;
@@ -130,20 +146,22 @@ export function getRefreshToken(): string | null {
 
 /** Updates the cache and persists the token to secure storage. */
 export async function setRefreshToken(token: string): Promise<void> {
+  const profileId = activeProfileId;
   cachedRefreshToken = token;
+  cacheLoaded = true;
   if (isTauriApp()) {
     clearLocal();
-    blockNativeRestore(true);
+    blockNativeRestore(true, profileId);
   }
   try {
     if (isTauriApp()) {
       const { store, stronghold } = await ensureVault();
       await store.insert(
-        AUTH_REFRESH_STORAGE_KEY,
+        vaultKey(profileId),
         Array.from(new TextEncoder().encode(token)),
       );
       await stronghold.save();
-      blockNativeRestore(false);
+      blockNativeRestore(false, profileId);
     } else {
       writeLocal(token);
     }
@@ -157,12 +175,21 @@ export async function setRefreshToken(token: string): Promise<void> {
 /** Clears the cache and removes the token from secure storage. */
 export async function removeRefreshToken(): Promise<void> {
   cachedRefreshToken = null;
+  cacheLoaded = true;
+  await removeStoredRefreshToken(activeProfileId);
+}
+
+/** Removes a (possibly inactive) profile's stored token. */
+export async function removeStoredRefreshToken(
+  profileId: string | null,
+): Promise<void> {
+  if (profileId === activeProfileId) cachedRefreshToken = null;
   clearLocal();
-  if (isTauriApp()) blockNativeRestore(true);
+  if (isTauriApp()) blockNativeRestore(true, profileId);
   try {
     if (isTauriApp()) {
       const { store, stronghold } = await ensureVault();
-      await store.remove(AUTH_REFRESH_STORAGE_KEY);
+      await store.remove(vaultKey(profileId));
       await stronghold.save();
     } else {
       clearLocal();
@@ -171,4 +198,54 @@ export async function removeRefreshToken(): Promise<void> {
     console.warn("[tokenStorage] remove failed", e);
     clearLocal();
   }
+}
+
+/** Whether a profile has a stored (restorable) refresh token. */
+export async function hasStoredRefreshToken(
+  profileId: string,
+): Promise<boolean> {
+  if (profileId === activeProfileId && cacheLoaded) return !!cachedRefreshToken;
+  if (isTauriApp() && isNativeRestoreBlocked(profileId)) return false;
+  try {
+    return !!(await secureGet(vaultKey(profileId)));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Stores a token for a profile that may not be active (legacy import).
+ * Throws when the vault fails.
+ */
+export async function storeRefreshTokenFor(
+  profileId: string,
+  token: string,
+): Promise<void> {
+  if (profileId === activeProfileId) {
+    await setRefreshToken(token);
+    return;
+  }
+  const { store, stronghold } = await ensureVault();
+  await store.insert(
+    vaultKey(profileId),
+    Array.from(new TextEncoder().encode(token)),
+  );
+  await stronghold.save();
+  blockNativeRestore(false, profileId);
+}
+
+/**
+ * Moves the pre-profile session (`app_refresh_token`) to a desktop profile.
+ * Returns whether a token was moved.
+ */
+export async function migrateLegacyRefreshToken(
+  profileId: string,
+): Promise<boolean> {
+  if (!isTauriApp()) return false;
+  if (isNativeRestoreBlocked(null)) return false;
+  const token = await secureGet(AUTH_REFRESH_STORAGE_KEY);
+  if (!token) return false;
+  await storeRefreshTokenFor(profileId, token);
+  await secureRemove(AUTH_REFRESH_STORAGE_KEY);
+  return true;
 }

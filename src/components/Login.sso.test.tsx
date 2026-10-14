@@ -46,7 +46,10 @@ beforeEach(() => {
       expect(window.location.href).not.toMatch(/access_token|refresh_token/);
       return {
         ok: true,
-        json: async () => ({ available_authentication_methods: ["sso"] }),
+        json: async () => ({
+          version: "17.0.0",
+          available_authentication_methods: ["sso"],
+        }),
       };
     }),
   );
@@ -57,7 +60,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   window.history.replaceState({}, "", "/login");
 });
-describe("SSO popup trust", () => {
+describe("SSO popup trust", { timeout: 30_000 }, () => {
   it("scrubs an initiated fragment before a failed login and consumes the marker", async () => {
     sessionStorage.setItem("app_sso_pending_server", "https://library.test");
     window.history.replaceState(

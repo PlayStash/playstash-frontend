@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { serverFetch } from "@/utils/serverFetch"; // WP6: additional request headers
 
 interface ServerInfo {
   status?: string;
@@ -51,7 +52,11 @@ export function useRegistrationRequirements(
         let base = chosen.trim();
         if (!/^https?:\/\//i.test(base)) base = "https://" + base;
         base = base.replace(/\/+$/, "");
-        const res = await fetch(`${base}/api/status`, { method: "GET" });
+        const res = await serverFetch(
+          `${base}/api/status`,
+          { method: "GET" },
+          base,
+        );
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const info: ServerInfo = await res.json();
         if (!cancelled) {

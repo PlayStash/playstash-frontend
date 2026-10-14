@@ -104,6 +104,9 @@ import {
   PuzzlePieceIcon,
   CircleStackIcon,
 } from "@heroicons/react/24/outline";
+// ── WP6 accounts: begin ──
+import AccountSettings from "@/components/settings/AccountSettings";
+// ── WP6 accounts: end ──
 
 const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
 const MINIMIZE_ON_GAME_LAUNCH_KEY = "tauri_minimize_on_game_launch";
@@ -255,6 +258,7 @@ const CATEGORY_ORDER: SettingsCategory[] = [
 const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   account: [
     // ── WP6 accounts: begin ──
+    { id: "wp6-account", component: AccountSettings },
     // ── WP6 accounts: end ──
   ],
   appearance: [

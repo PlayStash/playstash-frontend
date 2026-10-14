@@ -1,5 +1,30 @@
 # PlayStash Frontend Changelog
 
+## 17.3.0
+
+Status: Unreleased.
+
+### Changes
+
+<!-- WP6 -->
+- Added login profiles to the desktop app: save several accounts across servers, pick one from "Choose Your Profile", edit or delete profiles, and switch with "Change Profile" in Settings → Account without entering passwords again. Your current login is kept as the first profile.
+- Added "Remember Me" to the profile list: the desktop app logs into the last used profile automatically at startup.
+- Added "Logout from this Device" and "Logout from all Devices" in Settings → Account; logging out (also from the user menu) now ends the session on the server, and a failed server logout is reported while you are still logged out locally.
+- Added additional request headers ("Client Settings") to the desktop app for servers behind Cloudflare Access or similar proxies; they are sent with every server request, including downloads, playtime and add-ons, and never to other hosts.
+- Added "Export Server Connection" (Settings → Account) and "Import Server Connection" (login screen) to share the server URL and installation preferences; the archive password is only included on request.
+- The login now refuses servers older than 15.0.0 with a "CLIENT-SERVER-INCOMPATIBILITY DETECTED" dialog that links to the server releases.
+- Accounts awaiting admin approval now show a waiting screen that signs in automatically once the account is activated; registration signs you in right away.
+- The desktop app now shows a notice when it starts in offline mode and when the server is reachable again, and switches back to online mode reliably.
+- Added "Copy API Key" to the user editor when the server provides the key.
+- Added an import from the previous PlayStash client for Windows (profiles, settings, request headers, saved sessions and themes), plus adoption of games it installed so they show as installed without a new download.
+<!-- /WP6 -->
+
+### Breaking Changes & Migration
+
+<!-- WP6 -->
+- The client no longer logs in to PlayStash servers older than 15.0.0. -> **Update the server to 15.0.0 or newer.**
+<!-- /WP6 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.
