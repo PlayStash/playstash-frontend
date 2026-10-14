@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import {
   LEGACY_SETTING_TARGETS,
@@ -67,7 +68,10 @@ describe("legacy settings mapping", () => {
       DownloadLimit: "2500",
       MountIso: "1",
       LastLibrarySortBy: "metadata.rating",
-      LastLibraryOrderBy: "DESC",
+      LastLibraryOrderBy: "desc",
+      ShowMappedTitle: "0",
+      StartupSound: "C:\\sounds\\start.mp3",
+      ChatNotifications: "1",
       SyncDiscordPresence: "1",
       DiscordApplicationId: "123456789",
       CustomCloudSaveManifests: "https://a/manifest.yaml; C:\\m.yaml;",
@@ -80,8 +84,14 @@ describe("legacy settings mapping", () => {
       download_speed_limit_kb: "2500",
       tauri_mount_iso: "1",
       app_library_sort: "metadata.rating",
-      app_library_order: "desc",
+      app_library_order: "DESC",
+      playstash_show_mapped_title: "false",
       playstash_media_volume: "0.5",
+    });
+    expect(mapped.local).not.toHaveProperty("playstash_chat_notifications");
+    expect(mapped.profileLocal.playstash_chat_notifications).toBe("1");
+    expect(mapped.sections.startup).toEqual({
+      startupSound: "C:\\sounds\\start.mp3",
     });
     expect(mapped.sections.integrations).toEqual({
       syncDiscordPresence: true,
@@ -101,7 +111,7 @@ describe("legacy settings mapping", () => {
     // AutoInstallPortable, ShowMappedTitle and LibStartup default to on.
     expect(mapped.local).toEqual({
       tauri_auto_install: "1",
-      playstash_show_mapped_title: "1",
+      playstash_show_mapped_title: "true",
       playstash_library_autoload: "1",
     });
     expect(mapped.sections).toEqual({
@@ -130,13 +140,42 @@ describe("legacy settings mapping", () => {
     });
     expect(
       JSON.parse(
-        mapLegacyTheme('{"DisplayName":"Default Dark","Path":""}', null)!,
+        mapLegacyTheme(
+          JSON.stringify({
+            DisplayName: "Halloween (Dark)",
+            Path: "pack://application:,,,/playstash;component/Resources/Assets/Themes/ThemeHalloweenDark.xaml",
+          }),
+          null,
+        )!,
       ),
     ).toEqual({
       source: "builtin",
-      id: "Default Dark",
-      displayName: "Default Dark",
+      id: "ThemeHalloweenDark",
+      displayName: "Halloween (Dark)",
     });
+    expect(
+      JSON.parse(
+        mapLegacyTheme('{"DisplayName":"Default (Light)","Path":""}', null)!,
+      ),
+    ).toMatchObject({ source: "builtin", id: "ThemeDefaultLight" });
+    expect(
+      mapLegacyTheme('{"DisplayName":"Unknown","Path":""}', null),
+    ).toBeNull();
+  });
+
+  it("keeps sub folders of copied custom themes", () => {
+    expect(
+      JSON.parse(
+        mapLegacyTheme(
+          JSON.stringify({
+            DisplayName: "Nested",
+            Path: "C:\\Users\\a\\AppData\\Roaming\\PlayStash\\profiles\\s\\g\\themes\\Pack\\Nested.xaml",
+          }),
+          "C:\\app\\profiles\\p1\\themes",
+          "C:\\Users\\a\\AppData\\Roaming\\PlayStash\\profiles\\s\\g\\themes",
+        )!,
+      ).path,
+    ).toBe("C:\\app\\profiles\\p1\\themes\\Pack\\Nested.xaml");
   });
 });
 

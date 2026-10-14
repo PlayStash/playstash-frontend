@@ -220,15 +220,8 @@ pub(crate) fn scan_legacy_root(root: &Path) -> LegacyScan {
         scan.skipped.push(format!("{label}: profile without server URL or username"));
         continue;
       }
-      let theme_files = std::fs::read_dir(profile_dir.join("themes"))
-        .map(|entries| {
-          entries
-            .flatten()
-            .filter(|entry| entry.path().is_file())
-            .map(|entry| entry.path().to_string_lossy().to_string())
-            .collect()
-        })
-        .unwrap_or_default();
+      let mut theme_files = Vec::new();
+      list_theme_files(&profile_dir.join("themes"), &mut theme_files, 0);
       scan.profiles.push(LegacyProfile { root_dir: profile_dir.to_string_lossy().to_string(), values, theme_files });
     }
   }
@@ -261,7 +254,8 @@ fn is_inside(path: &Path, parent: &Path) -> bool {
 }
 
 /// Copies a WPF profile's custom themes (`*.xaml` plus overlay images) into
-/// `<app_data_dir>/profiles/<profileId>/themes/` (the WP7 per-profile themes dir).
+/// `<app_data_dir>/profiles/<profileId>/themes/` (the WP7 per-profile themes
+/// dir), keeping sub folders: the WPF client loaded themes recursively.
 #[tauri::command]
 pub(crate) async fn legacy_import_copy_themes(
   app: tauri::AppHandle,
@@ -277,21 +271,57 @@ pub(crate) async fn legacy_import_copy_themes(
     return Err("The theme folder is not part of the previous client's profiles.".into());
   }
   let target = crate::profiles::profile_dir(&app, &profile_id)?.join("themes");
-  std::fs::create_dir_all(&target).map_err(|error| error.to_string())?;
-  let mut copied = 0;
-  for entry in std::fs::read_dir(&source).map_err(|error| error.to_string())?.flatten() {
+  copy_theme_files(&source, &target, 0)
+}
+
+const MAX_THEME_DEPTH: usize = 16;
+
+/// Theme files below a WPF `themes` folder (recursive, links skipped).
+fn list_theme_files(dir: &Path, out: &mut Vec<String>, depth: usize) {
+  if depth > MAX_THEME_DEPTH {
+    return;
+  }
+  let Ok(entries) = std::fs::read_dir(dir) else {
+    return;
+  };
+  for entry in entries.flatten() {
+    let Ok(kind) = entry.file_type() else {
+      continue;
+    };
     let path = entry.path();
-    let extension = path.extension().and_then(|value| value.to_str()).unwrap_or("").to_ascii_lowercase();
-    let is_theme_file = matches!(extension.as_str(), "xaml" | "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp");
-    if !entry.file_type().map(|kind| kind.is_file()).unwrap_or(false) || !is_theme_file {
-      continue;
+    if kind.is_dir() {
+      list_theme_files(&path, out, depth + 1);
+    } else if kind.is_file() && is_theme_file(&path) {
+      out.push(path.to_string_lossy().to_string());
     }
+  }
+}
+
+fn is_theme_file(path: &Path) -> bool {
+  let extension = path.extension().and_then(|value| value.to_str()).unwrap_or("").to_ascii_lowercase();
+  matches!(extension.as_str(), "xaml" | "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp")
+}
+
+/// Copies theme files below `source` to `target` (existing files are kept).
+/// Symbolic links are skipped.
+fn copy_theme_files(source: &Path, target: &Path, depth: usize) -> Result<u32, String> {
+  if depth > MAX_THEME_DEPTH {
+    return Ok(0);
+  }
+  let mut copied = 0;
+  for entry in std::fs::read_dir(source).map_err(|error| error.to_string())?.flatten() {
+    let Ok(kind) = entry.file_type() else {
+      continue;
+    };
+    let path = entry.path();
     let destination = target.join(entry.file_name());
-    if destination.exists() {
-      continue;
+    if kind.is_dir() {
+      copied += copy_theme_files(&path, &destination, depth + 1)?;
+    } else if kind.is_file() && is_theme_file(&path) && !destination.exists() {
+      std::fs::create_dir_all(target).map_err(|error| error.to_string())?;
+      std::fs::copy(&path, &destination).map_err(|error| error.to_string())?;
+      copied += 1;
     }
-    std::fs::copy(&path, &destination).map_err(|error| error.to_string())?;
-    copied += 1;
   }
   Ok(copied)
 }
@@ -672,6 +702,30 @@ mod tests {
       let _ = std::fs::remove_dir_all(&self.0);
     }
   }
+
+  #[test]
+  fn copies_theme_files_recursively_and_keeps_existing_ones() {
+    let scratch = ScratchDir::new("themes");
+    let source = scratch.0.join("themes");
+    std::fs::create_dir_all(source.join("Sub")).unwrap();
+    std::fs::write(source.join("A.xaml"), "a").unwrap();
+    std::fs::write(source.join("notes.txt"), "x").unwrap();
+    std::fs::write(source.join("Sub").join("B.xaml"), "b").unwrap();
+    std::fs::write(source.join("Sub").join("overlay.png"), "p").unwrap();
+    let target = scratch.0.join("target");
+    std::fs::create_dir_all(&target).unwrap();
+    std::fs::write(target.join("A.xaml"), "kept").unwrap();
+
+    let mut listed = Vec::new();
+    list_theme_files(&source, &mut listed, 0);
+    assert_eq!(listed.len(), 3);
+    assert_eq!(copy_theme_files(&source, &target, 0).unwrap(), 2);
+    assert_eq!(std::fs::read_to_string(target.join("A.xaml")).unwrap(), "kept");
+    assert_eq!(std::fs::read_to_string(target.join("Sub").join("B.xaml")).unwrap(), "b");
+    assert!(target.join("Sub").join("overlay.png").is_file());
+    assert!(!target.join("notes.txt").exists());
+  }
+
 
   #[test]
   fn reads_preference_lines_like_the_wpf_library() {

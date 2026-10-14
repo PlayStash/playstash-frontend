@@ -19,12 +19,10 @@ import {
 } from "@/utils/requestHeaders";
 import { serverFetch } from "@/utils/serverFetch";
 import { storeRefreshTokenFor } from "@/utils/tokenStorage";
-import {
-  EXTRACTION_PASSWORD_SECRET,
-  secureGet,
-  secureSet,
-} from "@/utils/secureStore";
 import { addRootPath, getRootPaths } from "@/utils/rootPaths";
+import { setDefaultExtractionPassword } from "@/utils/extractionPassword";
+import { presenceStorageKey } from "@/utils/communityNotifications";
+import { BUILTIN_THEME_SOURCES, getBuiltinThemes } from "@/themes/builtins";
 
 /**
  * Import from the previous WPF client. Rust (`legacy_import.rs`) reads and
@@ -33,7 +31,8 @@ import { addRootPath, getRootPaths } from "@/utils/rootPaths";
  *
  * Machine settings (download roots, install preferences, …) were per profile
  * in WPF but are global now, so they come from the last used profile (or the
- * first one). Account settings (theme, artwork providers, presence) stay per
+ * first one). Account settings (theme, artwork providers, presence, chat
+ * and activity notifications, the default extraction password) stay per
  * profile.
  */
 
@@ -70,10 +69,17 @@ export type LegacyTarget =
   | { kind: "special"; owner: string };
 
 const flag: Converter = (value) => (value.trim() === "1" ? "1" : "0");
+/** Booleans stored as "true"/"false" by their owner (mapped title). */
+const trueFalse: Converter = (value) =>
+  value.trim() === "1" ? "true" : "false";
 const bool: Converter = (value) => value.trim() === "1";
 const raw: Converter = (value) => value.trim() || null;
 const number: Converter = (value) => {
   const parsed = Number(value.trim().replace(",", "."));
+  return Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : null;
+};
+const integer: Converter = (value) => {
+  const parsed = Number.parseInt(value.trim(), 10);
   return Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : null;
 };
 const list: Converter = (value) =>
@@ -81,9 +87,10 @@ const list: Converter = (value) =>
     .split(";")
     .map((entry) => entry.trim())
     .filter(Boolean);
+/** WPF "asc"/"desc" → the Library's "ASC"/"DESC". */
 const order: Converter = (value) =>
-  ["asc", "desc"].includes(value.trim().toLowerCase())
-    ? value.trim().toLowerCase()
+  ["ASC", "DESC"].includes(value.trim().toUpperCase())
+    ? value.trim().toUpperCase()
     : null;
 const artworkProviders: Converter = (value) => {
   try {
@@ -120,13 +127,13 @@ export const LEGACY_SETTING_TARGETS: Record<string, LegacyTarget> = {
   SessionToken: { kind: "special", owner: "WP6 refresh_token:<profileId>" },
   ExtractionPassword: {
     kind: "special",
-    owner: "WP5 default_extraction_password",
+    owner: "default_extraction_password:<profileId> (extractionPassword.ts)",
   },
   Theme: { kind: "special", owner: "WP7 playstash_theme (per profile)" },
   RootDirectories: { kind: "special", owner: "tauri_download_paths" },
   CommunityPresence: {
     kind: "special",
-    owner: "WP2 playstash:community-presence:<server>:<user>",
+    owner: "WP2 presence (per profile and account)",
   },
   BackgroundStart: {
     kind: "special",
@@ -147,12 +154,12 @@ export const LEGACY_SETTING_TARGETS: Record<string, LegacyTarget> = {
   DownloadLimit: {
     kind: "local",
     key: "download_speed_limit_kb",
-    convert: number,
+    convert: integer,
   },
   ShowMappedTitle: {
     kind: "local",
     key: "playstash_show_mapped_title",
-    convert: flag,
+    convert: trueFalse,
     whenMissing: "1",
   },
   FullscreenLibrary: {
@@ -163,16 +170,16 @@ export const LEGACY_SETTING_TARGETS: Record<string, LegacyTarget> = {
   StartupSound: {
     kind: "section",
     section: "startup",
-    field: "soundPath",
+    field: "startupSound",
     convert: raw,
   },
   ChatNotifications: {
-    kind: "local",
+    kind: "profileLocal",
     key: "playstash_chat_notifications",
     convert: flag,
   },
   ActivityNotifications: {
-    kind: "local",
+    kind: "profileLocal",
     key: "playstash_activity_notifications",
     convert: flag,
   },
@@ -298,26 +305,81 @@ export function parseLegacyHeaders(value: string | undefined): RequestHeader[] {
   }
 }
 
-/** WPF `Theme`: JSON `ThemeItem {DisplayName, Description, Author, Path}`. */
+const BUILTIN_THEME_IDS = new Set(BUILTIN_THEME_SOURCES.map(([id]) => id));
+
+function fileName(path: string): string {
+  return path.split(/[\\/]/).pop() ?? "";
+}
+
+/**
+ * The path of `path` below `dir` (both WPF paths) with `\` separators, or
+ * null when it is not inside.
+ */
+function relativeToDir(path: string, dir: string): string | null {
+  const normalize = (value: string) =>
+    value.replace(/[\\/]+/g, "\\").replace(/\\$/, "");
+  const base = normalize(dir);
+  const full = normalize(path);
+  if (!base || !full.toLowerCase().startsWith(`${base.toLowerCase()}\\`))
+    return null;
+  const relative = full.slice(base.length + 1);
+  return relative.split("\\").some((part) => !part || part === "..")
+    ? null
+    : relative;
+}
+
+/**
+ * WPF `Theme`: JSON `ThemeItem {DisplayName, Description, Author, Path}`.
+ *
+ * - Built-in themes have a `pack://…/Themes/<Id>.xaml` path; `<Id>` is the
+ *   WP7 built-in id (`ThemeDefaultDark`, …). Other values fall back to a
+ *   built-in theme with the same display name.
+ * - Custom themes point into the WPF profile's `themes` folder
+ *   (`legacyThemesDir`), which was copied to `copiedThemeDir` keeping its
+ *   sub folders.
+ *
+ * Returns the WP7 `playstash_theme` selection JSON, or null (default theme).
+ */
 export function mapLegacyTheme(
   value: string | undefined,
   copiedThemeDir: string | null,
+  legacyThemesDir?: string,
 ): string | null {
   if (!value) return null;
   try {
     const item = JSON.parse(value) as { DisplayName?: string; Path?: string };
     const displayName = item?.DisplayName?.trim();
     if (!displayName) return null;
-    const fileName = (item.Path ?? "").split(/[\\/]/).pop() ?? "";
-    if (copiedThemeDir && /\.xaml$/i.test(fileName)) {
+    const path = (item.Path ?? "").trim();
+    const name = fileName(path);
+    const builtinId = name.replace(/\.xaml$/i, "");
+    if (/^pack:/i.test(path) && BUILTIN_THEME_IDS.has(builtinId)) {
+      return JSON.stringify({ source: "builtin", id: builtinId, displayName });
+    }
+    const isFile =
+      /\.xaml$/i.test(name) && !/^[a-z][a-z0-9+.-]+:\/\//i.test(path);
+    if (copiedThemeDir && isFile) {
+      const relative =
+        (legacyThemesDir ? relativeToDir(path, legacyThemesDir) : null) ?? name;
       const separator = copiedThemeDir.includes("\\") ? "\\" : "/";
       return JSON.stringify({
         source: "file",
-        path: `${copiedThemeDir}${separator}${fileName}`,
+        path: `${copiedThemeDir}${separator}${relative.split("\\").join(separator)}`,
         displayName,
       });
     }
-    return JSON.stringify({ source: "builtin", id: displayName, displayName });
+    const builtin = getBuiltinThemes().find(
+      (theme) =>
+        theme.definition.displayName.trim().toLowerCase() ===
+        displayName.toLowerCase(),
+    );
+    return builtin
+      ? JSON.stringify({
+          source: "builtin",
+          id: builtin.id,
+          displayName: builtin.definition.displayName,
+        })
+      : null;
   } catch {
     return null;
   }
@@ -500,7 +562,12 @@ export async function importLegacyData(
         );
       }
     }
-    const theme = mapLegacyTheme(values.Theme, themeDir);
+    const separator = legacy.rootDir.includes("\\") ? "\\" : "/";
+    const theme = mapLegacyTheme(
+      values.Theme,
+      themeDir,
+      `${legacy.rootDir}${separator}themes`,
+    );
     if (theme) writeLocal({ [profileScopedKey("playstash_theme", id)]: theme });
     const mapped = mapLegacySettings(values);
     writeLocal(
@@ -513,9 +580,18 @@ export async function importLegacyData(
     );
     if (values.CommunityPresence && profile.userId) {
       writeLocal({
-        [`playstash:community-presence:${serverUrl}:${profile.userId}`]:
+        [profileScopedKey(presenceStorageKey(serverUrl, profile.userId), id)]:
           values.CommunityPresence,
       });
+    }
+    if (values.ExtractionPassword) {
+      try {
+        await setDefaultExtractionPassword(values.ExtractionPassword, id);
+      } catch {
+        report.skipped.push(
+          `${username}: ExtractionPassword (the vault is unavailable)`,
+        );
+      }
     }
     for (const root of list(values.RootDirectories ?? "") as string[]) {
       if (!report.roots.includes(root)) report.roots.push(root);
@@ -554,17 +630,6 @@ export async function importLegacyData(
         await invokeCommand("set_start_minimized", { minimized });
       } catch {
         /* simulated desktop mode */
-      }
-    }
-    if (primary.values.ExtractionPassword) {
-      try {
-        if (!(await secureGet(EXTRACTION_PASSWORD_SECRET)))
-          await secureSet(
-            EXTRACTION_PASSWORD_SECRET,
-            primary.values.ExtractionPassword,
-          );
-      } catch {
-        report.skipped.push("ExtractionPassword: the vault is unavailable");
       }
     }
   }
