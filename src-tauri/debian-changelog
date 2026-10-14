@@ -1,4 +1,4 @@
-playstash (17.2.2) unstable; urgency=medium
+playstash (17.2.3) unstable; urgency=medium
 
   * Add separate prebuilt frontend runtime with API, streaming downloads and WebSocket proxying.
 

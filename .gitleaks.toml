@@ -1,0 +1,16 @@
+[extend]
+useDefault = true
+
+# RFC 6455 section 1.2 publishes this nonce; it grants no service access.
+# https://www.rfc-editor.org/rfc/rfc6455#section-1.2
+# Match only the complete HTTP example string in this one integration fixture.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Public RFC 6455 WebSocket handshake example"
+condition = "AND"
+paths = ['''^scripts/check-frontend-runtime\.mjs$''']
+regexTarget = "line"
+regexes = ['''^\s*"Sec-WebSocket-Version: 13\\r\\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ[=][=]\\r\\n\\r\\n",\s*$''']
+

@@ -1,6 +1,6 @@
 # PlayStash Frontend Changelog
 
-## 17.2.2
+## 17.2.3
 
 Status: Released on 2026-10-14.
 
