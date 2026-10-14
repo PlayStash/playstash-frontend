@@ -4,7 +4,8 @@
     "externalBin": ["binaries/ludusavi"],
     "resources": {
       "binaries/ludusavi-LICENSE.txt": "licenses/ludusavi/LICENSE.txt",
-      "binaries/ludusavi-THIRD-PARTY.txt": "licenses/ludusavi/THIRD-PARTY.txt"
+      "binaries/ludusavi-THIRD-PARTY.txt": "licenses/ludusavi/THIRD-PARTY.txt",
+      "binaries/ludusavi-provenance.json": "licenses/ludusavi/provenance.json"
     }
   }
 }

@@ -203,8 +203,12 @@ jobs:
           #   -plugins-base: appsink, ogg/vorbis, opus, isomp4
           #   -plugins-good: autoaudiosink, vpx (VP8/VP9), matroska
           #   -plugins-bad:  fakevideosink, WebVTT encoder, H.264 (openh264), AAC (faad)
+          # libxcb-composite0-dev and libgtk-3-dev build the Ludusavi sidecar
+          # (the same packages upstream Ludusavi's CI installs).
           sudo apt install -y \
             libwebkit2gtk-4.1-dev \
+            libxcb-composite0-dev \
+            libgtk-3-dev \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
@@ -263,12 +267,40 @@ jobs:
       - name: Write AppStream metainfo
         run: node scripts/write-tauri-metainfo.mjs
 
-      # Cloud saves: the release config bundles Ludusavi as a sidecar, so the
-      # pinned, SHA-256 verified binary must exist before the build. Without a
-      # cross target the host triple is used; Intel macOS is built from source.
-      - name: Fetch verified Ludusavi sidecar
+      # Cloud saves: the release config bundles Ludusavi as a sidecar. It is
+      # built from the pinned upstream source with the security-patched
+      # lockfile (tooling/ludusavi, same build as the Windows client): pins
+      # verified, lockfile audited, upstream tests run, CLI smoke-tested. No
+      # upstream binary is used. Without a cross target the host triple is used.
+      # The cache only ever matches the exact build inputs and is saved after
+      # every check passed; all checks still run on a cache hit.
+      - name: Restore Ludusavi build cache
+        id: ludusavi-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/index
+            ${{ runner.temp }}/ludusavi-target
+          key: ludusavi-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.target || matrix.platform }}-${{ hashFiles('tooling/ludusavi/**', 'scripts/build-ludusavi.mjs') }}
+
+      - name: Build patched Ludusavi sidecar
         shell: bash
-        run: node scripts/fetch-ludusavi.mjs --target "${{ matrix.target }}"
+        run: node scripts/build-ludusavi.mjs --upstream-tests --target "${{ matrix.target }}" --target-dir "$RUNNER_TEMP/ludusavi-target"
+
+      - name: Verify Ludusavi sidecar provenance
+        shell: bash
+        run: node scripts/build-ludusavi.mjs --verify --target "${{ matrix.target }}"
+
+      - name: Save Ludusavi build cache
+        if: success() && steps.ludusavi-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/index
+            ${{ runner.temp }}/ludusavi-target
+          key: ludusavi-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.target || matrix.platform }}-${{ hashFiles('tooling/ludusavi/**', 'scripts/build-ludusavi.mjs') }}
 
       - name: Build installers with official Tauri action
         uses: tauri-apps/tauri-action@v1

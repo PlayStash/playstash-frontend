@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "https://github.com/mtkennerly/ludusavi",
+    "tag": "v0.31.0",
+    "commit": "8844d7b67e784909f4ef42f7bfb047b700fe7b15",
+    "archive_url": "https://github.com/mtkennerly/ludusavi/archive/refs/tags/v0.31.0.zip",
+    "archive_sha256": "74d6458fe597000d7565722c3ec8d4d291bc3349d6bbf7f47bd528a272b0f1e5"
+  },
+  "patch_revision": "playstash-2",
+  "version": "0.31.0",
+  "variant": "PlayStash-security-2",
+  "rust_toolchain": "1.99.0",
+  "targets": [
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin"
+  ],
+  "lockfile_sha256": "3ee22e76d18d3244afe4960090de3c8301753d743f4644e835f35d6406f9297f",
+  "patches": [
+    {
+      "path": "patches/root-manifest.json",
+      "sha256": "2ad45f1a9abdf4f93f8f369fcc10378c56c42088b86236b6e9e9cb12503b0276"
+    },
+    {
+      "path": "patches/cryoglyph-manifest.json",
+      "sha256": "fd26bf697d3a62a6eb8346b73fee48b83d1544244893a01e95a1165ba117f1df"
+    }
+  ],
+  "vendor_sources": [
+    {
+      "name": "cryoglyph",
+      "version": "0.1.0",
+      "archive_url": "https://static.crates.io/crates/cryoglyph/cryoglyph-0.1.0.crate",
+      "archive_sha256": "08bc795bdbccdbd461736fb163930a009da6597b226d6f6fce33e7a8eb6ec519"
+    }
+  ],
+  "cargo_audit": {
+    "version": "0.22.2",
+    "release_url": "https://github.com/RustSec/rustsec/releases/download/cargo-audit/v0.22.2/",
+    "assets": {
+      "x86_64-pc-windows-msvc": {
+        "file": "cargo-audit-x86_64-pc-windows-msvc-v0.22.2.zip",
+        "sha256": "0a7316540862c13d954f648917ceacca593747baed6eec180fafa590be2710ab"
+      },
+      "x86_64-unknown-linux-gnu": {
+        "file": "cargo-audit-x86_64-unknown-linux-gnu-v0.22.2.tgz",
+        "sha256": "ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39"
+      },
+      "aarch64-apple-darwin": {
+        "file": "cargo-audit-aarch64-apple-darwin-v0.22.2.tgz",
+        "sha256": "ec7ca4263769593df4d909be85b94a6b79efa2897be5d2bb8ebd516e823175af"
+      },
+      "x86_64-apple-darwin": {
+        "file": "cargo-audit-x86_64-apple-darwin-v0.22.2.tgz",
+        "sha256": "847831323de932155b226ab60ee4a180e13e5d007a019f0d4b7b4d89a6de2ab2"
+      }
+    }
+  }
+}

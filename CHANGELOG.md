@@ -56,6 +56,7 @@ Status: Unreleased.
 - Added a Cloud Saves row on installed games to restore or back up saves manually, and an offer to back up the cloud save before uninstalling a game (before any of its files or its Wine prefix are removed).
 - Added custom Ludusavi manifests (file paths or URLs) and a "Use Primary Manifest" option to the cloud save settings.
 - Cloud saves of Proton/umu games on Linux are backed up from and restored into the game's Wine prefix, and archives move between Windows and Linux installations.
+- Cloud saves use the same security-patched Ludusavi build as the Windows client, compiled from source with updated dependencies (including the latest Rustls security fixes).
 - Archives created by the previous Windows client restore in the new desktop app and vice versa.
 - Reworked the Saves tab into a cloud save version list with created date, size and installation, marking archives uploaded from this device; administrators can browse the saves of every user.
 - Desktop downloads of save archives now stream straight to the chosen file, and manual uploads from the desktop app record this installation.

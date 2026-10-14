@@ -2,6 +2,8 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
+# Pinned Ludusavi build inputs are verified by SHA-256; keep their bytes as-is.
+tooling/ludusavi/** -text
 
 ###############################################################################
 # Set default behavior for command prompt diff.

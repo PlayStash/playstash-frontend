@@ -2,7 +2,7 @@
 //! `SaveGameHelper` / `LudusaviCommand`.
 //!
 //! - Ludusavi ships as a sidecar next to the PlayStash executable (see
-//!   `scripts/fetch-ludusavi.mjs`); it runs hidden, tracked by
+//!   `scripts/build-ludusavi.mjs`); it runs hidden, tracked by
 //!   `children`, with arguments passed as a list and every title after `--`.
 //! - The config file (`config.yaml`) maps the user folder and the install
 //!   folder onto the fixed `G:\playstash\...` targets, so archives move
@@ -129,7 +129,7 @@ fn sidecar_file_name() -> &'static str {
 
 /// The bundled Ludusavi executable: next to the PlayStash executable in
 /// packaged builds (Tauri strips the target triple from sidecars), or in
-/// `src-tauri/binaries/` for debug builds after `pnpm ludusavi:fetch`.
+/// `src-tauri/binaries/` for debug builds after `pnpm ludusavi:build`.
 pub(crate) fn resolve_ludusavi() -> Option<PathBuf> {
   let mut candidates = Vec::new();
   if let Some(dir) = tauri::utils::platform::current_exe()
@@ -1727,13 +1727,13 @@ mod tests {
     );
   }
 
-  /// Manual smoke test of the real sidecar (`pnpm ludusavi:fetch` first):
+  /// Manual smoke test of the real sidecar (`pnpm ludusavi:build` first):
   /// version, find, backup into a temp folder, zip, extract, restore.
   /// `cargo test --lib cloud_saves::tests::ludusavi_smoke -- --ignored --nocapture`
   #[test]
   #[ignore]
   fn ludusavi_smoke() {
-    let binary = resolve_ludusavi().expect("run `pnpm ludusavi:fetch` first");
+    let binary = resolve_ludusavi().expect("run `pnpm ludusavi:build` first");
     tauri::async_runtime::block_on(async {
       let version = run_ludusavi(&binary, vec!["--version".into()]).await.unwrap();
       assert_eq!(String::from_utf8_lossy(&version.stdout).trim(), "ludusavi 0.31.0");
