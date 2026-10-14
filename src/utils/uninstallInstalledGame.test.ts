@@ -147,6 +147,42 @@ describe("uninstallInstalledGame", () => {
     expect(reported).toEqual([[9, "uninstalled", 2]]);
   });
 
+  it("runs the pre-uninstall hooks before any file or prefix is deleted", async () => {
+    mocks.files.set(configPath, JSON.stringify({ installationfinished: true }));
+    mocks.invoke.mockImplementation(async (command: string, args: any) =>
+      command === "resolve_game_wine_prefix"
+        ? {
+            path: "/prefixes/9",
+            exists: true,
+            isPrefix: true,
+            managed: true,
+            sizeBytes: null,
+          }
+        : route(command, args),
+    );
+    // Answer "Delete prefix" to the prefix question, yes to everything else.
+    mocks.alert.mockImplementation(
+      async (options: { title: string }) =>
+        !options.title.startsWith("Delete the Wine/Proton prefix"),
+    );
+    let commandsAtHook: string[] = [];
+    cleanup.push(
+      registerPreUninstallHook(async () => {
+        commandsAtHook = commands();
+      }),
+    );
+
+    await uninstallInstalledGame({ gameId: 9, confirm: true, installed, game });
+
+    expect(commands()).toContain("fs_remove");
+    expect(commands()).toContain("delete_game_wine_prefix");
+    expect(commandsAtHook).not.toContain("fs_remove");
+    expect(commandsAtHook).not.toContain("delete_game_wine_prefix");
+    expect(commands().indexOf("fs_remove")).toBeGreaterThanOrEqual(
+      commandsAtHook.length,
+    );
+  });
+
   it("does nothing when the confirmation is declined", async () => {
     mocks.alert.mockResolvedValue(false);
     const hook = vi.fn(async () => {});
