@@ -23,6 +23,10 @@ import { useAlertDialog } from "@/context/AlertDialogContext";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { isTauriApp } from "@/utils/tauri";
 import { formatDate, formatYear } from "@/utils/date";
+// ── WP7 appearance: begin ──
+import { ArtworkSearchButton } from "@/components/ArtworkSearchDialog";
+import { CopyImageButton } from "@/components/admin/CopyImageButton";
+// ── WP7 appearance: end ──
 import {
   applyDroppedSources,
   isProbablyImageUrl,
@@ -1829,6 +1833,11 @@ export function GameSettings({
                         <MagnifyingGlassIcon className="w-4 h-4" />
                         Find Images
                       </Button>
+                      {/* ── WP7 appearance: begin ── */}
+                      <ArtworkSearchButton
+                        title={workingGame.title || "Game"}
+                      />
+                      {/* ── WP7 appearance: end ── */}
                     </div>
                     {/* Background zone */}
                     <div className="flex flex-col gap-4">
@@ -2018,7 +2027,10 @@ export function GameSettings({
 
                                 <div className="flex flex-col gap-4 lg:flex-row">
                                   {gameCoverUrl && (
-                                    <div className="shrink-0 self-start rounded-lg overflow-hidden border border-ps-line">
+                                    <div className="group/copy relative shrink-0 self-start rounded-lg overflow-hidden border border-ps-line">
+                                      {/* ── WP7 appearance: begin ── */}
+                                      <CopyImageButton src={gameCoverUrl} />
+                                      {/* ── WP7 appearance: end ── */}
                                       <img
                                         src={gameCoverUrl}
                                         alt="Cover"
@@ -2080,7 +2092,12 @@ export function GameSettings({
                                 {currentShownMappedGame ? (
                                   <div className="flex flex-col gap-4 lg:flex-row">
                                     {mappedGameCoverUrl && (
-                                      <div className="shrink-0 self-start rounded-lg overflow-hidden border border-ps-line">
+                                      <div className="group/copy relative shrink-0 self-start rounded-lg overflow-hidden border border-ps-line">
+                                        {/* ── WP7 appearance: begin ── */}
+                                        <CopyImageButton
+                                          src={mappedGameCoverUrl}
+                                        />
+                                        {/* ── WP7 appearance: end ── */}
                                         <img
                                           src={mappedGameCoverUrl}
                                           alt="Provider Cover"

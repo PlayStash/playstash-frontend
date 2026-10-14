@@ -38,7 +38,9 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Downloads = lazy(() => import("./pages/Downloads"));
-import { applyTheme, getStoredTheme } from "./utils/theme";
+// ── WP7 appearance: begin ──
+import { initializeThemes } from "./themes/themeManager";
+// ── WP7 appearance: end ──
 import { applyZoom, getStoredZoom, registerZoomHotkeys } from "./utils/zoom";
 import { registerReloadHotkey } from "./utils/reload";
 import { registerStreamerModeHotkey } from "./utils/streamerMode";
@@ -57,8 +59,10 @@ const isLaunchLogWindow = window.location.hash === "#launch-log";
 if (isLaunchLogWindow) {
   createRoot(document.getElementById("root")!).render(<LaunchLogWindow />);
 } else {
-  // Apply stored theme immediately to prevent flash of wrong theme
-  applyTheme(getStoredTheme());
+  // ── WP7 appearance: begin ──
+  // Apply the stored theme immediately to prevent a flash of the wrong theme
+  initializeThemes();
+  // ── WP7 appearance: end ──
   // Apply persisted zoom level (native webview zoom in Tauri, CSS zoom on web)
   void applyZoom(getStoredZoom());
   void startMediaCacheMaintenance();

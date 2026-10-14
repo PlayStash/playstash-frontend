@@ -90,8 +90,15 @@ fn dispatch(path: &str) -> (&'static str, String) {
 
   let autoplay = params.iter().any(|(k, v)| k == "autoplay" && v == "1");
   let mute = params.iter().any(|(k, v)| k == "mute" && v == "1");
+  // ── WP7 appearance: begin ──
+  let volume = params
+    .iter()
+    .find(|(k, _)| k == "volume")
+    .and_then(|(_, v)| v.parse::<u8>().ok())
+    .map(|v| v.min(100));
+  // ── WP7 appearance: end ──
 
-  ("200 OK", embed_page(video_id, autoplay, mute))
+  ("200 OK", embed_page(video_id, autoplay, mute, volume))
 }
 
 fn parse_query(query: &str) -> Vec<(String, String)> {
@@ -106,7 +113,7 @@ fn parse_query(query: &str) -> Vec<(String, String)> {
     .collect()
 }
 
-fn embed_page(video_id: &str, autoplay: bool, mute: bool) -> String {
+fn embed_page(video_id: &str, autoplay: bool, mute: bool, volume: Option<u8>) -> String {
   let mut extra = String::new();
   if autoplay {
     extra.push_str("&autoplay=1");
@@ -114,6 +121,19 @@ fn embed_page(video_id: &str, autoplay: bool, mute: bool) -> String {
   if mute {
     extra.push_str("&mute=1");
   }
+  // ── WP7 appearance: begin ──
+  // With a volume, enable the IFrame API, apply the persisted media volume
+  // and forward volume commands posted by the app to the player.
+  let volume_script = match volume {
+    Some(volume) => {
+      extra.push_str("&enablejsapi=1");
+      format!(
+        r#"<script>(function(){{var f=document.getElementById('player');function send(func,args){{try{{f.contentWindow.postMessage(JSON.stringify({{event:'command',func:func,args:args||[]}}),'*');}}catch(e){{}}}}function apply(v){{send('setVolume',[v]);send(v>0?'unMute':'mute');}}f.addEventListener('load',function(){{var n=0;var t=setInterval(function(){{try{{f.contentWindow.postMessage(JSON.stringify({{event:'listening'}}),'*');}}catch(e){{}}apply({volume});if(++n>=10)clearInterval(t);}},500);}});window.addEventListener('message',function(e){{if(e.source!==window.parent)return;var d=e.data;try{{d=typeof d==='string'?JSON.parse(d):d;}}catch(x){{return;}}if(d&&d.playstashVolume!==undefined){{var v=Math.max(0,Math.min(100,Number(d.playstashVolume)||0));apply(v);}}}});}})();</script>"#
+      )
+    }
+    None => String::new(),
+  };
+  // ── WP7 appearance: end ──
 
   format!(
     r#"<!DOCTYPE html>
@@ -124,7 +144,8 @@ fn embed_page(video_id: &str, autoplay: bool, mute: bool) -> String {
 <style>*{{margin:0;padding:0;box-sizing:border-box}}html,body{{width:100%;height:100%;overflow:hidden;background:#000}}iframe{{width:100%;height:100%;border:0}}</style>
 </head>
 <body>
-<iframe src="https://www.youtube.com/embed/{video_id}?playsinline=1&rel=0&fs=0{extra}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<iframe id="player" src="https://www.youtube.com/embed/{video_id}?playsinline=1&rel=0&fs=0{extra}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+{volume_script}
 </body>
 </html>"#
   )

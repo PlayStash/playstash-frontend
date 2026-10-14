@@ -29,6 +29,12 @@
   --color-ps-success: #56d692;
   --color-ps-warning: #f1c56c;
   --color-ps-danger: #ef7373;
+  /* WP7 theme tokens (set by themes; classic values below) */
+  --color-ps-on-accent: #ffffff;
+  --color-ps-accent-hover: color-mix(in srgb, #6d7cff 60%, transparent);
+  --color-ps-accent-pressed: color-mix(in srgb, #6d7cff 40%, transparent);
+  --color-ps-accent-disabled: color-mix(in srgb, #6d7cff 20%, transparent);
+  --color-ps-blur: rgba(0, 0, 0, 0.7);
 
   --color-rose-50: #fcf4f4;
   --color-rose-100: #f9e7e7;
@@ -108,6 +114,23 @@
     --color-ps-success: #188f5c;
     --color-ps-warning: #b17d19;
     --color-ps-danger: #d24747;
+    --color-ps-on-accent: #ffffff;
+    --color-ps-accent-hover: color-mix(
+      in srgb,
+      var(--color-ps-accent) 60%,
+      transparent
+    );
+    --color-ps-accent-pressed: color-mix(
+      in srgb,
+      var(--color-ps-accent) 40%,
+      transparent
+    );
+    --color-ps-accent-disabled: color-mix(
+      in srgb,
+      var(--color-ps-accent) 20%,
+      transparent
+    );
+    --color-ps-blur: rgba(255, 255, 255, 0.7);
     --shadow-shell:
       0 18px 40px rgba(43, 38, 86, 0.14), 0 4px 12px rgba(43, 38, 86, 0.06);
     --shadow-card:
@@ -133,6 +156,7 @@
     --color-ps-success: #56d692;
     --color-ps-warning: #f1c56c;
     --color-ps-danger: #ef7373;
+    --color-ps-blur: rgba(0, 0, 0, 0.7);
     --shadow-shell:
       0 22px 48px rgba(4, 4, 12, 0.36), 0 6px 14px rgba(4, 4, 12, 0.24);
     --shadow-card:
@@ -170,6 +194,26 @@
         color-mix(in srgb, var(--color-ps-bg) 88%, black) 100%
       );
     color: var(--color-ps-text);
+  }
+
+  /* A selected theme (WP7) tints the page glow with its own accent. */
+  html[data-ps-theme] body {
+    background:
+      radial-gradient(
+        circle at top left,
+        color-mix(in srgb, var(--color-ps-accent) 12%, transparent) 0,
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at top right,
+        color-mix(in srgb, var(--color-ps-accent) 14%, transparent) 0,
+        transparent 24%
+      ),
+      linear-gradient(
+        180deg,
+        var(--color-ps-bg) 0%,
+        color-mix(in srgb, var(--color-ps-bg) 88%, black) 100%
+      );
   }
 
   body::before {

@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
+import {
+  applyTemporaryClassicMode,
+  getActiveTheme,
+  selectClassicMode,
+  subscribeTheme,
+} from "@/themes/themeManager";
 
+/**
+ * Legacy light/dark mode of the classic web palette. The full theme system
+ * (built-in, file and community themes) lives in `src/themes/`; these helpers
+ * stay for callers that only switch the classic palette.
+ */
 export type ThemeMode = "system" | "light" | "dark";
 
 const STORAGE_KEY = "darkMode";
-
-function resolveIsDark(mode: ThemeMode): boolean {
-  if (mode === "dark") return true;
-  if (mode === "light") return false;
-  try {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  } catch {
-    return false;
-  }
-}
 
 export function getStoredTheme(): ThemeMode {
   try {
@@ -26,46 +27,25 @@ export function getStoredTheme(): ThemeMode {
 }
 
 /**
- * Applies a theme mode. By default the explicit choice is persisted to
- * localStorage. Pass `persist: false` for a temporary, visual-only switch
- * (e.g. the login page forcing the device theme) so the user's saved
- * preference is never erased — a reload while the login page is showing
- * would otherwise permanently lose the chosen theme.
+ * Applies a classic theme mode. By default the explicit choice is persisted
+ * (and becomes the selected theme). Pass `persist: false` for a temporary,
+ * visual-only switch (e.g. the login page showing the device theme): it only
+ * changes the classic palette and never erases the user's saved theme.
  */
 export function applyTheme(mode: ThemeMode, persist = true): void {
-  const isDark = resolveIsDark(mode);
-  const root = document.documentElement;
-  root.classList.toggle("dark", isDark);
-
-  try {
-    if (persist) {
-      if (mode === "system") {
-        localStorage.removeItem(STORAGE_KEY);
-      } else {
-        localStorage.setItem(STORAGE_KEY, mode === "dark" ? "true" : "false");
-      }
-    }
-  } catch {
-    // localStorage unavailable
-  }
-
-  // Notify other use-dark-mode hooks (Logo, etc.)
-  try {
-    window.dispatchEvent(
-      new CustomEvent("darkMode", { detail: { darkMode: isDark } }),
-    );
-  } catch {
-    // events unavailable
-  }
+  if (persist) selectClassicMode(mode);
+  else applyTemporaryClassicMode(mode);
 }
 
 export function useIsDark(): boolean {
   const [isDark, setIsDark] = useState<boolean>(() =>
-    typeof window !== "undefined" ? resolveIsDark(getStoredTheme()) : false,
+    typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : false,
   );
 
   useEffect(() => {
-    const apply = () => setIsDark(resolveIsDark(getStoredTheme()));
+    const sync = () => setIsDark(getActiveTheme().isDark);
     const onThemeChange = (event: Event) => {
       const detail = (event as CustomEvent).detail as
         { darkMode?: boolean } | undefined;
@@ -73,14 +53,12 @@ export function useIsDark(): boolean {
         setIsDark(detail.darkMode);
       }
     };
-
-    apply();
+    setIsDark(document.documentElement.classList.contains("dark"));
     window.addEventListener("darkMode", onThemeChange);
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    media.addEventListener("change", apply);
+    const unsubscribe = subscribeTheme(sync);
     return () => {
       window.removeEventListener("darkMode", onThemeChange);
-      media.removeEventListener("change", apply);
+      unsubscribe();
     };
   }, []);
 

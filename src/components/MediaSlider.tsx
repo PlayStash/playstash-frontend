@@ -9,8 +9,15 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ArrowsPointingOutIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
 } from "@heroicons/react/24/solid";
 import { isTauriApp } from "@/utils/tauri";
+import {
+  getMediaVolume,
+  setMediaVolume,
+  youtubeVolumeCommands,
+} from "@/utils/mediaVolume";
 
 export interface ResolvedStream {
   video: string; // Direct video stream URL (mp4/webm) OR image URL when type === image/placeholder
@@ -114,6 +121,14 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
   }, [rawList]);
 
   const [index, setIndex] = useState(0);
+  // Persisted media volume (default 0 = muted, like the WPF client).
+  const [volume, setVolumeState] = useState(getMediaVolume);
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  // The embed URL uses the volume at mount, so changing it never reloads
+  // the player (later changes go through postMessage).
+  const initialVolumeRef = useRef(volume);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const list = resolved;
   const current = list[index];
 
@@ -133,14 +148,19 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
         // (see src-tauri/src/youtube.rs) so it has a valid HTTP origin. In
         // dev/web we keep the direct embed, which works fine.
         if (ytEmbedBase) {
-          const params = new URLSearchParams({ v: ytId, mute: "1" });
+          const initial = initialVolumeRef.current;
+          const params = new URLSearchParams({
+            v: ytId,
+            mute: initial > 0 ? "0" : "1",
+            volume: String(Math.round(initial * 100)),
+          });
           if (autoPlay) params.set("autoplay", "1");
           return `${ytEmbedBase}/embed?${params.toString()}`;
         }
         const params = new URLSearchParams({
           rel: "0",
           playsinline: "1",
-          mute: "1",
+          mute: initialVolumeRef.current > 0 ? "0" : "1",
           fs: "0",
           enablejsapi: "1",
           origin: window.location.origin,
@@ -153,6 +173,44 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  /** Applies the volume to the video element and the YouTube player. */
+  const applyVolume = useCallback(
+    (value: number) => {
+      const video = videoRef.current;
+      if (video) {
+        video.volume = value;
+        video.muted = value === 0;
+      }
+      const frame = iframeRef.current?.contentWindow;
+      if (!frame) return;
+      try {
+        if (ytEmbedBase) {
+          frame.postMessage({ playstashVolume: Math.round(value * 100) }, "*");
+        } else {
+          for (const command of youtubeVolumeCommands(value)) {
+            frame.postMessage(command, "*");
+          }
+        }
+      } catch {
+        // cross-origin frame not ready
+      }
+    },
+    [ytEmbedBase],
+  );
+
+  const changeVolume = useCallback(
+    (value: number) => {
+      setVolumeState(value);
+      setMediaVolume(value);
+      applyVolume(value);
+    },
+    [applyVolume],
+  );
+
+  useEffect(() => {
+    applyVolume(volumeRef.current);
+  }, [index, applyVolume]);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const next = useCallback(() => {
@@ -253,8 +311,15 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
           title={current.title || "Trailer"}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
+          onLoad={() => {
+            // Re-apply the persisted volume once the player can listen.
+            for (const delay of [500, 1500, 3000]) {
+              setTimeout(() => applyVolume(volumeRef.current), delay);
+            }
+          }}
           // Native fullscreen intentionally disabled to use custom control
           ref={(el) => {
+            iframeRef.current = el;
             // The loopback proxy page handles autoplay itself via the embed
             // URL, so only use the direct Iframe API postMessage fallback for
             // the non-proxy (dev/web) embed path.
@@ -282,7 +347,19 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
             className="absolute inset-0 w-full h-full object-contain"
             controls
             playsInline
-            muted={autoPlay}
+            muted={volume === 0}
+            onLoadedMetadata={(event) => {
+              event.currentTarget.volume = volumeRef.current;
+              event.currentTarget.muted = volumeRef.current === 0;
+            }}
+            onVolumeChange={(event) => {
+              const element = event.currentTarget;
+              const next = element.muted ? 0 : element.volume;
+              if (Math.abs(next - volumeRef.current) > 0.001) {
+                setVolumeState(next);
+                setMediaVolume(next);
+              }
+            }}
             loop={loop}
             poster={current?.poster}
             autoPlay={autoPlay && !isImageOnly && !isYT}
@@ -326,6 +403,32 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
             <span className="text-rose-300 pointer-events-none">
               Unrecognized YouTube URL
             </span>
+          )}
+          {!isImageOnly && (
+            <div className="pointer-events-auto flex items-center gap-1 rounded-md bg-white/10 px-1.5 py-1">
+              <button
+                type="button"
+                onClick={() => changeVolume(volume > 0 ? 0 : 0.5)}
+                className="focus:outline-none focus:ring-2 focus:ring-ps-accent-cool rounded"
+                aria-label={volume > 0 ? "Mute" : "Unmute"}
+              >
+                {volume > 0 ? (
+                  <SpeakerWaveIcon className="w-4 h-4" />
+                ) : (
+                  <SpeakerXMarkIcon className="w-4 h-4" />
+                )}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={volume}
+                aria-label="Media volume"
+                onChange={(event) => changeVolume(Number(event.target.value))}
+                className="h-1 w-20 cursor-pointer accent-white"
+              />
+            </div>
           )}
           <button
             type="button"

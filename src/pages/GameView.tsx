@@ -83,11 +83,21 @@ import { EASE_OUT } from "@/lib/motion";
 // ── WP2 community: begin ──
 import { GameChatButton } from "@/components/GameChatButton";
 // ── WP2 community: end ──
+import { useTranslation } from "@/i18n";
+import {
+  displayTitle,
+  setShowMappedTitle,
+  titleYearSuffix,
+  useShowMappedTitle,
+} from "@/utils/mappedTitle";
+import { libraryFilterLink } from "@/utils/libraryLinks";
 
 export default function GameView() {
   const { id } = useParams<{ id: string }>();
   const numericId = Number(id);
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const showMappedTitle = useShowMappedTitle();
   const { serverUrl, authFetch, user } = useAuth();
   const streamerMode = useStreamerMode();
   const [game, setGame] = useState<PlaystashGame | null>(null);
@@ -204,6 +214,21 @@ export default function GameView() {
   ];
   const screenshots = game?.metadata?.url_screenshots || [];
   const title = game?.metadata?.title || game?.title;
+  // Header title follows the mapped-title preference (click to toggle).
+  const shownTitle = displayTitle(game, showMappedTitle);
+  const shownYear = titleYearSuffix(game, showMappedTitle);
+  const isDeleted = !!(game as any)?.deleted_at;
+  /** Opens the Library with exactly this one filter (GameView pills). */
+  const openLibraryFilter = useCallback(
+    (
+      param: "types" | "genres" | "tags" | "developers" | "publishers",
+      value: string,
+    ) =>
+      navigate(libraryFilterLink(param, value), {
+        state: { openFilters: true },
+      }),
+    [navigate],
+  );
   const description = game?.metadata?.description || null;
   const notes = (game as any)?.metadata?.notes || "";
   // Tags now sourced from metadata.tags (array of objects with name)
@@ -382,6 +407,26 @@ export default function GameView() {
     // else.
     const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     const shareUrl = buildShareUrl(serverUrl, route);
+    if (isTauri && game) {
+      // Desktop: a deep link that opens the game in the PlayStash client.
+      try {
+        await navigator.clipboard.writeText(
+          `playstash://show?gameid=${game.id}`,
+        );
+        showAlert({
+          title: t("gameView.share.copied"),
+          action: {
+            label: t("gameView.share.copyWeb"),
+            onClick: () => {
+              void navigator.clipboard.writeText(shareUrl).catch(() => {});
+            },
+          },
+        });
+      } catch {
+        showAlert({ title: "Couldn't copy link", description: shareUrl });
+      }
+      return;
+    }
     try {
       await navigator.clipboard.writeText(shareUrl);
       // Show global alert notification
@@ -394,7 +439,7 @@ export default function GameView() {
         description: shareUrl,
       });
     }
-  }, [serverUrl, showAlert]);
+  }, [serverUrl, showAlert, isTauri, game, t]);
 
   const resolveVersions = useCallback(async (): Promise<GameVersion[]> => {
     if (game && Array.isArray(game.versions) && game.versions.length > 0) {
@@ -765,9 +810,26 @@ export default function GameView() {
                 )}
               </div>
               <div className="flex-1 min-w-0 flex flex-col gap-3">
-                <div className="text-xl font-semibold leading-tight truncate pr-2">
-                  {title}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMappedTitle(!showMappedTitle)}
+                  title={
+                    showMappedTitle
+                      ? t("gameView.title.showFile")
+                      : t("gameView.title.showMapped")
+                  }
+                  className={clsx(
+                    "w-fit max-w-full cursor-pointer truncate pr-2 text-left text-xl font-semibold leading-tight text-ps-text",
+                    isDeleted && "line-through opacity-70",
+                  )}
+                >
+                  {shownTitle}
+                  {shownYear && (
+                    <span className="font-normal text-ps-muted">
+                      {shownYear}
+                    </span>
+                  )}
+                </button>
                 {updateAvailable && (
                   <span
                     title={
@@ -785,7 +847,12 @@ export default function GameView() {
                   </span>
                 )}
                 {/* Added flex-wrap to allow buttons to wrap on extremely narrow viewports, preventing horizontal overflow that could push the media slider and cause cutoff */}
-                <div className="flex flex-row flex-wrap gap-2">
+                <div
+                  className={clsx(
+                    "flex flex-row flex-wrap gap-2",
+                    isDeleted && "hidden",
+                  )}
+                >
                   {isTauri && installedInfo && (
                     <Button
                       color="indigo"
@@ -902,12 +969,17 @@ export default function GameView() {
                 (game as any)?.metadata?.early_access ? (
                   <div className="flex flex-wrap gap-1 pt-1 items-center">
                     {game?.type && game.type !== "UNDETECTABLE" && (
-                      <span className="px-2 py-0.5 rounded-full bg-ps-accent/15 text-ps-accent-strong text-[10px] font-medium">
+                      <button
+                        type="button"
+                        onClick={() => openLibraryFilter("types", game.type!)}
+                        title={t("gameView.pill.filter")}
+                        className="px-2 py-0.5 rounded-full bg-ps-accent/15 text-ps-accent-strong text-[10px] font-medium cursor-pointer hover:bg-ps-accent/25"
+                      >
                         {game.type
                           .replace(/_/g, " ")
                           .toLowerCase()
                           .replace(/\b\w/g, (c) => c.toUpperCase())}
-                      </span>
+                      </button>
                     )}
                     {(game as any)?.early_access ||
                     (game as any)?.metadata?.early_access ? (
@@ -916,12 +988,15 @@ export default function GameView() {
                       </span>
                     ) : null}
                     {genres.map((g: string) => (
-                      <span
+                      <button
+                        type="button"
                         key={g}
-                        className="px-2 py-0.5 rounded-full bg-ps-panel-strong text-[10px] font-medium text-ps-muted"
+                        onClick={() => openLibraryFilter("genres", g)}
+                        title={t("gameView.pill.filter")}
+                        className="px-2 py-0.5 rounded-full bg-ps-panel-strong text-[10px] font-medium text-ps-muted cursor-pointer hover:text-ps-text"
                       >
                         {g}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 ) : null}
@@ -1209,13 +1284,16 @@ export default function GameView() {
                     {detailsTab === "tags" &&
                       (tags && tags.length ? (
                         <div className="flex flex-wrap gap-2">
-                          {tags.map((t) => (
-                            <span
-                              key={t}
-                              className="px-2 py-1 rounded-md bg-ps-panel-strong text-xs font-medium text-ps-muted"
+                          {tags.map((tag) => (
+                            <button
+                              type="button"
+                              key={tag}
+                              onClick={() => openLibraryFilter("tags", tag)}
+                              title={t("gameView.pill.filter")}
+                              className="px-2 py-1 rounded-md bg-ps-panel-strong text-xs font-medium text-ps-muted cursor-pointer hover:text-ps-text"
                             >
-                              {t}
-                            </span>
+                              {tag}
+                            </button>
                           ))}
                         </div>
                       ) : (
@@ -1295,7 +1373,22 @@ export default function GameView() {
                         className="font-medium whitespace-nowrap truncate"
                         title={devNames.length ? devNames.join(", ") : "—"}
                       >
-                        {devNames.length ? devNames.join(", ") : "—"}
+                        {devNames.length
+                          ? devNames.map((name, index) => (
+                              <span key={name}>
+                                {index > 0 && ", "}
+                                <button
+                                  type="button"
+                                  className="cursor-pointer hover:text-ps-accent-cool"
+                                  onClick={() =>
+                                    openLibraryFilter("developers", name)
+                                  }
+                                >
+                                  {name}
+                                </button>
+                              </span>
+                            ))
+                          : "—"}
                       </div>
                     </div>
                   </li>
@@ -1314,7 +1407,20 @@ export default function GameView() {
                         }
                       >
                         {publisherNames.length
-                          ? publisherNames.join(", ")
+                          ? publisherNames.map((name, index) => (
+                              <span key={name}>
+                                {index > 0 && ", "}
+                                <button
+                                  type="button"
+                                  className="cursor-pointer hover:text-ps-accent-cool"
+                                  onClick={() =>
+                                    openLibraryFilter("publishers", name)
+                                  }
+                                >
+                                  {name}
+                                </button>
+                              </span>
+                            ))
                           : "—"}
                       </div>
                     </div>

@@ -46,6 +46,9 @@ mod iso_mount;
 // ── WP6 accounts: begin ──
 // ── WP6 accounts: end ──
 // ── WP7 appearance: begin ──
+mod sound;
+mod storage;
+mod themes;
 // ── WP7 appearance: end ──
 
 use crate::settings::AppSettings;
@@ -765,6 +768,23 @@ pub fn run() {
       net::set_additional_request_headers,
       // ── WP6 accounts: end ──
       // ── WP7 appearance: begin ──
+      themes::themes_dir,
+      themes::themes_list,
+      themes::theme_read,
+      themes::theme_write,
+      themes::theme_delete,
+      themes::theme_overlay_bytes,
+      themes::theme_export,
+      themes::github_fetch,
+      sound::startup_sound_get,
+      sound::startup_sound_set,
+      sound::startup_sound_clear,
+      sound::startup_sound_bytes,
+      sound::startup_sound_play,
+      sound::startup_sound_stop,
+      storage::storage_cache_sizes,
+      storage::storage_clear_offline_cache,
+      storage::storage_app_data_dir,
       // ── WP7 appearance: end ──
     ])
     .run(tauri::generate_context!())

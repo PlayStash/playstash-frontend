@@ -48,6 +48,12 @@ export interface UseGamesOptions {
   earlyAccess?: EarlyAccessFilter;
   addedSince?: string;
   libraryFolder?: string;
+  // ── WP7 appearance: begin ──
+  /** Age rating filter: `"all"`, `"null"` (N/A) or a number. */
+  ageRating?: string;
+  /** When false, nothing is fetched (Library auto-load off). */
+  enabled?: boolean;
+  // ── WP7 appearance: end ──
 }
 
 interface CachedGamesState {
@@ -87,6 +93,13 @@ const removedGameIds = new Set<number>();
 
 // Keep the module-level cache in sync even when no Library instance is mounted
 // (e.g. a game is deleted while the user is on the game view).
+// ── WP7 appearance: begin ──
+/** Drops every cached result so the next Library mount re-fetches. */
+export function invalidateGamesCache(): void {
+  gamesCache.clear();
+}
+// ── WP7 appearance: end ──
+
 onGameDeleted((gameId) => {
   removedGameIds.add(gameId);
   // Snapshot before iterating: `setGamesCache` re-inserts the key, which would
@@ -120,6 +133,10 @@ export function useGames({
   earlyAccess = "all",
   addedSince,
   libraryFolder,
+  // ── WP7 appearance: begin ──
+  ageRating,
+  enabled = true,
+  // ── WP7 appearance: end ──
 }: UseGamesOptions) {
   const { serverUrl, authFetch, user } = useAuth();
   const { isOnline } = useOnlineStatus();
@@ -144,6 +161,9 @@ export function useGames({
       earlyAccess,
       addedSince,
       libraryFolder,
+      // ── WP7 appearance: begin ──
+      ageRating,
+      // ── WP7 appearance: end ──
     },
     serverUrl || "",
     (user as any)?.id ?? (user as any)?.ID ?? null,
@@ -197,6 +217,9 @@ export function useGames({
 
   const fetchGames = useCallback(async () => {
     if (!serverUrl) return;
+    // ── WP7 appearance: begin ──
+    if (!enabled) return;
+    // ── WP7 appearance: end ──
     // Skip fetch when offline in Tauri mode — installed games handle themselves
     if (isTauriApp() && !isOnline) {
       setLoading(false);
@@ -228,6 +251,9 @@ export function useGames({
         earlyAccess,
         addedSince,
         libraryFolder,
+        // ── WP7 appearance: begin ──
+        ageRating,
+        // ── WP7 appearance: end ──
       });
       const url = `${base}/api/games?${params.toString()}`;
       const res = await authFetch(url, { method: "GET", signal: ac.signal });
@@ -281,6 +307,10 @@ export function useGames({
     addedSince,
     libraryFolder,
     isOnline,
+    // ── WP7 appearance: begin ──
+    ageRating,
+    enabled,
+    // ── WP7 appearance: end ──
   ]);
 
   const loadMore = useCallback(async () => {
