@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { isTauriApp } from "@/utils/tauri";
+import { serverFetch } from "@/utils/serverFetch"; // WP6: additional request headers
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +93,17 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     if (!isTauri) return;
     const stored = localStorage.getItem("app_server_url");
     if (stored) setServerUrl(stored);
+    // ── WP6 accounts: begin ──
+    // Follow profile switches to another server (AuthContext SERVER_CHANGED_EVENT).
+    const onServerChanged = (event: Event) => {
+      const next = (event as CustomEvent<{ serverUrl?: string }>).detail
+        ?.serverUrl;
+      if (next) setServerUrl(next);
+    };
+    window.addEventListener("playstash:server-changed", onServerChanged);
+    return () =>
+      window.removeEventListener("playstash:server-changed", onServerChanged);
+    // ── WP6 accounts: end ──
   }, [isTauri]);
 
   // Background poller
@@ -104,7 +116,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        await fetch(`${serverUrl}/api/status`, {
+        await serverFetch(`${serverUrl}/api/status`, {
           signal: AbortSignal.timeout(8000),
         });
         if (!isOnlineRef.current) {
@@ -114,6 +126,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
           );
           wasOfflineRef.current = true;
         }
+        // ── WP6 accounts: begin ──
+        // Leave offline mode again (a no-op re-render while already online).
+        setIsOnline(true);
+        // ── WP6 accounts: end ──
         // Only refresh the timestamp once a minute. Writing it on every 15 s
         // poll forces a new context value (and a re-render of every consumer)
         // four times a minute for no benefit, since the value is informational.
@@ -166,7 +182,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const checkNow = useCallback(() => {
     if (!serverUrl || forceOffline) return;
     setIsChecking(true);
-    fetch(`${serverUrl}/api/status`, {
+    serverFetch(`${serverUrl}/api/status`, {
       signal: AbortSignal.timeout(8000),
     })
       .then(() => {

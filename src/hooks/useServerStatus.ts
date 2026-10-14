@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { serverFetch } from "@/utils/serverFetch"; // WP6: additional request headers
 
 export interface ServerInfo {
   status: string;
@@ -33,7 +34,7 @@ export function useServerStatus(): UseServerStatusResult {
     setError(null);
     (async () => {
       try {
-        const res = await fetch(`${base}/api/status`, {
+        const res = await serverFetch(`${base}/api/status`, {
           headers: { Accept: "application/json" },
         });
         if (!res.ok)

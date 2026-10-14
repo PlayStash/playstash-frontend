@@ -13,6 +13,17 @@ import {
   detectBackendServedWebUi,
 } from "@/utils/authConfig";
 import { applyTheme, getStoredTheme } from "@/utils/theme";
+import { useNavigate } from "react-router";
+import { isPendingActivationError } from "@/context/AuthContext";
+import { serverFetch } from "@/utils/serverFetch";
+import { setServerContext } from "@/utils/requestHeaders";
+import { isServerOutdated } from "@/utils/serverVersion";
+import { isTauriApp } from "@/utils/tauri";
+import {
+  PendingActivation,
+  type ActivationPollResult,
+} from "@/components/login/PendingActivation";
+import { IncompatibleServerDialog } from "@/components/login/IncompatibleServerDialog";
 
 interface FormState {
   username?: string;
@@ -25,7 +36,12 @@ interface FormState {
 }
 
 export function Register() {
-  const { serverUrl } = useAuth();
+  const { loginBasic } = useAuth();
+  const navigate = useNavigate();
+  const [incompatibleOpen, setIncompatibleOpen] = useState(false);
+  const [pendingPoll, setPendingPoll] = useState<
+    (() => Promise<ActivationPollResult>) | null
+  >(null);
   const [serverInput, setServerInput] = useState(
     localStorage.getItem(AUTH_SERVER_STORAGE_KEY) || DEFAULT_SERVER_URL,
   );
@@ -145,30 +161,83 @@ export function Register() {
           birth_date: normalizeOptional(form.birth_date),
           password: form.password || "",
         };
-        const res = await fetch(`${base}/api/auth/basic/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
+        // The server being registered with is the one being configured: its
+        // additional request headers (desktop) apply from here on.
+        if (isTauriApp()) await setServerContext(base);
+        // Version gate before creating an account on an incompatible server.
+        if (await isServerOutdated(base)) {
+          setIncompatibleOpen(true);
+          return;
+        }
+        const res = await serverFetch(
+          `${base}/api/auth/basic/register`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
+          base,
+        );
+        if (!res.ok && res.status !== 406) {
           const txt = await res.text();
           throw new Error(
             `Register failed (${res.status}): ${txt || res.statusText}`,
           );
         }
-        await res.json().catch(() => ({}));
+        const created = (await res.json().catch(() => ({}))) as {
+          activated?: boolean;
+        };
         setSuccess(true);
         setMsg("Registration successful. You can now sign in.");
+        // Like the WPF client: sign in right away (desktop: as a new
+        // profile). An account that still needs an admin's approval waits on
+        // the pending screen, which retries the login every 5 seconds.
+        const login = () =>
+          loginBasic({
+            server: base,
+            username: payload.username,
+            password: payload.password,
+          });
+        const waitForActivation = () => {
+          setPendingPoll(() => async () => {
+            try {
+              await login();
+              setPendingPoll(null);
+              navigate("/library", { replace: true });
+              return "activated" as const;
+            } catch (pollError) {
+              if (isPendingActivationError(pollError))
+                return "pending" as const;
+              setPendingPoll(null);
+              setMsg(
+                pollError instanceof Error
+                  ? pollError.message
+                  : String(pollError),
+              );
+              return "failed" as const;
+            }
+          });
+        };
+        if (res.status === 406 || created.activated !== true) {
+          waitForActivation();
+          return;
+        }
+        try {
+          await login();
+          navigate("/library", { replace: true });
+        } catch (loginError) {
+          if (isPendingActivationError(loginError)) waitForActivation();
+        }
       } catch (err: any) {
         setMsg(err?.message || "Registration error");
       } finally {
         setSubmitting(false);
       }
     },
-    [form, confirmedServer, submitting, canSubmit],
+    [form, confirmedServer, submitting, canSubmit, loginBasic, navigate],
   );
 
   const isInvalid = (field: string) => {
@@ -182,11 +251,27 @@ export function Register() {
     return touched[field] && (typeof val !== "string" || !val.trim());
   };
 
+  if (pendingPoll) {
+    return (
+      <PendingActivation
+        poll={pendingPoll}
+        onCancel={() => {
+          setPendingPoll(null);
+          navigate("/", { replace: true });
+        }}
+      />
+    );
+  }
+
   return (
     <form
       onSubmit={confirmedServer ? handleSubmit : handleContinue}
       className="grid w-full max-w-sm grid-cols-1 gap-6"
     >
+      <IncompatibleServerDialog
+        open={incompatibleOpen}
+        onClose={() => setIncompatibleOpen(false)}
+      />
       <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
       <div className="space-y-3">
         <Heading>Create your account</Heading>

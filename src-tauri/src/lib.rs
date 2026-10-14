@@ -51,6 +51,8 @@ mod download_extras;
 mod iso_mount;
 // ── WP5 download-pipeline: end ──
 // ── WP6 accounts: begin ──
+mod legacy_import;
+mod profiles;
 // ── WP6 accounts: end ──
 // ── WP7 appearance: begin ──
 mod sound;
@@ -562,6 +564,7 @@ pub fn run() {
       // ── WP5 download-pipeline: begin ──
       // ── WP5 download-pipeline: end ──
       // ── WP6 accounts: begin ──
+      net::load_connection_context(app.handle());
       // ── WP6 accounts: end ──
       // ── WP7 appearance: begin ──
       // ── WP7 appearance: end ──
@@ -707,7 +710,20 @@ pub fn run() {
       download_extras::scan_duplicate_installations,
       // ── WP5 download-pipeline: end ──
       // ── WP6 accounts: begin ──
-      net::set_additional_request_headers,
+      net::wp6::set_additional_request_headers,
+      net::wp6::get_additional_request_headers,
+      net::wp6::set_server_context,
+      net::wp6::server_fetch,
+      profiles::get_profiles_state,
+      profiles::save_profiles_state,
+      profiles::get_profile_dir,
+      profiles::delete_profile_data,
+      legacy_import::legacy_import_available,
+      legacy_import::legacy_import_scan,
+      legacy_import::legacy_import_copy_themes,
+      legacy_import::legacy_import_write_section,
+      legacy_import::legacy_scan_installations,
+      legacy_import::legacy_adopt_installation,
       // ── WP6 accounts: end ──
       // ── WP7 appearance: begin ──
       themes::themes_dir,

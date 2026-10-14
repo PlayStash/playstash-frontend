@@ -1458,8 +1458,7 @@ async fn send_increment(
   url: &str,
   access_token: &str,
 ) -> Result<reqwest::Response, reqwest::Error> {
-  client
-    .put(url)
+  crate::net::server_request(client.put(url), url)
     .header("Authorization", format!("Bearer {access_token}"))
     .header("Accept", "application/json")
     .send()
@@ -1903,8 +1902,7 @@ pub(crate) async fn sync_offline_time(
     server_url, user_id, game_id, minutes
   );
   let client = reqwest::Client::new();
-  let resp = match client
-    .put(&url)
+  let resp = match crate::net::server_request(client.put(&url), &url)
     .header("Authorization", format!("Bearer {}", access_token))
     .header("Accept", "application/json")
     .send()

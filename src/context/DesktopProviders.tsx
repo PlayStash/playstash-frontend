@@ -21,6 +21,13 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 // ── WP1 os-integration: begin ──
 import { DesktopCommandProvider } from "@/context/DesktopCommandContext";
 // ── WP1 os-integration: end ──
+// ── WP6 accounts: begin ──
+import {
+  ConnectionNotices,
+  LegacyImportPrompt,
+  LegacyInstallsPrompt,
+} from "@/components/login/AccountEffects";
+// ── WP6 accounts: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -77,6 +84,9 @@ const EFFECTS: ComponentType[] = [
   DuplicateInstallWatcher,
   // ── WP5 download-pipeline: end ──
   // ── WP6 accounts: begin ──
+  ConnectionNotices,
+  LegacyImportPrompt,
+  LegacyInstallsPrompt,
   // ── WP6 accounts: end ──
   // ── WP7 appearance: begin ──
   AppearanceEffects,
