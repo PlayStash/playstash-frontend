@@ -64,6 +64,11 @@
     }
   },
   "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["playstash"]
+      }
+    },
     "updater": {
       "endpoints": [
         "https://github.com/PlayStash/playstash-frontend/releases/latest/download/latest.json"
