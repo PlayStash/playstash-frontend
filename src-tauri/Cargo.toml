@@ -53,6 +53,8 @@ isomage = "2.1.0"
 
 # Feature package dependencies: add them inside your own block only.
 # ── WP1 os-integration: begin ──
+tauri-plugin-deep-link = "2"
+tauri-plugin-notification = "2"
 # ── WP1 os-integration: end ──
 # ── WP2 community: begin ──
 discord-rich-presence = "0.2"
@@ -73,6 +75,24 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser", "synchapi", "handleapi", "winbase", "winerror", "processthreadsapi", "sysinfoapi"] }
 # ── WP1 os-integration: begin ──
+windows = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_Storage_FileSystem",
+  "Win32_Storage_EnhancedStorage",
+  "Win32_System_Pipes",
+  "Win32_System_IO",
+  "Win32_System_Threading",
+  "Win32_System_Console",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
+  "Win32_UI_Shell",
+  "Win32_UI_Shell_Common",
+  "Win32_UI_Shell_PropertiesSystem",
+  "Win32_UI_WindowsAndMessaging",
+] }
 # ── WP1 os-integration: end ──
 # ── WP2 community: begin ──
 winreg = "0.55"

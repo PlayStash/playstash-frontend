@@ -64,6 +64,19 @@ Status: Unreleased.
 - Server news are re-checked every hour, toasts can be copied, the sidebar links to GitHub and the bug report form, and unexpected errors show a crash screen with reload, copy details and log folder actions.
 <!-- /WP7 -->
 
+<!-- WP1 -->
+- Desktop: added the `playstash://` link scheme and command line actions (`show`, `install`, `uninstall`, `start`, `--gameid`, `--minimized`, `--autoinstall`, `--confirm`, `--jumplistcommand`). Browser links always ask before uninstalling.
+- Desktop: starting PlayStash again, opening a `playstash://` link or using the command line while PlayStash runs hands the action to the running app instead of opening a second window; actions wait until you are signed in.
+- Desktop: added the local query interface used by the Playnite extension (installed state, install folder, game name, app version, server URL, login state and the game list), compatible with the extension and the previous Windows client.
+- Desktop: the tray menu now offers Library, Downloads, Community, Settings and Exit in your language; on Windows a double click on the tray icon shows or hides PlayStash.
+- Desktop: exiting while downloads are running asks first and cancels the downloads when you confirm.
+- Desktop: the first time the window is closed to the tray, a notification explains that PlayStash keeps running in the background.
+- Windows: the taskbar jump list offers Library, Downloads, Community, Settings and Exit, plus your five most recently played or installed games to start directly.
+- Desktop: "Minimize PlayStash to System Tray on Startup" now only applies when PlayStash is started with your computer; starting it yourself always shows the window.
+- Desktop: added OS notifications and desktop shortcuts that start a game through PlayStash (Windows `.url`, Linux `.desktop`, macOS `.webloc`).
+- Desktop: "Download in desktop app" links from the web interface now open the download in the desktop app.
+<!-- /WP1 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.

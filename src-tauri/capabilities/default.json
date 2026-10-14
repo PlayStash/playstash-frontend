@@ -53,6 +53,8 @@
     "fs:allow-home-read-recursive",
     "fs:allow-home-write-recursive",
     "autostart:default",
+    "notification:default",
+    "deep-link:default",
     "updater:default",
     "stronghold:default",
     "stronghold:allow-remove-store-record",

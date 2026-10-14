@@ -24,8 +24,15 @@ mod frontend_watchdog;
 
 // Feature packages add their modules inside their own block only.
 // ── WP1 os-integration: begin ──
+mod children;
+mod cli;
 mod desktop_commands;
+mod ipc;
+mod jumplist;
+mod notifications;
 mod shortcuts;
+mod tray;
+pub use ipc::predispatch as cli_predispatch;
 // ── WP1 os-integration: end ──
 // ── WP2 community: begin ──
 mod discord;
@@ -51,13 +58,10 @@ mod storage;
 mod themes;
 // ── WP7 appearance: end ──
 
-use crate::settings::AppSettings;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::path::BaseDirectory;
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_updater::UpdaterExt;
 use url::Url;
@@ -439,19 +443,22 @@ pub fn run() {
     // which brings its window back to the foreground.
     .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
       // ── WP1 os-integration: begin ──
+      // Parses the second instance's arguments and dispatches them (a plain
+      // start just brings the window to the foreground).
+      ipc::handle_second_instance(app, &_args);
       // ── WP1 os-integration: end ──
-      if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-      }
     }))
     .plugin(tauri_plugin_window_state::Builder::default().build())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
-    .plugin(tauri_plugin_autostart::init(Default::default(), None))
+    .plugin(tauri_plugin_autostart::init(
+      Default::default(),
+      Some(vec!["show", "--autostart"]),
+    ))
     // ── WP1 os-integration: begin ──
+    .plugin(tauri_plugin_deep_link::init())
+    .plugin(tauri_plugin_notification::init())
     // ── WP1 os-integration: end ──
     // ── WP2 community: begin ──
     // ── WP2 community: end ──
@@ -536,91 +543,15 @@ pub fn run() {
       // counters in memory either way.
       tracker_log::init(app.handle());
 
-      // ── System tray with Show / Quit menu ──────────────────────────────
-
-      let show_item = MenuItemBuilder::with_id("show", "Show").build(app)?;
-      let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
-      let menu = MenuBuilder::new(app)
-        .item(&show_item)
-        .item(&quit_item)
-        .build()?;
-
-      let _tray = TrayIconBuilder::new()
-        .icon(app.default_window_icon().unwrap().clone())
-        .menu(&menu)
-        .on_menu_event(|app, event| {
-          match event.id.as_ref() {
-            "show" => {
-              if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-              }
-            }
-            "quit" => {
-              app.exit(0);
-            }
-            _ => {}
-          }
-        })
-        .on_tray_icon_event(|tray, event| {
-          if let TrayIconEvent::Click {
-            button: MouseButton::Left,
-            button_state: MouseButtonState::Up,
-            ..
-          } = event
-          {
-            let app = tray.app_handle();
-            if let Some(window) = app.get_webview_window("main") {
-              if window.is_visible().unwrap_or(false) {
-                let _ = window.hide();
-              } else {
-                let _ = window.show();
-                let _ = window.set_focus();
-              }
-            }
-          }
-        })
-        .build(app)?;
-
-      // ── Close-to-tray: intercept window close, hide instead of quit ────
-
-      if let Some(window) = app.get_webview_window("main") {
-        let window_handle = window.clone();
-        window.on_window_event(move |event| {
-          if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-            api.prevent_close();
-            let _ = window_handle.hide();
-          }
-        });
-      }
-
-      // ── Conditionally hide window at startup ───────────────────────────
-
-      {
-        let path = app.path().app_data_dir().unwrap().join("playstash-settings.json");
-        let start_minimized = if path.exists() {
-          std::fs::read_to_string(&path)
-            .ok()
-            .and_then(|data| serde_json::from_str::<AppSettings>(&data).ok())
-            .map(|s| s.start_minimized)
-            .unwrap_or(false)
-        } else {
-          false
-        };
-
-        if start_minimized {
-          if let Some(window) = app.get_webview_window("main") {
-            let _ = window.hide();
-          }
-        }
-      }
-
       // ── Apply persisted WebKitGTK rendering settings (Linux) ──────────
       #[cfg(target_os = "linux")]
       rendering::apply_webkit_settings(app.handle());
 
       // ── Feature package setup ──────────────────────────────────────────
       // ── WP1 os-integration: begin ──
+      // Tray, close-to-tray, start-minimized, IPC server, deep links, jump
+      // list and the startup command (see `ipc::setup`).
+      ipc::setup(app)?;
       // ── WP1 os-integration: end ──
       // ── WP2 community: begin ──
       // ── WP2 community: end ──
@@ -733,9 +664,20 @@ pub fn run() {
       download_and_install_app_update,
       // ── WP1 os-integration: begin ──
       desktop_commands::desktop_commands_ready,
+      desktop_commands::desktop_commands_not_ready,
+      desktop_commands::desktop_command_done,
+      desktop_commands::set_desktop_context,
+      desktop_commands::desktop_frontend_attached,
+      desktop_commands::has_active_downloads,
+      desktop_commands::show_main_window,
+      desktop_commands::exit_app,
       shortcuts::create_desktop_shortcut,
       shortcuts::remove_desktop_shortcut,
       shortcuts::desktop_shortcut_exists,
+      tray::set_tray_labels,
+      jumplist::set_jump_list_games,
+      jumplist::reset_jump_list_games,
+      notifications::os_notify,
       // ── WP1 os-integration: end ──
       // ── WP2 community: begin ──
       integrations::get_integrations_settings,

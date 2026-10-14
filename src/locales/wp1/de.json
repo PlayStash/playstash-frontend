@@ -1,1 +1,23 @@
-{}
+{
+  "wp1.tray.library": "Bibliothek",
+  "wp1.tray.downloads": "Downloads",
+  "wp1.tray.community": "Community",
+  "wp1.tray.settings": "Einstellungen",
+  "wp1.tray.exit": "Beenden",
+  "wp1.tray.libraryDescription": "Bibliothek öffnen",
+  "wp1.tray.downloadsDescription": "Downloads öffnen",
+  "wp1.tray.communityDescription": "Community öffnen",
+  "wp1.tray.settingsDescription": "Einstellungen öffnen",
+  "wp1.tray.exitDescription": "PlayStash beenden",
+  "wp1.tray.noticeTitle": "Information",
+  "wp1.tray.noticeBody": "PlayStash läuft im Hintergrund weiter",
+  "wp1.jumpList.actions": "Aktionen",
+  "wp1.jumpList.lastPlayed": "Zuletzt gespielt",
+  "wp1.exit.downloadsRunning": "Im Hintergrund laufen noch Downloads. Möchtest du die App trotzdem beenden?",
+  "wp1.common.yes": "Ja",
+  "wp1.common.no": "Nein",
+  "wp1.command.gameNotFound": "Spiel mit der ID {id} wurde nicht gefunden",
+  "wp1.command.failed": "PlayStash konnte die angeforderte Aktion nicht ausführen",
+  "wp1.shortcut.confirm": "Möchtest du eine Desktop-Verknüpfung für {title} erstellen?",
+  "wp1.shortcut.exists": "Die Desktop-Verknüpfung existiert bereits"
+}
