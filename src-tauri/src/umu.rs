@@ -1050,6 +1050,7 @@ pub(crate) fn launch_with_umu(
   umu_wine_prefix: Option<&str>,
   restore_on_exit: bool,
   log: Option<Arc<crate::launch_log::LaunchLog>>,
+  installation_path: String,
 ) -> Result<(), String> {
   let umu_run = match find_umu_run() {
     Some(path) => path,
@@ -1092,13 +1093,19 @@ pub(crate) fn launch_with_umu(
   if let Some(params) = launch_parameters {
     let params = params.trim();
     if !params.is_empty() {
-      for arg in params.split_whitespace() {
+      for arg in crate::launch_support::split_launch_args(params) {
         command.arg(arg);
       }
     }
   }
 
   command.stdout(Stdio::piped()).stderr(Stdio::piped());
+
+  let identity = crate::game_sessions::LaunchIdentity {
+    game_id,
+    version_directory: game_version_directory.clone(),
+    installation_path,
+  };
 
   match command.spawn() {
     Ok(child) => {
@@ -1109,6 +1116,7 @@ pub(crate) fn launch_with_umu(
         child,
         restore_on_exit,
         log,
+        identity,
       );
       Ok(())
     }
@@ -1131,6 +1139,7 @@ pub(crate) fn spawn_umu_launch_monitor(
   mut child: Child,
   restore_on_exit: bool,
   launch_log: Option<Arc<crate::launch_log::LaunchLog>>,
+  identity: crate::game_sessions::LaunchIdentity,
 ) {
   thread::spawn(move || {
     if restore_on_exit {
@@ -1211,6 +1220,13 @@ pub(crate) fn spawn_umu_launch_monitor(
       }
       emit_umu_status(&app, Some(&game_title), "exit", None, None);
     }
+    crate::game_sessions::emit_game_exited(
+      &app,
+      &identity,
+      exit_code,
+      start.elapsed().as_millis() as u64,
+      reported_running,
+    );
   });
 }
 

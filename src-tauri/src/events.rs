@@ -60,6 +60,8 @@ pub(crate) struct InstalledGameInfo {
   pub version_directory: String,
   /// Unix timestamp (millis) of when this version was installed, 0 if unknown.
   pub installed_at: i64,
+  /// Unix timestamp (millis) of the last launch through PlayStash, 0 if never.
+  pub last_launched_at: i64,
 }
 
 #[derive(Serialize, Clone)]

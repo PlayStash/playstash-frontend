@@ -33,6 +33,7 @@ mod shortcuts;
 // ── WP3 cloud-saves: end ──
 // ── WP4 launch: begin ──
 mod game_sessions;
+mod launch_support;
 // ── WP4 launch: end ──
 // ── WP5 download-pipeline: begin ──
 // ── WP5 download-pipeline: end ──
@@ -733,6 +734,10 @@ pub fn run() {
       // ── WP3 cloud-saves: end ──
       // ── WP4 launch: begin ──
       game_sessions::get_active_game_sessions,
+      launch_support::set_last_played,
+      launch_support::resolve_path_inside,
+      launch_support::resolve_emulator_executable,
+      launch_support::find_uninstaller_executable,
       // ── WP4 launch: end ──
       // ── WP5 download-pipeline: begin ──
       // ── WP5 download-pipeline: end ──

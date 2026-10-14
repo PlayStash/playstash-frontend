@@ -940,7 +940,8 @@ fn run_uninstall_via_umu(
     .wait()
     .map_err(|error| format!("Failed while waiting for uninstall executable: {error}"))?;
   let exit_code = status.code();
-  if status.success() {
+  // WP4: 3010 (reboot required) also counts as a successful uninstall.
+  if crate::launch_support::uninstall_exit_succeeded(exit_code) {
     Ok(exit_code)
   } else {
     Err(format!(
@@ -1087,7 +1088,8 @@ fn launch_uninstall_executable_blocking(
   match child.wait_with_output() {
     Ok(output) => {
       let exit_code = output.status.code();
-      if output.status.success() {
+      // WP4: 3010 (reboot required) also counts as a successful uninstall.
+      if crate::launch_support::uninstall_exit_succeeded(exit_code) {
         Ok(exit_code)
       } else {
         Err(format!(
