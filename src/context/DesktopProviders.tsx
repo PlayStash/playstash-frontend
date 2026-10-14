@@ -1,4 +1,8 @@
 import type { ComponentType, ReactNode } from "react";
+// ── WP5 download-pipeline: begin ──
+import { DownloadFlowHost } from "@/components/downloads/DownloadFlowHost";
+import { DuplicateInstallWatcher } from "@/components/downloads/DuplicateInstallWatcher";
+// ── WP5 download-pipeline: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -42,6 +46,9 @@ const EFFECTS: ComponentType[] = [
   // ── WP4 launch: begin ──
   // ── WP4 launch: end ──
   // ── WP5 download-pipeline: begin ──
+  // Hosts requestGameDownload (dialogs, auth, navigation).
+  DownloadFlowHost,
+  DuplicateInstallWatcher,
   // ── WP5 download-pipeline: end ──
   // ── WP6 accounts: begin ──
   // ── WP6 accounts: end ──

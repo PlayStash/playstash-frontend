@@ -104,6 +104,9 @@ import {
   PuzzlePieceIcon,
   CircleStackIcon,
 } from "@heroicons/react/24/outline";
+// ── WP5 download-pipeline: begin ──
+import { DownloadExtrasSettings } from "@/components/settings/DownloadExtrasSettings";
+// ── WP5 download-pipeline: end ──
 
 const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
 const MINIMIZE_ON_GAME_LAUNCH_KEY = "tauri_minimize_on_game_launch";
@@ -271,6 +274,11 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   downloads: [
     // ── WP5 download-pipeline: begin ──
+    {
+      id: "wp5-download-extras",
+      component: DownloadExtrasSettings,
+      desktopOnly: true,
+    },
     // ── WP5 download-pipeline: end ──
   ],
   games: [

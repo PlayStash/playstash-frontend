@@ -33,6 +33,39 @@ import type {
   PlaystashGame,
   PlaystashGameTypeEnum,
 } from "@/api/models/PlaystashGame";
+import { translate } from "@/i18n";
+import { DownloadAutoRetry, isAuthError } from "@/utils/autoRetry";
+import {
+  notifyDownloadEvent,
+  type DownloadNotificationKind,
+} from "@/utils/downloadNotifications";
+import {
+  applyAutoInstallDefault,
+  getCreateDesktopShortcutEnabled,
+  getMountIsoEnabled,
+} from "@/utils/downloadPreferences";
+import { getDefaultExtractionPassword } from "@/utils/extractionPassword";
+import {
+  buildSavedPasswords,
+  runPasswordAttempts,
+  type ExtractionAttemptOutcome,
+} from "@/utils/passwordOrder";
+import { createDesktopShortcut } from "@/utils/desktopShortcut";
+import { ROOT_PATHS_CHANGE_EVENT } from "@/utils/rootPaths";
+import {
+  PipelineDialogHost,
+  confirmPipeline,
+  promptPipelinePassword,
+} from "@/components/downloads/PipelineDialogs";
+import {
+  fillTemplate,
+  installSourceDirectory,
+  isCardBusy,
+  isInstalledAt,
+  isIsoFile,
+  resumePositionAfterError,
+  type InstalledEntry,
+} from "@/utils/downloadPipeline";
 
 type InstallationStatus =
   "idle" | "copying" | "launching" | "running" | "completed" | "error";
@@ -73,6 +106,14 @@ export interface ActiveDownload {
   installationExitCode?: number | null;
   sourceFilesDeleted?: boolean;
   fileWriter?: { close(): Promise<void>; abort(): Promise<void> };
+  /** Extract and install this card automatically (CLI `--autoinstall`). */
+  autoInstall?: boolean;
+  /** Mount root of the ISO used instead of the extraction folder. */
+  isoMountPath?: string;
+  /** Informational extraction state, e.g. "ISO mounted at E:\". */
+  extractionNotice?: string;
+  /** The last error was 401/403: resume once a fresh token arrives. */
+  awaitingAuth?: boolean;
 }
 
 export type SimulatedDownloadKind =
@@ -133,8 +174,22 @@ interface DownloadContextValue {
     gameType?: PlaystashGameTypeEnum;
     filename: string;
     downloadRootPath?: string;
+    /** Extract and install automatically, regardless of the global toggles. */
+    autoInstall?: boolean;
   }) => void;
   cancelDownload: (gameId: number) => void;
+  /** Cancels every running download (used on app exit / logout). */
+  cancelAllDownloads: () => void;
+  /**
+   * Asks before installing over an existing installation of this game in the
+   * same version folder. Resolves to false when the user cancelled.
+   */
+  confirmInstallOverwrite: (gameId: number) => Promise<boolean>;
+  /** Persists a game type the user forced in the install flow. */
+  persistForcedGameType: (
+    gameId: number,
+    gameType: PlaystashGameTypeEnum,
+  ) => Promise<void>;
   pauseDownload: (gameId: number) => void;
   resumeDownload: (gameId: number) => void;
   deleteDownloadCard: (gameId: number) => Promise<void>;
@@ -177,7 +232,40 @@ type StartDownloadParams = {
   filename: string;
   resumePosition?: number;
   downloadRootPath?: string;
+  autoInstall?: boolean;
 };
+
+/** Toast from outside the alert provider (this provider is mounted above it). */
+function pipelineToast(title: string) {
+  void window.showAlertDialog?.({ title });
+}
+
+/** The `isomountpath` of a version config ("" when unset or unreadable). */
+async function readIsoMountPath(versionDirectory?: string): Promise<string> {
+  if (!versionDirectory) return "";
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const { join } = await import("@tauri-apps/api/path");
+    const configPath = await join(
+      versionDirectory,
+      ".playstash.game.config.json",
+    );
+    const config = JSON.parse(
+      await invoke<string>("fs_read_text_file", { path: configPath }),
+    );
+    return typeof config?.isomountpath === "string"
+      ? config.isomountpath.trim()
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Portable install failure: the old client's hint plus the cause. */
+function portableInstallError(detail: string) {
+  const hint = translate("wp5.install.portableFailed");
+  return detail.trim() ? `${hint} (${detail.trim()})` : hint;
+}
 
 export function DownloadProvider({ children }: { children: ReactNode }) {
   useFlushGameMetrics();
@@ -247,6 +335,64 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   // listeners, startup recovery) without re-creating them on every update.
   const downloadsRef = useRef<Record<number, ActiveDownload>>({});
   downloadsRef.current = downloads;
+
+  // ── WP5 pipeline extras ──────────────────────────────────────────────────
+  // Auto-install portable games defaults to on for fresh installations only.
+  useState(() => {
+    if (isTauriApp()) applyAutoInstallDefault();
+    return null;
+  });
+  const serverUrlRef = useRef(serverUrl);
+  serverUrlRef.current = serverUrl;
+  /** Mount roots of ISOs, set synchronously so installs started right after see them. */
+  const isoMountRef = useRef<Record<number, string>>({});
+  /** Set after render: resumes a failed download from its partial file. */
+  const resumeAfterErrorRef = useRef<((gameId: number) => void) | null>(null);
+  const autoRetryRef = useRef<DownloadAutoRetry | null>(null);
+  if (!autoRetryRef.current) {
+    autoRetryRef.current = new DownloadAutoRetry((gameId) =>
+      resumeAfterErrorRef.current?.(gameId),
+    );
+  }
+  const autoRetry = autoRetryRef.current;
+
+  /** Shows a pipeline OS notification with the cached cover as image. */
+  const notifyPipeline = useCallback(
+    async (kind: DownloadNotificationKind, d: ActiveDownload | undefined) => {
+      if (!d || d.gameId <= 0 || !isTauriApp()) return;
+      let imagePath: string | undefined;
+      const coverId = (d.gameMetadata as any)?.cover?.id;
+      if (coverId && serverUrlRef.current) {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          imagePath =
+            (await invoke<string | null>("get_cached_image_path", {
+              serverNamespace: getServerNamespace(serverUrlRef.current),
+              mediaId: Number(coverId),
+            })) ?? undefined;
+        } catch {
+          imagePath = undefined;
+        }
+      }
+      await notifyDownloadEvent({
+        kind,
+        gameId: d.gameId,
+        gameTitle: d.gameTitle,
+        imagePath,
+      });
+    },
+    [],
+  );
+
+  /** The folder installs read from (the mounted ISO or the extraction). */
+  const sourceDirectoryFor = useCallback(
+    (d: ActiveDownload) =>
+      installSourceDirectory({
+        isoMountPath: isoMountRef.current[d.gameId] ?? d.isoMountPath,
+        extractionDirectory: d.extractionDirectory,
+      }),
+    [],
+  );
 
   const updateDownload = useCallback(
     (gameId: number, patch: Partial<ActiveDownload>) => {
@@ -623,7 +769,14 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   }, [cacheInstalledGameData, downloadGameIdsKey, isOnline]);
 
   const writeVersionConfig = useCallback(
-    async (versionDirectory: string, patch: Partial<PlayStashConfig>) => {
+    async (
+      versionDirectory: string,
+      // WP5 keys (`isomountpath`, `forcedgametype`) live next to the typed ones.
+      patch: Partial<PlayStashConfig> & {
+        isomountpath?: string;
+        forcedgametype?: string;
+      },
+    ) => {
       if (!isTauriApp() || !versionDirectory) return;
       const { join } = await import("@tauri-apps/api/path");
       const { invoke } = await import("@tauri-apps/api/core");
@@ -721,6 +874,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const cancelDownload = useCallback(
     (gameId: number) => {
       clearSimulatedTimer(gameId);
+      autoRetry.stop(gameId);
       setSkipAutoResume(gameId, true);
       if (isTauriApp()) {
         import("@tauri-apps/api/core")
@@ -743,6 +897,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             total: null,
             progress: 0,
             speedBps: undefined,
+            awaitingAuth: false,
           },
         };
       });
@@ -752,8 +907,15 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         delete tauriUnlistenRef.current[gameId];
       }
     },
-    [clearSimulatedTimer],
+    [clearSimulatedTimer, autoRetry],
   );
+
+  const cancelAllDownloads = useCallback(() => {
+    autoRetry.stopAll();
+    for (const d of Object.values(downloadsRef.current)) {
+      if (d.status === "downloading") cancelDownload(d.gameId);
+    }
+  }, [autoRetry, cancelDownload]);
 
   const lastUpdateRef = useRef<Record<number, number>>({});
   const lastConfigWriteRef = useRef<Record<number, number>>({});
@@ -761,6 +923,10 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const tauriExtractUnlistenRef = useRef<Record<number, () => void>>({});
   const tauriInstallCopyUnlistenRef = useRef<Record<number, () => void>>({});
   const tauriInstallerUnlistenRef = useRef<Record<number, () => void>>({});
+  /** Set after render: notification + auto-retry after a download error. */
+  const handleDownloadErrorRef = useRef<
+    ((gameId: number, message: string) => void) | null
+  >(null);
   const extractArchiveRef = useRef<
     ((gameId: number, password?: string) => Promise<void>) | null
   >(null);
@@ -776,6 +942,12 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const pendingAutoResumeRef = useRef<ActiveDownload[]>([]);
   /** Games whose finished extraction was already handled in this page session. */
   const extractionCompletionHandledRef = useRef<Set<number>>(new Set());
+  /** Games whose extraction was started (and is awaited) from this page. */
+  const extractionAttemptActiveRef = useRef<Set<number>>(new Set());
+  /** Set after render: the "already installed" confirmation. */
+  const confirmInstallOverwriteRef = useRef<
+    ((gameId: number) => Promise<boolean>) | null
+  >(null);
   /** Games whose finished installation was already handled in this page session. */
   const installationCompletionHandledRef = useRef<Set<number>>(new Set());
   /** Set after render so the startup recovery can re-attach to extractions. */
@@ -794,9 +966,12 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       filename,
       resumePosition,
       downloadRootPath,
+      autoInstall,
     }: StartDownloadParams) => {
       if (!serverUrl) return;
       if (downloads[gameId]?.status === "downloading") return;
+      // A fresh start (not a resume) of a card resets its mount state.
+      if (!resumePosition) delete isoMountRef.current[gameId];
       const base = serverUrl.replace(/\/$/, "");
       const url = `${base}/api/game/${gameId}/versions/${versionId}`;
       const isDesktop = isTauriApp();
@@ -820,6 +995,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         status: "downloading",
         extractionStatus: "idle",
         installationStatus: "idle",
+        autoInstall: autoInstall ?? false,
       };
       setDownloads((prev) => ({ ...prev, [gameId]: entry }));
       speedSamplesRef.current[gameId] = [
@@ -968,6 +1144,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             gametype: gameType,
             downloadfinished: false,
             extractionfinished: false,
+            ...(resumePosition && resumePosition > 0
+              ? {}
+              : { isomountpath: "" }),
             downloadprogress:
               resumePosition && resumePosition > 0
                 ? `${resumePosition}/0`
@@ -1103,12 +1282,19 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               });
               // Cache game data + images for offline use (Download tab)
               cacheInstalledGameData(gameId);
+              autoRetry.reset(gameId);
+              void notifyPipeline(
+                "download-complete",
+                downloadsRef.current[gameId] ?? entry,
+              );
 
-              // Auto-extract if enabled
+              // Auto-extract if enabled, or forced for this card (CLI
+              // `--autoinstall`).
               try {
                 if (
-                  typeof localStorage !== "undefined" &&
-                  localStorage.getItem("tauri_auto_extract") === "1"
+                  entry.autoInstall ||
+                  (typeof localStorage !== "undefined" &&
+                    localStorage.getItem("tauri_auto_extract") === "1")
                 ) {
                   setTimeout(() => {
                     extractArchiveRef
@@ -1134,17 +1320,29 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
                 speedBps: undefined,
               });
             } else if (payload.status === "error") {
+              // Keep the bytes already on disk so the download can resume.
+              const previous = downloadsRef.current[gameId];
+              const errorReceived = Number(payload.received || 0);
+              const received =
+                errorReceived > 0 ? errorReceived : (previous?.received ?? 0);
+              const total =
+                payload.total !== undefined && payload.total !== null
+                  ? Number(payload.total)
+                  : (previous?.total ?? null);
               void writeVersionConfig(versionBaseFolder, {
                 downloadfinished: false,
+                downloadprogress: `${received}/${total || 0}`,
               });
+              const message = payload.error || "Download failed";
               updateDownload(gameId, {
                 status: "error",
-                error: payload.error || "Download failed",
-                received: 0,
-                total: null,
-                progress: 0,
+                error: message,
+                received,
+                total,
+                progress: total && total > 0 ? (received / total) * 100 : 0,
                 speedBps: undefined,
               });
+              handleDownloadErrorRef.current?.(gameId, message);
             }
 
             const stop = tauriUnlistenRef.current[gameId];
@@ -1341,6 +1539,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             progress: 0,
             speedBps: undefined,
           });
+          if (isDesktop) handleDownloadErrorRef.current?.(gameId, String(err));
         }
       }
     },
@@ -1356,6 +1555,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       speedLimitKB,
       trimSamples,
       computeSpeedBps,
+      autoRetry,
+      notifyPipeline,
     ],
   );
 
@@ -1369,6 +1570,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         return;
       }
       setSkipAutoResume(gameId, true);
+      autoRetry.stop(gameId);
       if (isTauriApp()) {
         import("@tauri-apps/api/core")
           .then(({ invoke }) => invoke("pause_download_task", { gameId }))
@@ -1382,7 +1584,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         speedBps: undefined,
       });
     },
-    [downloads, updateDownload, clearSimulatedTimer],
+    [downloads, updateDownload, clearSimulatedTimer, autoRetry],
   );
 
   const resumeDownload = useCallback(
@@ -1410,6 +1612,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         filename: d.filename,
         resumePosition: d.received > 0 ? d.received : 0,
         downloadRootPath: d.downloadRootPath,
+        autoInstall: d.autoInstall,
       });
     },
     [downloads, startDownload, startSimulatedProgress, updateDownload],
@@ -1422,6 +1625,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
       setSkipAutoResume(gameId, false);
       clearSimulatedTimer(gameId);
+      autoRetry.reset(gameId);
+      delete isoMountRef.current[gameId];
 
       if (d.versionDirectory) {
         try {
@@ -1429,6 +1634,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
             downloadfinished: false,
             extractionfinished: false,
             downloadprogress: "",
+            isomountpath: "",
           });
         } catch (error) {
           console.warn(
@@ -1528,7 +1734,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         return next;
       });
     },
-    [downloads, writeVersionConfig, clearSimulatedTimer],
+    [downloads, writeVersionConfig, clearSimulatedTimer, autoRetry],
   );
 
   const retryDownload = useCallback(
@@ -1549,6 +1755,14 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         startSimulatedProgress(gameId, total);
         return;
       }
+      // A manual retry replaces the pending automatic one.
+      autoRetry.stop(gameId);
+      // After an error the partial file is kept: resume it like the old
+      // client did instead of starting from zero.
+      if (d.status === "error" && d.received > 0 && isTauriApp()) {
+        resumeAfterErrorRef.current?.(gameId);
+        return;
+      }
       void startDownload({
         gameId: d.gameId,
         versionId: d.versionId,
@@ -1558,6 +1772,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         gameType: d.gameType,
         filename: d.filename,
         downloadRootPath: d.downloadRootPath,
+        autoInstall: d.autoInstall,
       });
     },
     [
@@ -1566,8 +1781,85 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       clearSimulatedTimer,
       updateDownload,
       startSimulatedProgress,
+      autoRetry,
     ],
   );
+
+  const startDownloadRef = useRef(startDownload);
+  startDownloadRef.current = startDownload;
+
+  /** Resumes a failed download from the bytes that are on disk. */
+  const resumeAfterError = useCallback(
+    async (gameId: number) => {
+      const d = downloadsRef.current[gameId];
+      if (!d || d.status !== "error") {
+        autoRetry.stop(gameId);
+        return;
+      }
+      let bytesOnDisk: number | null = null;
+      if (d.downloadedFilePath) {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          bytesOnDisk = await invoke<number>("get_paths_size", {
+            paths: [d.downloadedFilePath],
+          });
+        } catch {
+          bytesOnDisk = null;
+        }
+      }
+      // The user may have retried, paused or deleted the card meanwhile.
+      const current = downloadsRef.current[gameId];
+      if (!current || current.status !== "error") return;
+      updateDownload(gameId, { awaitingAuth: false });
+      setSkipAutoResume(gameId, false);
+      void startDownloadRef.current({
+        gameId: current.gameId,
+        versionId: current.versionId,
+        versionName: current.versionName,
+        gameTitle: current.gameTitle,
+        gameMetadata: current.gameMetadata,
+        gameType: current.gameType,
+        filename: current.filename,
+        resumePosition: resumePositionAfterError(current.received, bytesOnDisk),
+        downloadRootPath: current.downloadRootPath,
+        autoInstall: current.autoInstall,
+      });
+    },
+    [autoRetry, updateDownload],
+  );
+  resumeAfterErrorRef.current = (gameId) => void resumeAfterError(gameId);
+
+  /** First error of a download: notify; then schedule the automatic resume. */
+  const handleDownloadError = useCallback(
+    (gameId: number, message: string) => {
+      if (gameId <= 0) return;
+      if (!autoRetry.isAutoRetryAttempt(gameId)) {
+        void notifyPipeline("download-failed", downloadsRef.current[gameId]);
+      }
+      if (isAuthError(message)) {
+        // A rejected token is not fixed by retrying: wait for a new one.
+        autoRetry.stop(gameId);
+        updateDownload(gameId, { awaitingAuth: true });
+        return;
+      }
+      autoRetry.scheduleAfterError(gameId);
+    },
+    [autoRetry, notifyPipeline, updateDownload],
+  );
+  handleDownloadErrorRef.current = handleDownloadError;
+
+  // Downloads that failed with 401/403 resume once a fresh token arrives.
+  useEffect(() => {
+    if (!auth?.access_token) return;
+    for (const d of Object.values(downloadsRef.current)) {
+      if (d.awaitingAuth && d.status === "error") {
+        void resumeAfterError(d.gameId);
+      }
+    }
+  }, [auth?.access_token, resumeAfterError]);
+
+  // Stop pending retries when the provider goes away.
+  useEffect(() => () => autoRetry.stopAll(), [autoRetry]);
 
   const openDownloadFolder = useCallback(
     async (gameId: number) => {
@@ -1618,10 +1910,11 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   // Handles a finished extraction. Idempotent per game, because both the
   // invoke result and the terminal `extract-progress` event report it.
   const handleExtractionCompleted = useCallback(
-    async (gameId: number) => {
+    async (gameId: number, options?: { mounted?: boolean }) => {
       if (extractionCompletionHandledRef.current.has(gameId)) return;
       extractionCompletionHandledRef.current.add(gameId);
       const d = downloadsRef.current[gameId];
+      if (!options?.mounted) void notifyPipeline("extraction-complete", d);
 
       updateDownload(gameId, {
         extractionStatus: "completed",
@@ -1642,11 +1935,17 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       }
 
       // Start installation only after extraction has actually completed.
+      // A card queued with `autoInstall` (CLI) installs regardless of the
+      // global toggle.
       try {
         if (
-          typeof localStorage !== "undefined" &&
-          localStorage.getItem("tauri_auto_install") === "1"
+          d?.autoInstall ||
+          (typeof localStorage !== "undefined" &&
+            localStorage.getItem("tauri_auto_install") === "1")
         ) {
+          if (!((await confirmInstallOverwriteRef.current?.(gameId)) ?? true)) {
+            return;
+          }
           const gameType = d?.gameType;
           const isPortable =
             gameType === "WINDOWS_PORTABLE" ||
@@ -1677,7 +1976,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         console.error("Auto-install failed:", e);
       }
     },
-    [updateDownload, writeVersionConfig],
+    [notifyPipeline, updateDownload, writeVersionConfig],
   );
 
   /**
@@ -1745,21 +2044,139 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               (typeof payload.error === "string" && payload.error) ||
               "Extraction failed.",
           });
+          // The invoke result reports attempts started from this page; this
+          // covers extractions re-attached after a reload.
+          if (!extractionAttemptActiveRef.current.has(gameId)) {
+            void notifyPipeline(
+              "extraction-failed",
+              downloadsRef.current[gameId],
+            );
+          }
         }
       });
 
       tauriExtractUnlistenRef.current[gameId] = unlisten;
     },
-    [handleExtractionCompleted, updateDownload],
+    [handleExtractionCompleted, notifyPipeline, updateDownload],
   );
 
   // Re-attaching to installations is set up further down, next to the install
   // flow itself (see `reconcileBackgroundStates`).
 
+  type ExtractionResult = {
+    success: boolean;
+    needsPassword: boolean;
+    message?: string;
+    /** Another extraction of this game is still running in the backend. */
+    alreadyRunning?: boolean;
+  };
+
+  /** One `extract_archive` call with the given password. */
+  const runExtractionAttempt = useCallback(
+    async (
+      d: ActiveDownload,
+      password: string | null,
+    ): Promise<{
+      outcome: ExtractionAttemptOutcome;
+      result: ExtractionResult;
+    }> => {
+      const gameId = d.gameId;
+      updateDownload(gameId, {
+        extractionStatus: "extracting",
+        extractionProgress: 0,
+        extractionCurrentFile: undefined,
+        extractionError: undefined,
+        extractionPasswordRequired: false,
+      });
+      const { invoke } = await import("@tauri-apps/api/core");
+      await attachExtractionListener(gameId);
+      const result = await invoke<ExtractionResult>("extract_archive", {
+        gameId,
+        archivePath: d.downloadedFilePath,
+        destinationPath: d.extractionDirectory,
+        password: password || null,
+      });
+      if (result.success) return { outcome: "success", result };
+      if (result.needsPassword) return { outcome: "needs-password", result };
+      // The backend refuses to extract the same game twice at once. That is
+      // not a failure of this call: the running extraction reports its own
+      // outcome through the still-attached listener.
+      if (await isExtractionRunning(gameId)) {
+        return {
+          outcome: "error",
+          result: { ...result, alreadyRunning: true },
+        };
+      }
+      return { outcome: "error", result };
+    },
+    [attachExtractionListener, isExtractionRunning, updateDownload],
+  );
+
+  /**
+   * "Mount ISO instead of extracting". Resolves to true when the ISO was
+   * mounted, false when the caller should extract normally (Linux fallback)
+   * and "failed" when mounting failed for good.
+   */
+  const mountIsoInsteadOfExtracting = useCallback(
+    async (d: ActiveDownload): Promise<boolean | "failed"> => {
+      const gameId = d.gameId;
+      updateDownload(gameId, {
+        extractionStatus: "extracting",
+        extractionProgress: null,
+        extractionCurrentFile: undefined,
+        extractionError: undefined,
+        extractionPasswordRequired: false,
+        extractionNotice: translate("wp5.iso.mounting"),
+      });
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const mountRoot = await invoke<string>("mount_iso", {
+          isoPath: d.downloadedFilePath,
+        });
+        isoMountRef.current[gameId] = mountRoot;
+        if (d.versionDirectory) {
+          await writeVersionConfig(d.versionDirectory, {
+            isomountpath: mountRoot,
+          }).catch((error) =>
+            console.warn("Failed to persist the ISO mount path:", error),
+          );
+        }
+        updateDownload(gameId, {
+          isoMountPath: mountRoot,
+          extractionNotice: fillTemplate(translate("wp5.iso.mounted"), {
+            path: mountRoot,
+          }),
+        });
+        await handleExtractionCompleted(gameId, { mounted: true });
+        return true;
+      } catch (error) {
+        console.warn("Mounting the ISO failed:", error);
+        const isLinux =
+          typeof navigator !== "undefined" &&
+          navigator.userAgent.includes("Linux");
+        if (isLinux) {
+          // udisks2 may be missing (e.g. sandboxed builds): extract instead.
+          updateDownload(gameId, {
+            extractionNotice: translate("wp5.iso.mountFailedExtracting"),
+          });
+          return false;
+        }
+        updateDownload(gameId, {
+          extractionStatus: "error",
+          extractionProgress: null,
+          extractionNotice: undefined,
+          extractionError: `${translate("wp5.iso.mountFailed")}: ${String(error)}`,
+        });
+        return "failed";
+      }
+    },
+    [handleExtractionCompleted, updateDownload, writeVersionConfig],
+  );
+
   const extractArchive = useCallback(
     async (gameId: number, password?: string) => {
       if (!isTauriApp()) return;
-      const d = downloads[gameId];
+      const d = downloadsRef.current[gameId] ?? downloads[gameId];
       if (!d?.downloadedFilePath || !d.extractionDirectory) return;
 
       // An extraction started earlier may still be running in the backend (the
@@ -1771,55 +2188,75 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       }
 
       extractionCompletionHandledRef.current.delete(gameId);
-
+      delete isoMountRef.current[gameId];
       updateDownload(gameId, {
-        extractionStatus: "extracting",
-        extractionProgress: 0,
-        extractionCurrentFile: undefined,
-        extractionError: undefined,
-        extractionPasswordRequired: false,
+        isoMountPath: undefined,
+        extractionNotice: undefined,
       });
 
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        await attachExtractionListener(gameId);
+      if (getMountIsoEnabled() && isIsoFile(d.downloadedFilePath)) {
+        const mounted = await mountIsoInsteadOfExtracting(d);
+        if (mounted !== false) return;
+      } else if (d.isoMountPath && d.versionDirectory) {
+        // Extracting for real now: forget an earlier mount.
+        await writeVersionConfig(d.versionDirectory, {
+          isomountpath: "",
+        }).catch(() => undefined);
+      }
 
-        const result = await invoke<{
-          success: boolean;
-          needsPassword: boolean;
-          message?: string;
-        }>("extract_archive", {
-          gameId,
-          archivePath: d.downloadedFilePath,
-          destinationPath: d.extractionDirectory,
-          password: (password ?? d.gameMetadata?.archive_password) || null,
+      const explicitPassword = password?.trim() ? password : undefined;
+      extractionAttemptActiveRef.current.add(gameId);
+      try {
+        const savedPasswords = explicitPassword
+          ? [explicitPassword]
+          : buildSavedPasswords(
+              d.gameMetadata?.archive_password,
+              await getDefaultExtractionPassword(),
+            );
+
+        const loop = await runPasswordAttempts({
+          savedPasswords,
+          attempt: (candidate) => runExtractionAttempt(d, candidate),
+          // A password typed on the card is tried as is, without a prompt.
+          prompt: explicitPassword
+            ? async () => null
+            : ({ title, message }) =>
+                promptPipelinePassword({
+                  title,
+                  message,
+                  placeholder: translate("wp5.password.placeholder"),
+                  confirmText: translate("wp5.password.extract"),
+                  cancelText: translate("wp5.dialog.cancel"),
+                }),
+          texts: {
+            title: translate("wp5.password.title"),
+            enterMessage: translate("wp5.password.enter"),
+            savedFailedMessage: translate("wp5.password.savedFailed"),
+          },
         });
 
-        if (result.success) {
+        if (loop.outcome === "success") {
           await handleExtractionCompleted(gameId);
           return;
         }
 
-        if (result.needsPassword) {
+        if (loop.outcome === "wrong-password") {
           updateDownload(gameId, {
             extractionStatus: "needs-password",
             extractionProgress: null,
             extractionPasswordRequired: true,
-            extractionError: result.message || "Archive password required.",
+            extractionError: translate("wp5.password.wrong"),
           });
           return;
         }
 
-        // The backend refuses to extract the same game twice at once. That is
-        // not a failure of this call: the running extraction reports its own
-        // outcome through the still-attached listener.
-        if (await isExtractionRunning(gameId)) return;
-
+        if (loop.result.alreadyRunning) return;
         updateDownload(gameId, {
           extractionStatus: "error",
           extractionProgress: null,
-          extractionError: result.message || "Extraction failed.",
+          extractionError: loop.result.message || "Extraction failed.",
         });
+        void notifyPipeline("extraction-failed", downloadsRef.current[gameId]);
       } catch (err) {
         const stop = tauriExtractUnlistenRef.current[gameId];
         if (stop) {
@@ -1831,14 +2268,20 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           extractionProgress: null,
           extractionError: String(err),
         });
+        void notifyPipeline("extraction-failed", downloadsRef.current[gameId]);
+      } finally {
+        extractionAttemptActiveRef.current.delete(gameId);
       }
     },
     [
-      attachExtractionListener,
       downloads,
       handleExtractionCompleted,
       isExtractionRunning,
+      mountIsoInsteadOfExtracting,
+      notifyPipeline,
+      runExtractionAttempt,
       updateDownload,
+      writeVersionConfig,
     ],
   );
   extractArchiveRef.current = extractArchive;
@@ -1859,14 +2302,15 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const listInstallExecutables = useCallback(
     async (gameId: number) => {
       if (!isTauriApp()) return [];
-      const d = downloads[gameId];
-      if (!d?.extractionDirectory) return [];
+      const d = downloads[gameId] ?? downloadsRef.current[gameId];
+      const source = d ? sourceDirectoryFor(d) : undefined;
+      if (!source) return [];
       const { invoke } = await import("@tauri-apps/api/core");
       return invoke<string[]>("list_install_executables", {
-        extractionPath: d.extractionDirectory,
+        extractionPath: source,
       });
     },
-    [downloads],
+    [downloads, sourceDirectoryFor],
   );
   listInstallExecutablesRef.current = listInstallExecutables;
 
@@ -1943,6 +2387,71 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   );
 
   /**
+   * "Create Shortcut": puts a desktop shortcut for the freshly installed game
+   * on the desktop. Runs after the default launch config was applied, so the
+   * launch executable is already auto-detected when the game has none.
+   */
+  const createShortcutAfterInstall = useCallback(async (d: ActiveDownload) => {
+    if (!isTauriApp() || !d.versionDirectory || !d.installationDirectory) {
+      return;
+    }
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const { join } = await import("@tauri-apps/api/path");
+
+      // Give the installed-games list a moment, then make sure the game is
+      // actually detected as installed.
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (d.downloadRootPath) {
+        const installed = await invoke<InstalledEntry[]>(
+          "list_installed_games",
+          { selectedRoot: d.downloadRootPath },
+        ).catch(() => [] as InstalledEntry[]);
+        if (!isInstalledAt(installed, d.gameId, d.versionDirectory)) return;
+      }
+
+      let executable = "";
+      try {
+        const configPath = await join(
+          d.versionDirectory,
+          ".playstash.game.config.json",
+        );
+        const config = JSON.parse(
+          await invoke<string>("fs_read_text_file", { path: configPath }),
+        );
+        if (typeof config?.launchexecutable === "string") {
+          executable = config.launchexecutable.trim();
+        }
+      } catch {
+        executable = "";
+      }
+      if (!executable) {
+        const { executables } = await invoke<{ executables: string[] }>(
+          "list_launch_executables",
+          { installationPath: d.installationDirectory },
+        ).catch(() => ({ executables: [] as string[] }));
+        executable = executables[0] ?? "";
+      }
+      if (!executable) {
+        pipelineToast(translate("wp5.shortcut.noExecutable"));
+        return;
+      }
+
+      const result = await createDesktopShortcut({
+        gameId: d.gameId,
+        title: d.gameTitle,
+        iconPath: await join(d.installationDirectory, executable),
+        ask: false,
+      });
+      if (result === "exists") {
+        pipelineToast(translate("wp5.shortcut.exists"));
+      }
+    } catch (error) {
+      console.warn("Creating the desktop shortcut failed:", error);
+    }
+  }, []);
+
+  /**
    * Completes an installation: persists the flag, applies the default launch
    * config, caches the game and cleans up the source files.
    *
@@ -1973,6 +2482,11 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         installationCurrentFile: undefined,
         installationError: undefined,
       });
+
+      // "Create Shortcut" toggle of the install flow.
+      if (getCreateDesktopShortcutEnabled()) {
+        void createShortcutAfterInstall(d);
+      }
 
       // Cache game data for offline use
       cacheInstalledGameData(gameId);
@@ -2007,6 +2521,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       applyDefaultLaunchConfig,
       autoDeleteSourceFiles,
       cacheInstalledGameData,
+      createShortcutAfterInstall,
       updateDownload,
       writeVersionConfig,
     ],
@@ -2049,11 +2564,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         updateDownload(gameId, {
           installationStatus: "error",
           installationCurrentFile: undefined,
-          installationError:
-            "The installer appeared to exit successfully but no game " +
-            "executable was found in the installation folder. The " +
-            "install may have been canceled or failed, so no source " +
-            "files were deleted.",
+          installationError: translate("wp5.install.noFilesFound"),
           installationExitCode: exitCode,
         });
         return;
@@ -2069,7 +2580,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     async (gameId: number, card?: ActiveDownload) => {
       if (!isTauriApp()) return;
       const d = downloads[gameId] ?? card;
-      if (!d?.extractionDirectory || !d.installationDirectory) return;
+      const source = d ? sourceDirectoryFor(d) : undefined;
+      if (!d || !source || !d.installationDirectory) return;
 
       // A fresh copy (or a re-attach to one that is still running) resets the
       // "already handled" marker for this game.
@@ -2126,9 +2638,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               updateDownload(gameId, {
                 installationStatus: "error",
                 installationProgress: null,
-                installationError:
-                  (typeof payload.error === "string" && payload.error) ||
-                  "Installation copy failed.",
+                installationError: portableInstallError(
+                  typeof payload.error === "string" ? payload.error : "",
+                ),
               });
             }
 
@@ -2142,9 +2654,10 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
         tauriInstallCopyUnlistenRef.current[gameId] = unlisten;
 
+        // Always a copy: a mounted ISO stays untouched.
         await invoke("copy_installation_files", {
           gameId,
-          sourcePath: d.extractionDirectory,
+          sourcePath: source,
           destinationPath: d.installationDirectory,
         });
       } catch (err) {
@@ -2156,11 +2669,17 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         updateDownload(gameId, {
           installationStatus: "error",
           installationProgress: null,
-          installationError: String(err),
+          installationError: portableInstallError(String(err)),
         });
       }
     },
-    [downloads, finalizeInstallation, updateDownload, writeVersionConfig],
+    [
+      downloads,
+      finalizeInstallation,
+      sourceDirectoryFor,
+      updateDownload,
+      writeVersionConfig,
+    ],
   );
   copyInstallationFilesRef.current = copyInstallationFiles;
 
@@ -2172,7 +2691,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     ) => {
       if (!isTauriApp()) return;
       const d = downloads[gameId] ?? card;
-      if (!d?.extractionDirectory || !d.installationDirectory) return;
+      const source = d ? sourceDirectoryFor(d) : undefined;
+      if (!d || !source || !d.installationDirectory) return;
 
       if (d.versionDirectory) {
         await writeVersionConfig(d.versionDirectory, {
@@ -2288,7 +2808,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         await invoke("launch_installation_executable", {
           gameId,
           versionDirectory: d.versionDirectory,
-          extractionPath: d.extractionDirectory,
+          extractionPath: source,
           installerRelativePath,
           installationPath: d.installationDirectory,
           installerParameters: d.gameMetadata?.installer_parameters ?? null,
@@ -2310,9 +2830,59 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [downloads, handleInstallerCompleted, updateDownload, writeVersionConfig],
+    [
+      downloads,
+      handleInstallerCompleted,
+      sourceDirectoryFor,
+      updateDownload,
+      writeVersionConfig,
+    ],
   );
   launchInstallationExecutableRef.current = launchInstallationExecutable;
+
+  const confirmInstallOverwrite = useCallback(async (gameId: number) => {
+    const d = downloadsRef.current[gameId];
+    if (!d?.downloadRootPath || !d.versionDirectory || !isTauriApp()) {
+      return true;
+    }
+    let installed: InstalledEntry[] = [];
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      installed = await invoke<InstalledEntry[]>("list_installed_games", {
+        selectedRoot: d.downloadRootPath,
+      });
+    } catch {
+      return true;
+    }
+    const existing = isInstalledAt(installed, gameId, d.versionDirectory);
+    if (!existing) return true;
+    return confirmPipeline({
+      title: translate("wp5.install.alreadyInstalledTitle"),
+      message: fillTemplate(translate("wp5.install.alreadyInstalledMessage"), {
+        title: d.gameTitle,
+        path: existing.installationDirectory || d.installationDirectory || "",
+      }),
+      confirmText: translate("wp5.install.continue"),
+      cancelText: translate("wp5.dialog.cancel"),
+      tone: "danger",
+    });
+  }, []);
+  confirmInstallOverwriteRef.current = confirmInstallOverwrite;
+
+  const persistForcedGameType = useCallback(
+    async (gameId: number, gameType: PlaystashGameTypeEnum) => {
+      const d = downloadsRef.current[gameId];
+      if (!d?.versionDirectory) return;
+      try {
+        await writeVersionConfig(d.versionDirectory, {
+          forcedgametype: gameType,
+        });
+      } catch (error) {
+        console.warn("Failed to persist the forced game type:", error);
+      }
+    },
+    [writeVersionConfig],
+  );
 
   /**
    * Re-syncs the cards with the backend after startup.
@@ -2512,11 +3082,36 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const recoverDownloads = async () => {
+    /**
+     * Rebuilds the cards from the version configs on disk. On startup every
+     * card is restored and interrupted downloads resume; after the download
+     * locations changed (Settings) only new cards are added, and cards of
+     * removed locations disappear.
+     */
+    const recoverDownloads = async (startup: boolean) => {
       if (!isTauriApp()) return;
 
       try {
         const rootPaths = getRootPaths();
+        if (!startup) {
+          const rootSet = new Set(rootPaths.map((root) => root.path));
+          setDownloads((prev) => {
+            let changed = false;
+            const next = { ...prev };
+            for (const card of Object.values(prev)) {
+              if (
+                card.gameId > 0 &&
+                card.downloadRootPath &&
+                !rootSet.has(card.downloadRootPath) &&
+                !isCardBusy(card)
+              ) {
+                delete next[card.gameId];
+                changed = true;
+              }
+            }
+            return changed ? next : prev;
+          });
+        }
         if (!rootPaths.length) return;
 
         const { invoke } = await import("@tauri-apps/api/core");
@@ -2602,6 +3197,33 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
               sourceFilesDeleted,
               cachedMetadata: card.cachedMetadata ?? null,
             };
+
+            // "Mount ISO instead of extracting": restore the mount, or offer
+            // a new one when the image was unmounted in the meantime.
+            const restored = recovered[gameId];
+            const mountPath = await readIsoMountPath(restored.versionDirectory);
+            if (mountPath) {
+              const stillMounted = await invoke<boolean>("fs_path_exists", {
+                path: mountPath,
+              }).catch(() => false);
+              if (stillMounted) {
+                isoMountRef.current[gameId] = mountPath;
+                restored.isoMountPath = mountPath;
+                restored.extractionNotice = fillTemplate(
+                  translate("wp5.iso.mounted"),
+                  { path: mountPath },
+                );
+              } else if (restored.installationStatus !== "completed") {
+                restored.extractionStatus = "idle";
+                restored.extractionProgress = null;
+              }
+            }
+          }
+        }
+
+        if (!startup) {
+          for (const id of Object.keys(downloadsRef.current)) {
+            delete recovered[Number(id)];
           }
         }
 
@@ -2618,7 +3240,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         // user intentionally stopped it (paused/cancelled) before quitting.
         const skipAutoResume = getSkipAutoResumeIds();
         const toResume: ActiveDownload[] = [];
-        for (const dl of Object.values(recovered)) {
+        for (const dl of startup ? Object.values(recovered) : []) {
           if (dl.status === "completed" || dl.status === "error") continue;
           if (skipAutoResume.has(dl.gameId)) continue;
           toResume.push(dl);
@@ -2660,9 +3282,13 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void recoverDownloads();
+    void recoverDownloads(true);
+    // Like the old client, changing the download locations rescans them.
+    const onRootPathsChange = () => void recoverDownloads(false);
+    window.addEventListener(ROOT_PATHS_CHANGE_EVENT, onRootPathsChange);
     return () => {
       mounted = false;
+      window.removeEventListener(ROOT_PATHS_CHANGE_EVENT, onRootPathsChange);
     };
   }, []);
 
@@ -2793,6 +3419,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     downloads,
     startDownload,
     cancelDownload,
+    cancelAllDownloads,
+    confirmInstallOverwrite,
+    persistForcedGameType,
     pauseDownload,
     resumeDownload,
     deleteDownloadCard,
@@ -2814,6 +3443,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   return (
     <DownloadContext.Provider value={value}>
       {children}
+      {/* Pipeline confirmations and the archive password prompt. */}
+      <PipelineDialogHost />
     </DownloadContext.Provider>
   );
 }

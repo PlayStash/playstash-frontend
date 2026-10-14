@@ -49,8 +49,7 @@ export function PhaseDetail({
 }: Readonly<PhaseDetailProps>) {
   const isDownloadingOrPaused =
     download.status === "downloading" || download.status === "paused";
-  const isFailed =
-    download.status === "error" || download.status === "aborted";
+  const isFailed = download.status === "error" || download.status === "aborted";
   const isExtracting = download.extractionStatus === "extracting";
   const needsPassword =
     download.extractionStatus === "needs-password" ||
@@ -124,9 +123,7 @@ export function PhaseDetail({
                 {download.extractionStatus === "completed" && (
                   <Badge color="green">Extracted</Badge>
                 )}
-                {needsPassword && (
-                  <Badge color="amber">Password needed</Badge>
-                )}
+                {needsPassword && <Badge color="amber">Password needed</Badge>}
               </div>
             </div>
 
@@ -156,6 +153,12 @@ export function PhaseDetail({
                 valueText={extractionProgressText}
                 currentFile={download.extractionCurrentFile}
               />
+            )}
+
+            {download.extractionNotice && (
+              <p className="text-xs text-ps-muted" role="status">
+                {download.extractionNotice}
+              </p>
             )}
 
             {download.extractionError && (
@@ -226,7 +229,10 @@ export function PhaseDetail({
 
               {download.installationStatus === "completed" &&
                 download.installationDirectory && (
-                  <p className="truncate text-xs text-ps-muted" title={download.installationDirectory}>
+                  <p
+                    className="truncate text-xs text-ps-muted"
+                    title={download.installationDirectory}
+                  >
                     Installed to {download.installationDirectory}.
                   </p>
                 )}
