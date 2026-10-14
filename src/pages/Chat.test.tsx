@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   io: vi.fn(),
   fetch: vi.fn(),
 }));
-vi.mock("socket.io-client", () => ({ io: mocks.io }));
+vi.mock("socket.io-client", () => ({ io: mocks.io, Fetch: class {} }));
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     serverUrl: "http://library.test",

@@ -122,7 +122,8 @@ export function getAdditionalRequestHeaderList(): RequestHeader[] {
 /**
  * Additional request headers sent with every request to the PlayStash server
  * (WP6 contract). Applied inside `authFetch` and to the unauthenticated server
- * calls; WP2 passes them to socket.io (`socketIoHeaderOptions`).
+ * calls; the community socket uses them through `socketIoHeaderOptions`
+ * (`serverSocketTransport.ts`).
  */
 export function getAdditionalRequestHeaders(): Record<string, string> {
   const result: Record<string, string> = {};
@@ -222,20 +223,6 @@ export function setNativeServerRequestsEnabled(enabled: boolean): void {
     /* storage unavailable */
   }
   emitChange();
-}
-
-/**
- * socket.io options for the community connection (WP2). Browser WebSockets
- * cannot carry custom headers, so with additional headers the client must use
- * the HTTP long-polling transport with `extraHeaders`.
- */
-export function socketIoHeaderOptions(): {
-  extraHeaders?: Record<string, string>;
-  transports?: string[];
-} {
-  const extra = getAdditionalRequestHeaders();
-  if (!Object.keys(extra).length) return {};
-  return { extraHeaders: extra, transports: ["polling"] };
 }
 
 /** Test helper: replaces the in-memory state. */

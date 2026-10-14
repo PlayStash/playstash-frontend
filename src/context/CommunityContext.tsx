@@ -37,7 +37,8 @@ import {
 import type { ChatMessage } from "@/utils/chat";
 import { onGameExited, onGameSession } from "@/utils/gameSessions";
 import { isMainWindowFocused, notify } from "@/utils/osNotify";
-import { getAdditionalRequestHeaders } from "@/utils/requestHeaders";
+import { REQUEST_HEADERS_CHANGE_EVENT } from "@/utils/requestHeaders";
+import { socketIoHeaderOptions } from "@/utils/serverSocketTransport";
 import { isTauriApp } from "@/utils/tauri";
 
 export type CommunityStatus =
@@ -360,6 +361,13 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Connection lifecycle ────────────────────────────────────────────────
+  const [headersVersion, setHeadersVersion] = useState(0);
+  useEffect(() => {
+    const onChange = () => setHeadersVersion((version) => version + 1);
+    window.addEventListener(REQUEST_HEADERS_CHANGE_EVENT, onChange);
+    return () =>
+      window.removeEventListener(REQUEST_HEADERS_CHANGE_EVENT, onChange);
+  }, []);
   const canConnect = Boolean(isOnline && userId && apiKey && serverUrl);
   useEffect(() => {
     const reset = () => {
@@ -379,17 +387,15 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const headers = getAdditionalRequestHeaders();
-    const hasHeaders = Object.keys(headers).length > 0;
     const socket = io(serverUrl, {
       auth: { api_key: apiKey },
       autoConnect: false,
       reconnectionDelay: COMMUNITY_RECONNECT_DELAY_MS,
       reconnectionDelayMax: COMMUNITY_RECONNECT_DELAY_MS,
       randomizationFactor: 0,
-      // Browser WebSockets cannot carry custom headers, so a reverse proxy
-      // that requires them only works with the polling transport.
-      ...(hasHeaders ? { transports: ["polling"], extraHeaders: headers } : {}),
+      // Additional request headers: polling through the desktop app (browser
+      // WebSockets cannot carry them, see serverSocketTransport.ts).
+      ...socketIoHeaderOptions(),
     });
     socketRef.current = socket;
     attachedRef.current = new Set();
@@ -460,9 +466,10 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
       openConversationRef.current = null;
       setStatusCode("offline");
     };
-    // Reconnect only when the account, server, key or connectivity changes.
+    // Reconnect only when the account, server, key, connectivity or the
+    // additional request headers change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canConnect, serverUrl, userId, apiKey]);
+  }, [canConnect, serverUrl, userId, apiKey, headersVersion]);
 
   const value = useMemo<CommunityContextValue>(
     () => ({

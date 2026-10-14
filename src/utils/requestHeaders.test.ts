@@ -19,7 +19,6 @@ import {
   isServerResource,
   sanitizeRequestHeaders,
   saveAdditionalRequestHeaders,
-  socketIoHeaderOptions,
   validateHeaderName,
 } from "./requestHeaders";
 import { serverFetch, unpackNativeResponse } from "./serverFetch";
@@ -112,14 +111,6 @@ describe("applying the headers", () => {
   it("are never applied on the web build", () => {
     mocks.tauri = false;
     expect(getAdditionalRequestHeaders()).toEqual({});
-    expect(socketIoHeaderOptions()).toEqual({});
-  });
-
-  it("forces the polling transport for socket.io", () => {
-    expect(socketIoHeaderOptions()).toEqual({
-      extraHeaders: { "CF-Access-Client-Id": "abc" },
-      transports: ["polling"],
-    });
   });
 
   it("serverFetch sends them to the server and never to other hosts", async () => {

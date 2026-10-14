@@ -17,8 +17,20 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(async () => {}),
   focused: false,
   fetch: vi.fn(),
+  headers: {} as Record<string, string>,
+  ServerPolling: class {},
 }));
-vi.mock("socket.io-client", () => ({ io: mocks.io }));
+vi.mock("socket.io-client", () => ({ io: mocks.io, Fetch: class {} }));
+vi.mock("@/utils/serverSocketTransport", () => ({
+  socketIoHeaderOptions: () =>
+    Object.keys(mocks.headers).length
+      ? {
+          extraHeaders: mocks.headers,
+          transports: [mocks.ServerPolling],
+          upgrade: false,
+        }
+      : {},
+}));
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     serverUrl: "http://library.test",
@@ -81,6 +93,7 @@ describe("CommunityProvider", { timeout: 20_000 }, () => {
     mocks.tauri = false;
     mocks.activeGames = [];
     mocks.focused = false;
+    mocks.headers = {};
     mocks.fetch.mockResolvedValue({
       ok: true,
       json: async () => [{ id: 2, username: "Alice" }],
@@ -111,6 +124,28 @@ describe("CommunityProvider", { timeout: 20_000 }, () => {
       }),
     );
     expect(socket.socket.emit).toHaveBeenCalledWith("get-activities", {});
+  });
+
+  it("polls through the desktop app with additional request headers and reconnects when they change", async () => {
+    mocks.tauri = true;
+    mocks.headers = { "CF-Access-Client-Id": "abc" };
+    await mount();
+    expect(mocks.io).toHaveBeenLastCalledWith(
+      "http://library.test",
+      expect.objectContaining({
+        extraHeaders: { "CF-Access-Client-Id": "abc" },
+        transports: [mocks.ServerPolling],
+        upgrade: false,
+      }),
+    );
+    const first = socket.socket;
+    mocks.headers = {};
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent("playstash:request-headers-change"));
+    });
+    expect(first.disconnect).toHaveBeenCalled();
+    expect(mocks.io).toHaveBeenCalledTimes(2);
+    expect(mocks.io.mock.calls[1][1]).not.toHaveProperty("transports");
   });
 
   it("stays offline without a connection", async () => {
