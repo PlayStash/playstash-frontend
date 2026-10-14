@@ -1,5 +1,10 @@
 {
   "bundle": {
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "externalBin": ["binaries/ludusavi"],
+    "resources": {
+      "binaries/ludusavi-LICENSE.txt": "licenses/ludusavi/LICENSE.txt",
+      "binaries/ludusavi-THIRD-PARTY.txt": "licenses/ludusavi/THIRD-PARTY.txt"
+    }
   }
 }

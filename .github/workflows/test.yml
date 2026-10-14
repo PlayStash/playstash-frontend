@@ -84,6 +84,26 @@ jobs:
           path: coverage/
           retention-days: 14
 
+  ludusavi:
+    name: Ludusavi sidecar checksums
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Test the fetch script
+        run: node --test scripts/fetch-ludusavi.test.mjs
+
+      # Downloads every pinned release asset and fails on any checksum change.
+      - name: Verify pinned release checksums
+        run: node scripts/fetch-ludusavi.mjs --all --skip-source --out "$RUNNER_TEMP/ludusavi"
+
   rust:
     name: Rust tests (Linux)
     runs-on: ubuntu-latest

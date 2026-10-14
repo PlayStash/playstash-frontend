@@ -263,6 +263,13 @@ jobs:
       - name: Write AppStream metainfo
         run: node scripts/write-tauri-metainfo.mjs
 
+      # Cloud saves: the release config bundles Ludusavi as a sidecar, so the
+      # pinned, SHA-256 verified binary must exist before the build. Without a
+      # cross target the host triple is used; Intel macOS is built from source.
+      - name: Fetch verified Ludusavi sidecar
+        shell: bash
+        run: node scripts/fetch-ludusavi.mjs --target "${{ matrix.target }}"
+
       - name: Build installers with official Tauri action
         uses: tauri-apps/tauri-action@v1
         env:

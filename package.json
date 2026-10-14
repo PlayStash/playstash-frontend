@@ -18,6 +18,8 @@
     "test:cov": "vitest run src --coverage && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs",
     "lint": "prettier --write . && eslint .",
     "licenses": "node scripts/generate-third-party-licenses.mjs",
+    "ludusavi:fetch": "node scripts/fetch-ludusavi.mjs",
+    "test:ludusavi": "node --test scripts/fetch-ludusavi.test.mjs",
     "postinstall": "node scripts/ensure-api-client.mjs",
     "typecheck": "tsc --noEmit",
     "api:generate": "node scripts/ensure-api-client.mjs"
