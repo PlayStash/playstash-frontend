@@ -15,6 +15,7 @@ import {
   ConnectionNotices,
   LegacyImportPrompt,
   LegacyInstallsPrompt,
+  SessionEndEffect,
 } from "@/components/login/AccountEffects";
 import { CloudSaveSync } from "@/hooks/useCloudSaveSync";
 
@@ -50,6 +51,7 @@ const EFFECTS: ComponentType[] = [
   ConnectionNotices,
   LegacyImportPrompt,
   LegacyInstallsPrompt,
+  SessionEndEffect,
   AppearanceEffects,
 ];
 

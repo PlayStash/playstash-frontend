@@ -289,6 +289,8 @@ describe("ProfilesContext", { timeout: 30_000 }, () => {
     expect(commands).toContain("desktop_commands_not_ready");
     expect(commands).toContain("reset_jump_list_games");
     expect(commands).toContain("stop_game_time_tracker");
+    expect(commands).toContain("kill_child_processes");
+    expect(commands).toContain("discord_clear_presence");
     expect(harness.auth.auth).toBeNull();
     expect(harness.auth.currentProfileId).toBeNull();
     expect(harness.profiles.lastProfileId).toBeNull();

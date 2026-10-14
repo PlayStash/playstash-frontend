@@ -6,7 +6,7 @@
 //!   PlayStash exits (normally or by a crash), which kills the children.
 //! - Linux: children get `PR_SET_PDEATHSIG = SIGKILL`.
 //! - All platforms: children are registered by pid. `kill_all()` kills them
-//!   (exit and logout paths call it), and on Unix it also runs from an
+//!   (exit and logout paths call it; logout through `kill_child_processes`), and on Unix it also runs from an
 //!   `atexit` handler, which covers macOS where no parent-death signal exists.
 
 use std::collections::HashSet;
@@ -41,6 +41,13 @@ pub(crate) fn kill_all() {
   for pid in pids {
     kill_pid(pid);
   }
+}
+
+/// Kills the tracked helper processes when the session ends (logout,
+/// profile change), like the WPF `MainWindow.Dispose`.
+#[tauri::command]
+pub(crate) async fn kill_child_processes() {
+  kill_all();
 }
 
 #[cfg(windows)]

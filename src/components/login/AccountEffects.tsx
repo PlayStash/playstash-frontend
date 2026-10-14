@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
+import { useDownloads } from "@/context/DownloadContext";
 import { useTranslation } from "@/i18n";
 import { isTauriApp } from "@/utils/tauri";
 import {
@@ -114,4 +115,23 @@ export function LegacyInstallsPrompt() {
       }}
     />
   );
+}
+
+/**
+ * Ends the downloads of a session when the user signs out or changes the
+ * profile (desktop), like the WPF client: they belong to the old account.
+ * The native clean-up runs in `runProfileSwitchEffects`.
+ */
+export function SessionEndEffect() {
+  const { user } = useAuth();
+  const { cancelAllDownloads } = useDownloads();
+  const signedInRef = useRef(false);
+
+  useEffect(() => {
+    const signedIn = !!user;
+    if (isTauriApp() && signedInRef.current && !signedIn) cancelAllDownloads();
+    signedInRef.current = signedIn;
+  }, [user, cancelAllDownloads]);
+
+  return null;
 }

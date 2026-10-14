@@ -663,6 +663,7 @@ pub fn run() {
       cloud_saves::cloud_save_backup,
       cloud_saves::cloud_save_restore,
       cloud_saves::download_to_file,
+      children::kill_child_processes,
       game_sessions::get_active_game_sessions,
       launch_support::set_last_played,
       launch_support::resolve_path_inside,
