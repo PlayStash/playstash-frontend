@@ -12,6 +12,12 @@ import {
 } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 import { formatDecimal } from "@/utils/number";
+import { Switch } from "@tw/switch";
+import { useTranslation } from "@/i18n";
+import {
+  getCreateDesktopShortcutEnabled,
+  setCreateDesktopShortcutEnabled,
+} from "@/utils/downloadPreferences";
 import {
   FORCE_INSTALL_TYPES,
   formatGameTypeLabel,
@@ -35,9 +41,27 @@ export function InstallFlow({
   onSetUndetectedMode,
   onForceInstall,
 }: Readonly<InstallFlowProps>) {
-  const { copyInstallationFiles, launchInstallationExecutable } =
-    useDownloads();
+  const {
+    copyInstallationFiles,
+    launchInstallationExecutable,
+    confirmInstallOverwrite,
+  } = useDownloads();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
+  const [createShortcut, setCreateShortcut] = useState(
+    getCreateDesktopShortcutEnabled,
+  );
+
+  const handleCreateShortcutChange = (enabled: boolean) => {
+    setCreateShortcut(enabled);
+    setCreateDesktopShortcutEnabled(enabled);
+  };
+
+  /** Installs after the "already installed" check. */
+  const startInstall = async (run: () => Promise<void>) => {
+    if (!(await confirmInstallOverwrite(download.gameId))) return;
+    await run();
+  };
 
   const gameTypeLabel = formatGameTypeLabel(
     installState.mode === "undetected"
@@ -59,7 +83,7 @@ export function InstallFlow({
     if (!path) return;
     try {
       await navigator.clipboard.writeText(path);
-      await showAlert({ title: "Path copied" });
+      await showAlert({ title: t("wp5.install.copiedDirectory") });
     } catch {
       await showAlert({ title: "Could not copy path", description: path });
     }
@@ -69,8 +93,7 @@ export function InstallFlow({
   // directory must be a Windows path (drive X: maps to $HOME). Resolve it so
   // the user pastes a path the installer can actually use.
   const isLinux =
-    typeof navigator !== "undefined" &&
-    navigator.userAgent.includes("Linux");
+    typeof navigator !== "undefined" && navigator.userAgent.includes("Linux");
   const [windowsInstallPath, setWindowsInstallPath] = useState("");
   const windowsPathResolvedRef = useRef(false);
 
@@ -168,7 +191,8 @@ export function InstallFlow({
             <li>Hit the 'Install' button to launch the game's installer.</li>
             <li>Go through the game's setup process.</li>
             <li>
-              If not already set, make sure to select this folder as the installer's destination:
+              If not already set, make sure to select this folder as the
+              installer's destination:
             </li>
           </ol>
 
@@ -187,7 +211,10 @@ export function InstallFlow({
                   </p>
                   <Button
                     color="indigo"
-                    onClick={() => void handleCopyInstallPath(windowsInstallPath)}
+                    title={t("wp5.install.copyToClipboard")}
+                    onClick={() =>
+                      void handleCopyInstallPath(windowsInstallPath)
+                    }
                   >
                     <ClipboardDocumentIcon
                       className="h-4 w-4"
@@ -214,6 +241,7 @@ export function InstallFlow({
                 </p>
                 <Button
                   color="zinc"
+                  title={t("wp5.install.copyToClipboard")}
                   onClick={() =>
                     void handleCopyInstallPath(download.installationDirectory)
                   }
@@ -264,6 +292,19 @@ export function InstallFlow({
         </div>
       )}
 
+      {installState.mode !== "undetected" && !installationBusy && (
+        <label className="flex items-center justify-between gap-3 text-sm text-ps-text">
+          <span>{t("wp5.install.createShortcut")}</span>
+          <Switch
+            color="indigo"
+            name="createDesktopShortcut"
+            aria-label={t("wp5.install.createShortcut")}
+            checked={createShortcut}
+            onChange={handleCreateShortcutChange}
+          />
+        </label>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <Button color="zinc" onClick={onClose}>
           Cancel
@@ -277,7 +318,9 @@ export function InstallFlow({
           {installState.mode === "portable" && (
             <Button
               color="indigo"
-              onClick={() => void copyInstallationFiles(download.gameId)}
+              onClick={() =>
+                void startInstall(() => copyInstallationFiles(download.gameId))
+              }
               disabled={installationBusy}
             >
               {download.installationStatus === "copying"
@@ -290,9 +333,11 @@ export function InstallFlow({
             <Button
               color="indigo"
               onClick={() =>
-                void launchInstallationExecutable(
-                  download.gameId,
-                  installState.selectedInstaller,
+                void startInstall(() =>
+                  launchInstallationExecutable(
+                    download.gameId,
+                    installState.selectedInstaller,
+                  ),
                 )
               }
               disabled={

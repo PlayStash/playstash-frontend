@@ -1,4 +1,4 @@
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { Button } from "@/components/tailwind/button";
@@ -18,6 +18,7 @@ import { isTauriApp } from "@/utils/tauri";
 import { PhaseSteps, type StepState } from "./PhaseSteps";
 import { PhaseDetail } from "./PhaseDetail";
 import { useInstallFlow } from "./useInstallFlow";
+import { useTranslation } from "@/i18n";
 import {
   ArchiveBoxIcon,
   ArrowDownTrayIcon,
@@ -103,6 +104,46 @@ function getInstallationStepState(download: ActiveDownload): StepState {
   return "pending";
 }
 
+/**
+ * Size of the card's Download and Extraction folders (hidden when 0).
+ * Recomputed when the card is restored and whenever the download or
+ * extraction state changes, not on every progress tick.
+ */
+function useFolderSize(download: ActiveDownload, isTauri: boolean) {
+  const [size, setSize] = useState(0);
+  const { gameId, downloadDirectory, extractionDirectory } = download;
+  useEffect(() => {
+    if (!isTauri || gameId <= 0) return;
+    const paths = [downloadDirectory, extractionDirectory].filter(
+      (path): path is string => !!path,
+    );
+    if (!paths.length) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const bytes = await invoke<number>("get_paths_size", { paths });
+        if (!cancelled) setSize(bytes);
+      } catch {
+        if (!cancelled) setSize(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isTauri,
+    gameId,
+    downloadDirectory,
+    extractionDirectory,
+    download.status,
+    download.extractionStatus,
+    download.installationStatus,
+    download.sourceFilesDeleted,
+  ]);
+  return size;
+}
+
 export function DownloadCard({
   download,
   index = 0,
@@ -118,12 +159,15 @@ export function DownloadCard({
     retryDownload,
     openDownloadFolder,
     extractArchive,
+    persistForcedGameType,
     formatBytes,
     formatSpeed,
   } = useDownloads();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
   const isTauri = isTauriApp();
   const [password, setPassword] = useState("");
+  const folderSize = useFolderSize(download, isTauri);
   const {
     installState,
     openInstallFlow,
@@ -336,10 +380,20 @@ export function DownloadCard({
                   )}
               </div>
             </div>
-            <Badge color={status.color} className="shrink-0">
-              <status.icon className="size-4" aria-hidden="true" />
-              {status.label}
-            </Badge>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <Badge color={status.color} className="shrink-0">
+                <status.icon className="size-4" aria-hidden="true" />
+                {status.label}
+              </Badge>
+              {folderSize > 0 && (
+                <span
+                  className="text-xs tabular-nums text-ps-muted"
+                  title={t("wp5.card.folderSize")}
+                >
+                  {formatBytes(folderSize)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -365,7 +419,13 @@ export function DownloadCard({
           onCloseInstallView={closeInstallView}
           onSetUndetectedMode={setUndetectedMode}
           onForceInstall={() => {
-            if (installState) void openInstallFlow(installState.forcedType);
+            if (!installState) return;
+            // The uninstall flow reads the forced type from the version config.
+            void persistForcedGameType(
+              download.gameId,
+              installState.forcedType,
+            );
+            void openInstallFlow(installState.forcedType);
           }}
         />
       </div>

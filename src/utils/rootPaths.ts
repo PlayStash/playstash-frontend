@@ -61,12 +61,20 @@ export function getRootPaths(): RootPathEntry[] {
   }
 }
 
+/** Fired on `window` after the configured root paths changed. */
+export const ROOT_PATHS_CHANGE_EVENT = "playstash:root-paths-change";
+
 /** Persist root paths to localStorage. */
 export function setRootPaths(paths: RootPathEntry[]): void {
   try {
     localStorage.setItem(ROOT_PATHS_KEY, JSON.stringify(paths));
   } catch {
     console.warn("Failed to persist root paths");
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(ROOT_PATHS_CHANGE_EVENT, { detail: { paths } }),
+    );
   }
 }
 

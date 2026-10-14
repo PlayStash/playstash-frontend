@@ -32,6 +32,23 @@ Status: Unreleased.
 
 <!-- /WP2 -->
 
+<!-- WP5 -->
+- Desktop: the download-location picker preselects the location you used last, shows the free space of every location and checks that the game fits before the download starts.
+- Desktop: starting a download of a game that was already downloaded now asks before overwriting it; a game that is already being downloaded is not queued twice.
+- Desktop: failed downloads resume automatically after 10 seconds, waiting twice as long after every further failure; downloads rejected by the server wait for a fresh sign-in instead.
+- Desktop: a connection that closes early now fails the download and resumes it instead of handing a truncated file to the extractor.
+- Desktop: a default extraction password can be saved (encrypted) in Settings → Downloads; encrypted archives try the game's password, then the default password, and finally ask for the password.
+- Desktop: new option "Mount ISO instead of extracting" mounts downloaded .iso images as a drive (Windows, macOS, Linux with udisks2) and installs the game from it.
+- Desktop: new "Create Shortcut" switch in the install panel creates a desktop shortcut after the installation.
+- Desktop: installing over an existing installation of the same version now asks for confirmation, and a forced installation type is remembered for the uninstall.
+- Desktop: setups that exit with code 3010 (restart required) count as successful; other failure codes and empty installation folders show clearer messages.
+- Desktop: "Delete all Downloads" on the Downloads page removes every finished, failed or cancelled download; running ones are kept.
+- Desktop: download cards show the size of their download and extraction folders.
+- Desktop: system notifications for finished and failed downloads and extractions while PlayStash is in the background or another page is open.
+- Desktop: adding or removing a download location now rescans it for downloads and warns when a game is installed in more than one location.
+- Desktop: "Auto-Install Games" is now on by default for new installations; existing installations keep their current setting.
+<!-- /WP5 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.

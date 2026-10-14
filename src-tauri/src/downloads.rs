@@ -409,7 +409,8 @@ pub(crate) fn download_game_version(
   tauri::async_runtime::spawn(async move {
     let _active_entry = active_entry;
 
-    let mut req = client.get(&url).header("Accept", "*/*");
+    // Every server request carries the user's additional request headers.
+    let mut req = crate::net::server_request(client.get(&url), &url).header("Accept", "*/*");
     if let Some(auth) = auth_header.as_ref() {
       if !auth.trim().is_empty() {
         req = req.header("Authorization", auth);
@@ -733,6 +734,30 @@ pub(crate) fn download_game_version(
     }
 
     let _ = file.flush().await;
+
+    // A connection that closes early ends the stream without an error. Report
+    // it as a failure (keeping the partial file) so the download can resume
+    // instead of handing a truncated archive to the extractor.
+    if let Some(message) = incomplete_download_error(received, total) {
+      let _ = app.emit(
+        "download-progress",
+        DownloadProgressEvent {
+          game_id,
+          status: "error".to_string(),
+          received,
+          total,
+          error: Some(message),
+          filename: Some(sanitized_filename.clone()),
+          file_path: Some(file_path_string.clone()),
+        },
+      );
+      let mut guard = control_flags().lock().ok();
+      if let Some(ref mut map) = guard {
+        map.remove(&game_id);
+      }
+      return;
+    }
+
     let _ = app.emit(
       "download-progress",
       DownloadProgressEvent {
@@ -753,4 +778,28 @@ pub(crate) fn download_game_version(
   });
 
   Ok(())
+}
+
+/// Error for a stream that ended before the announced size was received.
+fn incomplete_download_error(received: u64, total: Option<u64>) -> Option<String> {
+  match total {
+    Some(total) if total > 0 && received < total => Some(format!(
+      "Connection closed early ({received} of {total} bytes received)."
+    )),
+    _ => None,
+  }
+}
+
+#[cfg(test)]
+mod incomplete_download_tests {
+  use super::incomplete_download_error;
+
+  #[test]
+  fn flags_streams_that_end_early() {
+    assert!(incomplete_download_error(10, Some(20)).is_some());
+    assert!(incomplete_download_error(20, Some(20)).is_none());
+    assert!(incomplete_download_error(25, Some(20)).is_none());
+    assert!(incomplete_download_error(10, None).is_none());
+    assert!(incomplete_download_error(0, Some(0)).is_none());
+  }
 }

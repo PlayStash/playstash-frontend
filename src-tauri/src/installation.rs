@@ -350,6 +350,28 @@ pub(crate) fn copy_installation_files(
 /// verify the install directory actually got populated.
 const INSTALLER_VERIFY_GRACE: Duration = Duration::from_secs(90);
 
+/// Exit codes that mean the installer succeeded: 0, and 3010
+/// (`ERROR_SUCCESS_REBOOT_REQUIRED`, used by MSI and many setup wrappers).
+pub(crate) fn installer_exit_code_is_success(exit_code: Option<i32>) -> bool {
+  matches!(exit_code, Some(0) | Some(3010))
+}
+
+/// Message shown when an installer exits with a failure code and left the
+/// installation folder empty.
+pub(crate) fn installer_exit_error_message(exit_code: Option<i32>) -> String {
+  format!(
+    "The installer exited with code {}. Extracted files are preserved for retry.",
+    exit_code.unwrap_or(-1)
+  )
+}
+
+/// Decides whether an installer run counts as successful: an accepted exit
+/// code, or (for wrappers that exit early with an odd code) an installation
+/// folder that got populated within the grace period.
+fn installer_run_succeeded(exit_code: Option<i32>, populated: impl FnOnce() -> bool) -> bool {
+  installer_exit_code_is_success(exit_code) || populated()
+}
+
 /// Returns true once the installation directory contains at least one entry,
 /// meaning the installer (or its detached child) has written into it.
 fn installation_directory_populated(path: &Path) -> bool {
@@ -588,7 +610,7 @@ fn run_installer_via_umu(
   let status = child.wait();
   let exit_code = status.as_ref().ok().and_then(|s| s.code());
 
-  if status.map(|s| s.success()).unwrap_or(false) {
+  if installer_exit_code_is_success(exit_code) {
     log.push(
       "info",
       &format!("Installer exited with code {}.", exit_code.unwrap_or(0)),
@@ -622,7 +644,7 @@ fn run_installer_via_umu(
       None,
     );
   } else {
-    let message = format!("Installer exited with code {}.", exit_code.unwrap_or(-1));
+    let message = installer_exit_error_message(exit_code);
     log.push("err", &message);
     log.finish_failed(&app, exit_code);
     emit_installer_status(
@@ -774,14 +796,27 @@ pub(crate) fn launch_installation_executable(
               installer_path.parent().and_then(|value| value.to_str()),
             ) {
               Ok(exit_code) => {
-                emit_installer_status(
-                  &app,
-                  game_id,
-                  "completed",
-                  Some(installer_relative.clone()),
-                  exit_code,
-                  None,
-                );
+                if installer_run_succeeded(exit_code, || {
+                  wait_for_installation_populated(Path::new(&installation_path_resolved))
+                }) {
+                  emit_installer_status(
+                    &app,
+                    game_id,
+                    "completed",
+                    Some(installer_relative.clone()),
+                    exit_code,
+                    None,
+                  );
+                } else {
+                  emit_installer_status(
+                    &app,
+                    game_id,
+                    "error",
+                    Some(installer_relative.clone()),
+                    exit_code,
+                    Some(installer_exit_error_message(exit_code)),
+                  );
+                }
               }
               Err(message) => {
                 emit_installer_status(
@@ -822,7 +857,15 @@ pub(crate) fn launch_installation_executable(
     match child.wait_with_output() {
       Ok(output) => {
         let exit_code = output.status.code();
-        if output.status.success() {
+        // 0 and 3010 (reboot required) are successes. Any other code is not a
+        // reliable failure signal either: some self-extracting installers
+        // (GOG/NSIS wrappers) spawn a child and their wrapper exits right away
+        // (e.g. -1073740771 / 0xC000041D) while the real install continues
+        // and succeeds. Verify the install directory actually got populated
+        // before reporting an error.
+        if installer_run_succeeded(exit_code, || {
+          wait_for_installation_populated(Path::new(&installation_path_resolved))
+        }) {
           emit_installer_status(
             &app,
             game_id,
@@ -832,33 +875,14 @@ pub(crate) fn launch_installation_executable(
             None,
           );
         } else {
-          // A non-zero exit code is not a reliable failure signal. Some
-          // self-extracting installers (GOG/NSIS wrappers) spawn a child and
-          // their wrapper exits right away (e.g. -1073740771 / 0xC000041D)
-          // while the real install continues and succeeds. Verify the install
-          // directory actually got populated before reporting an error.
-          if wait_for_installation_populated(Path::new(&installation_path_resolved)) {
-            emit_installer_status(
-              &app,
-              game_id,
-              "completed",
-              Some(installer_relative),
-              exit_code,
-              None,
-            );
-          } else {
-            emit_installer_status(
-              &app,
-              game_id,
-              "error",
-              Some(installer_relative),
-              exit_code,
-              Some(format!(
-                "Installer exited with code {}.",
-                exit_code.unwrap_or(-1)
-              )),
-            );
-          }
+          emit_installer_status(
+            &app,
+            game_id,
+            "error",
+            Some(installer_relative),
+            exit_code,
+            Some(installer_exit_error_message(exit_code)),
+          );
         }
       }
       Err(error) => emit_installer_status(
@@ -1129,6 +1153,41 @@ mod tests {
     assert_eq!(
       split_installer_params("/S /D=C:\\Games\\foo.exe"),
       vec!["/S", "/D=C:\\Games\\foo.exe"]
+    );
+  }
+}
+
+#[cfg(test)]
+mod exit_code_tests {
+  use super::{installer_exit_code_is_success, installer_exit_error_message, installer_run_succeeded};
+
+  #[test]
+  fn accepts_zero_and_reboot_required() {
+    assert!(installer_exit_code_is_success(Some(0)));
+    assert!(installer_exit_code_is_success(Some(3010)));
+    assert!(!installer_exit_code_is_success(Some(1)));
+    assert!(!installer_exit_code_is_success(Some(1602)));
+    assert!(!installer_exit_code_is_success(Some(-1073740771)));
+    assert!(!installer_exit_code_is_success(None));
+  }
+
+  #[test]
+  fn falls_back_to_the_populated_folder_check() {
+    assert!(installer_run_succeeded(Some(3010), || panic!("not needed")));
+    assert!(installer_run_succeeded(Some(-1073740771), || true));
+    assert!(!installer_run_succeeded(Some(5), || false));
+    assert!(!installer_run_succeeded(None, || false));
+  }
+
+  #[test]
+  fn formats_the_failure_message() {
+    assert_eq!(
+      installer_exit_error_message(Some(1603)),
+      "The installer exited with code 1603. Extracted files are preserved for retry."
+    );
+    assert_eq!(
+      installer_exit_error_message(None),
+      "The installer exited with code -1. Extracted files are preserved for retry."
     );
   }
 }

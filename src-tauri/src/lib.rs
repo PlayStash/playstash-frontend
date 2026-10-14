@@ -40,6 +40,8 @@ mod game_sessions;
 mod launch_support;
 // ── WP4 launch: end ──
 // ── WP5 download-pipeline: begin ──
+mod download_extras;
+mod iso_mount;
 // ── WP5 download-pipeline: end ──
 // ── WP6 accounts: begin ──
 // ── WP6 accounts: end ──
@@ -753,6 +755,11 @@ pub fn run() {
       launch_support::find_uninstaller_executable,
       // ── WP4 launch: end ──
       // ── WP5 download-pipeline: begin ──
+      iso_mount::mount_iso,
+      download_extras::get_free_space,
+      download_extras::get_paths_size,
+      download_extras::get_cached_image_path,
+      download_extras::scan_duplicate_installations,
       // ── WP5 download-pipeline: end ──
       // ── WP6 accounts: begin ──
       net::set_additional_request_headers,

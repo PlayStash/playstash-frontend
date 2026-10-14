@@ -18,6 +18,9 @@ import { GameSettings } from "@/components/admin/GameSettings";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
 import { getRootPaths } from "@/utils/rootPaths";
+// ── WP5 download-pipeline: begin ──
+import { requestGameDownload } from "@/utils/downloadFlow";
+// ── WP5 download-pipeline: end ──
 import { isTauriApp } from "@/utils/tauri";
 import {
   formatGameSize,
@@ -244,38 +247,13 @@ const GameCard = memo(function GameCard({
       e.preventDefault();
       e.stopPropagation();
       if (!serverUrl) return;
-
-      console.log("=== handleTauriDownload called ===");
-      console.log("Game ID:", game.id);
-
-      try {
-        const rootPaths = getRootPaths();
-        console.log("Root paths:", rootPaths);
-        if (rootPaths.length === 0) {
-          const openSettings = await showAlert({
-            title: "No download location configured",
-            description:
-              "A download location is required before games can be downloaded. Configure one in Settings.",
-            affirmativeText: "Open Settings",
-            negativeText: "Cancel",
-          });
-          if (openSettings) navigate("/settings?section=downloads");
-          return;
-        }
-
-        if (rootPaths.length === 1) {
-          console.log("Single root path — proceeding directly");
-          await selectVersionAndRun("tauri", rootPaths[0].path);
-          return;
-        }
-
-        console.log("Multiple root paths — showing selection dialog");
-        setRootSelectOpen(true);
-      } catch (error) {
-        console.error("Error starting Tauri download:", error);
-      }
+      // ── WP5 download-pipeline: begin ──
+      // Location pick, version pick, overwrite and free-space checks live in
+      // the shared download flow (also used by GameView and the CLI).
+      await requestGameDownload({ gameId: game.id });
+      // ── WP5 download-pipeline: end ──
     },
-    [serverUrl, selectVersionAndRun],
+    [serverUrl, game.id],
   );
 
   const handleRootPathSelect = useCallback(

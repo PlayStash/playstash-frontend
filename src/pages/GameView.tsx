@@ -24,6 +24,9 @@ import { GameVersion } from "@/api/models/GameVersion";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
 import { getRootPaths } from "@/utils/rootPaths";
+// ── WP5 download-pipeline: begin ──
+import { requestGameDownload } from "@/utils/downloadFlow";
+// ── WP5 download-pipeline: end ──
 import { buildShareUrl } from "@/utils/shareUrl";
 import { formatDate, formatTime, formatYear } from "@/utils/date";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
@@ -483,34 +486,14 @@ export default function GameView() {
     void selectVersionAndRun("direct");
   }, [game, selectVersionAndRun]);
 
+  // ── WP5 download-pipeline: begin ──
+  // Location pick, version pick, overwrite and free-space checks live in the
+  // shared download flow (also used by GameCard and the CLI `install`).
   const handleTauriDownload = useCallback(async () => {
     if (!game) return;
-
-    try {
-      const rootPaths = getRootPaths();
-      if (rootPaths.length === 0) {
-        const openSettings = await showAlert({
-          title: "No download location configured",
-          description:
-            "A download location is required before games can be downloaded. Configure one in Settings.",
-          affirmativeText: "Open Settings",
-          negativeText: "Cancel",
-        });
-        if (openSettings) navigate("/settings?section=downloads");
-        return;
-      }
-
-      if (rootPaths.length === 1) {
-        await selectVersionAndRun("tauri", rootPaths[0].path);
-        return;
-      }
-
-      // Multiple roots — show selection dialog
-      setRootSelectOpen(true);
-    } catch (error) {
-      console.error("Error starting Tauri download:", error);
-    }
-  }, [game, selectVersionAndRun]);
+    await requestGameDownload({ gameId: game.id });
+  }, [game]);
+  // ── WP5 download-pipeline: end ──
 
   const handleRootPathSelect = useCallback(
     (rootPath: string) => {
