@@ -1,4 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
+// ── WP3 cloud-saves: begin ──
+import { CloudSaveSync } from "@/hooks/useCloudSaveSync";
+// ── WP3 cloud-saves: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -38,6 +41,7 @@ const EFFECTS: ComponentType[] = [
   // ── WP2 community: begin ──
   // ── WP2 community: end ──
   // ── WP3 cloud-saves: begin ──
+  CloudSaveSync,
   // ── WP3 cloud-saves: end ──
   // ── WP4 launch: begin ──
   // ── WP4 launch: end ──

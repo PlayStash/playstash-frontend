@@ -75,6 +75,9 @@ import {
 } from "@/utils/gameUpdate";
 import { LayoutGroup, motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
+// ── WP3 cloud-saves: begin ──
+import { CloudSaveRow } from "@/components/CloudSaveRow";
+// ── WP3 cloud-saves: end ──
 
 export default function GameView() {
   const reportGameEvent = useGameMetrics();
@@ -1045,6 +1048,9 @@ export default function GameView() {
                   </div>
                 </div>
               </div>
+              {/* ── WP3 cloud-saves: begin ── */}
+              <CloudSaveRow game={game} installed={installedInfo} />
+              {/* ── WP3 cloud-saves: end ── */}
               <div>
                 <div className="text-xs font-medium text-ps-muted mb-1">
                   Progress State
@@ -1194,7 +1200,14 @@ export default function GameView() {
                     {detailsTab === "reviews" && (
                       <GameReviews gameId={numericId} />
                     )}
-                    {detailsTab === "saves" && <GameSaves gameId={numericId} />}
+                    {/* ── WP3 cloud-saves: begin ── */}
+                    {detailsTab === "saves" && (
+                      <GameSaves
+                        gameId={numericId}
+                        gameTitle={game?.title ?? undefined}
+                      />
+                    )}
+                    {/* ── WP3 cloud-saves: end ── */}
                     {detailsTab === "package" && (
                       <PackageContents
                         gameId={numericId}
