@@ -38,6 +38,9 @@ import clsx from "clsx";
 import { memo, useCallback, useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { GameVersion } from "@/api/models/GameVersion";
+// ── WP7 appearance: begin ──
+import { useMappedTitle } from "@/utils/mappedTitle";
+// ── WP7 appearance: end ──
 
 const GameCard = memo(function GameCard({
   game,
@@ -73,6 +76,9 @@ const GameCard = memo(function GameCard({
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [localGame, setLocalGame] = useState<PlaystashGame>(game);
+  // ── WP7 appearance: begin ──
+  const shownTitle = useMappedTitle(localGame);
+  // ── WP7 appearance: end ──
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [selectableVersions, setSelectableVersions] = useState<GameVersion[]>(
     [],
@@ -660,9 +666,9 @@ const GameCard = memo(function GameCard({
           <div className="flex flex-col gap-0.5 px-3 pb-3 pt-2.5">
             <h3
               className="truncate text-sm font-semibold tracking-[-0.02em] text-ps-text"
-              title={localGame.metadata?.title || localGame.title}
+              title={shownTitle}
             >
-              {localGame.metadata?.title || localGame.title}
+              {shownTitle}
             </h3>
             {sortMetric && (
               <p className="truncate text-xs text-ps-muted">{sortMetric}</p>

@@ -12,6 +12,9 @@ function hashText(text: string): Promise<string> {
     });
 }
 
+/** Server news re-check interval while logged in. */
+export const NEWS_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
 interface NewsResult {
   content: string;
   error: string | null;
@@ -19,7 +22,7 @@ interface NewsResult {
 }
 
 export function useNews() {
-  const { authFetch, serverUrl } = useAuth();
+  const { authFetch, serverUrl, user } = useAuth();
   const [playStashNews, setPlayStashNews] = useState<NewsResult | null>(null);
   const [serverNews, setServerNews] = useState<NewsResult | null>(null);
 
@@ -111,6 +114,18 @@ export function useNews() {
   useEffect(() => {
     fetchAllNews();
   }, [fetchAllNews]);
+
+  // Re-check the server news every hour while logged in (WPF), so the
+  // unread badge appears without a restart.
+  const loggedIn = !!user;
+  useEffect(() => {
+    if (!loggedIn) return;
+    const id = window.setInterval(
+      () => void fetchServerNews(),
+      NEWS_CHECK_INTERVAL_MS,
+    );
+    return () => window.clearInterval(id);
+  }, [loggedIn, fetchServerNews]);
 
   const hasNewNews =
     (playStashNews?.isNew ?? false) || (serverNews?.isNew ?? false);

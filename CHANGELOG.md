@@ -1,5 +1,26 @@
 # PlayStash Frontend Changelog
 
+## 17.3.0
+
+Status: Unreleased.
+
+### Changes
+
+<!-- WP7 -->
+- Added a theme system with the seven PlayStash desktop themes (Default, Classic, Phalcode, Halloween, Christmas), a System option and the classic web look; the chosen theme applies instantly and is remembered per profile.
+- Added custom theme files (validated XAML) with a theme folder, reload and uninstall on desktop, theme file import on the web, overlay images, community themes from GitHub and a "Create a Theme" generator that exports and applies new themes.
+- Added a desktop startup sound (up to 20 MB, played at half volume for at most 10 seconds after login).
+- Added "Auto-Load Library from Server on Startup" and "Retain Sorting and Filter preferences after restart" settings.
+- Added "I'm Feeling Lucky", a reload button, an age rating filter, "Hide installed games", a cover size slider and a scroll-to-top button to the library.
+- Added sorting (last played, title, release date, rating, size, playtime) and early access, release year and type filters to the installed games section, which also remembers whether it is expanded.
+- Game pages: click the title to switch between the mapped and the file title, see the release year, open the library filtered by a type, genre, tag, developer or publisher, and copy a playstash:// link when sharing from the desktop app.
+- The media slider remembers its volume (muted by default) for videos and trailers.
+- Added artwork search providers with custom search URLs and "Copy Image to Clipboard" for covers in the game settings.
+- Added a Storage settings page with image and offline cache sizes, clearing the offline cache and opening the app data folder.
+- Administration: sort users by name, activation or role, see when a newer backend release is available, view the server health protocol and uptime, and see reindex errors.
+- Server news are re-checked every hour, toasts can be copied, the sidebar links to GitHub and the bug report form, and unexpected errors show a crash screen with reload, copy details and log folder actions.
+<!-- /WP7 -->
+
 ## 17.2.3
 
 Status: Released on 2026-10-14.

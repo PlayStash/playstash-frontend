@@ -22,6 +22,9 @@ import {
 import { Button } from "@tw/button";
 import { Toast, type ToastTone } from "@tw/toast";
 import { isTauriApp } from "@/utils/tauri";
+// ── WP7 appearance: begin ──
+import { translate } from "@/i18n";
+// ── WP7 appearance: end ──
 
 // Shape of a queued alert request
 export interface AlertDialogRequest {
@@ -33,6 +36,10 @@ export interface AlertDialogRequest {
   affirmativeText?: string;
   negativeText?: string;
   tone?: ToastTone;
+  // ── WP7 appearance: begin ──
+  /** Toast action; title-only toasts default to "Copy" (WPF "Copy Message"). */
+  action?: { label: string; onClick: () => void };
+  // ── WP7 appearance: end ──
   resolve: (value: boolean) => void;
 }
 
@@ -44,6 +51,9 @@ interface AlertDialogContextValue {
     affirmativeText?: string;
     negativeText?: string;
     tone?: ToastTone;
+    // ── WP7 appearance: begin ──
+    action?: { label: string; onClick: () => void };
+    // ── WP7 appearance: end ──
   }) => Promise<boolean>;
 }
 
@@ -169,6 +179,9 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
       affirmativeText = "Confirm",
       negativeText,
       tone,
+      // ── WP7 appearance: begin ──
+      action,
+      // ── WP7 appearance: end ──
     }) => {
       return new Promise<boolean>((resolve) => {
         const request: AlertDialogRequest = {
@@ -179,6 +192,9 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
           affirmativeText,
           negativeText,
           tone,
+          // ── WP7 appearance: begin ──
+          action,
+          // ── WP7 appearance: end ──
           resolve,
         };
         queueRef.current.push(request);
@@ -209,6 +225,18 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
               title={active.title}
               description={active.description}
               onDismiss={() => handleClose(true)}
+              // ── WP7 appearance: begin ──
+              action={
+                active.action ?? {
+                  label: translate("toast.copy"),
+                  onClick: () => {
+                    void navigator.clipboard
+                      ?.writeText(active.title)
+                      .catch(() => {});
+                  },
+                }
+              }
+              // ── WP7 appearance: end ──
             />
           )}
         </AnimatePresence>

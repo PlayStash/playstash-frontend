@@ -86,7 +86,7 @@ const styles = {
       "[--btn-icon:var(--color-ps-accent-cool)] data-active:[--btn-icon:var(--color-ps-accent)] data-hover:[--btn-icon:var(--color-ps-accent)]",
     ],
     indigo: [
-      "text-white [--btn-hover-overlay:rgb(255_255_255_/_0.14)] [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)]",
+      "text-ps-on-accent [--btn-hover-overlay:rgb(255_255_255_/_0.14)] [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)]",
       "[--btn-icon:var(--color-white)]/80 data-active:[--btn-icon:var(--color-white)] data-hover:[--btn-icon:var(--color-white)]",
     ],
     cyan: [

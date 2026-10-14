@@ -59,6 +59,9 @@ export function Toast({
   description,
   onDismiss,
   className,
+  // ── WP7 appearance: begin ──
+  action,
+  // ── WP7 appearance: end ──
   ...props
 }: {
   tone?: ToastTone;
@@ -66,6 +69,10 @@ export function Toast({
   description?: string;
   onDismiss?: () => void;
   className?: string;
+  // ── WP7 appearance: begin ──
+  /** Optional text button next to the dismiss button (e.g. "Copy"). */
+  action?: { label: string; onClick: () => void };
+  // ── WP7 appearance: end ──
 } & HTMLMotionProps<"div">) {
   const { rail, icon, Icon } = tones[tone];
 
@@ -107,6 +114,17 @@ export function Toast({
         )}
       </div>
 
+      {/* ── WP7 appearance: begin ── */}
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="h-9 shrink-0 rounded-xl px-2.5 text-xs font-semibold text-ps-accent-cool transition-colors hover:bg-ps-panel-soft focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
+        >
+          {action.label}
+        </button>
+      )}
+      {/* ── WP7 appearance: end ── */}
       {onDismiss && (
         <button
           type="button"

@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "@/i18n";
+import { formatMessage } from "@/utils/formatMessage";
+import { formatUptime } from "@/utils/adminExtras";
 import { useAuth } from "@/context/AuthContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { getErrorMessage } from "@/utils/apiError";
@@ -9,9 +12,52 @@ interface LogRecord {
   timestamp?: string;
   message: string;
 }
+interface HealthState {
+  summary: string;
+  protocol: string;
+}
+
 export function ServerDiagnostics() {
   const { serverUrl, authFetch } = useAuth();
   const { showAlert } = useAlertDialog();
+  const { t } = useTranslation();
+  const [health, setHealth] = useState<HealthState | null>(null);
+  const [healthBusy, setHealthBusy] = useState(false);
+
+  /** `GET /api/status` (authenticated): status, uptime and health protocol. */
+  const loadHealth = useCallback(async () => {
+    if (!serverUrl) return;
+    setHealthBusy(true);
+    try {
+      const response = await authFetch(`${serverUrl}/api/status`);
+      if (!response.ok)
+        throw new Error(
+          await getErrorMessage(response, "Could not read the server status."),
+        );
+      const status = await response.json();
+      setHealth({
+        summary: formatMessage(t("admin.health.summary"), {
+          status: String(status?.status ?? "?"),
+          uptime: formatUptime(status?.uptime) ?? t("admin.health.unavailable"),
+        }),
+        protocol:
+          status?.protocol !== undefined && status?.protocol !== null
+            ? JSON.stringify(status.protocol, null, 2)
+            : t("admin.health.noProtocol"),
+      });
+    } catch (cause) {
+      setHealth({
+        summary: cause instanceof Error ? cause.message : String(cause),
+        protocol: t("admin.health.noProtocol"),
+      });
+    } finally {
+      setHealthBusy(false);
+    }
+  }, [serverUrl, authFetch, t]);
+
+  useEffect(() => {
+    void loadHealth();
+  }, [loadHealth]);
   const [logs, setLogs] = useState<LogRecord[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +73,11 @@ export function ServerDiagnostics() {
         );
       setLogs(await response.json());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(
+        formatMessage(t("admin.logs.unavailable"), {
+          msg: cause instanceof Error ? cause.message : String(cause),
+        }),
+      );
     } finally {
       setBusy(false);
     }
@@ -71,6 +121,28 @@ export function ServerDiagnostics() {
         Logs are filtered by the server; review their contents before sharing
         them.
       </p>
+      <div className="space-y-2 rounded-xl bg-ps-panel-soft p-4 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p role="status" className="font-medium text-ps-text">
+            {health?.summary ?? t("admin.health.loading")}
+          </p>
+          <Button
+            outline
+            disabled={healthBusy}
+            onClick={() => void loadHealth()}
+          >
+            {t("admin.health.refresh")}
+          </Button>
+        </div>
+        <details>
+          <summary className="cursor-pointer text-ps-muted">
+            {t("admin.health.protocol")}
+          </summary>
+          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-ps-text">
+            {health?.protocol ?? ""}
+          </pre>
+        </details>
+      </div>
       <div className="flex flex-wrap gap-3">
         <Button outline disabled={busy} onClick={() => void loadLogs()}>
           {logs ? "Refresh logs" : "Read server logs"}
@@ -99,7 +171,7 @@ export function ServerDiagnostics() {
           className="max-h-96 space-y-3 overflow-auto rounded-xl bg-ps-panel-soft p-4 text-xs"
           aria-label="Recent server logs"
         >
-          {!logs.length && <p>No recent log records.</p>}
+          {!logs.length && <p>{t("admin.logs.empty")}</p>}
           {logs.map((record, index) => (
             <article key={index}>
               <p className="text-ps-muted">

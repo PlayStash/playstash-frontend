@@ -59,6 +59,9 @@ import {
 import { isAnalyticsEnabled, setAnalyticsEnabled } from "@/utils/analytics";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
 import { clearImageCache } from "@/utils/mediaCache";
+// ── WP7 appearance: begin ──
+import { WP7_SECTIONS } from "@/components/settings/wp7Sections";
+// ── WP7 appearance: end ──
 import {
   formatCpuMemoryLabel,
   formatDisplayLabel,
@@ -263,6 +266,7 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   themes: [
     // ── WP7 appearance: begin ──
+    ...WP7_SECTIONS.themes,
     // ── WP7 appearance: end ──
   ],
   sound: [
@@ -279,6 +283,7 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   startup: [
     // ── WP7 appearance: begin ──
+    ...WP7_SECTIONS.startup,
     // ── WP7 appearance: end ──
   ],
   community: [
@@ -293,6 +298,7 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   storage: [
     // ── WP7 appearance: begin ──
+    ...WP7_SECTIONS.storage,
     // ── WP7 appearance: end ──
   ],
   privacy: [],
@@ -302,6 +308,7 @@ const CATEGORY_SECTIONS: Record<SettingsCategory, SettingsSection[]> = {
   ],
   developer: [
     // ── WP7 appearance: begin ──
+    ...WP7_SECTIONS.developer,
     // ── WP7 appearance: end ──
   ],
 };

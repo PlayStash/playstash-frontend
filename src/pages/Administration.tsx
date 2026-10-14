@@ -29,7 +29,16 @@ import {
   TableHeader,
   TableRow,
 } from "@tw/table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation, type TranslationKey } from "@/i18n";
+import {
+  BACKEND_RELEASES_API,
+  findBackendUpdate,
+  sortUsers,
+  type UserSort,
+} from "@/utils/adminExtras";
+import { fetchPublicText } from "@/themes/communityThemes";
+import { invalidateGamesCache } from "@/hooks/useGames";
 import Card from "../components/Card";
 import { maskUrl, maskUser, useStreamerMode } from "@/utils/streamerMode";
 import { RegisterUserModal } from "@/components/admin/RegisterUserModal";
@@ -40,8 +49,16 @@ import BackupRestoreDialog from "../components/admin/BackupRestoreDialog";
 import { Label } from "../components/tailwind/fieldset";
 import { FolderTagRules } from "@/components/admin/FolderTagRules";
 import { ServerDiagnostics } from "@/components/admin/ServerDiagnostics";
+import { getErrorMessage } from "@/utils/apiError";
+
+const USER_SORT_LABELS: Record<UserSort, TranslationKey> = {
+  username: "admin.sort.username",
+  activation: "admin.sort.activation",
+  role: "admin.sort.role",
+};
 
 export default function Administration() {
+  const { t } = useTranslation();
   const streamerMode = useStreamerMode();
   const {
     users,
@@ -71,6 +88,29 @@ export default function Administration() {
 
   // State: show deleted users toggle
   const [showDeleted, setShowDeleted] = useState(false);
+  const [userSort, setUserSort] = useState<UserSort>("username");
+  const [update, setUpdate] = useState<{ version: string; url: string } | null>(
+    null,
+  );
+
+  // Backend update check (unauthenticated GitHub releases API).
+  useEffect(() => {
+    if (!version) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const releases = JSON.parse(
+          await fetchPublicText(BACKEND_RELEASES_API),
+        );
+        if (!cancelled) setUpdate(findBackendUpdate(releases, version));
+      } catch {
+        if (!cancelled) setUpdate(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [version]);
   // State: edit modal + register modal
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [showRegister, setShowRegister] = useState(false);
@@ -81,9 +121,9 @@ export default function Administration() {
   }, [editingUserId, users]);
 
   const filteredUsers = useMemo(() => {
-    if (showDeleted) return users;
-    return users.filter((u) => !u.deleted_at);
-  }, [users, showDeleted]);
+    const visible = showDeleted ? users : users.filter((u) => !u.deleted_at);
+    return sortUsers(visible, userSort);
+  }, [users, showDeleted, userSort]);
 
   try {
     return (
@@ -121,6 +161,19 @@ export default function Administration() {
                 ) : (
                   <span className="text-ps-muted">—</span>
                 )}
+                {update && (
+                  <>
+                    {" "}
+                    <Link
+                      href={update.url}
+                      target="_blank"
+                      className="font-semibold text-ps-danger!"
+                      title={update.version}
+                    >
+                      {t("admin.updateAvailable")}
+                    </Link>
+                  </>
+                )}
               </DescriptionDetails>
               <DescriptionTerm>Users</DescriptionTerm>
               <DescriptionDetails>
@@ -157,13 +210,23 @@ export default function Administration() {
                       method: "PUT",
                     });
                     if (!res.ok) {
-                      const txt = await res.text();
-                      throw new Error(txt || `Reindex failed (${res.status})`);
+                      throw new Error(
+                        await getErrorMessage(
+                          res,
+                          `Reindex failed (${res.status})`,
+                        ),
+                      );
                     }
+                    void showAlert({
+                      title: t("admin.reindex.success"),
+                      tone: "success",
+                    });
                   } catch (e: any) {
                     setReindexError(e.message || String(e));
                   } finally {
                     setReindexing(false);
+                    // The library reloads after a reindex (success or not).
+                    invalidateGamesCache();
                   }
                 }}
                 title="Reindex Games"
@@ -171,6 +234,14 @@ export default function Administration() {
               >
                 {reindexing ? "Reindexing…" : "Reindex Games"}
               </Button>
+              {reindexError && (
+                <p
+                  role="alert"
+                  className="col-span-full rounded-md bg-red-500/10 p-3 text-sm text-red-500"
+                >
+                  {reindexError}
+                </p>
+              )}
               <Text className="col-span-full text-sm">
                 Update the web interface by pulling and recreating the frontend
                 container in your deployment.
@@ -199,6 +270,20 @@ export default function Administration() {
                 />
                 <Label>Show Deleted Users</Label>
               </SwitchField>
+              <div className="ml-auto w-52">
+                <Listbox
+                  name="userSort"
+                  aria-label={t("admin.sort.label")}
+                  value={userSort}
+                  onChange={(value: any) => setUserSort(value as UserSort)}
+                >
+                  {(Object.keys(USER_SORT_LABELS) as UserSort[]).map((key) => (
+                    <ListboxOption key={key} value={key}>
+                      <ListboxLabel>{t(USER_SORT_LABELS[key])}</ListboxLabel>
+                    </ListboxOption>
+                  ))}
+                </Listbox>
+              </div>
               <Button
                 color="indigo"
                 onClick={() => setShowRegister(true)}

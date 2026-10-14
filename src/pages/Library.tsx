@@ -10,14 +10,54 @@ import { Divider } from "@tw/divider";
 import { Heading } from "@tw/heading";
 import { Input } from "@tw/input";
 import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  type CSSProperties,
+} from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import {
   TrashIcon,
   FunnelIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  ArrowPathIcon,
+  ChevronUpIcon,
 } from "@heroicons/react/24/outline";
+import { useLocation, useNavigate } from "react-router";
+import { useAlertDialog } from "@/context/AlertDialogContext";
+import { useTranslation, type TranslationKey } from "@/i18n";
+import { getErrorMessage } from "@/utils/apiError";
+import {
+  COVER_SIZE_MAX,
+  COVER_SIZE_MIN,
+  getCoverSize,
+  getInstalledOpen,
+  getLibraryRetain,
+  isLibraryLoadAllowed,
+  requestLibraryLoad,
+  setCoverSize as persistCoverSize,
+  setInstalledOpen,
+} from "@/utils/libraryPreferences";
+import {
+  DEFAULT_INSTALLED_FILTERS,
+  filterInstalledGames,
+  INSTALLED_SORTS,
+  INSTALLED_TYPE_FILTERS,
+  sortInstalledGames,
+  type InstalledEarlyAccess,
+  type InstalledFilters,
+  type InstalledSort,
+  type InstalledTypeFilter,
+} from "@/utils/installedSort";
+import {
+  ageRatingOptionValue,
+  distinctAgeRatings,
+  isAgeRatingValue,
+} from "@/utils/ageRatings";
 import { Button } from "@/components/tailwind/button";
 import { Badge } from "../components/tailwind/badge";
 import { PlaystashGameTypeEnum } from "@/api/models/PlaystashGame";
@@ -93,8 +133,61 @@ const BOOKMARK_OPTIONS: { label: string; value: BookmarkFilter }[] = [
 const LIB_SORT_KEY = "app_library_sort";
 const LIB_ORDER_KEY = "app_library_order";
 
+const INSTALLED_SORT_LABELS: Record<InstalledSort, TranslationKey> = {
+  "last-played": "library.installed.sort.lastPlayed",
+  title: "library.installed.sort.title",
+  "release-date": "library.installed.sort.releaseDate",
+  rating: "library.installed.sort.rating",
+  size: "library.installed.sort.size",
+  playtime: "library.installed.sort.playtime",
+};
+
+const INSTALLED_TYPE_LABELS: Record<InstalledTypeFilter, TranslationKey> = {
+  all: "library.installed.type.all",
+  WINDOWS_PORTABLE: "library.installed.type.windowsPortable",
+  WINDOWS_SETUP: "library.installed.type.windowsSetup",
+  LINUX_PORTABLE: "library.installed.type.linuxPortable",
+  UNDETECTABLE: "library.installed.type.undetectable",
+};
+
+const INSTALLED_EARLY_ACCESS_LABELS: Record<
+  InstalledEarlyAccess,
+  TranslationKey
+> = {
+  all: "library.installed.earlyAccess.all",
+  only: "library.installed.earlyAccess.only",
+  exclude: "library.installed.earlyAccess.exclude",
+};
+
+/** Dice icon for "I'm Feeling Lucky". */
+function DiceIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
+      <circle cx="8.5" cy="8.5" r="1.1" fill="currentColor" />
+      <circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" />
+      <circle cx="8.5" cy="15.5" r="1.1" fill="currentColor" />
+      <circle cx="15.5" cy="15.5" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export default function Library() {
-  const { serverUrl, user } = useAuth();
+  const { serverUrl, user, authFetch } = useAuth();
+  const { t } = useTranslation();
+  const { showAlert } = useAlertDialog();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isOnline } = useOnlineStatus();
   const isTauri = isTauriApp();
 
@@ -105,10 +198,11 @@ export default function Library() {
   const [search, setSearch] = useState("");
   const [libraryFolder, setLibraryFolder] = useState("");
   const deferredLibraryFolder = useDebouncedValue(libraryFolder.trim(), 300);
-  // Sort/order preferences are always retained (they're the default behaviour).
+  // Sort/order preferences are retained unless the user turned that off
+  // (Settings > Startup); URL parameters still apply.
   const [sortBy, setSortBy] = useState(() => {
     try {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && getLibraryRetain()) {
         const saved = localStorage.getItem(LIB_SORT_KEY);
         if (saved && SORT_BY.some((o) => o.value === saved)) return saved;
       }
@@ -117,7 +211,7 @@ export default function Library() {
   });
   const [order, setOrder] = useState<"ASC" | "DESC">(() => {
     try {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && getLibraryRetain()) {
         const saved = localStorage.getItem(LIB_ORDER_KEY) as
           "ASC" | "DESC" | null;
         if (saved === "ASC" || saved === "DESC") return saved;
@@ -144,6 +238,27 @@ export default function Library() {
   const [releaseDateFrom, setReleaseDateFrom] = useState("");
   const [releaseDateTo, setReleaseDateTo] = useState("");
   const [earlyAccess, setEarlyAccess] = useState<EarlyAccessFilter>("all");
+  const [ageRating, setAgeRating] = useState("all");
+  const [ageRatingOptions, setAgeRatingOptions] = useState<
+    (number | null)[] | null
+  >(null);
+  const ageRatingLoadingRef = useRef(false);
+  // Client-side only: hide server cards of installed games (desktop).
+  const [hideInstalled, setHideInstalled] = useState(true);
+  const [coverSize, setCoverSizeState] = useState(getCoverSize);
+  // Auto-load off: server games load after the first search/filter/reload.
+  const [loadAllowed, setLoadAllowed] = useState(isLibraryLoadAllowed);
+  const [luckyBusy, setLuckyBusy] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [installedSort, setInstalledSort] =
+    useState<InstalledSort>("last-played");
+  const [installedFilters, setInstalledFilters] = useState<InstalledFilters>(
+    DEFAULT_INSTALLED_FILTERS,
+  );
+  const allowLoad = useCallback(() => {
+    requestLibraryLoad();
+    setLoadAllowed(true);
+  }, []);
 
   // Dialog states
   const [gameTypesDialogOpen, setGameTypesDialogOpen] = useState(false);
@@ -156,6 +271,7 @@ export default function Library() {
   const hasActiveFilters = useMemo(() => {
     return (
       !!libraryFolder.trim() ||
+      ageRating !== "all" ||
       computeHasActiveFilters({
         bookmarkFilter,
         earlyAccess,
@@ -181,12 +297,14 @@ export default function Library() {
     releaseDateFrom,
     releaseDateTo,
     earlyAccess,
+    ageRating,
   ]);
 
   // Number of active filter selections (for the badge on the Filters toggle)
   const activeFilterCount = useMemo(() => {
     return (
       Number(!!libraryFolder.trim()) +
+      Number(ageRating !== "all") +
       computeActiveFilterCount({
         bookmarkFilter,
         earlyAccess,
@@ -212,6 +330,7 @@ export default function Library() {
     releaseDateFrom,
     releaseDateTo,
     earlyAccess,
+    ageRating,
   ]);
 
   // Clear all filters
@@ -227,6 +346,7 @@ export default function Library() {
     setReleaseDateFrom("");
     setReleaseDateTo("");
     setEarlyAccess("all");
+    setAgeRating("all");
   }, []);
 
   // Debounce search so we only fire the API request once the user pauses
@@ -261,23 +381,84 @@ export default function Library() {
     [selectedPublishers],
   );
 
-  const { count, games, loading, error, loadMore, hasMore } = useGames({
-    search: deferredSearch,
-    sortBy,
-    order,
-    limit: 50,
-    bookmarkFilter,
-    gameTypes: gameTypeValues,
-    tags: tagNames,
-    libraryFolder: deferredLibraryFolder,
-    genres: genreNames,
-    developers: developerNames,
-    publishers: publisherNames,
-    gameState: selectedGameState || undefined,
-    releaseDateFrom: releaseDateFrom || undefined,
-    releaseDateTo: releaseDateTo || undefined,
-    earlyAccess,
-  });
+  // Searching, filtering or opening the filters loads the server games when
+  // auto-load is off.
+  useEffect(() => {
+    if (!loadAllowed && (search.trim() || showFilters || hasActiveFilters)) {
+      allowLoad();
+    }
+  }, [loadAllowed, search, showFilters, hasActiveFilters, allowLoad]);
+
+  const { count, games, loading, error, loadMore, hasMore, refetch } = useGames(
+    {
+      search: deferredSearch,
+      sortBy,
+      order,
+      limit: 50,
+      bookmarkFilter,
+      gameTypes: gameTypeValues,
+      tags: tagNames,
+      libraryFolder: deferredLibraryFolder,
+      genres: genreNames,
+      developers: developerNames,
+      publishers: publisherNames,
+      gameState: selectedGameState || undefined,
+      releaseDateFrom: releaseDateFrom || undefined,
+      releaseDateTo: releaseDateTo || undefined,
+      earlyAccess,
+      ageRating,
+      enabled: loadAllowed,
+    },
+  );
+
+  /** "I'm Feeling Lucky": opens a random game. */
+  const openRandomGame = useCallback(async () => {
+    if (!serverUrl || luckyBusy) return;
+    setLuckyBusy(true);
+    try {
+      const base = serverUrl.replace(/\/+$/, "");
+      const res = await authFetch(`${base}/api/games/random`);
+      if (!res.ok) {
+        throw new Error(await getErrorMessage(res, t("library.lucky.failed")));
+      }
+      const game = (await res.json()) as PlaystashGame;
+      navigate(`/library/${game.id}`);
+    } catch (e) {
+      void showAlert({
+        title: e instanceof Error ? e.message : String(e),
+        tone: "danger",
+      });
+    } finally {
+      setLuckyBusy(false);
+    }
+  }, [serverUrl, luckyBusy, authFetch, navigate, showAlert, t]);
+
+  /** Reload (WPF "Reload Library (F5)"): loads even with auto-load off. */
+  const reloadLibrary = useCallback(() => {
+    if (!loadAllowed) {
+      allowLoad();
+      return;
+    }
+    void refetch();
+  }, [loadAllowed, allowLoad, refetch]);
+
+  /** Age rating options are loaded on the first open (logged in only). */
+  const loadAgeRatings = useCallback(async () => {
+    if (!serverUrl || !user || ageRatingOptions || ageRatingLoadingRef.current)
+      return;
+    ageRatingLoadingRef.current = true;
+    try {
+      const base = serverUrl.replace(/\/+$/, "");
+      const res = await authFetch(`${base}/api/games?limit=-1`);
+      if (!res.ok) throw new Error(String(res.status));
+      const json = await res.json();
+      setAgeRatingOptions(distinctAgeRatings(json?.data ?? []));
+    } catch {
+      // Retried on the next open.
+    } finally {
+      ageRatingLoadingRef.current = false;
+    }
+  }, [serverUrl, user, ageRatingOptions, authFetch]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -346,6 +527,14 @@ export default function Library() {
     const ea = params.get("earlyAccess");
     if (ea && isEarlyAccess(ea)) setEarlyAccess(ea);
 
+    const rating = params.get("ageRating");
+    if (rating && isAgeRatingValue(rating)) setAgeRating(rating);
+
+    // GameView pills open the Library with that single filter shown.
+    if ((location.state as { openFilters?: boolean } | null)?.openFilters) {
+      setShowFilters(true);
+    }
+
     urlInitializedRef.current = true;
   }, [getParamValues, isBookmark, isEarlyAccess, isGameType, isProgressState]);
 
@@ -410,6 +599,9 @@ export default function Library() {
       if (earlyAccess !== "all") params.set("earlyAccess", earlyAccess);
       else params.delete("earlyAccess");
 
+      if (ageRating !== "all") params.set("ageRating", ageRating);
+      else params.delete("ageRating");
+
       // Only update URL if it actually changed to avoid rate-limiting errors
       const newUrl = url.toString();
       if (newUrl !== window.location.href) {
@@ -419,6 +611,7 @@ export default function Library() {
 
     return () => clearTimeout(timeoutId);
   }, [
+    ageRating,
     bookmarkFilter,
     earlyAccess,
     isGameType,
@@ -489,20 +682,28 @@ export default function Library() {
   const installedAsGames: PlaystashGame[] = useMemo(() => {
     return installedGames.map((ig) => {
       const meta = (ig.cachedMetadata || ig.gameMetadata) as any;
+      // Cached data is either a full game (metadata nested) or the metadata.
+      const isFullGame = !!meta?.metadata;
       const g = {
         id: ig.gameId,
         created_at: new Date(),
         entity_version: 0,
         title: ig.gameTitle,
-        sort_title: ig.gameTitle?.toLowerCase(),
+        sort_title:
+          (isFullGame && meta.sort_title) || ig.gameTitle?.toLowerCase(),
         type: ig.gameType as any,
+        size: isFullGame ? meta.size : undefined,
+        release_date: isFullGame ? meta.release_date : undefined,
+        early_access: isFullGame ? meta.early_access : undefined,
+        progresses: isFullGame ? meta.progresses : undefined,
         // Carry the server's version info through so installed-only cards can
         // also show the "update available" indicator.
         version: (meta as any)?.version,
         versions: (meta as any)?.versions,
         metadata: meta
           ? {
-              title: meta.title,
+              title: isFullGame ? meta.metadata.title : meta.title,
+              early_access: meta.early_access ?? meta.metadata?.early_access,
               cover: meta.cover ?? meta.metadata?.cover,
               rating: meta.rating ?? meta.metadata?.rating,
               release_date: meta.release_date ?? meta.metadata?.release_date,
@@ -510,6 +711,7 @@ export default function Library() {
               genres: meta.genres ?? meta.metadata?.genres,
               developers: meta.developers ?? meta.metadata?.developers,
               publishers: meta.publishers ?? meta.metadata?.publishers,
+              age_rating: meta.age_rating ?? meta.metadata?.age_rating,
             }
           : undefined,
       } as PlaystashGame;
@@ -536,7 +738,7 @@ export default function Library() {
 
   // Client-side filter + sort installed games with the same Library criteria
   const filteredInstalledGames = useMemo(() => {
-    return filterAndSortInstalledGames(installedAsGames, {
+    const matching = filterAndSortInstalledGames(installedAsGames, {
       search: deferredSearch,
       gameTypes: gameTypeValues,
       tags: tagNames,
@@ -544,7 +746,15 @@ export default function Library() {
       developers: developerNames,
       publishers: publisherNames,
     });
+    return sortInstalledGames(
+      filterInstalledGames(matching, installedFilters),
+      installedSort,
+      (user as any)?.id ?? (user as any)?.ID,
+    );
   }, [
+    installedFilters,
+    installedSort,
+    user,
     installedAsGames,
     deferredSearch,
     gameTypeValues,
@@ -553,6 +763,42 @@ export default function Library() {
     developerNames,
     publisherNames,
   ]);
+
+  const visibleGames = useMemo(
+    () =>
+      isTauri && hideInstalled
+        ? games.filter((g) => !installedByGameId.has(g.id))
+        : games,
+    [games, hideInstalled, installedByGameId, isTauri],
+  );
+
+  // Scroll-to-top button once the page is scrolled more than 10 %.
+  useEffect(() => {
+    const el = document.querySelector(
+      "[data-scroll-container]",
+    ) as HTMLElement | null;
+    if (!el) return;
+    const onScroll = () => {
+      const scrollable = el.scrollHeight - el.clientHeight;
+      setShowScrollTop(scrollable > 0 && el.scrollTop / scrollable > 0.1);
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    const el = document.querySelector(
+      "[data-scroll-container]",
+    ) as HTMLElement | null;
+    el?.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const coverGridStyle = {
+    "--ps-cover-size": `${coverSize}px`,
+  } as CSSProperties;
+
+  const libraryNotLoaded = !!serverUrl && !loadAllowed;
 
   return (
     <div className="flex min-h-full flex-col gap-5">
@@ -630,7 +876,27 @@ export default function Library() {
               </div>
             </div>
 
-            <div className="shrink-0">
+            <div className="flex shrink-0 gap-2">
+              <Button
+                outline
+                className={`${CONTROL_HEIGHT_CLASS} px-3`}
+                aria-label={t("library.reload")}
+                title={t("library.reload")}
+                disabled={!serverUrl || loading}
+                onClick={reloadLibrary}
+              >
+                <ArrowPathIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                outline
+                className={`${CONTROL_HEIGHT_CLASS} px-3`}
+                aria-label={t("library.lucky")}
+                title={t("library.lucky")}
+                disabled={!serverUrl || luckyBusy}
+                onClick={() => void openRandomGame()}
+              >
+                <DiceIcon className="h-4 w-4" />
+              </Button>
               <Button
                 outline
                 className={`${CONTROL_HEIGHT_CLASS} px-3 ${hasActiveFilters ? "text-ps-accent" : ""}`}
@@ -872,6 +1138,82 @@ export default function Library() {
                   ))}
                 </Listbox>
               </div>
+
+              {/* Age Rating (options load on first open) */}
+              <div
+                className="col-span-1"
+                onPointerDownCapture={() => void loadAgeRatings()}
+                onKeyDownCapture={() => void loadAgeRatings()}
+              >
+                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                  {t("library.ageRating")}
+                </label>
+                <Listbox
+                  name="ageRating"
+                  value={ageRating}
+                  onChange={(v: any) => setAgeRating(String(v))}
+                  disabled={!user}
+                >
+                  <ListboxOption value="all">
+                    <ListboxLabel>{t("library.ageRating.all")}</ListboxLabel>
+                  </ListboxOption>
+                  {ageRating !== "all" &&
+                    !(ageRatingOptions ?? []).some(
+                      (value) => ageRatingOptionValue(value) === ageRating,
+                    ) && (
+                      <ListboxOption value={ageRating}>
+                        <ListboxLabel>
+                          {ageRating === "null"
+                            ? t("library.ageRating.na")
+                            : ageRating}
+                        </ListboxLabel>
+                      </ListboxOption>
+                    )}
+                  {(ageRatingOptions ?? []).map((value) => (
+                    <ListboxOption
+                      key={ageRatingOptionValue(value)}
+                      value={ageRatingOptionValue(value)}
+                    >
+                      <ListboxLabel>
+                        {value === null ? t("library.ageRating.na") : value}
+                      </ListboxLabel>
+                    </ListboxOption>
+                  ))}
+                </Listbox>
+              </div>
+            </div>
+
+            {/* Display options (client-side, not counted as filters) */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-ps-line pt-4">
+              {isTauri && (
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-ps-text">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-ps-accent"
+                    checked={hideInstalled}
+                    onChange={(e) => setHideInstalled(e.target.checked)}
+                  />
+                  {t("library.hideInstalled")}
+                </label>
+              )}
+              <label className="flex items-center gap-3 text-sm text-ps-text">
+                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                  {t("library.coverSize")}
+                </span>
+                <input
+                  type="range"
+                  min={COVER_SIZE_MIN}
+                  max={COVER_SIZE_MAX}
+                  value={coverSize}
+                  aria-label={t("library.coverSize")}
+                  className="w-40 accent-ps-accent"
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setCoverSizeState(next);
+                    persistCoverSize(next);
+                  }}
+                />
+              </label>
             </div>
 
             {/* Selected Items Display */}
@@ -1016,14 +1358,99 @@ export default function Library() {
         {isTauri && (
           <SectionExpander
             title={`Installed Games (${filteredInstalledGames.length})`}
-            defaultOpen={true}
+            defaultOpen={getInstalledOpen()}
+            onOpenChange={setInstalledOpen}
             headerRight={
-              <RowCountControl
-                value={installedRows}
-                onChange={handleRowsChange}
-              />
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-48"
+                  title={t("library.installed.sortTooltip")}
+                >
+                  <Listbox
+                    name="installedSort"
+                    aria-label={t("library.installed.sortTooltip")}
+                    value={installedSort}
+                    onChange={(v: any) => setInstalledSort(v as InstalledSort)}
+                  >
+                    {INSTALLED_SORTS.map((sort) => (
+                      <ListboxOption key={sort} value={sort}>
+                        <ListboxLabel>
+                          {t(INSTALLED_SORT_LABELS[sort])}
+                        </ListboxLabel>
+                      </ListboxOption>
+                    ))}
+                  </Listbox>
+                </div>
+                <RowCountControl
+                  value={installedRows}
+                  onChange={handleRowsChange}
+                />
+              </div>
             }
           >
+            <div className="flex flex-wrap items-end gap-3 pb-2 text-left">
+              <div className="w-52">
+                <Listbox
+                  name="installedEarlyAccess"
+                  aria-label={t("library.installed.earlyAccess.label")}
+                  value={installedFilters.earlyAccess}
+                  onChange={(v: any) =>
+                    setInstalledFilters((f) => ({
+                      ...f,
+                      earlyAccess: v as InstalledEarlyAccess,
+                    }))
+                  }
+                >
+                  {(
+                    Object.keys(
+                      INSTALLED_EARLY_ACCESS_LABELS,
+                    ) as InstalledEarlyAccess[]
+                  ).map((value) => (
+                    <ListboxOption key={value} value={value}>
+                      <ListboxLabel>
+                        {t(INSTALLED_EARLY_ACCESS_LABELS[value])}
+                      </ListboxLabel>
+                    </ListboxOption>
+                  ))}
+                </Listbox>
+              </div>
+              <div className="w-36">
+                <Input
+                  name="installedReleaseYear"
+                  inputMode="numeric"
+                  aria-label={t("library.installed.releaseYear")}
+                  placeholder={t("library.installed.releaseYear")}
+                  value={installedFilters.releaseYear}
+                  onChange={(e: any) =>
+                    setInstalledFilters((f) => ({
+                      ...f,
+                      releaseYear: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="w-48">
+                <Listbox
+                  name="installedType"
+                  aria-label={t("library.installed.type.label")}
+                  value={installedFilters.type}
+                  onChange={(v: any) =>
+                    setInstalledFilters((f) => ({
+                      ...f,
+                      type: v as InstalledTypeFilter,
+                    }))
+                  }
+                >
+                  {INSTALLED_TYPE_FILTERS.map((value) => (
+                    <ListboxOption key={value} value={value}>
+                      <ListboxLabel>
+                        {t(INSTALLED_TYPE_LABELS[value])}
+                      </ListboxLabel>
+                    </ListboxOption>
+                  ))}
+                </Listbox>
+              </div>
+            </div>
             {filteredInstalledGames.length === 0 ? (
               <div className="surface-panel-soft rounded-2xl p-4 text-sm text-ps-muted">
                 No installed games found.
@@ -1052,7 +1479,17 @@ export default function Library() {
           </SectionExpander>
         )}
 
-        {serverUrl && isOnline && <RecentlyAddedGames />}
+        {serverUrl && isOnline && loadAllowed && <RecentlyAddedGames />}
+
+        {libraryNotLoaded && (
+          <div className="surface-panel-soft mb-4 rounded-3xl p-8 text-sm text-ps-muted">
+            <p>{t("library.notLoaded")}</p>
+            <Button outline className="mt-3" onClick={reloadLibrary}>
+              <ArrowPathIcon className="h-4 w-4" />
+              {t("library.loadNow")}
+            </Button>
+          </div>
+        )}
 
         {/* Server Games Section */}
         {isTauri && !isOnline ? (
@@ -1063,7 +1500,7 @@ export default function Library() {
           </div>
         ) : isTauri ? (
           <SectionExpander
-            title={`Server Games (${games.length} of ${count ?? 0})`}
+            title={`Server Games (${visibleGames.length} of ${count ?? 0})`}
             defaultOpen={true}
           >
             {serverUrl && loading && games.length === 0 && (
@@ -1077,27 +1514,34 @@ export default function Library() {
                 ))}
               </div>
             )}
-            {serverUrl && !loading && games.length === 0 && !error && (
-              <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-                No games found.
-                {(search.trim() || hasActiveFilters) && (
-                  <div className="mt-2">
-                    <TextLink
-                      href="#"
-                      onClick={() => {
-                        clearAllFilters();
-                        setShowFilters(false);
-                        setSearch("");
-                      }}
-                    >
-                      <Strong>Try clearing all filters and search</Strong>
-                    </TextLink>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] py-2 pb-8">
-              {games.map((g, i) => {
+            {serverUrl &&
+              loadAllowed &&
+              !loading &&
+              games.length === 0 &&
+              !error && (
+                <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+                  No games found.
+                  {(search.trim() || hasActiveFilters) && (
+                    <div className="mt-2">
+                      <TextLink
+                        href="#"
+                        onClick={() => {
+                          clearAllFilters();
+                          setShowFilters(false);
+                          setSearch("");
+                        }}
+                      >
+                        <Strong>Try clearing all filters and search</Strong>
+                      </TextLink>
+                    </div>
+                  )}
+                </div>
+              )}
+            <div
+              className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(var(--ps-cover-size),1fr))] py-2 pb-8"
+              style={coverGridStyle}
+            >
+              {visibleGames.map((g, i) => {
                 const installed = installedByGameId.get(g.id);
                 const cardGame = installed
                   ? {
@@ -1169,27 +1613,34 @@ export default function Library() {
                 ))}
               </div>
             )}
-            {serverUrl && !loading && games.length === 0 && !error && (
-              <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-                No games found.
-                {(search.trim() || hasActiveFilters) && (
-                  <div className="mt-2">
-                    <TextLink
-                      href="#"
-                      onClick={() => {
-                        clearAllFilters();
-                        setShowFilters(false);
-                        setSearch("");
-                      }}
-                    >
-                      <Strong>Try clearing all filters and search</Strong>
-                    </TextLink>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] py-2 pb-8">
-              {games.map((g, i) => {
+            {serverUrl &&
+              loadAllowed &&
+              !loading &&
+              games.length === 0 &&
+              !error && (
+                <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+                  No games found.
+                  {(search.trim() || hasActiveFilters) && (
+                    <div className="mt-2">
+                      <TextLink
+                        href="#"
+                        onClick={() => {
+                          clearAllFilters();
+                          setShowFilters(false);
+                          setSearch("");
+                        }}
+                      >
+                        <Strong>Try clearing all filters and search</Strong>
+                      </TextLink>
+                    </div>
+                  )}
+                </div>
+              )}
+            <div
+              className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(var(--ps-cover-size),1fr))] py-2 pb-8"
+              style={coverGridStyle}
+            >
+              {visibleGames.map((g, i) => {
                 const installed = installedByGameId.get(g.id);
                 const cardGame = installed
                   ? {
@@ -1250,6 +1701,18 @@ export default function Library() {
           </>
         )}
       </div>
+
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          aria-label={t("library.scrollTop")}
+          title={t("library.scrollTop")}
+          className="fixed right-6 bottom-6 z-30 flex size-[50px] items-center justify-center rounded-full bg-ps-accent text-ps-on-accent shadow-[var(--shadow-card)] hover:bg-ps-accent-hover active:bg-ps-accent-pressed"
+        >
+          <ChevronUpIcon className="size-6" />
+        </button>
+      )}
 
       {/* Filter Dialogs */}
       <MultiSelectFilterDialog

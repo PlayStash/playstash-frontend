@@ -6,6 +6,8 @@ import { Logo } from "@components/Logo";
 import {
   ArrowRightStartOnRectangleIcon,
   BookOpenIcon,
+  BugAntIcon,
+  CodeBracketIcon,
   ChatBubbleLeftRightIcon,
   ChevronUpIcon,
   LifebuoyIcon,
@@ -193,6 +195,20 @@ export function Sidebar() {
             >
               <LifebuoyIcon />
               <SidebarLabel>{t("nav.support")}</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem
+              href="https://github.com/orgs/PlayStash/repositories"
+              target="_blank"
+            >
+              <CodeBracketIcon />
+              <SidebarLabel>{t("nav.github")}</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem
+              href="https://github.com/PlayStash/playstash-frontend/issues/new/choose"
+              target="_blank"
+            >
+              <BugAntIcon />
+              <SidebarLabel>{t("nav.bugReport")}</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               onClick={(e: any) => {

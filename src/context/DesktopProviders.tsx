@@ -1,4 +1,8 @@
 import type { ComponentType, ReactNode } from "react";
+// ── WP7 appearance: begin ──
+import { AppearanceEffects } from "@/components/AppearanceEffects";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+// ── WP7 appearance: end ──
 
 /**
  * App-wide providers and background effects added by the feature packages.
@@ -25,6 +29,8 @@ const PROVIDERS: ComponentType<{ children: ReactNode }>[] = [
   // ── WP6 accounts: begin ──
   // ── WP6 accounts: end ──
   // ── WP7 appearance: begin ──
+  // Crash screen around the routes and the package effects.
+  ErrorBoundary,
   // ── WP7 appearance: end ──
 ];
 
@@ -46,6 +52,7 @@ const EFFECTS: ComponentType[] = [
   // ── WP6 accounts: begin ──
   // ── WP6 accounts: end ──
   // ── WP7 appearance: begin ──
+  AppearanceEffects,
   // ── WP7 appearance: end ──
 ];
 
