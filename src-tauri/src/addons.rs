@@ -97,8 +97,8 @@ pub(crate) async fn install_game_addon(
   let name = Path::new(&archive_name).file_name().ok_or("Invalid addon filename.")?;
   if name.to_string_lossy().contains(['\\', ':']) { return Err("Invalid addon filename.".into()); }
   let archive = staging.join(name);
-  let response = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none()).build().map_err(|error| error.to_string())?
-    .get(url).bearer_auth(access_token).send().await.map_err(|_| "Addon download failed.")?;
+  let client = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none()).build().map_err(|error| error.to_string())?;
+  let response = crate::net::server_request(client.get(url.clone()), url.as_str()).bearer_auth(access_token).send().await.map_err(|_| "Addon download failed.")?;
   if !response.status().is_success() { return Err(format!("Addon download returned HTTP {}.", response.status())); }
   let mut output = tokio::fs::File::create(&archive).await.map_err(|error| error.to_string())?;
   let mut stream = response.bytes_stream();

@@ -80,6 +80,8 @@ winapi = { version = "0.3", features = ["fileapi", "shellapi", "winnt", "winuser
 # ── WP5 download-pipeline: begin ──
 # ── WP5 download-pipeline: end ──
 # ── WP6 accounts: begin ──
+# DPAPI (legacy WPF data import) and directory junctions.
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_IO"] }
 # ── WP6 accounts: end ──
 # ── WP7 appearance: begin ──
 # ── WP7 appearance: end ──

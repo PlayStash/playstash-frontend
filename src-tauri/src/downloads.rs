@@ -409,7 +409,7 @@ pub(crate) fn download_game_version(
   tauri::async_runtime::spawn(async move {
     let _active_entry = active_entry;
 
-    let mut req = client.get(&url).header("Accept", "*/*");
+    let mut req = crate::net::server_request(client.get(&url), &url).header("Accept", "*/*");
     if let Some(auth) = auth_header.as_ref() {
       if !auth.trim().is_empty() {
         req = req.header("Authorization", auth);
