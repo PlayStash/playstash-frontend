@@ -1240,10 +1240,24 @@ async fn upload(url: &str, token: &str, installation_id: &str, archive: &Path) -
   }
 }
 
-async fn stream_to_file(response: reqwest::Response, path: &Path) -> Result<u64, String> {
-  use tokio::io::AsyncWriteExt;
+/// Streams a response body into `path` through a `.partial` file, which is
+/// removed again when the download fails.
+pub(crate) async fn stream_to_file(response: reqwest::Response, path: &Path) -> Result<u64, String> {
   let partial = path.with_extension("partial");
-  let mut file = tokio::fs::File::create(&partial)
+  let result = write_partial(response, &partial).await;
+  let result = match result {
+    Ok(written) => tokio::fs::rename(&partial, path).await.map(|_| written).map_err(|error| error.to_string()),
+    Err(error) => Err(error),
+  };
+  if result.is_err() {
+    let _ = tokio::fs::remove_file(&partial).await;
+  }
+  result
+}
+
+async fn write_partial(response: reqwest::Response, partial: &Path) -> Result<u64, String> {
+  use tokio::io::AsyncWriteExt;
+  let mut file = tokio::fs::File::create(partial)
     .await
     .map_err(|error| format!("Failed to create {}: {error}", partial.display()))?;
   let mut written = 0u64;
@@ -1254,8 +1268,6 @@ async fn stream_to_file(response: reqwest::Response, path: &Path) -> Result<u64,
     written += chunk.len() as u64;
   }
   file.flush().await.map_err(|error| error.to_string())?;
-  drop(file);
-  tokio::fs::rename(&partial, path).await.map_err(|error| error.to_string())?;
   Ok(written)
 }
 

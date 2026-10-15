@@ -36,6 +36,7 @@ mod integrations;
 mod steam;
 mod vdf;
 mod cloud_saves;
+mod database_backup;
 mod game_sessions;
 mod launch_support;
 mod download_extras;
@@ -710,6 +711,8 @@ pub fn run() {
       cloud_saves::cloud_save_backup,
       cloud_saves::cloud_save_restore,
       cloud_saves::download_to_file,
+      database_backup::database_backup_download,
+      database_backup::database_backup_restore,
       children::kill_child_processes,
       game_sessions::get_active_game_sessions,
       launch_support::set_last_played,
