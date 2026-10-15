@@ -2,7 +2,7 @@
 
 ## 17.3.0
 
-Status: Unreleased.
+Status: Released on 2026-10-15.
 
 ### Changes
 
@@ -80,6 +80,12 @@ Status: Unreleased.
 - Windows: the taskbar jump list offers Library, Downloads, Community, Settings and Exit, plus your five most recently played or installed games to start directly; it is cleared when you log out.
 - Desktop: "Minimize PlayStash to System Tray on Startup" now only applies when PlayStash is started with your computer; starting it yourself always shows the window.
 - The whole interface is now available in German (Settings → Appearance → Language), including the settings search; content from the server such as game descriptions stays in its original language.
+- Desktop: PlayStash checks for updates at startup and every 4 hours and proposes a new version in a dialog with its release notes ("Update now" / "Later"; "Later" stays quiet about that version for a day). Unstable builds are ordered correctly (e.g. 17.3.0-unstable.15.1 after 17.3.0-unstable.9.1), and when the signed update cannot be used the dialog offers the download page instead. On macOS and Linux "Restart now" loads an installed update right away.
+- Administration → Backup & Restore Database now works in the desktop app: the backup is saved straight to the file you choose (also large databases) with a valid timestamped name, and a restore uploads the chosen file from disk.
+- Backup & Restore Database: a wrong database password is reported as such instead of signing you out, the browser download no longer gets a broken file name, restoring asks for explicit confirmation before the server database is replaced, and server errors are shown.
+- Windows installer: running the installer of a newer version over an older one asks "Update to …?" and updates in place, keeping your settings, profiles and games, then starts PlayStash. The same version offers repair or uninstall, and an older version warns about the downgrade first. The installer is also available in German.
+- Windows installer: an installed previous PlayStash client for Windows is detected and offered for uninstallation; its data stays available for the import in the new app.
+- Releases now also include an MSI installer for Windows and an RPM package for Fedora, openSUSE and other RPM-based Linux distributions.
 
 ### Breaking Changes & Migration
 
