@@ -50,6 +50,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   renameSync,
   rmSync,
   statSync,
@@ -894,7 +895,12 @@ async function build(target, options, tooling) {
     throw new Error(`Unexpected Rust compiler version: ${rustc.trim()}`);
   }
 
-  const work = mkdtempSync(path.join(tmpdir(), "playstash-ludusavi-"));
+  // Resolve the temp folder to its long path first: on Windows %TEMP% can be
+  // an 8.3 short path (e.g. RUNNER~1), which makes the upstream Ludusavi
+  // tests compare short against long paths and fail.
+  const work = mkdtempSync(
+    path.join(realpathSync.native(tmpdir()), "playstash-ludusavi-"),
+  );
   try {
     const sourceDir = await prepareSource(work, provenance, lockfile, patches);
     const upstreamLicense = readFileSync(

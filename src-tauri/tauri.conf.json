@@ -60,16 +60,16 @@
         "desktopTemplate": "linux/playstash.desktop.hbs",
         "section": "games",
         "files": {
-          "usr/share/doc/playstash/copyright": "debian-copyright",
-          "usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml",
-          "usr/share/doc/playstash/changelog.Debian": "debian-changelog"
+          "/usr/share/doc/playstash/copyright": "debian-copyright",
+          "/usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml",
+          "/usr/share/doc/playstash/changelog.Debian": "debian-changelog"
         },
         "changelog": "debian-changelog"
       },
       "rpm": {
         "desktopTemplate": "linux/playstash.desktop.hbs",
         "files": {
-          "usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml"
+          "/usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml"
         }
       }
     }
