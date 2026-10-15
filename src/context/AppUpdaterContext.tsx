@@ -7,21 +7,27 @@ import {
   useState,
 } from "react";
 import { useAlertDialog } from "@/context/AlertDialogContext";
+import UpdatePromptDialog, {
+  type UpdatePromptInfo,
+} from "@/components/UpdatePromptDialog";
 import { isTauriApp } from "@/utils/tauri";
 import {
   channelLabel,
-  clearSkippedVersion,
   compareVersions,
   formatUpdateError,
-  formatUpdatePrompt,
+  githubReleaseVersion,
   isMissingUpdaterFeedError,
-  normalizeVersion,
-  readSkippedVersion,
+  isUpdateSnoozed,
   readUpdateChannel,
-  writeSkippedVersion,
+  UPDATE_CHECK_INTERVAL_MS,
+  UPDATE_SNOOZE_MS,
   writeUpdateChannel,
 } from "@/utils/updater";
-import type { UpdateChannel } from "@/utils/updater";
+import type {
+  GithubReleaseInfo,
+  UpdateChannel,
+  UpdateSnooze,
+} from "@/utils/updater";
 import { translate, type TranslationKey } from "@/i18n";
 import { fillTemplate } from "@/utils/downloadPipeline";
 
@@ -76,14 +82,6 @@ type PendingUpdate = {
   channel: UpdateChannel;
 };
 
-interface GithubReleaseFallback {
-  tag_name: string;
-  html_url?: string;
-  body?: string | null;
-  published_at?: string;
-  updated_at?: string;
-}
-
 interface CheckForUpdatesOptions {
   manual?: boolean;
 }
@@ -105,9 +103,9 @@ const AppUpdaterContext = createContext<AppUpdaterContextValue | undefined>(
   undefined,
 );
 
-async function fetchGithubReleaseFallback(
+async function fetchGithubRelease(
   channel: UpdateChannel,
-): Promise<GithubReleaseFallback> {
+): Promise<GithubReleaseInfo> {
   const response = await fetch(GITHUB_RELEASE_API_URLS[channel], {
     headers: {
       Accept: "application/vnd.github+json",
@@ -120,7 +118,7 @@ async function fetchGithubReleaseFallback(
     );
   }
 
-  return (await response.json()) as GithubReleaseFallback;
+  return (await response.json()) as GithubReleaseInfo;
 }
 
 function openExternalReleasePage(channel: UpdateChannel, url?: string): void {
@@ -128,6 +126,20 @@ function openExternalReleasePage(channel: UpdateChannel, url?: string): void {
   window.open(targetUrl, "_blank", "noopener,noreferrer");
 }
 
+/**
+ * Desktop app updates.
+ *
+ * Checks the signed Tauri updater feed of the selected channel (stable:
+ * `latest.json` of the latest GitHub release, unstable: `unstable.json`)
+ * shortly after startup, every few hours while the app runs and on
+ * "Check for Updates". A newer version is proposed in a dialog with its
+ * release notes; "Update now" downloads, verifies and installs it, "Later"
+ * keeps automatic checks quiet about that version for a day.
+ *
+ * When the signed feed cannot be used (not published yet, no entry for this
+ * platform) the GitHub release is checked instead and a newer version is
+ * offered as a manual download from its release page.
+ */
 export function AppUpdaterProvider({
   children,
 }: {
@@ -144,12 +156,41 @@ export function AppUpdaterProvider({
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [statusText, setStatusText] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState<UpdatePromptInfo | null>(null);
+  const promptResolveRef = useRef<((accepted: boolean) => void) | null>(null);
   const runningRef = useRef(false);
   const autoCheckedRef = useRef(false);
+  const snoozeRef = useRef<UpdateSnooze | null>(null);
 
   const setUpdateChannel = useCallback((channel: UpdateChannel) => {
     setUpdateChannelState(channel);
     writeUpdateChannel(channel);
+  }, []);
+
+  /** Shows the update proposal and resolves with the user's answer. */
+  const askToUpdate = useCallback(
+    (info: UpdatePromptInfo) =>
+      new Promise<boolean>((resolve) => {
+        promptResolveRef.current = resolve;
+        setPrompt(info);
+      }),
+    [],
+  );
+
+  const answerPrompt = useCallback((accepted: boolean) => {
+    const resolve = promptResolveRef.current;
+    promptResolveRef.current = null;
+    setPrompt(null);
+    resolve?.(accepted);
+  }, []);
+
+  /** "Later": automatic checks stay quiet about this version for a while. */
+  const snooze = useCallback((channel: UpdateChannel, version: string) => {
+    snoozeRef.current = {
+      channel,
+      version,
+      until: Date.now() + UPDATE_SNOOZE_MS,
+    };
   }, []);
 
   useEffect(() => {
@@ -234,6 +275,7 @@ export function AppUpdaterProvider({
                   setStatusText(tr("updater.status.installing"));
                   break;
                 case "Finished":
+                  runningRef.current = false;
                   setIsInstalling(false);
                   setStatusText(tr("updater.status.installed"));
                   break;
@@ -258,6 +300,77 @@ export function AppUpdaterProvider({
       cancelled = true;
     };
   }, []);
+
+  const showUpToDate = useCallback(
+    async (manual: boolean) => {
+      setAvailableVersion(null);
+      setStatusText(
+        tr("updater.status.upToDate", {
+          channel: channelLabel(updateChannel),
+        }),
+      );
+      if (manual) {
+        await showAlert({
+          title: tr("updater.upToDate.title"),
+          description: tr("updater.upToDate.description", {
+            channel: channelLabel(updateChannel),
+            version: __APP_VERSION__,
+          }),
+          affirmativeText: tr("common.ok"),
+        });
+      }
+    },
+    [showAlert, updateChannel],
+  );
+
+  /**
+   * The signed feed could not be used: look the release up on GitHub and
+   * offer a newer version as a manual download from its release page.
+   */
+  const checkReleasePage = useCallback(
+    async (manual: boolean) => {
+      const release = await fetchGithubRelease(updateChannel);
+      const remoteVersion = githubReleaseVersion(release);
+      if (
+        !remoteVersion ||
+        compareVersions(remoteVersion, __APP_VERSION__) <= 0
+      ) {
+        await showUpToDate(manual);
+        return;
+      }
+
+      setAvailableVersion(remoteVersion);
+      setStatusText(
+        tr("updater.status.available", {
+          channel: channelLabel(updateChannel),
+          version: remoteVersion,
+        }),
+      );
+      if (
+        !manual &&
+        isUpdateSnoozed(snoozeRef.current, updateChannel, remoteVersion)
+      ) {
+        return;
+      }
+
+      const approved = await askToUpdate({
+        version: remoteVersion,
+        currentVersion: __APP_VERSION__,
+        channel: updateChannel,
+        notes: release.body,
+        mode: "page",
+      });
+      if (!approved) {
+        snooze(updateChannel, remoteVersion);
+        return;
+      }
+      openExternalReleasePage(updateChannel, release.html_url ?? undefined);
+      setStatusText(
+        tr("updater.status.openedPage", { version: remoteVersion }),
+      );
+    },
+    [askToUpdate, showUpToDate, snooze, updateChannel],
+  );
 
   const checkForUpdates = useCallback(
     async ({ manual = false }: CheckForUpdatesOptions = {}) => {
@@ -293,203 +406,56 @@ export function AppUpdaterProvider({
       setStatusText(
         tr("updater.status.checking", { channel: channelLabel(updateChannel) }),
       );
-      let update: PendingUpdate | null = null;
       let removeProgressListener: (() => void) | null = null;
-
-      const handleMissingFeedFallback = async (cause: unknown) => {
-        const fallbackMessage = tr("updater.feedMissing");
-
-        try {
-          const release = await fetchGithubReleaseFallback(updateChannel);
-          const releaseUrl =
-            release.html_url || GITHUB_RELEASE_PAGE_URLS[updateChannel];
-
-          if (updateChannel === "stable") {
-            const remoteVersion = normalizeVersion(release.tag_name);
-            const hasNewerStable =
-              compareVersions(remoteVersion, __APP_VERSION__) > 0;
-
-            if (!hasNewerStable) {
-              setAvailableVersion(null);
-              setErrorText(fallbackMessage);
-              setStatusText(tr("updater.stable.feedMissingStatus"));
-
-              if (!manual) {
-                return;
-              }
-
-              const approved = await showAlert({
-                title: tr("updater.stable.pageAvailable.title"),
-                description: tr("updater.stable.pageAvailable.description", {
-                  version: remoteVersion,
-                }),
-                affirmativeText: tr("updater.openGithubRelease"),
-                negativeText: tr("common.cancel"),
-              });
-
-              if (approved) {
-                openExternalReleasePage(updateChannel, releaseUrl);
-                setStatusText(tr("updater.stable.openedPage"));
-              }
-
-              return;
-            }
-
-            setAvailableVersion(remoteVersion);
-            setErrorText(fallbackMessage);
-            setStatusText(
-              tr("updater.stable.newerStatus", { version: remoteVersion }),
-            );
-
-            if (
-              !manual &&
-              readSkippedVersion(updateChannel) === remoteVersion
-            ) {
-              return;
-            }
-
-            if (!manual) {
-              return;
-            }
-
-            const approved = await showAlert({
-              title: tr("updater.stable.newer.title", {
-                version: remoteVersion,
-              }),
-              description: tr("updater.stable.newer.description"),
-              affirmativeText: tr("updater.openGithubRelease"),
-              negativeText: tr("common.cancel"),
-            });
-
-            if (approved) {
-              clearSkippedVersion(updateChannel);
-              openExternalReleasePage(updateChannel, releaseUrl);
-              setStatusText(tr("updater.stable.openedPage"));
-            }
-            return;
-          }
-
-          const label = channelLabel(updateChannel);
-          setAvailableVersion(null);
-          setErrorText(fallbackMessage);
-          setStatusText(
-            tr("updater.channel.feedMissingStatus", { channel: label }),
-          );
-
-          if (!manual) {
-            return;
-          }
-
-          const updatedLabel = release.updated_at || release.published_at;
-          const description = updatedLabel
-            ? tr("updater.channel.pageAvailable.descriptionUpdated", {
-                channel: label,
-                date: new Date(updatedLabel).toLocaleString(),
-              })
-            : tr("updater.channel.pageAvailable.description", {
-                channel: label,
-              });
-
-          const approved = await showAlert({
-            title: tr("updater.channel.pageAvailable.title", {
-              channel: label,
-            }),
-            description,
-            affirmativeText: tr("updater.channel.openRelease", {
-              channel: label,
-            }),
-            negativeText: tr("common.cancel"),
-          });
-
-          if (approved) {
-            openExternalReleasePage(updateChannel, releaseUrl);
-            setStatusText(tr("updater.channel.openedPage", { channel: label }));
-          }
-        } catch (fallbackError) {
-          const message = formatUpdateError(fallbackError);
-          console.error(
-            "GitHub release fallback failed:",
-            cause,
-            fallbackError,
-          );
-          setAvailableVersion(null);
-          setErrorText(message);
-          setStatusText(null);
-
-          if (manual) {
-            await showAlert({
-              title: tr("updater.failed.title"),
-              description: message,
-              affirmativeText: tr("common.ok"),
-            });
-          }
-        }
-      };
 
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        update = (await invoke<PendingUpdate | null>("check_for_app_update", {
-          channel: updateChannel,
-        })) as PendingUpdate | null;
+        let update: PendingUpdate | null;
+        try {
+          update = await invoke<PendingUpdate | null>("check_for_app_update", {
+            channel: updateChannel,
+          });
+        } catch (error) {
+          if (!isMissingUpdaterFeedError(error)) throw error;
+          console.warn("Signed updater feed unavailable:", error);
+          await checkReleasePage(manual);
+          return;
+        }
 
         if (!update) {
-          setAvailableVersion(null);
-          setStatusText(
-            tr("updater.status.upToDate", {
-              channel: channelLabel(updateChannel),
-            }),
-          );
-
-          if (manual) {
-            await showAlert({
-              title: tr("updater.upToDate.title"),
-              description: tr("updater.upToDate.description", {
-                channel: channelLabel(updateChannel),
-                version: __APP_VERSION__,
-              }),
-              affirmativeText: tr("common.ok"),
-            });
-          }
+          await showUpToDate(manual);
           return;
         }
 
         setAvailableVersion(update.version);
+        setStatusText(
+          tr("updater.status.available", {
+            channel: channelLabel(updateChannel),
+            version: update.version,
+          }),
+        );
 
-        if (!manual && readSkippedVersion(updateChannel) === update.version) {
-          setStatusText(
-            tr("updater.status.available", {
-              channel: channelLabel(updateChannel),
-              version: update.version,
-            }),
-          );
+        if (
+          !manual &&
+          isUpdateSnoozed(snoozeRef.current, updateChannel, update.version)
+        ) {
           return;
         }
 
-        const approved = await showAlert({
-          title: tr("updater.available.title", { version: update.version }),
-          description: formatUpdatePrompt(
-            update.version,
-            updateChannel,
-            update.body,
-          ),
-          affirmativeText: tr("updater.updateNow"),
-          negativeText: tr("updater.later"),
+        const approved = await askToUpdate({
+          version: update.version,
+          currentVersion: update.currentVersion || __APP_VERSION__,
+          channel: updateChannel,
+          notes: update.body,
+          mode: "install",
         });
 
         if (!approved) {
-          if (!manual) {
-            writeSkippedVersion(updateChannel, update.version);
-          }
-          setStatusText(
-            tr("updater.status.available", {
-              channel: channelLabel(updateChannel),
-              version: update.version,
-            }),
-          );
+          snooze(updateChannel, update.version);
           return;
         }
 
-        clearSkippedVersion(updateChannel);
+        snoozeRef.current = null;
         setIsInstalling(true);
         setStatusText(tr("updater.status.downloading"));
         void showAlert({ title: tr("updater.status.downloading") });
@@ -533,6 +499,8 @@ export function AppUpdaterProvider({
           },
         );
 
+        // On Windows the installer closes PlayStash and starts the new
+        // version itself; elsewhere the new version loads after a restart.
         await invoke<string | null>("download_and_install_app_update", {
           channel: updateChannel,
         });
@@ -540,17 +508,16 @@ export function AppUpdaterProvider({
         setAvailableVersion(null);
         setStatusText(tr("updater.status.installed"));
 
-        await showAlert({
+        const restart = await showAlert({
           title: tr("updater.installed.title"),
           description: tr("updater.installed.description"),
-          affirmativeText: tr("common.ok"),
+          affirmativeText: tr("updater.restartNow"),
+          negativeText: tr("updater.later"),
         });
-      } catch (error) {
-        if (isMissingUpdaterFeedError(error)) {
-          await handleMissingFeedFallback(error);
-          return;
+        if (restart) {
+          await invoke("restart_app");
         }
-
+      } catch (error) {
         const message = formatUpdateError(error);
         console.error("Update check failed:", error);
         setErrorText(message);
@@ -573,7 +540,15 @@ export function AppUpdaterProvider({
         setIsInstalling(false);
       }
     },
-    [showAlert, updateChannel, updaterEnabled],
+    [
+      askToUpdate,
+      checkReleasePage,
+      showAlert,
+      showUpToDate,
+      snooze,
+      updateChannel,
+      updaterEnabled,
+    ],
   );
 
   useEffect(() => {
@@ -583,6 +558,7 @@ export function AppUpdaterProvider({
     setStatusText(null);
   }, [updateChannel]);
 
+  // Check shortly after startup (and after switching the channel).
   useEffect(() => {
     if (!updaterReady || !updaterEnabled || autoCheckedRef.current) {
       return;
@@ -596,6 +572,15 @@ export function AppUpdaterProvider({
     return () => {
       window.clearTimeout(timer);
     };
+  }, [checkForUpdates, updaterEnabled, updaterReady]);
+
+  // Keep checking while the app runs (it often stays open in the tray).
+  useEffect(() => {
+    if (!updaterReady || !updaterEnabled) return;
+    const interval = window.setInterval(() => {
+      void checkForUpdates();
+    }, UPDATE_CHECK_INTERVAL_MS);
+    return () => window.clearInterval(interval);
   }, [checkForUpdates, updaterEnabled, updaterReady]);
 
   return (
@@ -614,6 +599,7 @@ export function AppUpdaterProvider({
       }}
     >
       {children}
+      <UpdatePromptDialog prompt={prompt} onAnswer={answerPrompt} />
     </AppUpdaterContext.Provider>
   );
 }

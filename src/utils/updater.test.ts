@@ -2,17 +2,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   channelLabel,
-  clearSkippedVersion,
   compareVersions,
   defaultChannelForBuild,
   formatReleaseNotes,
   formatUpdateError,
-  formatUpdatePrompt,
+  githubReleaseVersion,
   isMissingUpdaterFeedError,
+  isUpdateSnoozed,
+  MAX_RELEASE_NOTES_LENGTH,
   normalizeVersion,
-  readSkippedVersion,
   readUpdateChannel,
-  writeSkippedVersion,
+  UPDATE_CHECK_INTERVAL_MS,
   writeUpdateChannel,
 } from "./updater";
 
@@ -35,10 +35,28 @@ describe("compareVersions", () => {
     expect(compareVersions("2.0.0", "1.9.9")).toBe(1);
   });
 
-  it("treats missing segments as zero and ignores pre-release labels", () => {
+  it("treats missing segments as zero and ignores build metadata", () => {
     expect(compareVersions("1.2", "1.2.0")).toBe(0);
-    expect(compareVersions("1.2.3-beta", "1.2.3")).toBe(0);
     expect(compareVersions("v1.2.3", "1.2.3")).toBe(0);
+    expect(compareVersions("1.2.3+abc", "1.2.3")).toBe(0);
+  });
+
+  it("orders prereleases by SemVer precedence", () => {
+    expect(compareVersions("1.2.3-beta", "1.2.3")).toBe(-1);
+    expect(compareVersions("17.2.3", "17.2.3-unstable.15.1")).toBe(1);
+    expect(compareVersions("17.2.3-unstable.15.1", "17.2.3-unstable.9.1")).toBe(
+      1,
+    );
+    expect(
+      compareVersions("17.2.3-unstable.15.2", "17.2.3-unstable.15.1"),
+    ).toBe(1);
+    expect(compareVersions("17.3.0-unstable.1.1", "17.2.3")).toBe(1);
+    expect(compareVersions("17.3.0-unstable.1.1", "17.3.0")).toBe(-1);
+  });
+
+  it("never treats an unparseable version as newer", () => {
+    expect(compareVersions("nightly", "1.0.0")).toBe(0);
+    expect(compareVersions("1.0.0", "")).toBe(0);
   });
 });
 
@@ -49,29 +67,42 @@ describe("formatReleaseNotes", () => {
     expect(formatReleaseNotes("   ")).toBe("");
   });
 
-  it("collapses whitespace and truncates long notes", () => {
-    expect(formatReleaseNotes("a\n\nb")).toBe("a b");
-    const long = "x".repeat(300);
-    const result = formatReleaseNotes(long);
-    expect(result).toBe("x".repeat(237) + "...");
+  it("keeps Markdown, drops the changelog status and truncates", () => {
+    expect(
+      formatReleaseNotes("Status: Released.\r\n### Changes\r\n- Added x."),
+    ).toBe("### Changes\n- Added x.");
+    const result = formatReleaseNotes("x".repeat(MAX_RELEASE_NOTES_LENGTH + 5));
+    expect(result).toHaveLength(MAX_RELEASE_NOTES_LENGTH);
+    expect(result.endsWith("...")).toBe(true);
   });
 });
 
-describe("formatUpdatePrompt", () => {
-  it("includes version, channel, and confirmation question", () => {
-    const prompt = formatUpdatePrompt("2.0.0", "stable");
-    expect(prompt).toContain("You are running PlayStash v");
-    expect(prompt).toContain(
-      "PlayStash v2.0.0 is available on the stable channel",
-    );
-    expect(prompt).toContain(
-      "Do you want to download and install this update now?",
-    );
+describe("githubReleaseVersion", () => {
+  it("reads stable tags and the unstable build version from the title", () => {
+    expect(githubReleaseVersion({ tag_name: "v17.3.0" })).toBe("17.3.0");
+    expect(
+      githubReleaseVersion({
+        tag_name: "unstable",
+        name: "PlayStash 17.3.0-unstable.15.1 · Unstable",
+      }),
+    ).toBe("17.3.0-unstable.15.1");
+    expect(githubReleaseVersion({ tag_name: "early-access" })).toBeNull();
+  });
+});
+
+describe("isUpdateSnoozed", () => {
+  it("silences only the same version and channel until it expires", () => {
+    const snooze = { channel: "stable" as const, version: "2.0.0", until: 100 };
+    expect(isUpdateSnoozed(snooze, "stable", "2.0.0", 50)).toBe(true);
+    expect(isUpdateSnoozed(snooze, "stable", "v2.0.0", 50)).toBe(true);
+    expect(isUpdateSnoozed(snooze, "stable", "2.0.1", 50)).toBe(false);
+    expect(isUpdateSnoozed(snooze, "unstable", "2.0.0", 50)).toBe(false);
+    expect(isUpdateSnoozed(snooze, "stable", "2.0.0", 100)).toBe(false);
+    expect(isUpdateSnoozed(null, "stable", "2.0.0", 50)).toBe(false);
   });
 
-  it("appends release notes when present", () => {
-    const prompt = formatUpdatePrompt("2.0.0", "unstable", "Great new stuff");
-    expect(prompt).toContain("Release notes: Great new stuff");
+  it("checks every few hours", () => {
+    expect(UPDATE_CHECK_INTERVAL_MS).toBe(4 * 60 * 60 * 1000);
   });
 });
 
@@ -95,16 +126,6 @@ describe("channelLabel", () => {
   });
 });
 
-describe("skipped update version", () => {
-  it("stores and clears per channel", () => {
-    writeSkippedVersion("stable", "1.0.0");
-    expect(readSkippedVersion("stable")).toBe("1.0.0");
-    expect(readSkippedVersion("unstable")).toBeNull();
-    clearSkippedVersion("stable");
-    expect(readSkippedVersion("stable")).toBeNull();
-  });
-});
-
 describe("update channel persistence", () => {
   it("falls back to the build default when unset or invalid", () => {
     expect(defaultChannelForBuild()).toBe("stable");
@@ -120,12 +141,25 @@ describe("update channel persistence", () => {
 });
 
 describe("isMissingUpdaterFeedError", () => {
-  it("detects missing feed errors", () => {
-    expect(isMissingUpdaterFeedError(new Error("404 Not Found"))).toBe(true);
-    expect(isMissingUpdaterFeedError("target not found")).toBe(true);
+  it("detects a missing feed or platform entry", () => {
+    expect(isMissingUpdaterFeedError(new Error("HTTP 404 Not Found"))).toBe(
+      true,
+    );
+    expect(
+      isMissingUpdaterFeedError(
+        "Failed to check for updates: Could not fetch a valid release JSON from the remote",
+      ),
+    ).toBe(true);
+    expect(
+      isMissingUpdaterFeedError(
+        'None of the fallback platforms `["windows-x86_64"]` were found in the response `platforms` object',
+      ),
+    ).toBe(true);
   });
 
   it("does not match unrelated errors", () => {
     expect(isMissingUpdaterFeedError(new Error("network down"))).toBe(false);
+    expect(isMissingUpdaterFeedError("invalid target directory")).toBe(false);
+    expect(isMissingUpdaterFeedError("signature mismatch 4040")).toBe(false);
   });
 });

@@ -246,6 +246,44 @@ mod tests {
   }
 
   #[test]
+  fn unstable_builds_follow_semver_prerelease_order() {
+    // A later CI run (numeric identifiers compare numerically, 15 > 9).
+    assert!(should_offer_release(
+      &v("17.2.3-unstable.9.1"),
+      &v("17.2.3-unstable.15.1"),
+      UpdateChannel::Unstable,
+      UpdateChannel::Unstable,
+    ));
+    // A rerun of the same CI run.
+    assert!(should_offer_release(
+      &v("17.2.3-unstable.15.1"),
+      &v("17.2.3-unstable.15.2"),
+      UpdateChannel::Unstable,
+      UpdateChannel::Unstable,
+    ));
+    // The next version's unstable builds follow the released version.
+    assert!(should_offer_release(
+      &v("17.2.3"),
+      &v("17.3.0-unstable.1.1"),
+      UpdateChannel::Unstable,
+      UpdateChannel::Unstable,
+    ));
+    // The release itself ranks above its unstable builds.
+    assert!(should_offer_release(
+      &v("17.3.0-unstable.20.1"),
+      &v("17.3.0"),
+      UpdateChannel::Stable,
+      UpdateChannel::Stable,
+    ));
+    assert!(!should_offer_release(
+      &v("17.3.0"),
+      &v("17.3.0-unstable.20.1"),
+      UpdateChannel::Unstable,
+      UpdateChannel::Unstable,
+    ));
+  }
+
+  #[test]
   fn switching_to_identical_version_is_skipped() {
     assert!(!should_offer_release(
       &v("17.1.0"),
@@ -336,6 +374,14 @@ async fn download_and_install_app_update(
       Err(error)
     }
   }
+}
+
+/// Restarts PlayStash so an installed update is loaded (macOS and Linux; on
+/// Windows the update installer restarts the app itself).
+#[tauri::command]
+fn restart_app(app: AppHandle) {
+  crate::children::kill_all();
+  app.restart();
 }
 
 /// State of everything that keeps running in the background (downloads,
@@ -628,6 +674,7 @@ pub fn run() {
       is_updater_enabled,
       check_for_app_update,
       download_and_install_app_update,
+      restart_app,
       desktop_commands::desktop_commands_ready,
       desktop_commands::desktop_commands_not_ready,
       desktop_commands::desktop_command_done,

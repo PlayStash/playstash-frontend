@@ -1,40 +1,12 @@
 import { translate } from "@/i18n";
-import { fillTemplate } from "@/utils/downloadPipeline";
+import { compareVersionStrings, parseVersion } from "@/utils/semver";
 
 export type UpdateChannel = "stable" | "unstable";
 
-export const SKIPPED_UPDATE_KEY = "playstash_skipped_update_version";
 export const UPDATE_CHANNEL_KEY = "playstash_update_channel";
 
 export function channelLabel(channel: UpdateChannel): string {
   return channel;
-}
-
-export function readSkippedVersion(channel: UpdateChannel): string | null {
-  try {
-    return localStorage.getItem(`${SKIPPED_UPDATE_KEY}:${channel}`);
-  } catch {
-    return null;
-  }
-}
-
-export function writeSkippedVersion(
-  channel: UpdateChannel,
-  version: string,
-): void {
-  try {
-    localStorage.setItem(`${SKIPPED_UPDATE_KEY}:${channel}`, version);
-  } catch {
-    // localStorage unavailable
-  }
-}
-
-export function clearSkippedVersion(channel: UpdateChannel): void {
-  try {
-    localStorage.removeItem(`${SKIPPED_UPDATE_KEY}:${channel}`);
-  } catch {
-    // localStorage unavailable
-  }
 }
 
 export function defaultChannelForBuild(): UpdateChannel {
@@ -63,41 +35,21 @@ export function writeUpdateChannel(channel: UpdateChannel): void {
   }
 }
 
+/** Longest release notes shown in the update dialog. */
+export const MAX_RELEASE_NOTES_LENGTH = 20_000;
+
+/**
+ * Release notes as shown in the update dialog: Markdown kept intact, the
+ * changelog "Status:" line removed and very long notes cut off.
+ */
 export function formatReleaseNotes(notes?: string | null): string {
   if (!notes) return "";
-
-  const collapsed = notes.replace(/\s+/g, " ").trim();
-  if (!collapsed) return "";
-  if (collapsed.length <= 240) return collapsed;
-  return `${collapsed.slice(0, 237)}...`;
-}
-
-export function formatUpdatePrompt(
-  version: string,
-  channel: UpdateChannel,
-  notes?: string | null,
-): string {
-  const releaseNotes = formatReleaseNotes(notes);
-  const parts = [
-    fillTemplate(translate("updater.prompt.running"), {
-      version: __APP_VERSION__,
-    }),
-    fillTemplate(translate("updater.prompt.available"), {
-      version,
-      channel: channelLabel(channel),
-    }),
-  ];
-
-  if (releaseNotes) {
-    parts.push(
-      fillTemplate(translate("updater.prompt.releaseNotes"), {
-        notes: releaseNotes,
-      }),
-    );
-  }
-
-  parts.push(translate("updater.prompt.question"));
-  return parts.join(" ");
+  const cleaned = notes
+    .replace(/\r\n/g, "\n")
+    .replace(/^Status:.*$/gm, "")
+    .trim();
+  if (cleaned.length <= MAX_RELEASE_NOTES_LENGTH) return cleaned;
+  return `${cleaned.slice(0, MAX_RELEASE_NOTES_LENGTH - 3).trimEnd()}...`;
 }
 
 export function formatUpdateError(error: unknown): string {
@@ -116,35 +68,74 @@ export function normalizeVersion(version: string): string {
   return version.replace(/^v/i, "").trim();
 }
 
+/**
+ * SemVer precedence of two versions (-1, 0 or 1), including prerelease
+ * suffixes: 17.2.3-unstable.9.1 < 17.2.3-unstable.15.1 < 17.2.3 < 17.3.0.
+ */
 export function compareVersions(left: string, right: string): number {
-  const leftParts = normalizeVersion(left)
-    .split("-")[0]
-    .split(".")
-    .map((part) => Number.parseInt(part, 10));
-  const rightParts = normalizeVersion(right)
-    .split("-")[0]
-    .split(".")
-    .map((part) => Number.parseInt(part, 10));
-
-  const length = Math.max(leftParts.length, rightParts.length);
-  for (let index = 0; index < length; index += 1) {
-    const leftValue = Number.isFinite(leftParts[index]) ? leftParts[index] : 0;
-    const rightValue = Number.isFinite(rightParts[index])
-      ? rightParts[index]
-      : 0;
-
-    if (leftValue > rightValue) return 1;
-    if (leftValue < rightValue) return -1;
-  }
-
-  return 0;
+  return compareVersionStrings(normalizeVersion(left), normalizeVersion(right));
 }
 
+/**
+ * True when the updater could not use the signed feed: it is missing (HTTP
+ * 404, "Could not fetch a valid release JSON") or has no entry for this
+ * platform. The update can still be offered through the GitHub release page.
+ */
 export function isMissingUpdaterFeedError(error: unknown): boolean {
   const message = formatUpdateError(error).toLowerCase();
   return (
-    message.includes("404") ||
-    message.includes("not found") ||
-    message.includes("target")
+    /\b404\b/.test(message) ||
+    message.includes("could not fetch a valid release json") ||
+    message.includes("in the response `platforms` object")
   );
+}
+
+/** How long "Later" silences the automatic prompt for the same version. */
+export const UPDATE_SNOOZE_MS = 24 * 60 * 60 * 1000;
+/** Interval of the automatic background update check. */
+export const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+
+export interface UpdateSnooze {
+  channel: UpdateChannel;
+  version: string;
+  until: number;
+}
+
+/** Whether an automatic check should stay quiet about `version`. */
+export function isUpdateSnoozed(
+  snooze: UpdateSnooze | null,
+  channel: UpdateChannel,
+  version: string,
+  now: number = Date.now(),
+): boolean {
+  return (
+    !!snooze &&
+    snooze.channel === channel &&
+    normalizeVersion(snooze.version) === normalizeVersion(version) &&
+    now < snooze.until
+  );
+}
+
+export interface GithubReleaseInfo {
+  tag_name?: string | null;
+  name?: string | null;
+  html_url?: string | null;
+  body?: string | null;
+}
+
+/**
+ * Version of a GitHub release: the stable tag (`v17.3.0`), or for the
+ * moving `unstable` tag the build version in the release title
+ * ("PlayStash 17.3.0-unstable.15.1 · Unstable"). Null when none is found.
+ */
+export function githubReleaseVersion(
+  release: GithubReleaseInfo,
+): string | null {
+  for (const candidate of [release.tag_name, release.name]) {
+    const match = /v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]*[0-9A-Za-z])?)/.exec(
+      candidate ?? "",
+    );
+    if (match && parseVersion(match[1])) return match[1];
+  }
+  return null;
 }
