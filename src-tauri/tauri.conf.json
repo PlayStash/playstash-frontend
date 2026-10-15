@@ -44,7 +44,12 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "perMachine"
+        "installMode": "perMachine",
+        "installerHooks": "windows/installer-hooks.nsh",
+        "languages": ["English", "German"]
+      },
+      "wix": {
+        "upgradeCode": "fa68c2fd-2e09-51df-a33d-d29bcb498ed6"
       }
     },
     "linux": {
