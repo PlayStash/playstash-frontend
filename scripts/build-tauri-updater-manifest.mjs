@@ -86,10 +86,18 @@ for (const filePath of metadataFiles.sort()) {
 
 const manifest = {
   version,
+  // RFC 3339 publication time, shown by the updater next to the version.
+  pub_date: new Date().toISOString(),
   platforms,
 };
 
-const notes = process.env.PLAYSTASH_UPDATER_NOTES?.trim();
+// Release notes (the CHANGELOG.md section) shown in the app's update dialog.
+const notesFile = process.env.PLAYSTASH_UPDATER_NOTES_FILE?.trim();
+const notes = (
+  notesFile
+    ? await readFile(notesFile, "utf8")
+    : process.env.PLAYSTASH_UPDATER_NOTES || ""
+).trim();
 if (notes) {
   manifest.notes = notes;
 }

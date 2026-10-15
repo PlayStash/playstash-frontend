@@ -4,7 +4,7 @@ import {
   mergeExistingChannels,
   readRelease,
 } from "./read-updater-channels.mjs";
-import { canPublishStable } from "./plan-release.mjs";
+import { canPublishStable, stableReleasePlan } from "./plan-release.mjs";
 const repository = "PlayStash/playstash-frontend";
 const release = (draft = true) => ({
   id: 42,
@@ -38,7 +38,9 @@ test("pending draft tags resume through GraphQL and REST by ID when REST tags re
   assert.deepEqual(calls, ["graphql", `repos/${repository}/releases/42`]);
   assert.deepEqual(existing, release());
   assert.equal(canPublishStable(existing, "same-build-commit"), true);
-  assert.equal(canPublishStable(existing, "another-build-commit"), false);
+  // An unpublished draft of an earlier commit moves to the newest build.
+  assert.equal(stableReleasePlan(existing, "same-build-commit"), "resume");
+  assert.equal(stableReleasePlan(existing, "another-build-commit"), "retarget");
 });
 
 test("published tags use the same full metadata lookup and remain immutable", () => {

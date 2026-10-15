@@ -116,3 +116,116 @@ test("macOS cross-target paths and metadata keep ARM and Intel distinct", async 
     await rm(root, { recursive: true, force: true });
   }
 });
+test("Windows publishes the signed MSI next to NSIS when it was built (stable)", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "playstash-assets-"));
+  try {
+    const bundle = path.join(root, "src-tauri/target/release/bundle");
+    await mkdir(path.join(bundle, "nsis"), { recursive: true });
+    await writeFile(
+      path.join(root, "src-tauri/tauri.conf.json"),
+      '{"productName":"PlayStash"}',
+    );
+    await writeFile(
+      path.join(bundle, "nsis/PlayStash_17.3.0_x64-setup.exe"),
+      "setup",
+    );
+    await writeFile(
+      path.join(bundle, "nsis/PlayStash_17.3.0_x64-setup.exe.sig"),
+      "nsis-signature",
+    );
+    const run = () =>
+      execFileSync(process.execPath, [script, "windows", "17.3.0"], {
+        cwd: root,
+        env: {
+          ...process.env,
+          PLAYSTASH_TARGET_ARCH: "x64",
+          PLAYSTASH_TARGET_TRIPLE: "",
+        },
+        stdio: "pipe",
+      });
+    const metadata = async () =>
+      JSON.parse(
+        await readFile(
+          path.join(root, "updater-metadata/windows-x86_64.json"),
+          "utf8",
+        ),
+      );
+
+    // Unstable builds have no MSI: NSIS alone is enough.
+    run();
+    assert.deepEqual(
+      (await metadata()).updaters.map((entry) => entry.installer),
+      ["nsis"],
+    );
+
+    await mkdir(path.join(bundle, "msi"));
+    await writeFile(
+      path.join(bundle, "msi/PlayStash_17.3.0_x64_en-US.msi"),
+      "msi",
+    );
+    await writeFile(
+      path.join(bundle, "msi/PlayStash_17.3.0_x64_en-US.msi.sig"),
+      "msi-signature",
+    );
+    run();
+    const stable = await metadata();
+    assert.deepEqual(
+      stable.updaters.map((entry) => [entry.installer, entry.assetName]),
+      [
+        ["nsis", "PlayStash-windows-x64-17.3.0-setup.exe"],
+        ["msi", "PlayStash-windows-x64-17.3.0.msi"],
+      ],
+    );
+    assert.deepEqual(
+      (await readdir(path.join(root, "release-assets/windows"))).sort(),
+      [
+        "PlayStash-windows-x64-17.3.0-setup.exe",
+        "PlayStash-windows-x64-17.3.0-setup.exe.sig",
+        "PlayStash-windows-x64-17.3.0.msi",
+        "PlayStash-windows-x64-17.3.0.msi.sig",
+      ],
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+test("Linux publishes the RPM package with a structured name", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "playstash-assets-"));
+  try {
+    const bundle = path.join(root, "src-tauri/target/release/bundle");
+    await mkdir(path.join(bundle, "appimage"), { recursive: true });
+    await mkdir(path.join(bundle, "rpm"));
+    await writeFile(
+      path.join(root, "src-tauri/tauri.conf.json"),
+      '{"productName":"PlayStash"}',
+    );
+    await writeFile(
+      path.join(bundle, "appimage/playstash_17.3.0_amd64.AppImage"),
+      "bundle",
+    );
+    await writeFile(
+      path.join(bundle, "appimage/playstash_17.3.0_amd64.AppImage.sig"),
+      "signature",
+    );
+    await writeFile(
+      path.join(bundle, "rpm/playstash-17.3.0-1.x86_64.rpm"),
+      "package",
+    );
+    execFileSync(process.execPath, [script, "linux", "17.3.0"], {
+      cwd: root,
+      env: {
+        ...process.env,
+        PLAYSTASH_TARGET_ARCH: "x64",
+        PLAYSTASH_TARGET_TRIPLE: "",
+      },
+      stdio: "pipe",
+    });
+    assert.ok(
+      (await readdir(path.join(root, "release-assets/linux"))).includes(
+        "PlayStash-linux-x64-17.3.0.rpm",
+      ),
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

@@ -23,16 +23,32 @@ const PLATFORM_CONFIG = {
   // Each platform can publish multiple *signed* updater bundles. The Tauri
   // updater client searches the feed for "<os>-<arch>-<installer>" first and
   // falls back to "<os>-<arch>", so we emit an entry per installer — this lets
-  // the Windows installer and AppImage installs on Linux. Debian packages
-  // are regular release assets: Tauri does not generate .deb updater signatures.
+  // the Windows installers and AppImage installs on Linux update themselves.
+  // Debian and RPM packages are regular release assets: Tauri does not
+  // generate updater signatures for them. `optional` bundles are only built
+  // for some channels (MSI and RPM need a plain MAJOR.MINOR.PATCH version, so
+  // they are stable-only); `plainName` bundles carry no "<name>_<version>_"
+  // prefix the generic renaming understands.
   linux: {
     osKey: "linux",
     updaters: [{ dir: "appimage", suffix: ".AppImage", installer: "appimage" }],
-    optionalReleaseAssets: [{ dir: "deb", suffix: ".deb" }],
+    optionalReleaseAssets: [
+      { dir: "deb", suffix: ".deb" },
+      { dir: "rpm", suffix: ".rpm", plainName: true },
+    ],
   },
   windows: {
     osKey: "windows",
-    updaters: [{ dir: "nsis", suffix: ".exe", installer: "nsis" }],
+    updaters: [
+      { dir: "nsis", suffix: ".exe", installer: "nsis" },
+      {
+        dir: "msi",
+        suffix: ".msi",
+        installer: "msi",
+        optional: true,
+        plainName: true,
+      },
+    ],
     optionalReleaseAssets: [],
   },
   macos: {
@@ -194,16 +210,29 @@ const archLabel = ARCH_LABELS[resolveArchKey()] || resolveArchKey();
 const updaters = [];
 const releaseFiles = [];
 
-for (const updater of config.updaters) {
-  const dirPath = path.join(bundleRoot, updater.dir);
-  const files = await listFiles(dirPath);
+function releaseName(assetPath, entry) {
+  return entry.plainName
+    ? `${productName}-${platform}-${archLabel}-${version}${entry.suffix}`
+    : toStructuredReleaseName(
+        path.basename(assetPath),
+        version,
+        productName,
+        platform,
+        archLabel,
+      );
+}
 
-  const assetPath = pickSingleFile(
-    files,
-    (file) =>
-      file.endsWith(updater.suffix) && !file.endsWith(`${updater.suffix}.sig`),
-    `${platform} updater bundle ${updater.suffix}`,
-  );
+for (const updater of config.updaters) {
+  const assetPath = updater.optional
+    ? await resolveOptionalAsset(updater.dir, updater.suffix)
+    : pickSingleFile(
+        await listFiles(path.join(bundleRoot, updater.dir)),
+        (file) =>
+          file.endsWith(updater.suffix) &&
+          !file.endsWith(`${updater.suffix}.sig`),
+        `${platform} updater bundle ${updater.suffix}`,
+      );
+  if (!assetPath) continue;
 
   const signaturePath = `${assetPath}.sig`;
   try {
@@ -216,13 +245,7 @@ for (const updater of config.updaters) {
     );
   }
 
-  const assetName = toStructuredReleaseName(
-    path.basename(assetPath),
-    version,
-    productName,
-    platform,
-    archLabel,
-  );
+  const assetName = releaseName(assetPath, updater);
 
   releaseFiles.push(
     { source: assetPath, target: assetName },
@@ -240,13 +263,7 @@ for (const optionalAsset of config.optionalReleaseAssets) {
   if (assetPath) {
     releaseFiles.push({
       source: assetPath,
-      target: toStructuredReleaseName(
-        path.basename(assetPath),
-        version,
-        productName,
-        platform,
-        archLabel,
-      ),
+      target: releaseName(assetPath, optionalAsset),
     });
   }
 }

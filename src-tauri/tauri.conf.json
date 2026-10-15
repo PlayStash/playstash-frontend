@@ -28,7 +28,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "app", "dmg", "appimage", "deb"],
+    "targets": ["nsis", "msi", "app", "dmg", "appimage", "deb", "rpm"],
     "publisher": "PlayStash",
     "license": "CC BY-NC-SA 4.0",
     "homepage": "https://github.com/PlayStash/playstash-frontend",
@@ -60,6 +60,12 @@
           "usr/share/doc/playstash/changelog.Debian": "debian-changelog"
         },
         "changelog": "debian-changelog"
+      },
+      "rpm": {
+        "desktopTemplate": "linux/playstash.desktop.hbs",
+        "files": {
+          "usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml"
+        }
       }
     }
   },

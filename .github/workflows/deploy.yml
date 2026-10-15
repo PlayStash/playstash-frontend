@@ -146,6 +146,9 @@ jobs:
     if: ${{ !cancelled() && needs.release.result == 'success' }}
     runs-on: ${{ matrix.os }}
 
+    # Installers per platform. MSI (WiX) and RPM need a plain MAJOR.MINOR.PATCH
+    # version, so unstable builds (17.3.0-unstable.<run>.<attempt>) skip them;
+    # every stable release ships all of them.
     strategy:
       fail-fast: false
       matrix:
@@ -154,18 +157,26 @@ jobs:
             platform: linux
             arch: x64
             target: ""
+            bundles_stable: appimage,deb,rpm
+            bundles_unstable: appimage,deb
           - os: windows-latest
             platform: windows
             arch: x64
             target: ""
+            bundles_stable: nsis,msi
+            bundles_unstable: nsis
           - os: macos-latest
             platform: macos
             arch: arm64
             target: aarch64-apple-darwin
+            bundles_stable: app,dmg
+            bundles_unstable: app,dmg
           - os: macos-latest
             platform: macos
             arch: x64
             target: x86_64-apple-darwin
+            bundles_stable: app,dmg
+            bundles_unstable: app,dmg
 
     steps:
       - name: Checkout
@@ -302,6 +313,12 @@ jobs:
             ${{ runner.temp }}/ludusavi-target
           key: ludusavi-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.target || matrix.platform }}-${{ hashFiles('tooling/ludusavi/**', 'scripts/build-ludusavi.mjs') }}
 
+      # The Rust cache can restore an earlier build's bundle folder; only this
+      # build's installers may be published.
+      - name: Remove stale installer bundles
+        shell: bash
+        run: rm -rf src-tauri/target/release/bundle src-tauri/target/*/release/bundle
+
       - name: Build installers with official Tauri action
         uses: tauri-apps/tauri-action@v1
         env:
@@ -314,7 +331,7 @@ jobs:
           PLAYSTASH_BUILD_ID: ${{ needs.release.outputs.build_id }}
           PLAYSTASH_RELEASE_REF: ${{ needs.release.outputs.release_ref }}
         with:
-          args: --config src-tauri/tauri.release.generated.json ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
+          args: --config src-tauri/tauri.release.generated.json --bundles ${{ needs.release.outputs.build_channel == 'unstable' && matrix.bundles_unstable || matrix.bundles_stable }} ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
           retryAttempts: 2
           uploadUpdaterJson: false
 
@@ -417,9 +434,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/read-updater-channels.mjs
 
+      - name: Write release notes for the update dialog
+        if: needs.release.outputs.upload_draft == 'true'
+        run: node scripts/plan-release.mjs --notes release-notes.md
+
       - name: Build current channel manifest
         if: needs.release.outputs.upload_draft == 'true'
         env:
+          PLAYSTASH_UPDATER_NOTES_FILE: release-notes.md
           PLAYSTASH_BUILD_COMMIT: ${{ needs.release.outputs.build_commit }}
           PLAYSTASH_BUILD_ID: ${{ needs.release.outputs.build_id }}
           PLAYSTASH_BUILD_CHANNEL: ${{ needs.release.outputs.build_channel }}
