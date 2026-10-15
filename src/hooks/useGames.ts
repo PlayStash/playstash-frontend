@@ -16,6 +16,12 @@ import {
 } from "@/utils/gamesQuery";
 export type { BookmarkFilter, EarlyAccessFilter } from "@/utils/gamesQuery";
 import { onGameDeleted } from "@/utils/gameUpdates";
+import {
+  isLibraryRefreshDue,
+  LIBRARY_FOCUS_REFRESH_MIN_MS,
+  LIBRARY_INTERVAL_REFRESH_MS,
+  libraryRefreshLimit,
+} from "@/utils/libraryAutoRefresh";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface PaginatedData<T> {
@@ -175,6 +181,10 @@ export function useGames({
   cacheKeyRef.current = cacheKey;
   const gamesRef = useRef<PlaystashGame[]>(games);
   gamesRef.current = games;
+  // Time of the last successful fetch, for the background refresh.
+  const lastFetchAtRef = useRef(0);
+  const loadingRef = useRef(false);
+  loadingRef.current = loading;
 
   // Serialize arrays to stable strings to use as dependencies (prevent re-fetching when array reference changes but contents are same)
   const gameTypesKey = useMemo(
@@ -209,102 +219,145 @@ export function useGames({
   developersRef.current = developers;
   publishersRef.current = publishers;
 
-  const fetchGames = useCallback(async () => {
-    if (!serverUrl) return;
-    if (!enabled) return;
-    // Skip fetch when offline in Tauri mode — installed games handle themselves
-    if (isTauriApp() && !isOnline) {
-      setLoading(false);
-      return;
-    }
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    setLoading(true);
-    setError(null);
-    try {
-      const base = serverUrl.replace(/\/+$/, "");
-      const userId = (user as any)?.id ?? (user as any)?.ID;
-      const params = buildGamesQueryParams({
-        search,
-        sortBy,
-        order,
-        limit,
-        bookmarkFilter,
-        userId,
-        gameTypes: gameTypesRef.current,
-        tags: tagsRef.current,
-        genres: genresRef.current,
-        developers: developersRef.current,
-        publishers: publishersRef.current,
-        gameState,
-        releaseDateFrom,
-        releaseDateTo,
-        earlyAccess,
-        addedSince,
-        libraryFolder,
-        ageRating,
-      });
-      const url = `${base}/api/games?${params.toString()}`;
-      const res = await authFetch(url, { method: "GET", signal: ac.signal });
-      if (!res.ok)
-        throw new Error(
-          fillTemplate(translate("library.fetchFailed"), {
-            status: res.status,
-          }),
+  /**
+   * Loads the list from the server. A silent fetch (background refresh) keeps
+   * the current list on screen, reloads every page already scrolled through
+   * and leaves errors and the loading state untouched.
+   */
+  const fetchGamesWith = useCallback(
+    async (silent: boolean) => {
+      if (!serverUrl) return;
+      if (!enabled) return;
+      // Skip fetch when offline in Tauri mode — installed games handle themselves
+      if (isTauriApp() && !isOnline) {
+        if (!silent) setLoading(false);
+        return;
+      }
+      if (silent && loadingRef.current) return;
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
+      const pages = silent ? Math.max(1, loadedPagesRef.current) : 1;
+      try {
+        const base = serverUrl.replace(/\/+$/, "");
+        const userId = (user as any)?.id ?? (user as any)?.ID;
+        const params = buildGamesQueryParams({
+          search,
+          sortBy,
+          order,
+          limit: libraryRefreshLimit(limit, pages),
+          bookmarkFilter,
+          userId,
+          gameTypes: gameTypesRef.current,
+          tags: tagsRef.current,
+          genres: genresRef.current,
+          developers: developersRef.current,
+          publishers: publishersRef.current,
+          gameState,
+          releaseDateFrom,
+          releaseDateTo,
+          earlyAccess,
+          addedSince,
+          libraryFolder,
+          ageRating,
+        });
+        const url = `${base}/api/games?${params.toString()}`;
+        const res = await authFetch(url, { method: "GET", signal: ac.signal });
+        if (!res.ok)
+          throw new Error(
+            fillTemplate(translate("library.fetchFailed"), {
+              status: res.status,
+            }),
+          );
+        const json: PaginatedData<PlaystashGame> = await res.json();
+        // Drop games that were removed from the library (e.g. their last version
+        // was deleted) so they don't reappear after a re-fetch.
+        const fetchedGames = (json.data || []).filter(
+          (g) => !removedGameIds.has(g.id),
         );
-      const json: PaginatedData<PlaystashGame> = await res.json();
-      // Drop games that were removed from the library (e.g. their last version
-      // was deleted) so they don't reappear after a re-fetch.
-      const fetchedGames = (json.data || []).filter(
-        (g) => !removedGameIds.has(g.id),
-      );
-      const fetchedCount = Math.max(
-        0,
-        json.meta.totalItems - removedGameIds.size,
-      );
-      setCount(fetchedCount);
-      setGames(fetchedGames);
-      setNext(json.links?.next || null);
-      loadedPagesRef.current = 1;
-      // Persist page 1 results to the module-level cache so that navigating
-      // away and back (e.g. Library → GameView → back) restores instantly.
-      setGamesCache(cacheKeyRef.current, {
-        count: fetchedCount,
-        games: fetchedGames,
-        next: json.links?.next || null,
-        loadedPages: 1,
-      });
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
-      setError(e.message || String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    serverUrl,
-    authFetch,
-    search,
-    sortBy,
-    order,
-    limit,
-    bookmarkFilter,
-    user,
-    gameTypesKey,
-    tagsKey,
-    genresKey,
-    developersKey,
-    publishersKey,
-    gameState,
-    releaseDateFrom,
-    releaseDateTo,
-    earlyAccess,
-    addedSince,
-    libraryFolder,
-    isOnline,
-    ageRating,
-    enabled,
-  ]);
+        const fetchedCount = Math.max(
+          0,
+          json.meta.totalItems - removedGameIds.size,
+        );
+        setCount(fetchedCount);
+        setGames(fetchedGames);
+        setNext(json.links?.next || null);
+        loadedPagesRef.current = pages;
+        lastFetchAtRef.current = Date.now();
+        // Persist the results to the module-level cache so that navigating
+        // away and back (e.g. Library → GameView → back) restores instantly.
+        setGamesCache(cacheKeyRef.current, {
+          count: fetchedCount,
+          games: fetchedGames,
+          next: json.links?.next || null,
+          loadedPages: pages,
+        });
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        // A failed background refresh keeps the list as it is.
+        if (!silent) setError(e.message || String(e));
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [
+      serverUrl,
+      authFetch,
+      search,
+      sortBy,
+      order,
+      limit,
+      bookmarkFilter,
+      user,
+      gameTypesKey,
+      tagsKey,
+      genresKey,
+      developersKey,
+      publishersKey,
+      gameState,
+      releaseDateFrom,
+      releaseDateTo,
+      earlyAccess,
+      addedSince,
+      libraryFolder,
+      isOnline,
+      ageRating,
+      enabled,
+    ],
+  );
+
+  const fetchGames = useCallback(() => fetchGamesWith(false), [fetchGamesWith]);
+
+  // Keep the list current while the app stays open: refresh in the background
+  // when the window regains focus and every few minutes while it is visible,
+  // so changes made elsewhere (other clients, admins, the API) show up.
+  useEffect(() => {
+    if (!enabled) return;
+    const refreshIfDue = (minIntervalMs: number) => {
+      if (document.visibilityState !== "visible") return;
+      if (
+        !isLibraryRefreshDue(lastFetchAtRef.current, Date.now(), minIntervalMs)
+      )
+        return;
+      void fetchGamesWith(true);
+    };
+    const onFocus = () => refreshIfDue(LIBRARY_FOCUS_REFRESH_MIN_MS);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    const interval = window.setInterval(
+      () => refreshIfDue(LIBRARY_INTERVAL_REFRESH_MS),
+      LIBRARY_INTERVAL_REFRESH_MS,
+    );
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+      window.clearInterval(interval);
+    };
+  }, [enabled, fetchGamesWith]);
 
   const loadMore = useCallback(async () => {
     if (!serverUrl || !next || loading) return;

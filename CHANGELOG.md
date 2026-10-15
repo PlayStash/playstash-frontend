@@ -86,6 +86,8 @@ Status: Released on 2026-10-15.
 - Windows installer: running the installer of a newer version over an older one asks "Update to …?" and updates in place, keeping your settings, profiles and games, then starts PlayStash. The same version offers repair or uninstall, and an older version warns about the downgrade first. The installer is also available in German.
 - Windows installer: an installed previous PlayStash client for Windows is detected and offered for uninstallation; its data stays available for the import in the new app.
 - Releases now also include an MSI installer for Windows and an RPM package for Fedora, openSUSE and other RPM-based Linux distributions.
+- The library refreshes itself in the background when you return to the window and every five minutes while it is visible, so new games and changed covers or details appear without reloading; the list keeps every page you scrolled through.
+- Updated Rustls in the desktop app to fix the latest Rustls security advisories.
 
 ### Breaking Changes & Migration
 
