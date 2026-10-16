@@ -1,12 +1,22 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { Registry } from "./container-registry.mjs";
+import { extractContainerDirectory } from "./copy-container-directory.mjs";
 import {
   currentBranchHead,
   planContainer,
@@ -23,6 +33,49 @@ const digest = (body) =>
   `sha256:${createHash("sha256")
     .update(typeof body === "string" ? body : JSON.stringify(body))
     .digest("hex")}`;
+
+test("read-only container directories extract and clean up for an ordinary user", async () => {
+  const temporary = await mkdtemp(
+    path.join(tmpdir(), "playstash-readonly-proof-"),
+  );
+  const source = path.join(temporary, "source");
+  const nested = path.join(source, "assets");
+  try {
+    await mkdir(nested, { recursive: true });
+    await writeFile(
+      path.join(source, "THIRD-PARTY-LICENSES.json"),
+      '{"fixture":true}',
+    );
+    await writeFile(
+      path.join(nested, "application.js"),
+      'console.log("fixture");',
+    );
+    await chmod(path.join(source, "THIRD-PARTY-LICENSES.json"), 0o444);
+    await chmod(path.join(nested, "application.js"), 0o444);
+    await chmod(nested, 0o555);
+    await chmod(source, 0o555);
+    const archive = execFileSync("tar", ["-cf", "-", "-C", source, "."]);
+    const destination = path.join(temporary, "proof");
+    await extractContainerDirectory(archive, destination);
+    assert.equal(
+      await readFile(
+        path.join(destination, "THIRD-PARTY-LICENSES.json"),
+        "utf8",
+      ),
+      '{"fixture":true}',
+    );
+    assert.equal(
+      await readFile(path.join(destination, "assets/application.js"), "utf8"),
+      'console.log("fixture");',
+    );
+    await rm(destination, { recursive: true });
+  } finally {
+    await chmod(source, 0o700);
+    await chmod(nested, 0o700);
+    assert.equal(path.dirname(temporary), path.resolve(tmpdir()));
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
 
 async function registryFixture(run, overrides = {}) {
   const blobs = new Map();

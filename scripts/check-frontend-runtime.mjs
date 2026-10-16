@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { verifyPublishedAssets } from "./container-release.mjs";
+import { copyContainerDirectory } from "./copy-container-directory.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const project = `playstash-runtime-${randomUUID()}`;
@@ -306,8 +307,12 @@ try {
     );
     const proof = path.join(temporary, "published");
     await mkdir(proof);
-    docker("cp", `${frontend}:/opt/playstash/frontend/.`, proof);
-    docker("cp", `${frontend}:/usr/share/nginx/html`, path.join(proof, "dist"));
+    await copyContainerDirectory(frontend, "/opt/playstash/frontend", proof);
+    await copyContainerDirectory(
+      frontend,
+      "/usr/share/nginx/html",
+      path.join(proof, "dist"),
+    );
     await verifyPublishedAssets(proof, {
       commit: process.env.PLAYSTASH_EXPECTED_FRONTEND_COMMIT,
       version: process.env.PLAYSTASH_EXPECTED_FRONTEND_VERSION,

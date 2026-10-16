@@ -81,7 +81,7 @@ Optional integrations use your own accounts: enable Discord release notices with
 
 ## Separate frontend runtime
 
-The frontend repository builds and publishes its own image at **`ghcr.io/playstash/playstash-frontend`**. The backend consumes this image and does not build or bundle the frontend. Images support Linux AMD64 and ARM64 and contain Nginx and the web assets, without the backend or Node.js.
+The frontend repository builds and publishes its own image at **`ghcr.io/playstash/playstash-frontend`**. The frontend and backend source repositories and releases are public. The backend consumes this image and does not build or bundle the frontend. Images support Linux AMD64 and ARM64 and contain Nginx and the web assets, without the backend or Node.js.
 
 | Tag                      | Meaning                                                                         |
 | ------------------------ | ------------------------------------------------------------------------------- |
