@@ -204,6 +204,26 @@ export async function promotionTargets(registry, plan, headCommit) {
   return tags;
 }
 
+export function anonymousPullTargets(index) {
+  assert.match(index.digest, digestPattern);
+  const targets = index.body.manifests
+    .filter((entry) => entry.platform?.os === "linux")
+    .map((entry) => {
+      assert.match(entry.digest, digestPattern);
+      return {
+        platform: `linux/${entry.platform.architecture}`,
+        reference: `${image}@${entry.digest}`,
+      };
+    })
+    .sort((left, right) => left.platform.localeCompare(right.platform));
+  assert.deepEqual(
+    targets.map((target) => target.platform),
+    ["linux/amd64", "linux/arm64"],
+  );
+  assert.equal(new Set(targets.map((target) => target.reference)).size, 2);
+  return targets;
+}
+
 export async function anonymousPull(reference) {
   assert.match(
     reference,
@@ -218,17 +238,30 @@ export async function anonymousPull(reference) {
   delete environment.DOCKER_AUTH_CONFIG;
   delete environment.REGISTRY_AUTH_FILE;
   try {
-    await registry.verifyIndex(reference.split("@")[1]);
-    for (const platform of ["linux/amd64", "linux/arm64"]) {
-      execFileSync("docker", ["pull", "--platform", platform, reference], {
-        env: environment,
-        stdio: "inherit",
-        timeout: 300_000,
-      });
+    const index = await registry.verifyIndex(reference.split("@")[1]);
+    // Classic Docker stores one platform per local digest reference. Pull the
+    // distinct child manifests already bound to this verified public index.
+    for (const target of anonymousPullTargets(index)) {
+      execFileSync(
+        "docker",
+        ["pull", "--platform", target.platform, target.reference],
+        {
+          env: environment,
+          stdio: "inherit",
+          timeout: 300_000,
+        },
+      );
     }
   } catch (cause) {
+    const accessDenied =
+      /\((401|403)\)|unauthorized|authentication required/i.test(
+        String(cause?.message),
+      );
     throw new Error(
-      "Anonymous frontend pull failed; latest/dev/version tags remain unchanged. New GHCR packages start private: set the playstash-frontend package visibility to Public once, then rerun this workflow. Network and registry errors also stop publication.",
+      "Anonymous frontend image download or registry verification failed; latest/dev/version tags remain unchanged." +
+        (accessDenied
+          ? " GHCR denied anonymous access: ensure the frontend package is Public and rerun the workflow."
+          : ""),
       { cause },
     );
   } finally {

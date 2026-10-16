@@ -18,6 +18,7 @@ import test from "node:test";
 import { Registry } from "./container-registry.mjs";
 import { extractContainerDirectory } from "./copy-container-directory.mjs";
 import {
+  anonymousPullTargets,
   currentBranchHead,
   planContainer,
   prepareContext,
@@ -209,6 +210,38 @@ test("real registry responses verify both platform configs and source/version/li
   registryFixture(async ({ registry }) => {
     const result = await registry.verifyIndex("candidate", { version, commit });
     assert.match(result.digest, /^sha256:[a-f0-9]{64}$/);
+  }));
+
+test("anonymous pulls use distinct verified platform manifests instead of overwriting one index reference", () =>
+  registryFixture(async ({ registry }) => {
+    const index = await registry.verifyIndex("candidate", { version, commit });
+    const targets = anonymousPullTargets(index);
+    assert.deepEqual(
+      targets.map((target) => target.platform),
+      ["linux/amd64", "linux/arm64"],
+    );
+    const localStore = new Map();
+    for (const target of targets) {
+      assert.ok(
+        !target.reference.endsWith(index.digest),
+        "The index must not be repulled as a second platform.",
+      );
+      assert.ok(
+        !localStore.has(target.reference),
+        "A classic Docker reference must not be overwritten by another platform.",
+      );
+      localStore.set(target.reference, target.platform);
+      const manifest = await registry.manifest(target.reference.split("@")[1]);
+      assert.ok(
+        manifest.body.config?.digest,
+        "The target is a runnable child manifest, not another index.",
+      );
+      const config = await registry.read("blobs", manifest.body.config.digest);
+      assert.equal(
+        `${config.body.os}/${config.body.architecture}`,
+        target.platform,
+      );
+    }
   }));
 
 test("only typed MANIFEST_UNKNOWN is treated as an absent immutable version", () =>
