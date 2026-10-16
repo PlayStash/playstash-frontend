@@ -1,12 +1,20 @@
 # PlayStash Frontend Changelog
 
+## 17.3.4
+
+Status: Released on 2026-10-16.
+
+### Changes
+
+- The web app shows the "Server Games (X of Y)" heading above the server games, like the desktop app; previously the games followed directly below the recently added games.
+
 ## 17.3.3
 
 Status: Released on 2026-10-16.
 
 ### Changes
 
-- The library heading "Server Games (X of Y)" now counts every game on the server; only installed games hidden by "Hide installed games" are subtracted. Previously it only counted the games loaded so far, which looked like missing games. The web app now shows this heading too.
+- The library heading "Server Games (X of Y)" now counts every game on the server; only installed games hidden by "Hide installed games" are subtracted. Previously it only counted the games loaded so far, which looked like missing games.
 - Returning to the library from a game page and background refreshes keep every page you already scrolled through, so the list no longer shrinks back to the first 50 games or jumps.
 - Further pages load before you reach the end of the list and always from the server address you connected to, also behind a reverse proxy.
 - Changes on the server (new games, edited metadata and images) show up within a minute while the app is open, and 10 seconds after returning to the window.

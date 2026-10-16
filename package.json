@@ -1,6 +1,6 @@
 {
   "name": "playstash-frontend",
-  "version": "17.3.3",
+  "version": "17.3.4",
   "description": "the self-hosted gaming platform for drm-free games",
   "author": "PlayStash",
   "private": true,
