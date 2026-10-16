@@ -27,7 +27,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 import { Status } from "../api";
-import { applyTheme, getStoredTheme } from "@/utils/theme";
+import { applyTheme } from "@/utils/theme";
+import { reapplyStoredTheme } from "@/themes/themeManager";
 import { isTauriApp } from "@/utils/tauri";
 import { useTranslation } from "@/i18n";
 import { findDuplicateProfile, type Profile } from "@/utils/profiles";
@@ -140,9 +141,8 @@ export function Login() {
   // reload here can't wipe the user's saved theme); restore the stored
   // preference on leave.
   useEffect(() => {
-    const stored = getStoredTheme();
     applyTheme("system", false);
-    return () => applyTheme(stored, false);
+    return () => void reapplyStoredTheme();
   }, []);
 
   // Desktop: start on the profile picker, or the sign-in form without profiles.

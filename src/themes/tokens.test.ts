@@ -4,7 +4,9 @@ import { getBuiltinTheme } from "./builtins";
 import { isDarkTheme, THEME_TOKEN_NAMES, themeToTokens } from "./tokens";
 import {
   applySelection,
+  applyTemporaryClassicMode,
   builtinSelection,
+  reapplyStoredTheme,
   getActiveTheme,
   selectTheme,
   setShowDefaultTheme,
@@ -68,9 +70,7 @@ describe("isDarkTheme", () => {
 
 describe("theme application", () => {
   it("applies a built-in theme and persists it", async () => {
-    await selectTheme(
-      builtinSelection("ThemePhalcodeLight", "Phalcode (Light)"),
-    );
+    await selectTheme(builtinSelection("ThemePhalcodeLight", "Phalcode (Light)"));
     const root = document.documentElement;
     expect(root.style.getPropertyValue("--color-ps-accent")).toBe(
       "rgba(18, 174, 132, 1)",
@@ -98,6 +98,23 @@ describe("theme application", () => {
     expect(
       document.documentElement.style.getPropertyValue("--color-ps-bg"),
     ).toBe("rgba(226, 225, 239, 1)");
+  });
+
+  it("classic dark stays dark after the login page forced the device mode", async () => {
+    // The login page shows the (light) device mode and must not keep
+    // overriding the choice the user makes afterwards.
+    applyTemporaryClassicMode("system");
+    await selectTheme(builtinSelection("classic-dark"));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(getActiveTheme().isDark).toBe(true);
+  });
+
+  it("restores the stored classic dark theme when leaving the login page", async () => {
+    await selectTheme(builtinSelection("classic-dark"));
+    applyTemporaryClassicMode("system");
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    await reapplyStoredTheme();
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
   it("shows the default while logged out and restores on login", async () => {

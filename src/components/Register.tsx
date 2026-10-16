@@ -12,7 +12,8 @@ import {
   DEFAULT_SERVER_URL,
   detectBackendServedWebUi,
 } from "@/utils/authConfig";
-import { applyTheme, getStoredTheme } from "@/utils/theme";
+import { applyTheme } from "@/utils/theme";
+import { reapplyStoredTheme } from "@/themes/themeManager";
 import { useNavigate } from "react-router";
 import { isPendingActivationError } from "@/context/AuthContext";
 import { serverFetch } from "@/utils/serverFetch";
@@ -71,9 +72,8 @@ export function Register() {
   // reload here can't wipe the user's saved theme); restore the stored
   // preference on leave.
   useEffect(() => {
-    const stored = getStoredTheme();
     applyTheme("system", false);
-    return () => applyTheme(stored, false);
+    return () => void reapplyStoredTheme();
   }, []);
 
   useEffect(() => {

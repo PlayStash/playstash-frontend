@@ -357,6 +357,8 @@ export function builtinSelection(id: string, displayName = ""): ThemeSelection {
 export function selectTheme(
   selection: ThemeSelection,
 ): Promise<ActiveThemeState> {
+  // An explicit choice always wins over a temporary mode (login page).
+  forcedClassicMode = null;
   writeSelection(selection);
   if (showDefault) return Promise.resolve(state);
   return applySelection(selection);
