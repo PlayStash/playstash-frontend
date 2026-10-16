@@ -189,6 +189,26 @@ describe("Library", { timeout: 20000 }, () => {
     );
   });
 
+  it("shows the server games heading in the web app too", async () => {
+    renderLibrary();
+    expect(await screen.findByText("Server Games (2 of 2)")).toBeTruthy();
+  });
+
+  it("counts every server game, not only the loaded page", async () => {
+    mocks.fetch.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({
+        data: [
+          { id: 1, title: "Alpha" },
+          { id: 2, title: "Beta" },
+        ],
+        meta: { totalItems: 53 },
+      }),
+    }));
+    renderLibrary();
+    expect(await screen.findByText("Server Games (53 of 53)")).toBeTruthy();
+  });
+
   it("hides installed games client-side without refetching", async () => {
     mocks.isTauri = true;
     mocks.installed = [

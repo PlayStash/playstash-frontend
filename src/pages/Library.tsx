@@ -1566,7 +1566,7 @@ export default function Library() {
             <p>{t("library.offline.unavailable")}</p>
             <p className="mt-1">{t("library.offline.installedPlayable")}</p>
           </div>
-        ) : isTauri ? (
+        ) : (
           <SectionExpander
             title={fillTemplate(t("library.server.section"), {
               // Only installed games hidden from this list are missing; games
@@ -1676,105 +1676,6 @@ export default function Library() {
               </div>
             )}
           </SectionExpander>
-        ) : (
-          <>
-            {serverUrl && loading && games.length === 0 && (
-              <div className="grid gap-4 sm:gap-6 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-3/4 rounded-3xl bg-ps-panel-strong motion-safe:animate-pulse"
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-            )}
-            {serverUrl &&
-              loadAllowed &&
-              !loading &&
-              games.length === 0 &&
-              !error && (
-                <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
-                  {t("library.empty")}
-                  {(search.trim() || hasActiveFilters) && (
-                    <div className="mt-2">
-                      <TextLink
-                        href="#"
-                        onClick={() => {
-                          clearAllFilters();
-                          setShowFilters(false);
-                          setSearch("");
-                        }}
-                      >
-                        <Strong>{t("library.empty.clearFilters")}</Strong>
-                      </TextLink>
-                    </div>
-                  )}
-                </div>
-              )}
-            <div
-              className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(var(--ps-cover-size),1fr))] py-2 pb-8"
-              style={coverGridStyle}
-            >
-              {visibleGames.map((g, i) => {
-                const installed = installedByGameId.get(g.id);
-                const cardGame = installed
-                  ? {
-                      ...g,
-                      _installedInfo: {
-                        installationDirectory: installed.installationDirectory,
-                        versionDirectory: installed.versionDirectory,
-                        versionId: installed.versionId,
-                        versionName: installed.versionName,
-                      },
-                      _onUninstalled: refetchInstalledGames,
-                    }
-                  : g;
-                return (
-                  <motion.div
-                    key={g.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: Math.min(i * 0.03, 0.3),
-                      duration: DURATION_SLOW,
-                      ease: EASE_OUT,
-                    }}
-                    className="min-w-0"
-                  >
-                    <GameCard game={cardGame} sortBy={sortBy} />
-                  </motion.div>
-                );
-              })}
-            </div>
-            {hasMore && <div ref={sentinelRef} className="h-10 -mt-10" />}
-            {loading && games.length > 0 && (
-              <div className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted">
-                <svg
-                  className="h-3.5 w-3.5 motion-safe:animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                {t("library.loadingMore")}
-              </div>
-            )}
-          </>
         )}
       </div>
 
