@@ -12,6 +12,7 @@ Status: Released on 2026-10-16.
 - Changes on the server (new games, edited metadata and images) show up within a minute while the app is open, and 10 seconds after returning to the window.
 - Game pages show the release year from the game's metadata (provider data or your edits) instead of only a year parsed from the file name, so games without a year in their file name show it too.
 - A classic web theme chosen after signing in (e.g. "Classic PlayStash web (Dark)") is applied again; the device theme of the login screen no longer overrides it.
+- Browser games (HTML games without an executable) can be played: "Play" opens their start page in the default browser, and the start page is detected automatically when a game has no executable. Playtime is not tracked for these games.
 - Settings → About lists PlayStash as the author, and the Linux packages include the project's `NOTICE`.
 
 ### Breaking Changes & Migration

@@ -276,13 +276,25 @@ pub(crate) fn is_script_missing_exec_bit(path: &Path, mode: Option<u32>) -> bool
   }
 }
 
+/// Whether a file is a web page (the start page of a browser game).
+pub(crate) fn is_web_page(path: &Path) -> bool {
+  path
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .is_some_and(|extension| extension.eq_ignore_ascii_case("html") || extension.eq_ignore_ascii_case("htm"))
+}
+
 /// Scans an installed game folder for launchable files.
+///
+/// A folder without any executable is a browser game: its web pages become
+/// the candidates instead, the shallowest first.
 ///
 /// The ignore list is deliberately *not* applied here: callers own that policy
 /// (the tracker filters after its cache so editing the ignore list takes effect
 /// immediately instead of after the cache expires).
 pub(crate) fn scan_launch_folder(root: &Path, limits: ScanLimits) -> LaunchScan {
   let mut scan = LaunchScan::default();
+  let mut web_pages = Vec::new();
 
   let outcome = walk_files(root, limits, |path, mode| {
     if is_launch_executable(path, mode) {
@@ -293,6 +305,10 @@ pub(crate) fn scan_launch_folder(root: &Path, limits: ScanLimits) -> LaunchScan 
       if let Some(relative) = relative_path(root, path) {
         scan.non_executable_scripts.push(relative);
       }
+    } else if is_web_page(path) {
+      if let Some(relative) = relative_path(root, path) {
+        web_pages.push(relative);
+      }
     }
   });
 
@@ -300,6 +316,10 @@ pub(crate) fn scan_launch_folder(root: &Path, limits: ScanLimits) -> LaunchScan 
   let by_name = |a: &String, b: &String| a.to_ascii_lowercase().cmp(&b.to_ascii_lowercase());
   scan.executables.sort_by(by_name);
   scan.non_executable_scripts.sort_by(by_name);
+  if scan.executables.is_empty() {
+    web_pages.sort_by(|a, b| a.matches('/').count().cmp(&b.matches('/').count()).then_with(|| by_name(a, b)));
+    scan.executables = web_pages;
+  }
   scan
 }
 
@@ -461,6 +481,41 @@ mod tests {
     assert!(scan.executables.contains(&"run.sh".to_string()));
     assert!(scan.executables.contains(&"launch".to_string()));
     assert_eq!(scan.non_executable_scripts, vec!["start.sh".to_string()]);
+  }
+
+  #[test]
+  fn recognizes_web_pages() {
+    assert!(is_web_page(Path::new("game/husbands-phone.html")));
+    assert!(is_web_page(Path::new("game/INDEX.HTM")));
+    assert!(!is_web_page(Path::new("game/Game.exe")));
+    assert!(!is_web_page(Path::new("game/page.html.exe")));
+  }
+
+  #[test]
+  fn offers_web_pages_of_browser_games_shallowest_first() {
+    let scratch = Scratch::new("browser-game");
+    scratch.write("Graduation/content/help.html", "<p>");
+    scratch.write("Graduation/graduation.html", "<html>");
+    scratch.write("Graduation/system/vue.js", "");
+
+    let scan = scan_launch_folder(scratch.path(), limits(1_000));
+
+    assert_eq!(
+      scan.executables,
+      vec!["Graduation/graduation.html".to_string(), "Graduation/content/help.html".to_string()]
+    );
+  }
+
+  #[cfg(windows)]
+  #[test]
+  fn keeps_executables_before_web_pages_on_windows() {
+    let scratch = Scratch::new("exe-and-manual");
+    scratch.write("Game.exe", "MZ");
+    scratch.write("manual.html", "<html>");
+
+    let scan = scan_launch_folder(scratch.path(), limits(1_000));
+
+    assert_eq!(scan.executables, vec!["Game.exe".to_string()]);
   }
 
   #[cfg(windows)]

@@ -573,6 +573,30 @@ fn launch_game_blocking(
         let _ = crate::launch_log::open_or_focus_log_window(&app);
     }
 
+    // Browser games start from a web page, which cannot be executed: open it
+    // with the default browser. The browser is not the game's own process,
+    // so no playtime is tracked for these games.
+    let emulator_launch = absolute_executable
+        .as_deref()
+        .is_some_and(|value| !value.trim().is_empty());
+    if !emulator_launch && executables::is_web_page(&exe_path) {
+        log.push(
+            "system",
+            &format!("Opening {} in the default browser", exe_path.display()),
+        );
+        return match open_web_page(&exe_path) {
+            Ok(()) => {
+                log.finish_success(&app, None);
+                Ok(())
+            }
+            Err(error) => {
+                log.push("system", &error);
+                log.finish_failed(&app, None);
+                Err(error)
+            }
+        };
+    }
+
     // On Linux a Windows executable cannot run natively; run it through
     // umu-launcher (Proton/Wine), auto-installing it when missing. This comes
     // before the admin branch: elevating a Windows exe (e.g. running wine as
@@ -772,6 +796,16 @@ const LAUNCH_GRACE: Duration = Duration::from_secs(5);
 
 /// Resolves the executable to start: an absolute emulator path when given
 /// (it must exist), otherwise the relative path inside the installation.
+/// Opens a local web page with the system's default browser.
+fn open_web_page(path: &Path) -> Result<(), String> {
+    #[cfg(all(unix, not(target_os = "macos")))]
+    return open_with_desktop_launchers(&path.to_string_lossy());
+
+    #[cfg(not(all(unix, not(target_os = "macos"))))]
+    tauri_plugin_opener::open_path(path, None::<&str>)
+        .map_err(|e| format!("Failed to open the game in the browser: {e}"))
+}
+
 fn resolve_launch_executable(
     root: &Path,
     executable_relative_path: &str,

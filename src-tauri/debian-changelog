@@ -2,6 +2,7 @@ playstash (17.3.3) unstable; urgency=medium
 
   * Count every server game in the library heading and keep all loaded pages when the list is refreshed or shown again.
   * Show changes from the server within a minute, show the release year from the metadata and keep a chosen classic theme after signing in.
+  * Open browser games (HTML start pages) in the default browser.
 
  -- PlayStash Maintainers <maintainers@playstash.invalid>  Fri, 16 Oct 2026 00:00:00 +0000
 
