@@ -1,5 +1,23 @@
 # PlayStash Frontend Changelog
 
+## 17.3.3
+
+Status: Released on 2026-10-16.
+
+### Changes
+
+- The library heading "Server Games (X of Y)" now counts every game on the server; only installed games hidden by "Hide installed games" are subtracted. Previously it only counted the games loaded so far, which looked like missing games.
+- Returning to the library from a game page and background refreshes keep every page you already scrolled through, so the list no longer shrinks back to the first 50 games or jumps.
+- Further pages load before you reach the end of the list and always from the server address you connected to, also behind a reverse proxy.
+- Changes on the server (new games, edited metadata and images) show up within a minute while the app is open, and 10 seconds after returning to the window.
+- Game pages show the release year from the game's metadata (provider data or your edits) instead of only a year parsed from the file name, so games without a year in their file name show it too.
+- A classic web theme chosen after signing in (e.g. "Classic PlayStash web (Dark)") is applied again; the device theme of the login screen no longer overrides it.
+- Settings → About lists PlayStash as the author, and the Linux packages include the project's `NOTICE`.
+
+### Breaking Changes & Migration
+
+- The two green built-in themes are now called "Emerald (Dark)" and "Emerald (Light)". -> **A previously selected green theme falls back to the classic theme; select "Emerald" again in Settings → Appearance.**
+
 ## 17.3.2
 
 Status: Released on 2026-10-16.
