@@ -1,17 +1,24 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyPublishedAssets } from "./container-release.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const project = `playstash-runtime-${randomUUID()}`;
 const label = `com.playstash.runtime-test=${project}`;
-const image = `${project}:test`;
+const externalImage = process.argv[2];
+if (externalImage)
+  assert.match(
+    externalImage,
+    /^(?:ghcr\.io\/playstash\/playstash-frontend@)?sha256:[a-f0-9]{64}$/,
+  );
+const image = externalImage || `${project}:test`;
 const frontend = `${project}-frontend`;
 const backend = `${project}-backend`;
 const temporary = await mkdtemp(path.join(tmpdir(), `${project}-`));
@@ -117,6 +124,10 @@ async function request(url, options = {}) {
   });
 }
 async function websocket() {
+  const key = randomBytes(16).toString("base64");
+  const expectedAccept = createHash("sha1")
+    .update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+    .digest("base64");
   await new Promise((resolve, reject) => {
     const socket = net.connect(port, "127.0.0.1");
     let data = Buffer.alloc(0);
@@ -127,7 +138,8 @@ async function websocket() {
       socket.write(
         "GET /socket.io/?EIO=4&transport=websocket HTTP/1.1\r\n" +
           "Host: playstash.example\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n" +
-          "Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n",
+          `Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ${key}\r\n` +
+          "Authorization: Bearer isolated-ws-fixture\r\nCookie: ws-session=isolated\r\n\r\n",
       ),
     );
     socket.on("error", reject);
@@ -141,14 +153,17 @@ async function websocket() {
       const frame = data.subarray(boundary + 4);
       if (frame.length < 4 || frame.length < 4 + frame.readUInt16BE(2)) return;
       try {
-        assert.match(
-          header,
-          /Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK\+xOo=/i,
+        assert.equal(
+          /Sec-WebSocket-Accept:\s*([^\r\n]+)/i.exec(header)?.[1].trim(),
+          expectedAccept,
         );
         assert.equal(
           JSON.parse(frame.subarray(4).toString()).url,
           "/socket.io/?EIO=4&transport=websocket",
         );
+        const upstream = JSON.parse(frame.subarray(4).toString());
+        assert.equal(upstream.authorization, "Bearer isolated-ws-fixture");
+        assert.equal(upstream.cookie, "ws-session=isolated");
         socket.destroy();
         resolve();
       } catch (cause) {
@@ -237,9 +252,10 @@ try {
     path.join(temporary, "provenance.json"),
     JSON.stringify({ fixture: true }),
   );
-  await cp(path.join(root, "dist"), path.join(temporary, "dist"), {
-    recursive: true,
-  });
+  if (!externalImage)
+    await cp(path.join(root, "dist"), path.join(temporary, "dist"), {
+      recursive: true,
+    });
   const fixture = path.join(temporary, "fixture");
   await mkdir(fixture);
   await cp(
@@ -250,16 +266,17 @@ try {
     path.join(fixture, "Dockerfile"),
     'FROM node:lts-alpine\nCOPY server.mjs /server.mjs\nUSER node\nCMD ["node","/server.mjs"]\n',
   );
-  docker(
-    "build",
-    "--label",
-    label,
-    "--tag",
-    image,
-    "--file",
-    path.join(temporary, "Dockerfile.runtime"),
-    temporary,
-  );
+  if (!externalImage)
+    docker(
+      "build",
+      "--label",
+      label,
+      "--tag",
+      image,
+      "--file",
+      path.join(temporary, "Dockerfile.runtime"),
+      temporary,
+    );
   docker("build", "--label", label, "--tag", `${project}:fixture`, fixture);
   docker("network", "create", "--label", label, project);
   networkCreated = true;
@@ -277,6 +294,25 @@ try {
     `${project}:fixture`,
   );
   await startFrontend();
+  if (externalImage) {
+    const information = JSON.parse(docker("image", "inspect", image))[0];
+    assert.equal(
+      information.Config.Labels["org.opencontainers.image.revision"],
+      process.env.PLAYSTASH_EXPECTED_FRONTEND_COMMIT,
+    );
+    assert.equal(
+      information.Config.Labels["org.opencontainers.image.version"],
+      process.env.PLAYSTASH_EXPECTED_FRONTEND_VERSION,
+    );
+    const proof = path.join(temporary, "published");
+    await mkdir(proof);
+    docker("cp", `${frontend}:/opt/playstash/frontend/.`, proof);
+    docker("cp", `${frontend}:/usr/share/nginx/html`, path.join(proof, "dist"));
+    await verifyPublishedAssets(proof, {
+      commit: process.env.PLAYSTASH_EXPECTED_FRONTEND_COMMIT,
+      version: process.env.PLAYSTASH_EXPECTED_FRONTEND_VERSION,
+    });
+  }
   const indexResponse = await request("/");
   const index = await indexResponse.text();
   assert.match(
@@ -311,6 +347,8 @@ try {
       "X-Forwarded-For": "203.0.113.99",
       Forwarded: "for=203.0.113.99;proto=https",
       "X-Forwarded-Port": "443",
+      Authorization: "Bearer isolated-runtime-fixture",
+      Cookie: "fixture-session=isolated",
     },
   });
   const untrusted = await response.json();
@@ -321,6 +359,8 @@ try {
   assert.equal(untrusted.client, untrusted.realIp);
   assert.equal(untrusted.forwarded, undefined);
   assert.equal(untrusted.forwardedPort, undefined);
+  assert.equal(untrusted.authorization, "Bearer isolated-runtime-fixture");
+  assert.equal(untrusted.cookie, "fixture-session=isolated");
   assert.equal(response.headers.get("content-security-policy"), null);
   const docs = await request("/api/docs");
   assert.equal(
@@ -391,7 +431,7 @@ try {
     assert.equal(network.Labels["com.playstash.runtime-test"], project);
     docker("network", "rm", project);
   }
-  for (const tag of [image, `${project}:fixture`]) {
+  for (const tag of [...(externalImage ? [] : [image]), `${project}:fixture`]) {
     try {
       const info = JSON.parse(docker("image", "inspect", tag))[0];
       assert.equal(info.Config.Labels["com.playstash.runtime-test"], project);

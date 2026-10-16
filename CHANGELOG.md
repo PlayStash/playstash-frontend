@@ -1,5 +1,18 @@
 # PlayStash Frontend Changelog
 
+## 17.3.2
+
+Status: Released on 2026-10-16.
+
+### Changes
+
+- Publish the web frontend independently as `ghcr.io/playstash/playstash-frontend` for AMD64 and ARM64, with automatic `latest`/`dev` channels and preserved version tags; the backend no longer needs to build or bundle it.
+- Check the actual web runtime, authentication forwarding, WebSockets and every reported container vulnerability severity before promoting an image. Anonymous pulls are required, so servers never need a GitHub token to run the public frontend image.
+
+### Breaking Changes & Migration
+
+- The frontend image moves from the backend's `frontend` tag to its own package. -> **Use `ghcr.io/playstash/playstash-frontend:latest` (or `:dev`) with the updated backend Compose file; build local images from the prepared `Dockerfile.runtime` context.**
+
 ## 17.3.1
 
 Status: Released on 2026-10-16.

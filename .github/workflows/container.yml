@@ -1,0 +1,199 @@
+name: Frontend container
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Separate from installers and native sidecars. Serialize each channel, including tag/manual reruns.
+concurrency:
+  group: frontend-container-${{ github.repository }}-${{ github.ref == 'refs/heads/dev' && 'dev' || 'stable' }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      channel: ${{ steps.plan.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Validate exact source and channel
+        id: plan
+        run: node scripts/container-release.mjs plan
+      # The committed schema is part of this exact source build; no API from another repository is fetched.
+      - name: Install the frozen web dependency graph
+        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+      - name: Audit dependencies and test the web client
+        run: |
+          set -euo pipefail
+          pnpm audit --audit-level=low
+          pnpm typecheck
+          pnpm exec eslint .
+          pnpm test
+      - name: Build this commit's web assets
+        env:
+          PLAYSTASH_BUILD_VERSION: ${{ steps.plan.outputs.version }}
+          PLAYSTASH_BUILD_CHANNEL: ${{ steps.plan.outputs.channel == 'dev' && 'unstable' || 'stable' }}
+          PLAYSTASH_BUILD_COMMIT: ${{ github.sha }}
+        run: pnpm build
+      - name: Prepare licensed runtime context and source provenance
+        run: node scripts/container-release.mjs context container-context
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-container-context
+          path: container-context/
+          if-no-files-found: error
+          retention-days: 3
+
+  architecture:
+    needs: web
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-latest
+            scanner: Linux-64bit
+            scanner_sha256: c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            scanner: Linux-ARM64
+            scanner_sha256: a1ee9f6ffb7d112b64ff726a2a0717c21175c1114361391f4a132956751a13b3
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - uses: actions/download-artifact@v8
+        with:
+          name: frontend-container-context
+          path: container-context
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push candidate by digest without changing release tags
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: container-context
+          file: container-context/Dockerfile.runtime
+          platforms: ${{ matrix.platform }}
+          tags: ghcr.io/playstash/playstash-frontend
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          provenance: mode=max
+          sbom: true
+          build-args: |
+            FRONTEND_VERSION=${{ needs.web.outputs.version }}
+            FRONTEND_REVISION=${{ github.sha }}
+            SECURITY_REFRESH=${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          cache-from: type=gha,scope=frontend-runtime-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=frontend-runtime-${{ matrix.arch }}
+      - name: Verify the final image's real runtime, proxy, authentication and WebSockets
+        env:
+          IMAGE: ghcr.io/playstash/playstash-frontend@${{ steps.build.outputs.digest }}
+          PLATFORM: ${{ matrix.platform }}
+          PLAYSTASH_EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
+          PLAYSTASH_EXPECTED_FRONTEND_VERSION: ${{ needs.web.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker pull --platform "$PLATFORM" "$IMAGE"
+          node scripts/check-frontend-runtime.mjs "$IMAGE"
+      - name: Install checksum-verified Trivy
+        env:
+          SCANNER: ${{ matrix.scanner }}
+          SCANNER_SHA256: ${{ matrix.scanner_sha256 }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/trivy.tar.gz"
+          curl --fail --location --retry 3 "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_${SCANNER}.tar.gz" --output "$archive"
+          echo "$SCANNER_SHA256  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/trivy"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/trivy" trivy
+          echo "$RUNNER_TEMP/trivy" >> "$GITHUB_PATH"
+      - name: Reject every known vulnerability severity in the final image
+        env:
+          IMAGE: ghcr.io/playstash/playstash-frontend@${{ steps.build.outputs.digest }}
+          PLATFORM: ${{ matrix.platform }}
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: trivy image --image-src remote --platform "$PLATFORM" --scanners vuln --ignorefile /dev/null --exit-code 1 --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --format json --output trivy-frontend.json "$IMAGE"
+      - name: Keep the complete vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-container-audit-${{ matrix.arch }}
+          path: trivy-frontend.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Record the verified architecture digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p verified-digests
+          printf '%s\n' "$DIGEST" > "verified-digests/$ARCH"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-container-digest-${{ matrix.arch }}
+          path: verified-digests/
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: [web, architecture]
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: frontend-container-digest-*
+          merge-multiple: true
+          path: verified-digests
+      - name: Assemble, verify anonymous pulls, and promote checked tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/container-release.mjs publish verified-digests

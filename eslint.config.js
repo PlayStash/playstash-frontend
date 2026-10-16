@@ -14,6 +14,7 @@ export default defineConfig([
     "src-tauri/gen",
     "release-assets",
     "updater-metadata",
+    "container-context",
   ]),
   {
     files: ["**/*.{js,jsx}"],

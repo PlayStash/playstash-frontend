@@ -81,7 +81,41 @@ Optional integrations use your own accounts: enable Discord release notices with
 
 ## Separate frontend runtime
 
-`Dockerfile.runtime` serves an already-built `dist/` with Nginx. Its build context contains `dist/`, `Dockerfile.runtime`, `nginx.runtime.conf`, `start-runtime.sh`, `LICENSE`, `NOTICE.txt` and `provenance.json`. The release publishes the web ZIP and all three runtime definitions; the image publisher preserves the license, original-author notice and pinned-release provenance under `/opt/playstash/frontend/`. The runtime contains no backend or Node.js.
+The frontend repository builds and publishes its own image at **`ghcr.io/playstash/playstash-frontend`**. The backend consumes this image and does not build or bundle the frontend. Images support Linux AMD64 and ARM64 and contain Nginx and the web assets, without the backend or Node.js.
+
+| Tag                      | Meaning                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `latest`                 | Checked current `main` source                                                   |
+| `dev`                    | Checked current `dev` source                                                    |
+| `v17.3.2`                | First successful stable publication of that frontend version; never overwritten |
+| `sha-<full Git SHA>`     | Stable source build                                                             |
+| `dev-sha-<full Git SHA>` | Development source build, kept separate even when both branches share a commit  |
+
+Use `ghcr.io/playstash/playstash-frontend@sha256:<index digest>` to pin the exact multi-platform content. Source commits and frontend versions are recorded as OCI labels; a container build does not claim that a desktop release has already been published.
+
+The independent **Frontend container** workflow (`.github/workflows/container.yml`) runs automatically on `main`/`dev` pushes, matching `v<package.json version>` tags and manual runs. It checks the committed API schema and frozen dependency graph, dependency advisories, typechecking, ESLint and web tests, then builds the web assets once from that exact checkout. Each native architecture builds a digest-only candidate and tests its real read-only runtime, SPA/assets, credential forwarding, WebSockets, streaming/ranges and trusted-proxy policy. Checksum-verified Trivy scans every severity (`UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`) without ignore files or ignored unfixed findings. Scanner/network errors stop publication. Reports remain Actions artifacts.
+
+Only after both architectures pass does publication assemble and verify their index, source/version/license labels, anonymous registry access and actual anonymous pulls for both architectures. It then creates missing version tags and promotes `latest`/`dev`. Existing version tags are preserved. Before changing a mutable channel, it verifies the current branch head through GitHub; older tag/manual/queued builds cannot downgrade a channel. Candidate tags named `build-<run>-<attempt>` are not release channels. Installer workflows remain independent and automatic, with their existing desktop/native tests.
+
+**One-time GHCR setup:** GitHub initially creates a new package as private. After the first digest candidates exist, a package administrator must set **Package settings → Change visibility → Public** for `playstash-frontend`, then rerun the container workflow. Until anonymous pulls pass, no release channel is promoted. The source repository can remain private. Publication uses the workflow's `GITHUB_TOKEN` with package-write access; deployment servers receive no token and pull the public image anonymously.
+
+`Dockerfile.runtime` serves an already-built `dist/`. Its prepared context contains `dist/`, `Dockerfile.runtime`, `nginx.runtime.conf`, `start-runtime.sh`, `LICENSE`, `NOTICE.txt` and `provenance.json`. The image preserves the license, original-author notice and commit-based asset-hash provenance under `/opt/playstash/frontend/`; the full third-party license catalog is also preserved as `/usr/share/nginx/html/THIRD-PARTY-LICENSES.json`. OCI build provenance and SBOM attestations are attached to the image.
+
+For a local source build, use a fresh context directory after the normal frozen install and web build:
+
+```sh
+pnpm install --frozen-lockfile --strict-peer-dependencies
+pnpm build
+export GITHUB_SHA="$(git rev-parse HEAD)" GITHUB_REF=refs/heads/dev
+node scripts/container-release.mjs context container-context
+docker build -f container-context/Dockerfile.runtime \
+  --build-arg FRONTEND_VERSION="$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')" \
+  --build-arg FRONTEND_REVISION="$GITHUB_SHA" \
+  --build-arg SECURITY_REFRESH="$(date +%s)" \
+  -t playstash-frontend:local container-context
+```
+
+The previous default Dockerfile is retired; the prepared runtime recipe is the supported container build path. Local uncommitted source changes are review builds, not proof of a published commit.
 
 The image publisher passes a fresh `SECURITY_REFRESH` build argument on every run so Alpine security updates are not skipped by a cached Docker layer. The frontend CSP blocks remote scripts and unsafe evaluation while permitting its existing Inter stylesheet/fonts at `rsms.me`; browsers contact that font host independently of analytics. API documentation and OAuth responses retain the backend CSP and cache policy.
 

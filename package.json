@@ -1,6 +1,6 @@
 {
   "name": "playstash-frontend",
-  "version": "17.3.1",
+  "version": "17.3.2",
   "description": "the self-hosted gaming platform for drm-free games",
   "author": "Alkan Alper, Schäfer Philip GbR / Phalcode",
   "private": true,
@@ -14,8 +14,8 @@
     "tauridev": "tauri dev",
     "build": "vite build",
     "test:runtime": "node scripts/check-frontend-runtime.mjs",
-    "test": "vitest run src && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs scripts/build-tauri-updater-manifest.test.mjs",
-    "test:cov": "vitest run src --coverage && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs scripts/build-tauri-updater-manifest.test.mjs",
+    "test": "vitest run src && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs scripts/build-tauri-updater-manifest.test.mjs scripts/container-release.test.mjs",
+    "test:cov": "vitest run src --coverage && node --test scripts/ensure-api-client.test.mjs scripts/plan-release.test.mjs scripts/prepare-tauri-release-assets.test.mjs scripts/read-updater-channels.test.mjs scripts/check-desktop-template.test.mjs scripts/build-tauri-updater-manifest.test.mjs scripts/container-release.test.mjs",
     "lint": "prettier --write . && eslint .",
     "licenses": "node scripts/generate-third-party-licenses.mjs",
     "ludusavi:build": "node scripts/build-ludusavi.mjs",

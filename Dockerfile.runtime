@@ -1,9 +1,11 @@
 FROM nginx:1.30.5-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94
 
-ARG FRONTEND_VERSION=17.2.3
+ARG FRONTEND_VERSION
+ARG FRONTEND_REVISION
 ARG SECURITY_REFRESH=local
 LABEL org.opencontainers.image.title="PlayStash frontend runtime" \
     org.opencontainers.image.version="${FRONTEND_VERSION}" \
+    org.opencontainers.image.revision="${FRONTEND_REVISION}" \
     org.opencontainers.image.source="https://github.com/PlayStash/playstash-frontend" \
     org.opencontainers.image.licenses="CC-BY-NC-SA-4.0"
 

@@ -1,3 +1,10 @@
+playstash (17.3.2) unstable; urgency=medium
+
+  * Publish the independently deployed web frontend as its own public AMD64/ARM64 container image with checked stable and development channels.
+  * Preserve immutable version images and verify runtime, anonymous pulls, provenance and all vulnerability severities before channel promotion.
+
+ -- PlayStash Maintainers <maintainers@playstash.invalid>  Fri, 16 Oct 2026 00:00:00 +0000
+
 playstash (17.3.1) unstable; urgency=medium
 
   * Read bundled Ludusavi manifests from the selected game's actual installation folder for cloud save and configuration backups.

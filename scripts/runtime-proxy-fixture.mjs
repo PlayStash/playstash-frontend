@@ -11,6 +11,8 @@ function inspect(request) {
     realIp: request.headers["x-real-ip"],
     forwarded: request.headers.forwarded,
     forwardedPort: request.headers["x-forwarded-port"],
+    authorization: request.headers.authorization,
+    cookie: request.headers.cookie,
   };
 }
 let uploadBytes = 0;
