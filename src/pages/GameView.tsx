@@ -712,9 +712,11 @@ export default function GameView() {
   );
 
   // Derive additional metadata fields
-  const releaseYear = game?.release_date
-    ? formatYear(game.release_date)
-    : (game as any)?.metadata?.release_year || null;
+  // The merged metadata (provider data and admin edits) knows the real
+  // release date; the game's own date is only parsed from the file name.
+  const releaseDate =
+    (game as any)?.metadata?.release_date || game?.release_date || null;
+  const releaseYear = releaseDate ? formatYear(releaseDate) : null;
   const versionTag = game?.version || (game as any)?.metadata?.version || null;
   const websites: string[] = (game as any)?.metadata?.url_websites || [];
   const devNames: string[] = ((game as any)?.metadata?.developers || [])
