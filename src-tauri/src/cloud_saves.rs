@@ -21,7 +21,7 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
 use tauri::Manager;
 
 pub(crate) const SETTINGS_SECTION: &str = "cloudsaves";
@@ -34,6 +34,9 @@ const LEGACY_ARCHIVE_PASSWORD: &[u8] = b"PlayStash-no-password";
 /// A Ludusavi match is accepted only above this score.
 const MATCH_THRESHOLD: f64 = 0.9;
 const GAME_CONFIG_FILE: &str = ".playstash.game.config.json";
+const INSTALLATION_MANIFEST_FILE: &str = ".ludusavi.yaml";
+const INSTALLATION_MANIFEST_SNAPSHOT: &str = "installation-manifest.yaml";
+const MAX_INSTALLATION_MANIFEST_BYTES: u64 = 1024 * 1024;
 const INSTALLATION_ID_KEY: &str = "installationid";
 const UPLOAD_FILE_NAME: &str = "x.zip";
 const UPLOAD_CONTENT_TYPE: &str = "application/x-zip-compressed";
@@ -100,7 +103,6 @@ pub(crate) async fn set_cloud_save_use_primary_manifest(
   let saved = crate::settings::update_section(&app, SETTINGS_SECTION, |settings: &mut CloudSaveSettings| {
     settings.use_primary_manifest = enabled;
   })?;
-  clear_match_cache();
   Ok(saved)
 }
 
@@ -113,7 +115,6 @@ pub(crate) async fn set_cloud_save_custom_manifests(
   let saved = crate::settings::update_section(&app, SETTINGS_SECTION, |settings: &mut CloudSaveSettings| {
     settings.custom_manifests = manifests;
   })?;
-  clear_match_cache();
   Ok(saved)
 }
 
@@ -263,8 +264,7 @@ async fn run_ludusavi(binary: &Path, args: Vec<OsString>) -> Result<std::process
 struct LudusaviConfig {
   redirects: Vec<Redirect>,
   roots: Vec<Root>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  manifest: Option<Manifest>,
+  manifest: Manifest,
 }
 
 #[derive(Serialize)]
@@ -318,8 +318,130 @@ fn join_path(base: &str, child: &str) -> String {
   Path::new(base).join(child).to_string_lossy().to_string()
 }
 
-/// Builds Ludusavi's `config.yaml` (pure, see the golden tests).
+fn is_link_or_reparse(metadata: &fs::Metadata) -> bool {
+  if metadata.file_type().is_symlink() {
+    return true;
+  }
+  #[cfg(windows)]
+  {
+    use std::os::windows::fs::MetadataExt;
+    return metadata.file_attributes() & 0x400 != 0;
+  }
+  #[cfg(not(windows))]
+  false
+}
+
+/// Only opt in a real manifest immediately inside the selected installation.
+/// Missing/relative paths, directory entries and filesystem links are not
+/// automatically trusted as game-provided manifests.
+fn installation_manifest(installation_path: &str) -> Option<PathBuf> {
+  let installation = Path::new(installation_path.trim());
+  if !installation.is_absolute() || installation.components().any(|part| matches!(part, Component::ParentDir)) {
+    return None;
+  }
+  let directory = fs::symlink_metadata(installation).ok()?;
+  if !directory.is_dir() || is_link_or_reparse(&directory) {
+    return None;
+  }
+  let manifest = installation.join(INSTALLATION_MANIFEST_FILE);
+  let metadata = fs::symlink_metadata(&manifest).ok()?;
+  if !metadata.is_file() || is_link_or_reparse(&metadata) {
+    return None;
+  }
+  let actual_installation = fs::canonicalize(installation).ok()?;
+  let actual_manifest = fs::canonicalize(&manifest).ok()?;
+  (actual_manifest.parent() == Some(actual_installation.as_path())).then_some(manifest)
+}
+
+/// Escape the literal installation prefix using globset's bracket escaping.
+/// The remainder of each manifest path keeps its intentional glob patterns.
+fn installation_glob_prefix(installation: &Path) -> String {
+  let rendered = installation.to_string_lossy().to_string();
+  #[cfg(windows)]
+  let rendered = rendered.replace('\\', "/");
+  let mut escaped = String::new();
+  for character in rendered.chars() {
+    match character {
+      '?' | '*' | '[' | ']' | '{' | '}' => {
+        escaped.push('[');
+        escaped.push(character);
+        escaped.push(']');
+      }
+      _ => escaped.push(character),
+    }
+  }
+  escaped
+}
+
+/// Preserve the manifest data while anchoring only file paths to the actual
+/// installation. Ludusavi itself normalizes these same ./ and ../ forms.
+fn normalize_installation_manifest(text: &str, installation: &Path) -> Result<String, String> {
+  let mut document: serde_yaml::Value = serde_yaml::from_str(text)
+    .map_err(|error| format!("Invalid game-local Ludusavi manifest: {error}"))?;
+  let games = document.as_mapping_mut().ok_or("The game-local Ludusavi manifest must contain a game mapping.")?;
+  let base = installation_glob_prefix(installation);
+  for game in games.values_mut() {
+    let game = game.as_mapping_mut().ok_or("Each local Ludusavi game entry must be a mapping.")?;
+    let Some(files) = game.get_mut(&serde_yaml::Value::String("files".into())) else { continue };
+    let files = files.as_mapping_mut().ok_or("Local Ludusavi file rules must be a mapping.")?;
+    let original = std::mem::take(files);
+    for (key, value) in original {
+      let path = key.as_str().ok_or("Local Ludusavi file paths must be strings.")?;
+      let relative = if let Some(rest) = path.strip_prefix("./").or_else(|| path.strip_prefix(".\\")) {
+        format!("<base>/{rest}")
+      } else if let Some(rest) = path.strip_prefix("../").or_else(|| path.strip_prefix("..\\")) {
+        format!("<base>/../{rest}")
+      } else {
+        path.to_string()
+      };
+      files.insert(serde_yaml::Value::String(relative.replace("<base>", &base)), value);
+    }
+  }
+  serde_yaml::to_string(&document).map_err(|error| format!("Failed to prepare the local Ludusavi manifest: {error}"))
+}
+
+fn check_snapshot_destination(path: &Path) -> Result<bool, String> {
+  match fs::symlink_metadata(path) {
+    Ok(metadata) if metadata.is_file() && !is_link_or_reparse(&metadata) => Ok(true),
+    Ok(_) => Err("The generated Ludusavi manifest path is not a regular local file.".into()),
+    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+    Err(error) => Err(format!("Failed to inspect the generated Ludusavi manifest: {error}")),
+  }
+}
+
+/// Called under the Ludusavi lock before every find/preview/backup/restore.
+/// Never add the version parent as a root: its Download/Extraction siblings
+/// can contain competing manifests and would change the selected <base>.
+fn prepare_config_yaml(config_dir: &Path, input: &ConfigInput<'_>) -> Result<String, String> {
+  let local = installation_manifest(input.installation_path);
+  let snapshot = config_dir.join(INSTALLATION_MANIFEST_SNAPSHOT);
+  let existed = check_snapshot_destination(&snapshot)?;
+  if let Some(local) = local.as_ref() {
+    let file = fs::File::open(local).map_err(|error| format!("Failed to read the game-local Ludusavi manifest: {error}"))?;
+    let mut text = String::new();
+    file.take(MAX_INSTALLATION_MANIFEST_BYTES + 1)
+      .read_to_string(&mut text)
+      .map_err(|error| format!("Failed to read the game-local Ludusavi manifest: {error}"))?;
+    if text.len() as u64 > MAX_INSTALLATION_MANIFEST_BYTES {
+      return Err("The game-local Ludusavi manifest exceeds the 1 MiB size limit.".into());
+    }
+    let normalized = normalize_installation_manifest(&text, Path::new(input.installation_path.trim()))?;
+    fs::write(&snapshot, normalized).map_err(|error| format!("Failed to write the generated Ludusavi manifest: {error}"))?;
+    build_config_yaml_with_manifest(input, Some((&snapshot, local)))
+  } else {
+    if existed {
+      fs::remove_file(&snapshot).map_err(|error| format!("Failed to remove a stale generated Ludusavi manifest: {error}"))?;
+    }
+    build_config_yaml(input)
+  }
+}
+
+/// Builds Ludusavi's `config.yaml` without broadening library roots.
 pub(crate) fn build_config_yaml(input: &ConfigInput<'_>) -> Result<String, String> {
+  build_config_yaml_with_manifest(input, None)
+}
+
+fn build_config_yaml_with_manifest(input: &ConfigInput<'_>, local: Option<(&Path, &Path)>) -> Result<String, String> {
   let mut redirects = Vec::new();
   if let Some(prefix) = input.wine_prefix.map(str::trim).filter(|prefix| !prefix.is_empty()) {
     // Saves of a Proton game live in the prefix user's profile. Mapping it
@@ -348,7 +470,7 @@ pub(crate) fn build_config_yaml(input: &ConfigInput<'_>) -> Result<String, Strin
     target: INSTALLATION_TARGET,
   });
 
-  let roots = input
+  let roots: Vec<_> = input
     .roots
     .iter()
     .map(|root| root.trim())
@@ -360,19 +482,34 @@ pub(crate) fn build_config_yaml(input: &ConfigInput<'_>) -> Result<String, Strin
     .collect();
 
   let manifests = clean_manifests(&input.settings.custom_manifests);
-  let manifest = (!manifests.is_empty()).then(|| Manifest {
-    enable: input.settings.use_primary_manifest,
-    secondary: manifests
-      .into_iter()
-      .map(|entry| {
-        if is_manifest_url(&entry) {
-          SecondaryManifest::Url { url: entry, enable: true }
-        } else {
-          SecondaryManifest::Path { path: entry, enable: true }
+  let mut secondary: Vec<_> = manifests
+    .into_iter()
+    .map(|entry| {
+      if is_manifest_url(&entry) {
+        SecondaryManifest::Url { url: entry, enable: true }
+      } else {
+        SecondaryManifest::Path { path: entry, enable: true }
+      }
+    })
+    .collect();
+  if let Some((snapshot, original)) = local {
+    let mut explicit = false;
+    for entry in &mut secondary {
+      if let SecondaryManifest::Path { path, .. } = entry {
+        if Path::new(path) == original {
+          *path = snapshot.to_string_lossy().to_string();
+          explicit = true;
         }
-      })
-      .collect(),
-  });
+      }
+    }
+    if !explicit {
+      secondary.insert(0, SecondaryManifest::Path { path: snapshot.to_string_lossy().to_string(), enable: true });
+    }
+  }
+  let manifest = Manifest {
+    enable: input.settings.use_primary_manifest,
+    secondary,
+  };
 
   serde_yaml::to_string(&LudusaviConfig {
     redirects,
@@ -420,7 +557,7 @@ fn write_config(
 ) -> Result<(), String> {
   let settings = load_settings(app);
   let home = home_dir(app);
-  let yaml = build_config_yaml(&ConfigInput {
+  let yaml = prepare_config_yaml(dir, &ConfigInput {
     home: &home,
     installation_path,
     roots,
@@ -482,39 +619,19 @@ pub(crate) fn parse_find_output(stdout: &str) -> String {
   }
 }
 
-fn match_cache() -> &'static Mutex<HashMap<i64, String>> {
-  static CACHE: OnceLock<Mutex<HashMap<i64, String>>> = OnceLock::new();
-  CACHE.get_or_init(|| Mutex::new(HashMap::new()))
-}
-
-fn clear_match_cache() {
-  if let Ok(mut cache) = match_cache().lock() {
-    cache.clear();
-  }
-}
-
-fn cached_match(game_id: i64) -> Option<String> {
-  match_cache().lock().ok().and_then(|cache| cache.get(&game_id).cloned())
-}
-
 /// Runs `find` (config must be written). Caller holds the Ludusavi lock.
-async fn find_title(binary: &Path, config_dir: &Path, game_id: i64, title: &str) -> Result<String, String> {
-  if let Some(cached) = cached_match(game_id) {
-    return Ok(cached);
-  }
+/// Do not cache results: installation manifests can appear, change or disappear
+/// while the app runs, and game ids are not unique across servers/profiles.
+async fn find_title(binary: &Path, config_dir: &Path, _game_id: i64, title: &str) -> Result<String, String> {
   if title.trim().is_empty() {
     return Ok(String::new());
   }
   let output = run_ludusavi(binary, find_args(config_dir, title)?).await?;
-  let matched = parse_find_output(&String::from_utf8_lossy(&output.stdout));
-  if let Ok(mut cache) = match_cache().lock() {
-    cache.insert(game_id, matched.clone());
-  }
-  Ok(matched)
+  Ok(parse_find_output(&String::from_utf8_lossy(&output.stdout)))
 }
 
 /// The Ludusavi title for a game ("" when Ludusavi has no confident match or
-/// is not bundled). Cached per game for the session.
+/// is not bundled). Re-evaluated using the current installation and profile.
 #[tauri::command]
 pub(crate) async fn cloud_save_match_title(
   app: tauri::AppHandle,
@@ -524,9 +641,6 @@ pub(crate) async fn cloud_save_match_title(
   roots: Option<Vec<String>>,
   profile_key: Option<String>,
 ) -> Result<String, String> {
-  if let Some(cached) = cached_match(game_id) {
-    return Ok(cached);
-  }
   if title.trim().is_empty() {
     return Ok(String::new());
   }
@@ -1479,7 +1593,8 @@ mod tests {
          - kind: bidirectional\n  source: /home/ada\n  target: G:\\playstash\\currentuser\n\
          - kind: bidirectional\n  source: /games/PlayStash/Celeste/Versions/1/Installation\n  target: G:\\playstash\\installation\n\
          roots:\n\
-         - store: other\n  path: {root}\n"
+         - store: other\n  path: {root}\n\
+         manifest:\n  enable: true\n  secondary: []\n"
       )
     );
   }
@@ -1523,6 +1638,194 @@ mod tests {
   }
 
   #[test]
+  fn primary_manifest_can_be_disabled_without_custom_manifests() {
+    let settings = settings(false, &[]);
+    let yaml = build_config_yaml(&ConfigInput {
+      home: "/home/ada",
+      installation_path: "",
+      roots: &[],
+      settings: &settings,
+      wine_prefix: None,
+    })
+    .unwrap();
+    let config: serde_yaml::Value = serde_yaml::from_str(&yaml).unwrap();
+    assert_eq!(config["manifest"]["enable"].as_bool(), Some(false));
+    assert!(config["manifest"]["secondary"].as_sequence().unwrap().is_empty());
+  }
+
+  #[test]
+  fn config_discovers_only_a_present_installation_manifest_and_preserves_custom_sources() {
+    let scratch = ScratchDir::new("installation-manifest");
+    let config_dir = scratch.0.join("config");
+    fs::create_dir_all(&config_dir).unwrap();
+    let root = scratch.0.join("library");
+    let version = root.join("PlayStash").join("A Game").join("Versions").join("1");
+    let installation = version.join("Installation");
+    fs::create_dir_all(&installation).unwrap();
+    fs::create_dir_all(version.join("Download")).unwrap();
+    let local = installation.join(INSTALLATION_MANIFEST_FILE);
+    let custom = scratch.0.join("custom.yaml");
+    fs::write(&custom, "{}").unwrap();
+    // A downloaded/source manifest is not itself an installed game manifest.
+    fs::write(version.join("Download").join(INSTALLATION_MANIFEST_FILE), "{}").unwrap();
+    let settings = settings(false, &[" https://example.com/manifest.yaml ", custom.to_str().unwrap()]);
+    let roots = vec![root.to_string_lossy().to_string()];
+    let input = ConfigInput {
+      home: scratch.0.to_str().unwrap(),
+      installation_path: installation.to_str().unwrap(),
+      roots: &roots,
+      settings: &settings,
+      wine_prefix: None,
+    };
+    let config: serde_yaml::Value = serde_yaml::from_str(&prepare_config_yaml(&config_dir, &input).unwrap()).unwrap();
+    assert_eq!(config["roots"].as_sequence().unwrap().len(), 1);
+    assert_eq!(config["manifest"]["secondary"].as_sequence().unwrap().len(), 2);
+
+    fs::write(&local, "A Game:\n  files: {}\n").unwrap();
+    let config: serde_yaml::Value = serde_yaml::from_str(&prepare_config_yaml(&config_dir, &input).unwrap()).unwrap();
+    assert_eq!(config["manifest"]["enable"].as_bool(), Some(false));
+    let secondary = config["manifest"]["secondary"].as_sequence().unwrap();
+    assert_eq!(secondary.len(), 3);
+    let snapshot = config_dir.join(INSTALLATION_MANIFEST_SNAPSHOT);
+    assert_eq!(secondary[0]["path"].as_str(), snapshot.to_str());
+    assert!(snapshot.is_file());
+    assert_eq!(secondary[1]["url"].as_str(), Some("https://example.com/manifest.yaml"));
+    assert_eq!(secondary[2]["path"].as_str(), custom.to_str());
+    let configured_roots = config["roots"].as_sequence().unwrap();
+    assert_eq!(configured_roots.len(), 1, "Do not discover manifests in Download/Extraction siblings.");
+
+    fs::remove_file(&local).unwrap();
+    let config: serde_yaml::Value = serde_yaml::from_str(&prepare_config_yaml(&config_dir, &input).unwrap()).unwrap();
+    assert_eq!(config["roots"].as_sequence().unwrap().len(), 1);
+    assert_eq!(config["manifest"]["secondary"].as_sequence().unwrap().len(), 2);
+    assert!(!snapshot.exists());
+  }
+
+  #[test]
+  fn installation_manifest_rejects_relative_missing_and_non_file_paths() {
+    assert!(installation_manifest("relative/Installation").is_none());
+    assert!(installation_manifest("").is_none());
+    let scratch = ScratchDir::new("invalid-local-manifest");
+    assert!(installation_manifest(scratch.0.join("missing").to_str().unwrap()).is_none());
+    let installation = scratch.0.join("Installation");
+    fs::create_dir_all(installation.join(INSTALLATION_MANIFEST_FILE)).unwrap();
+    assert!(installation_manifest(installation.to_str().unwrap()).is_none());
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn installation_manifest_rejects_linked_files_and_installations() {
+    use std::os::unix::fs::symlink;
+    let scratch = ScratchDir::new("linked-local-manifest");
+    let installation = scratch.0.join("Installation");
+    fs::create_dir_all(&installation).unwrap();
+    let target = scratch.0.join("unrelated.yaml");
+    fs::write(&target, "{}").unwrap();
+    let manifest = installation.join(INSTALLATION_MANIFEST_FILE);
+    symlink(&target, &manifest).unwrap();
+    assert!(installation_manifest(installation.to_str().unwrap()).is_none());
+    fs::remove_file(&manifest).unwrap();
+    fs::write(&manifest, "{}").unwrap();
+    let linked_installation = scratch.0.join("Linked Installation");
+    symlink(&installation, &linked_installation).unwrap();
+    assert!(installation_manifest(linked_installation.to_str().unwrap()).is_none());
+    assert_eq!(installation_manifest(installation.to_str().unwrap()), Some(manifest));
+  }
+
+  #[test]
+  fn explicitly_configured_installation_manifest_is_not_duplicated() {
+    let scratch = ScratchDir::new("duplicate-local-manifest");
+    let config_dir = scratch.0.join("config");
+    fs::create_dir_all(&config_dir).unwrap();
+    let installation = scratch.0.join("Installation");
+    fs::create_dir_all(&installation).unwrap();
+    let local = installation.join(INSTALLATION_MANIFEST_FILE);
+    fs::write(&local, "{}").unwrap();
+    let settings = settings(true, &[local.to_str().unwrap()]);
+    let yaml = prepare_config_yaml(&config_dir, &ConfigInput {
+      home: scratch.0.to_str().unwrap(),
+      installation_path: installation.to_str().unwrap(),
+      roots: &[],
+      settings: &settings,
+      wine_prefix: None,
+    })
+    .unwrap();
+    let config: serde_yaml::Value = serde_yaml::from_str(&yaml).unwrap();
+    assert_eq!(config["manifest"]["secondary"].as_sequence().unwrap().len(), 1);
+    assert_eq!(config["manifest"]["secondary"][0]["path"].as_str(), config_dir.join(INSTALLATION_MANIFEST_SNAPSHOT).to_str());
+  }
+
+  #[test]
+  fn installation_paths_are_escaped_without_changing_manifest_rules() {
+    let installation = Path::new("/library [edition]/{extras}*/Installation");
+    let input = r#"
+A Game:
+  files:
+    <base>/saves/*.sav:
+      tags: [save]
+      when: [{os: windows, store: steam}]
+    ./settings.json:
+      tags: [config]
+    .\preferences.ini: {tags: [config]}
+    ../shared.dat: {tags: [save]}
+    ..\shared-settings.json: {tags: [config]}
+    <home>/Documents/Game/*.sav: {tags: [save]}
+  registry:
+    HKEY_CURRENT_USER/Software/Game: {tags: [config]}
+  steam: {id: 42}
+"#;
+    let normalized = normalize_installation_manifest(input, installation).unwrap();
+    let document: serde_yaml::Value = serde_yaml::from_str(&normalized).unwrap();
+    let game = &document["A Game"];
+    let files = game["files"].as_mapping().unwrap();
+    let base = "/library [[]edition[]]/[{]extras[}][*]/Installation";
+    for suffix in ["saves/*.sav", "settings.json", "preferences.ini", "../shared.dat", "../shared-settings.json"] {
+      assert!(files.contains_key(&serde_yaml::Value::String(format!("{base}/{suffix}"))), "{suffix}");
+    }
+    let source: serde_yaml::Value = serde_yaml::from_str(input).unwrap();
+    assert_eq!(files[&serde_yaml::Value::String(format!("{base}/saves/*.sav"))], source["A Game"]["files"]["<base>/saves/*.sav"]);
+    assert_eq!(game["registry"], source["A Game"]["registry"]);
+    assert_eq!(game["steam"], source["A Game"]["steam"]);
+    assert_eq!(game["files"]["<home>/Documents/Game/*.sav"], source["A Game"]["files"]["<home>/Documents/Game/*.sav"]);
+  }
+
+  #[test]
+  fn malformed_local_manifest_fails_instead_of_falling_back() {
+    let scratch = ScratchDir::new("malformed-local-manifest");
+    let config_dir = scratch.0.join("config");
+    let installation = scratch.0.join("Installation");
+    fs::create_dir_all(&config_dir).unwrap();
+    fs::create_dir_all(&installation).unwrap();
+    let settings = CloudSaveSettings::default();
+    let input = ConfigInput { home: "", installation_path: installation.to_str().unwrap(), roots: &[], settings: &settings, wine_prefix: None };
+    for malformed in ["[", "[]", "A Game: 42", "A Game: {files: []}"] {
+      fs::write(installation.join(INSTALLATION_MANIFEST_FILE), malformed).unwrap();
+      assert!(prepare_config_yaml(&config_dir, &input).is_err(), "{malformed}");
+    }
+    fs::write(installation.join(INSTALLATION_MANIFEST_FILE), vec![b' '; MAX_INSTALLATION_MANIFEST_BYTES as usize + 1]).unwrap();
+    assert!(prepare_config_yaml(&config_dir, &input).unwrap_err().contains("1 MiB"));
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn generated_manifest_does_not_follow_a_preexisting_link() {
+    use std::os::unix::fs::symlink;
+    let scratch = ScratchDir::new("linked-snapshot");
+    let installation = scratch.0.join("Installation");
+    let config_dir = scratch.0.join("config");
+    fs::create_dir_all(&installation).unwrap();
+    fs::create_dir_all(&config_dir).unwrap();
+    fs::write(installation.join(INSTALLATION_MANIFEST_FILE), "A Game: {files: {}}\n").unwrap();
+    let unrelated = scratch.0.join("unrelated.txt");
+    fs::write(&unrelated, "do not overwrite").unwrap();
+    symlink(&unrelated, config_dir.join(INSTALLATION_MANIFEST_SNAPSHOT)).unwrap();
+    let settings = CloudSaveSettings::default();
+    let input = ConfigInput { home: "", installation_path: installation.to_str().unwrap(), roots: &[], settings: &settings, wine_prefix: None };
+    assert!(prepare_config_yaml(&config_dir, &input).is_err());
+    assert_eq!(fs::read_to_string(&unrelated).unwrap(), "do not overwrite");
+  }
+
+  #[test]
   fn config_maps_the_proton_prefix_user_first() {
     let settings = CloudSaveSettings::default();
     let yaml = build_config_yaml(&ConfigInput {
@@ -1542,7 +1845,7 @@ mod tests {
     assert!(yaml.starts_with(&format!(
       "redirects:\n- kind: bidirectional\n  source: {source}\n  target: G:\\playstash\\currentuser\n- kind: bidirectional\n  source: /home/ada\n"
     )));
-    assert!(!yaml.contains("manifest:"));
+    assert!(yaml.contains("manifest:\n  enable: true\n  secondary: []\n"));
   }
 
   #[test]
@@ -1760,7 +2063,7 @@ mod tests {
       let config = scratch.0.join("config");
       fs::create_dir_all(&config).unwrap();
 
-      let settings = CloudSaveSettings::default();
+      let settings = settings(false, &[]);
       let mut yaml = build_config_yaml(&ConfigInput {
         home: &home.to_string_lossy(),
         installation_path: &install.to_string_lossy(),
@@ -1771,7 +2074,7 @@ mod tests {
       .unwrap();
       // Offline smoke: no primary manifest, one custom game instead.
       yaml.push_str(&format!(
-        "manifest:\n  enable: false\n  secondary: []\ncustomGames:\n- name: PlayStash Smoke --help\n  integration: override\n  files:\n  - '{}'\n",
+        "customGames:\n- name: PlayStash Smoke --help\n  integration: override\n  files:\n  - '{}'\n",
         save.to_string_lossy().replace('\\', "/")
       ));
       fs::write(config.join("config.yaml"), yaml).unwrap();
@@ -1805,6 +2108,129 @@ mod tests {
       assert_eq!(fs::read_to_string(&save).unwrap(), "original save");
       let restored_mtime = newest_mtime_ms(&files).unwrap();
       println!("mtime before backup {original_mtime}, after restore {restored_mtime}");
+    });
+  }
+
+  /// Offline regression against the bundled Ludusavi, not a simulated finder:
+  /// only the installed game's manifest describes <base> save/config files.
+  /// Run with the other ignored `cloud_saves::tests::ludusavi*` smoke tests.
+  #[test]
+  #[ignore]
+  fn ludusavi_installation_manifest_smoke() {
+    let binary = resolve_ludusavi().expect("run `pnpm ludusavi:build` first");
+    tauri::async_runtime::block_on(async {
+      let scratch = ScratchDir::new("installed-manifest-smoke");
+      let title = "PlayStash Installation Manifest Smoke";
+      let root = scratch.0.join("library [edition]");
+      let installation = root.join("PlayStash").join(title).join("Versions").join("1").join("Installation");
+      fs::create_dir_all(installation.join("saves")).unwrap();
+      let save = installation.join("saves").join("slot1.sav");
+      let options = installation.join("settings.json");
+      fs::write(&save, "original game save").unwrap();
+      fs::write(&options, r#"{"volume":42}"#).unwrap();
+
+      // A separately configured user's manifest remains available throughout.
+      let custom_title = "Independently configured user fixture";
+      let custom_save = scratch.0.join("custom-save.dat");
+      fs::write(&custom_save, "custom save").unwrap();
+      let custom = scratch.0.join("custom.yaml");
+      let custom_data = serde_json::json!({
+        (custom_title): { "files": { (custom_save.to_string_lossy().replace('\\', "/")): { "tags": ["save"] } } }
+      });
+      fs::write(&custom, serde_yaml::to_string(&custom_data).unwrap()).unwrap();
+      let settings = settings(false, &[custom.to_str().unwrap()]);
+      let roots = vec![root.to_string_lossy().to_string()];
+      let input = ConfigInput {
+        home: scratch.0.to_str().unwrap(),
+        installation_path: installation.to_str().unwrap(),
+        roots: &roots,
+        settings: &settings,
+        wine_prefix: None,
+      };
+      let config = scratch.0.join("profile").join("cloudsave");
+      fs::create_dir_all(&config).unwrap();
+      // No network or built-in game data is needed for these tests.
+      fs::write(config.join("manifest.yaml"), "{}\n").unwrap();
+      fs::write(config.join("config.yaml"), prepare_config_yaml(&config, &input).unwrap()).unwrap();
+      assert!(find_title(&binary, &config, 77, title).await.unwrap().is_empty());
+      assert_eq!(find_title(&binary, &config, 88, custom_title).await.unwrap(), custom_title);
+
+      let local = installation.join(INSTALLATION_MANIFEST_FILE);
+      let write_local = |name: &str| {
+        let data = serde_json::json!({
+          (name): {
+            "files": {
+              "<base>/saves": { "tags": ["save"] },
+              "<base>/settings.json": { "tags": ["config"] }
+            }
+          }
+        });
+        fs::write(&local, serde_yaml::to_string(&data).unwrap()).unwrap();
+      };
+      write_local(title);
+      // Download/extraction copies commonly contain the same bundled manifest.
+      // None of their stale files may become this installation's <base>.
+      for sibling in ["Download", "Extraction"] {
+        let sibling = installation.parent().unwrap().join(sibling);
+        fs::create_dir_all(sibling.join("saves")).unwrap();
+        fs::write(sibling.join("saves").join("slot1.sav"), "stale source save").unwrap();
+        fs::write(sibling.join("settings.json"), r#"{"volume":99}"#).unwrap();
+        fs::copy(&local, sibling.join(INSTALLATION_MANIFEST_FILE)).unwrap();
+      }
+      fs::write(config.join("config.yaml"), prepare_config_yaml(&config, &input).unwrap()).unwrap();
+      assert!(fs::read_to_string(&local).unwrap().contains("<base>"), "Keep the game's original manifest unchanged.");
+      // The same game id previously had no match. A new file must work now,
+      // and a different title must not inherit a cached positive match.
+      assert_eq!(find_title(&binary, &config, 77, title).await.unwrap(), title);
+      assert!(find_title(&binary, &config, 77, "An Unrelated Different Game").await.unwrap().is_empty());
+      assert_eq!(find_title(&binary, &config, 88, custom_title).await.unwrap(), custom_title);
+
+      let preview = run_ludusavi(&binary, preview_args(&config, title, None).unwrap()).await.unwrap();
+      assert!(preview.status.success(), "{}", String::from_utf8_lossy(&preview.stderr));
+      let files = parse_preview_files(&String::from_utf8_lossy(&preview.stdout));
+      println!("installed manifest preview: {files:?}");
+      assert_eq!(files.len(), 2, "{}", String::from_utf8_lossy(&preview.stdout));
+      let actual: std::collections::HashSet<_> = files.iter().map(|path| fs::canonicalize(path).unwrap()).collect();
+      assert!(actual.contains(&fs::canonicalize(&save).unwrap()));
+      assert!(actual.contains(&fs::canonicalize(&options).unwrap()));
+
+      let temp = TempFolder::create().unwrap();
+      let backup = run_ludusavi(&binary, backup_args(&config, &temp.0, title, None).unwrap()).await.unwrap();
+      assert!(backup.status.success(), "{}", String::from_utf8_lossy(&backup.stderr));
+      assert!(find_mapping_file(&temp.0).is_some());
+      let archive = temp.0.join("backup.zip");
+      zip_directory(&temp.0, &archive).unwrap();
+      fs::write(&save, "changed game save").unwrap();
+      fs::write(&options, r#"{"volume":0}"#).unwrap();
+      let unpacked = scratch.0.join("restore");
+      extract_zip(&archive, &unpacked).unwrap();
+      let backup_dir = backup_dir_from_mapping(&unpacked).unwrap();
+      let restored = run_ludusavi(&binary, restore_args(&config, &backup_dir, None)).await.unwrap();
+      assert!(restored.status.success(), "{}", String::from_utf8_lossy(&restored.stderr));
+      assert_eq!(fs::read_to_string(&save).unwrap(), "original game save");
+      assert_eq!(fs::read_to_string(&options).unwrap(), r#"{"volume":42}"#);
+      for sibling in ["Download", "Extraction"] {
+        let sibling = installation.parent().unwrap().join(sibling);
+        assert_eq!(fs::read_to_string(sibling.join("saves").join("slot1.sav")).unwrap(), "stale source save");
+        assert_eq!(fs::read_to_string(sibling.join("settings.json")).unwrap(), r#"{"volume":99}"#);
+      }
+
+      // No stale result after editing/removing the file, nor after switching
+      // to a second profile with the same game id and no local manifest.
+      let replacement_title = "A Wholly Separate Replacement Fixture";
+      write_local(replacement_title);
+      fs::write(config.join("config.yaml"), prepare_config_yaml(&config, &input).unwrap()).unwrap();
+      assert!(find_title(&binary, &config, 77, title).await.unwrap().is_empty());
+      assert_eq!(find_title(&binary, &config, 77, replacement_title).await.unwrap(), replacement_title);
+      fs::remove_file(&local).unwrap();
+      fs::write(config.join("config.yaml"), prepare_config_yaml(&config, &input).unwrap()).unwrap();
+      assert!(find_title(&binary, &config, 77, replacement_title).await.unwrap().is_empty());
+      assert!(!config.join(INSTALLATION_MANIFEST_SNAPSHOT).exists());
+      let other_profile = scratch.0.join("other-profile").join("cloudsave");
+      fs::create_dir_all(&other_profile).unwrap();
+      fs::write(other_profile.join("manifest.yaml"), "{}\n").unwrap();
+      fs::write(other_profile.join("config.yaml"), prepare_config_yaml(&other_profile, &input).unwrap()).unwrap();
+      assert!(find_title(&binary, &other_profile, 77, title).await.unwrap().is_empty());
     });
   }
 }

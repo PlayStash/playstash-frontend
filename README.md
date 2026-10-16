@@ -126,6 +126,21 @@ Generate the keys once with `cargo tauri signer generate -w ~/.tauri/playstash-u
 
 **Cloud saves (Ludusavi)** – the desktop app bundles [Ludusavi](https://github.com/mtkennerly/ludusavi) v0.31.0 as a sidecar, built from source with the security-patched dependency lockfile shared with the Windows client (`tooling/ludusavi/`, see its README). No upstream release binary is used. Run `pnpm ludusavi:build` once (needs rustup, network access and the platform's C toolchain; on Linux also `libxcb-composite0-dev` and `libgtk-3-dev`) to verify the pins, audit the lockfile, compile the sidecar for the host target, smoke-test it and write it to `src-tauri/binaries/`. Pass `--target x86_64-apple-darwin` for the Intel macOS build on a Mac. Debug builds find the sidecar there; the release config (`src-tauri/tauri.release.conf.json`) bundles it with its MIT license, third-party notices generated from the patched dependency graph, and build provenance (`licenses/ludusavi/`), so release builds need the build step first. CI builds it per target with upstream's tests enabled.
 
+Enable `SAVEFILES_ENABLED=true` on the backend and **Settings → Integrations → Cloud Saves → Sync cloud saves** in the desktop app. PlayStash restores before launch and backs up after the game exits while the app is running. Known save and configuration paths come from Ludusavi's primary manifest or your custom manifests.
+
+Starting with 17.3.1, PlayStash also loads an existing `.ludusavi.yaml` directly from the selected game's actual installation folder, including `<Title>/Versions/<Version>/Installation/`. A manifest bundled with the game archive must end up in that installation folder. Its game name must match the title used by PlayStash; the normal confident title matching still applies. For example:
+
+```yaml
+My Game:
+  files:
+    <base>/saves:
+      tags: [save]
+    <base>/settings.json:
+      tags: [config]
+```
+
+`<base>` refers to that game's installation folder. Only existing files are backed up. Automatically loaded game manifests must be regular files of at most 1 MiB; invalid definitions report a sync error. Local game manifests work alongside configured manifest paths/URLs, including when the primary manifest is disabled. This reads declared backup rules; PlayStash does not monitor arbitrary game file accesses or infer backup paths from executables. The browser does not scan local game folders.
+
 **Linux AppImage media support** – `bundle.linux.appimage.bundleMediaFramework` is enabled, which makes the bundler copy the GStreamer plugins installed on the _build machine_ into the AppImage (they end up in `usr/lib/gstreamer-1.0`). A local AppImage build therefore needs `gstreamer1.0-plugins-base`, `gstreamer1.0-plugins-good` and `gstreamer1.0-plugins-bad` installed (the same packages CI installs); without them the AppImage ships without audio/video support and WebKitGTK logs `GStreamer element ... not found`.
 
 Version 17.2 adds game packages/extras and optional ordered addons, shared archive passwords, system requirements and launch profiles, restricted-game controls, versioned saves, game requests/reviews and completed-action metrics. These features use the bundled PlayStash backend 17.1 API contract. Package recipes and local post-install scripts require explicit local selection; addons and save restores require overwrite confirmation.

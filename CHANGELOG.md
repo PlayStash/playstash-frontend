@@ -1,5 +1,15 @@
 # PlayStash Frontend Changelog
 
+## 17.3.1
+
+Status: Released on 2026-10-16.
+
+### Changes
+
+- Desktop cloud saves now read a game's bundled `.ludusavi.yaml` from its actual installation folder, including versioned installations, so its local save and configuration paths are available for automatic and manual backups and restores.
+- Cloud-save detection now picks up added, changed or removed local manifests on the next save action, including after switching installations or profiles.
+- Turning off the primary Ludusavi manifest is now respected even when no custom manifests have been added.
+
 ## 17.3.0
 
 Status: Released on 2026-10-15.

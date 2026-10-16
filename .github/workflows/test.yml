@@ -128,6 +128,14 @@ jobs:
       - name: Build the patched Ludusavi sidecar
         run: node scripts/build-ludusavi.mjs --upstream-tests --target x86_64-unknown-linux-gnu --target-dir "$RUNNER_TEMP/ludusavi-target" --out "$RUNNER_TEMP/ludusavi-out"
 
+      - name: Keep the verified sidecar for native integration tests
+        uses: actions/upload-artifact@v7
+        with:
+          name: ludusavi-linux-test-sidecar
+          path: ${{ runner.temp }}/ludusavi-out/ludusavi-x86_64-unknown-linux-gnu
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Save Ludusavi build cache
         if: success() && steps.ludusavi-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
@@ -140,6 +148,7 @@ jobs:
 
   rust:
     name: Rust tests (Linux)
+    needs: ludusavi
     runs-on: ubuntu-latest
 
     steps:
@@ -153,6 +162,7 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
+            libxcb-composite0-dev \
             patchelf
 
       - name: Setup Rust
@@ -163,6 +173,19 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Download the verified sidecar
+        uses: actions/download-artifact@v8
+        with:
+          name: ludusavi-linux-test-sidecar
+          path: src-tauri/binaries
+
+      - name: Make the test sidecar executable
+        run: chmod +x src-tauri/binaries/ludusavi-x86_64-unknown-linux-gnu
+
       - name: Run Rust tests
         working-directory: src-tauri
         run: cargo test --locked
+
+      - name: Verify real cloud-save backup and restore with local game manifests
+        working-directory: src-tauri
+        run: cargo test --locked --lib cloud_saves::tests::ludusavi -- --ignored --nocapture
