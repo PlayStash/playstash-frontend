@@ -1,8 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasMoreGames,
   isLibraryRefreshDue,
   libraryRefreshLimit,
+  loadedPageCount,
 } from "@/utils/libraryAutoRefresh";
+
+describe("loadedPageCount", () => {
+  it("counts the pages covered by the loaded games", () => {
+    expect(loadedPageCount(0, 50)).toBe(1);
+    expect(loadedPageCount(50, 50)).toBe(1);
+    expect(loadedPageCount(53, 50)).toBe(2);
+    expect(loadedPageCount(100, 50)).toBe(2);
+  });
+});
+
+describe("hasMoreGames", () => {
+  it("is true until every server game is loaded", () => {
+    expect(hasMoreGames(50, 53)).toBe(true);
+    expect(hasMoreGames(53, 53)).toBe(false);
+    expect(hasMoreGames(0, 0)).toBe(false);
+  });
+});
 
 describe("isLibraryRefreshDue", () => {
   it("never refreshes before the first fetch", () => {

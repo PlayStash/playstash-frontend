@@ -1,10 +1,10 @@
 /** Background refresh of the library list while the app stays open. */
 
 /** Refresh at most this often when the window regains focus. */
-export const LIBRARY_FOCUS_REFRESH_MIN_MS = 30_000;
+export const LIBRARY_FOCUS_REFRESH_MIN_MS = 10_000;
 
 /** Refresh this often while the window is visible. */
-export const LIBRARY_INTERVAL_REFRESH_MS = 5 * 60_000;
+export const LIBRARY_INTERVAL_REFRESH_MS = 60_000;
 
 /**
  * Whether a background refresh is due: `lastFetchAt` is the time of the last
@@ -28,4 +28,19 @@ export function libraryRefreshLimit(
   loadedPages: number,
 ): number {
   return limit * Math.max(1, loadedPages);
+}
+
+/**
+ * Pages (of `limit` games) covered by `loadedGames` results. A refresh with a
+ * multiple of the page size counts as that many pages, so the next page
+ * continues exactly after the games already shown.
+ */
+export function loadedPageCount(loadedGames: number, limit: number): number {
+  if (limit <= 0) return 1;
+  return Math.max(1, Math.ceil(loadedGames / limit));
+}
+
+/** Whether the server has games beyond the `loadedGames` already shown. */
+export function hasMoreGames(loadedGames: number, totalGames: number): boolean {
+  return loadedGames < totalGames;
 }

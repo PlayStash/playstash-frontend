@@ -17,17 +17,18 @@ import {
 export type { BookmarkFilter, EarlyAccessFilter } from "@/utils/gamesQuery";
 import { onGameDeleted } from "@/utils/gameUpdates";
 import {
+  hasMoreGames,
   isLibraryRefreshDue,
   LIBRARY_FOCUS_REFRESH_MIN_MS,
   LIBRARY_INTERVAL_REFRESH_MS,
   libraryRefreshLimit,
+  loadedPageCount,
 } from "@/utils/libraryAutoRefresh";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface PaginatedData<T> {
   data: T[];
   meta: { totalItems: number };
-  links: { next?: string | null };
 }
 
 export interface UseGamesOptions {
@@ -65,8 +66,6 @@ export interface UseGamesOptions {
 interface CachedGamesState {
   count: number;
   games: PlaystashGame[];
-  next: string | null;
-  loadedPages: number;
 }
 
 // Module-level cache that survives component unmount/remount cycles.
@@ -113,8 +112,6 @@ onGameDeleted((gameId) => {
       setGamesCache(key, {
         count: Math.max(0, state.count - 1),
         games: state.games.filter((g) => g.id !== gameId),
-        next: state.next,
-        loadedPages: state.loadedPages,
       });
     }
   }
@@ -172,11 +169,17 @@ export function useGames({
 
   const [count, setCount] = useState(cached?.count ?? 0);
   const [games, setGames] = useState<PlaystashGame[]>(cached?.games ?? []);
-  const [next, setNext] = useState<string | null>(cached?.next ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const loadedPagesRef = useRef(cached?.loadedPages ?? 0);
+  // Every list load bumps the generation; a page that arrives for an older
+  // list (e.g. after a refresh or filter change) is discarded.
+  const generationRef = useRef(0);
+  // The filters of the list on screen. A fetch for the same filters refreshes
+  // it in place; other filters start over at the first page.
+  const shownKeyRef = useRef<string | null>(cached ? cacheKey : null);
+  const countRef = useRef(count);
+  countRef.current = count;
   const cacheKeyRef = useRef(cacheKey);
   cacheKeyRef.current = cacheKey;
   const gamesRef = useRef<PlaystashGame[]>(games);
@@ -219,10 +222,62 @@ export function useGames({
   developersRef.current = developers;
   publishersRef.current = publishers;
 
+  /** Query for one page of `pageLimit` games with the current filters. */
+  const buildQuery = useCallback(
+    (pageLimit: number, page: number) => {
+      const userId = (user as any)?.id ?? (user as any)?.ID;
+      const params = buildGamesQueryParams({
+        search,
+        sortBy,
+        order,
+        limit: pageLimit,
+        bookmarkFilter,
+        userId,
+        gameTypes: gameTypesRef.current,
+        tags: tagsRef.current,
+        genres: genresRef.current,
+        developers: developersRef.current,
+        publishers: publishersRef.current,
+        gameState,
+        releaseDateFrom,
+        releaseDateTo,
+        earlyAccess,
+        addedSince,
+        libraryFolder,
+        ageRating,
+      });
+      params.set("page", String(page));
+      return params;
+    },
+    // The array filters are read from refs; their serialized keys are the
+    // dependencies.
+    [
+      search,
+      sortBy,
+      order,
+      bookmarkFilter,
+      user,
+      gameTypesKey,
+      tagsKey,
+      genresKey,
+      developersKey,
+      publishersKey,
+      gameState,
+      releaseDateFrom,
+      releaseDateTo,
+      earlyAccess,
+      addedSince,
+      libraryFolder,
+      ageRating,
+    ],
+  );
+
   /**
-   * Loads the list from the server. A silent fetch (background refresh) keeps
-   * the current list on screen, reloads every page already scrolled through
-   * and leaves errors and the loading state untouched.
+   * Loads the list from the server. For the filters already on screen it
+   * reloads every page scrolled through, so the list (and its scroll
+   * position) does not shrink back to the first page; new filters start at
+   * the first page. A silent fetch (background refresh) also leaves errors
+   * and the loading state untouched.
    */
   const fetchGamesWith = useCallback(
     async (silent: boolean) => {
@@ -241,30 +296,15 @@ export function useGames({
         setLoading(true);
         setError(null);
       }
-      const pages = silent ? Math.max(1, loadedPagesRef.current) : 1;
+      const key = cacheKeyRef.current;
+      const sameList = shownKeyRef.current === key;
+      const pages = sameList
+        ? loadedPageCount(gamesRef.current.length, limit)
+        : 1;
+      const generation = ++generationRef.current;
       try {
         const base = serverUrl.replace(/\/+$/, "");
-        const userId = (user as any)?.id ?? (user as any)?.ID;
-        const params = buildGamesQueryParams({
-          search,
-          sortBy,
-          order,
-          limit: libraryRefreshLimit(limit, pages),
-          bookmarkFilter,
-          userId,
-          gameTypes: gameTypesRef.current,
-          tags: tagsRef.current,
-          genres: genresRef.current,
-          developers: developersRef.current,
-          publishers: publishersRef.current,
-          gameState,
-          releaseDateFrom,
-          releaseDateTo,
-          earlyAccess,
-          addedSince,
-          libraryFolder,
-          ageRating,
-        });
+        const params = buildQuery(libraryRefreshLimit(limit, pages), 1);
         const url = `${base}/api/games?${params.toString()}`;
         const res = await authFetch(url, { method: "GET", signal: ac.signal });
         if (!res.ok)
@@ -279,23 +319,18 @@ export function useGames({
         const fetchedGames = (json.data || []).filter(
           (g) => !removedGameIds.has(g.id),
         );
+        if (generation !== generationRef.current) return;
         const fetchedCount = Math.max(
           0,
           json.meta.totalItems - removedGameIds.size,
         );
         setCount(fetchedCount);
         setGames(fetchedGames);
-        setNext(json.links?.next || null);
-        loadedPagesRef.current = pages;
+        shownKeyRef.current = key;
         lastFetchAtRef.current = Date.now();
         // Persist the results to the module-level cache so that navigating
         // away and back (e.g. Library → GameView → back) restores instantly.
-        setGamesCache(cacheKeyRef.current, {
-          count: fetchedCount,
-          games: fetchedGames,
-          next: json.links?.next || null,
-          loadedPages: pages,
-        });
+        setGamesCache(key, { count: fetchedCount, games: fetchedGames });
       } catch (e: any) {
         if (e?.name === "AbortError") return;
         // A failed background refresh keeps the list as it is.
@@ -304,30 +339,7 @@ export function useGames({
         if (!silent) setLoading(false);
       }
     },
-    [
-      serverUrl,
-      authFetch,
-      search,
-      sortBy,
-      order,
-      limit,
-      bookmarkFilter,
-      user,
-      gameTypesKey,
-      tagsKey,
-      genresKey,
-      developersKey,
-      publishersKey,
-      gameState,
-      releaseDateFrom,
-      releaseDateTo,
-      earlyAccess,
-      addedSince,
-      libraryFolder,
-      isOnline,
-      ageRating,
-      enabled,
-    ],
+    [serverUrl, authFetch, limit, buildQuery, isOnline, enabled],
   );
 
   const fetchGames = useCallback(() => fetchGamesWith(false), [fetchGamesWith]);
@@ -359,21 +371,28 @@ export function useGames({
     };
   }, [enabled, fetchGamesWith]);
 
+  const hasMore = hasMoreGames(games.length, count);
+
+  /**
+   * Appends the next page. The URL is built here from the current filters
+   * instead of following the server's absolute `links.next`, which points
+   * at whatever host the server saw (e.g. an internal proxy address) and at
+   * the page size of the last refresh.
+   */
   const loadMore = useCallback(async () => {
-    if (!serverUrl || !next || loading) return;
+    if (!serverUrl || loadingRef.current) return;
+    const loaded = gamesRef.current.length;
+    if (!hasMoreGames(loaded, countRef.current)) return;
+    const generation = generationRef.current;
+    const key = cacheKeyRef.current;
     try {
       setLoading(true);
-      // If next is an absolute URL use it directly; otherwise treat as path or query starting at /api/games
-      let url: string;
-      if (/^https?:\/\//i.test(next)) {
-        url = next;
-      } else {
-        const base = serverUrl.replace(/\/+$/, "");
-        if (next.startsWith("/")) url = `${base}${next}`;
-        else if (next.startsWith("api/")) url = `${base}/${next}`;
-        else url = `${base}/api/games?${next}`;
-      }
-      const res = await authFetch(url, { method: "GET" });
+      const base = serverUrl.replace(/\/+$/, "");
+      const page = loadedPageCount(loaded, limit) + 1;
+      const params = buildQuery(limit, page);
+      const res = await authFetch(`${base}/api/games?${params.toString()}`, {
+        method: "GET",
+      });
       if (!res.ok)
         throw new Error(
           fillTemplate(translate("library.fetchFailed"), {
@@ -381,33 +400,36 @@ export function useGames({
           }),
         );
       const json: PaginatedData<PlaystashGame> = await res.json();
-      setGames((prev) => {
-        const merged = [...prev, ...(json.data || [])].filter(
-          (g) => !removedGameIds.has(g.id),
-        );
-        loadedPagesRef.current += 1;
-        // Persist all loaded pages so infinite-scroll position is preserved
-        // when navigating back to the library.
-        setGamesCache(cacheKeyRef.current, {
-          count,
-          games: merged,
-          next: json.links?.next || null,
-          loadedPages: loadedPagesRef.current,
-        });
-        return merged;
-      });
-      setNext(json.links?.next || null);
+      if (generation !== generationRef.current) return;
+      const fetchedCount = Math.max(
+        0,
+        json.meta.totalItems - removedGameIds.size,
+      );
+      const known = new Set(gamesRef.current.map((g) => g.id));
+      const merged = [
+        ...gamesRef.current,
+        ...(json.data || []).filter(
+          (g) => !removedGameIds.has(g.id) && !known.has(g.id),
+        ),
+      ];
+      setGames(merged);
+      setCount(fetchedCount);
+      // Persist all loaded pages so infinite-scroll position is preserved
+      // when navigating back to the library.
+      setGamesCache(key, { count: fetchedCount, games: merged });
     } catch (e: any) {
       setError(e.message || String(e));
     } finally {
       setLoading(false);
     }
-  }, [serverUrl, authFetch, next, loading]);
+  }, [serverUrl, authFetch, limit, buildQuery]);
 
   useEffect(() => {
-    fetchGames();
+    // The same filters already on screen (restored from the cache or a
+    // re-created callback) refresh quietly; new filters load visibly.
+    void fetchGamesWith(shownKeyRef.current === cacheKeyRef.current);
     return () => abortRef.current?.abort();
-  }, [fetchGames]);
+  }, [fetchGamesWith]);
 
   // Drop a deleted game from the live list as soon as the event fires, so the
   // Library updates without waiting for a refresh.
@@ -426,7 +448,7 @@ export function useGames({
     error,
     refetch: fetchGames,
     loadMore,
-    hasMore: !!next,
+    hasMore,
   };
 }
 

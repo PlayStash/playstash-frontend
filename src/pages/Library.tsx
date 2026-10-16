@@ -672,6 +672,9 @@ export default function Library() {
     if (!hasMore) return;
     const el = sentinelRef.current;
     if (!el) return;
+    // Observe within the library's own scroll container so the margin starts
+    // loading the next page well before the end is reached.
+    const root = el.closest("[data-scroll-container]") as HTMLElement | null;
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -680,7 +683,7 @@ export default function Library() {
           }
         });
       },
-      { root: null, rootMargin: "200px", threshold: 0 },
+      { root, rootMargin: "800px", threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -1566,7 +1569,12 @@ export default function Library() {
         ) : isTauri ? (
           <SectionExpander
             title={fillTemplate(t("library.server.section"), {
-              visible: visibleGames.length,
+              // Only installed games hidden from this list are missing; games
+              // of further pages are still loaded while scrolling.
+              visible: Math.max(
+                0,
+                (count ?? 0) - (games.length - visibleGames.length),
+              ),
               total: count ?? 0,
             })}
             defaultOpen={true}
