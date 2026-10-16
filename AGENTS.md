@@ -29,5 +29,3 @@ When you change code in this repository, you MUST keep `CHANGELOG.md` up to date
    Example:
    `### Thanks`
    `- @some-user`
-
-   Never add the maintainer accounts `@Alfagun74` or `@Yelo420` to the list — they are project maintainers, not contributors.

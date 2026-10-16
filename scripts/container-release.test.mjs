@@ -439,6 +439,7 @@ test("prepared runtime preserves licenses and detects changed/extra web assets",
       "nginx.runtime.conf",
       "start-runtime.sh",
       "LICENSE",
+      "NOTICE",
     ])
       await cp(path.join(root, filename), path.join(fixture, filename));
     await writeFile(
@@ -459,9 +460,10 @@ test("prepared runtime preserves licenses and detects changed/extra web assets",
     await prepareContext(output, stable(), fixture);
     const record = await verifyPublishedAssets(output, { commit, version });
     assert.equal(record.assets.length, 3);
-    assert.match(
-      await readFile(path.join(output, "NOTICE.txt"), "utf8"),
-      /Phalcode/,
+    assert.ok(
+      (await readFile(path.join(output, "NOTICE.txt"), "utf8")).includes(
+        (await readFile(path.join(root, "NOTICE"), "utf8")).trim(),
+      ),
     );
     await writeFile(path.join(output, "dist/unexpected.js"), "tampered");
     await assert.rejects(() => verifyPublishedAssets(output));

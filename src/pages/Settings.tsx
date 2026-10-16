@@ -2495,8 +2495,8 @@ export default function Settings() {
                       </SettingsRow>
                       <AboutLinkRow
                         title={t("settings.about.authors")}
-                        value="Phalcode"
-                        href="https://phalco.de"
+                        value="PlayStash"
+                        href="https://github.com/PlayStash"
                       />
                       <div
                         id="setting-about-license"

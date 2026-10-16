@@ -2,7 +2,7 @@
   "name": "playstash-frontend",
   "version": "17.3.2",
   "description": "the self-hosted gaming platform for drm-free games",
-  "author": "Alkan Alper, Schäfer Philip GbR / Phalcode",
+  "author": "PlayStash",
   "private": true,
   "license": "CC BY-NC-SA 4.0",
   "type": "module",

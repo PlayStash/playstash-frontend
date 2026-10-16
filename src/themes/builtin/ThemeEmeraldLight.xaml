@@ -4,22 +4,22 @@
     <!-- A version number you can use to update your theme -->
     <system:Int32 x:Key="Theme.Version">1</system:Int32>
     <!-- Theme File Name Convention is Theme+YourThemeName+Dark/Light (e.g. ThemeOceanLight) -->
-    <system:String x:Key="Theme.Name">ThemePhalcodeDark</system:String>
+    <system:String x:Key="Theme.Name">ThemeEmeraldLight</system:String>
     <!-- Ideally your GitHub Username -->
-    <system:String x:Key="Theme.Author">Phalcode</system:String>
+    <system:String x:Key="Theme.Author">PlayStash</system:String>
     <!-- Describe this theme -->
-    <system:String x:Key="Theme.Description">A dark theme aligned with our Phalcode brand.</system:String>
+    <system:String x:Key="Theme.Description">A light theme with emerald green accents.</system:String>
     <!-- How the theme will be shown in UI -->
-    <system:String x:Key="Theme.DisplayName">Phalcode (Dark)</system:String>
+    <system:String x:Key="Theme.DisplayName">Emerald (Light)</system:String>
 
     <!-- Text Color | On Realtime-Colors this is "Text" -->
-    <Color x:Key="PlayStash.Colors.Foreground">#FFEEF1EF</Color>
+    <Color x:Key="PlayStash.Colors.Foreground">#FF121212</Color>
     <!-- Text Color on top of Primary Color -->
     <Color x:Key="PlayStash.Colors.Foreground2">#FFFFFFFF</Color>
     <!-- Background Color (The one that takes most background space) | On Realtime-Colors this is "Background" -->
-    <Color x:Key="PlayStash.Colors.Background">#FF1C1C1C</Color>
+    <Color x:Key="PlayStash.Colors.Background">#FFFFFFFF</Color>
     <!-- Background Color (for cards and layouts) | On Realtime-Colors this is "Secondary" -->
-    <Color x:Key="PlayStash.Colors.Background2">#FF212121</Color>
+    <Color x:Key="PlayStash.Colors.Background2">#FFDDDDDD</Color>
     <!-- Primary / Accent Color | On Realtime-Colors this is "Primary" -->
     <Color x:Key="PlayStash.Colors.Accent">#FF12AE84</Color>
     <!-- Primary Accent Color with 60% Opacity -->
@@ -31,5 +31,5 @@
     <!-- Border Colors | On Realtime-Colors this is "Accent" -->
     <Color x:Key="PlayStash.Colors.Border">#FF2A5F47</Color>
     <!-- Blur Overlay Color | Usually "White" for Light Themes and "Black" for Dark Themes  -->
-    <Color x:Key="PlayStash.Colors.Blur">Black</Color>
+    <Color x:Key="PlayStash.Colors.Blur">White</Color>
 </ResourceDictionary>

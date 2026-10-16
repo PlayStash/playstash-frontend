@@ -87,14 +87,14 @@ export function useThemeOptions() {
       key: `builtin:${SYSTEM_THEME_ID}`,
       displayName: t("themes.system.name"),
       description: t("themes.system.description"),
-      author: "Phalcode",
+      author: "PlayStash",
       selection: builtinSelection(SYSTEM_THEME_ID, t("themes.system.name")),
     },
     {
       key: `builtin:${CLASSIC_THEME_IDS.system}`,
       displayName: t("themes.classic.name"),
       description: t("themes.classic.description"),
-      author: "Phalcode",
+      author: "PlayStash",
       selection: builtinSelection(
         CLASSIC_THEME_IDS.system,
         t("themes.classic.name"),
@@ -104,7 +104,7 @@ export function useThemeOptions() {
       key: `builtin:${CLASSIC_THEME_IDS.light}`,
       displayName: t("themes.classicLight.name"),
       description: t("themes.classicLight.description"),
-      author: "Phalcode",
+      author: "PlayStash",
       selection: builtinSelection(
         CLASSIC_THEME_IDS.light,
         t("themes.classicLight.name"),
@@ -114,7 +114,7 @@ export function useThemeOptions() {
       key: `builtin:${CLASSIC_THEME_IDS.dark}`,
       displayName: t("themes.classicDark.name"),
       description: t("themes.classicDark.description"),
-      author: "Phalcode",
+      author: "PlayStash",
       selection: builtinSelection(
         CLASSIC_THEME_IDS.dark,
         t("themes.classicDark.name"),

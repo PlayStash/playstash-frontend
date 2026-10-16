@@ -163,7 +163,7 @@
   "settings.about.description": "Version, licenses and system information.",
   "settings.about.version.title": "Application Version",
   "settings.about.version.tooltip": "Application version",
-  "settings.about.authors": "Original authors",
+  "settings.about.authors": "Authors",
   "settings.about.license.title": "License",
   "settings.about.metadataProviders": "Metadata Providers",
   "settings.about.openSourceLicenses.title": "Open Source Licenses",

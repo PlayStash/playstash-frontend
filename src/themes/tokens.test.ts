@@ -62,7 +62,7 @@ describe("isDarkTheme", () => {
   it("derives the dark class from the background luminance", () => {
     expect(isDarkTheme(colors("ThemeDefaultDark"))).toBe(true);
     expect(isDarkTheme(colors("ThemeDefaultLight"))).toBe(false);
-    expect(isDarkTheme(colors("ThemePhalcodeLight"))).toBe(false);
+    expect(isDarkTheme(colors("ThemeEmeraldLight"))).toBe(false);
     expect(isDarkTheme(colors("ThemeChristmasDark"))).toBe(true);
     expect(isDarkTheme(colors("ThemeHalloweenDark"))).toBe(true);
   });
@@ -70,7 +70,7 @@ describe("isDarkTheme", () => {
 
 describe("theme application", () => {
   it("applies a built-in theme and persists it", async () => {
-    await selectTheme(builtinSelection("ThemePhalcodeLight", "Phalcode (Light)"));
+    await selectTheme(builtinSelection("ThemeEmeraldLight", "Emerald (Light)"));
     const root = document.documentElement;
     expect(root.style.getPropertyValue("--color-ps-accent")).toBe(
       "rgba(18, 174, 132, 1)",
@@ -78,7 +78,7 @@ describe("theme application", () => {
     expect(root.classList.contains("dark")).toBe(false);
     expect(JSON.parse(localStorage.getItem(THEME_STORAGE_KEY)!)).toMatchObject({
       source: "builtin",
-      id: "ThemePhalcodeLight",
+      id: "ThemeEmeraldLight",
     });
     await selectTheme(builtinSelection("ThemeHalloweenDark"));
     expect(root.classList.contains("dark")).toBe(true);

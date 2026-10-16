@@ -8,8 +8,8 @@ import classicDark from "./builtin/ThemeClassicDark.xaml?raw";
 import defaultDark from "./builtin/ThemeDefaultDark.xaml?raw";
 import defaultLight from "./builtin/ThemeDefaultLight.xaml?raw";
 import halloweenDark from "./builtin/ThemeHalloweenDark.xaml?raw";
-import phalcodeDark from "./builtin/ThemePhalcodeDark.xaml?raw";
-import phalcodeLight from "./builtin/ThemePhalcodeLight.xaml?raw";
+import emeraldDark from "./builtin/ThemeEmeraldDark.xaml?raw";
+import emeraldLight from "./builtin/ThemeEmeraldLight.xaml?raw";
 import type { TranslationKey } from "@/i18n";
 import { parseThemeXaml, type ThemeDefinition } from "./xamlTheme";
 
@@ -19,8 +19,8 @@ export const BUILTIN_THEME_SOURCES: ReadonlyArray<[id: string, xaml: string]> =
     ["ThemeDefaultDark", defaultDark],
     ["ThemeDefaultLight", defaultLight],
     ["ThemeClassicDark", classicDark],
-    ["ThemePhalcodeDark", phalcodeDark],
-    ["ThemePhalcodeLight", phalcodeLight],
+    ["ThemeEmeraldDark", emeraldDark],
+    ["ThemeEmeraldLight", emeraldLight],
     ["ThemeHalloweenDark", halloweenDark],
     ["ThemeChristmasDark", christmasDark],
   ];
@@ -41,13 +41,13 @@ export const BUILTIN_THEME_TEXT: Readonly<
     name: "themes.builtin.classicDark.name",
     description: "themes.builtin.classicDark.description",
   },
-  ThemePhalcodeDark: {
-    name: "themes.builtin.phalcodeDark.name",
-    description: "themes.builtin.phalcodeDark.description",
+  ThemeEmeraldDark: {
+    name: "themes.builtin.emeraldDark.name",
+    description: "themes.builtin.emeraldDark.description",
   },
-  ThemePhalcodeLight: {
-    name: "themes.builtin.phalcodeLight.name",
-    description: "themes.builtin.phalcodeLight.description",
+  ThemeEmeraldLight: {
+    name: "themes.builtin.emeraldLight.name",
+    description: "themes.builtin.emeraldLight.description",
   },
   ThemeHalloweenDark: {
     name: "themes.builtin.halloweenDark.name",
@@ -99,4 +99,4 @@ export function isClassicThemeId(id: string): id is ClassicThemeId {
   return (Object.values(CLASSIC_THEME_IDS) as string[]).includes(id);
 }
 
-export const BUILTIN_AUTHOR = "Phalcode";
+export const BUILTIN_AUTHOR = "PlayStash";

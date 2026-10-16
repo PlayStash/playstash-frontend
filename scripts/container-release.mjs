@@ -94,8 +94,11 @@ export async function prepareContext(output, plan, directory = root) {
       (item) => item.path.startsWith("assets/") && item.path.endsWith(".js"),
     ),
   );
+  const attribution = (
+    await readFile(path.join(directory, "NOTICE"), "utf8")
+  ).trim();
   const notices =
-    "PlayStash frontend\nOriginal authors: Alkan Alper, Schäfer Philip GbR / Phalcode.\n" +
+    `PlayStash frontend\n${attribution}\n` +
     "License: CC-BY-NC-SA-4.0; see LICENSE.\n" +
     "Third-party license texts are bundled in the application (Settings > About > Open Source Licenses) and THIRD-PARTY-LICENSES.json.\n";
   await writeFile(path.join(output, "NOTICE.txt"), notices);

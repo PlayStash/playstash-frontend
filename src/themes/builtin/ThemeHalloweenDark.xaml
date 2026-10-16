@@ -10,7 +10,7 @@
     <!-- Theme File Name Convention is Theme+YourThemeName+Dark/Light (e.g. ThemeOceanLight) -->
     <system:String x:Key="Theme.Name">ThemeHalloweenDark</system:String>
     <!-- Ideally your GitHub Username -->
-    <system:String x:Key="Theme.Author">Phalcode</system:String>
+    <system:String x:Key="Theme.Author">PlayStash</system:String>
     <!-- Describe this theme -->
     <system:String x:Key="Theme.Description">A Halloween-themed ambiance to set the mood for horror games in autumn.</system:String>
     <!-- How the theme will be shown in UI -->

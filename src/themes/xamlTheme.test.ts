@@ -60,13 +60,13 @@ describe("parseThemeXaml", () => {
       "Default (Dark)",
       "Default (Light)",
       "Classic (Dark)",
-      "Phalcode (Dark)",
-      "Phalcode (Light)",
+      "Emerald (Dark)",
+      "Emerald (Light)",
       "Halloween (Dark)",
       "Christmas (Dark)",
     ]);
     for (const { definition } of themes) {
-      expect(definition.author).toBe("Phalcode");
+      expect(definition.author).toBe("PlayStash");
       expect(definition.schemaVersion).toBe(1);
       expect(definition.overlay).toBeNull();
       const accent = definition.colors.Accent;

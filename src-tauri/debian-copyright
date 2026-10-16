@@ -3,8 +3,10 @@ Upstream-Name: PlayStash
 Source: https://github.com/PlayStash/playstash-frontend
 
 Files: *
-Copyright: 2023-2026 Phalcode
+Copyright: 2023-2026 PlayStash contributors
 License: CC BY-NC-SA 4.0
+ See /usr/share/doc/playstash/NOTICE for the attribution.
+ .
  PlayStash is licensed under the Creative Commons
  Attribution-NonCommercial-ShareAlike 4.0 International license.
  A human-readable summary and the full legal code are available at:

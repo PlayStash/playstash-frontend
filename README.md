@@ -22,7 +22,7 @@ All PlayStash features are available without a subscription. Administrative acti
 
 This is a fresh PlayStash installation: desktop application data, downloaded games, metadata files, browser settings and caches use PlayStash identifiers.
 
-The original authors remain credited in the package metadata and license notices. The existing software license and third-party notices are preserved.
+See `LICENSE` and `NOTICE`; third-party notices are preserved.
 
 ## Scripts
 
@@ -99,7 +99,7 @@ Only after both architectures pass does publication assemble and verify their in
 
 **One-time GHCR setup:** GitHub initially creates a new package as private. After the first digest candidates exist, a package administrator must set **Package settings → Change visibility → Public** for `playstash-frontend`, then rerun the container workflow. Until anonymous pulls pass, no release channel is promoted. The source repository can remain private. Publication uses the workflow's `GITHUB_TOKEN` with package-write access; deployment servers receive no token and pull the public image anonymously.
 
-`Dockerfile.runtime` serves an already-built `dist/`. Its prepared context contains `dist/`, `Dockerfile.runtime`, `nginx.runtime.conf`, `start-runtime.sh`, `LICENSE`, `NOTICE.txt` and `provenance.json`. The image preserves the license, original-author notice and commit-based asset-hash provenance under `/opt/playstash/frontend/`; the full third-party license catalog is also preserved as `/usr/share/nginx/html/THIRD-PARTY-LICENSES.json`. OCI build provenance and SBOM attestations are attached to the image.
+`Dockerfile.runtime` serves an already-built `dist/`. Its prepared context contains `dist/`, `Dockerfile.runtime`, `nginx.runtime.conf`, `start-runtime.sh`, `LICENSE`, `NOTICE.txt` and `provenance.json`. The image preserves the license, the notice from `NOTICE` and commit-based asset-hash provenance under `/opt/playstash/frontend/`; the full third-party license catalog is also preserved as `/usr/share/nginx/html/THIRD-PARTY-LICENSES.json`. OCI build provenance and SBOM attestations are attached to the image.
 
 For a local source build, use a fresh context directory after the normal frozen install and web build:
 

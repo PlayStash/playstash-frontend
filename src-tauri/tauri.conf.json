@@ -61,6 +61,7 @@
         "section": "games",
         "files": {
           "/usr/share/doc/playstash/copyright": "debian-copyright",
+          "/usr/share/doc/playstash/NOTICE": "../NOTICE",
           "/usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml",
           "/usr/share/doc/playstash/changelog.Debian": "debian-changelog"
         },
@@ -69,6 +70,7 @@
       "rpm": {
         "desktopTemplate": "linux/playstash.desktop.hbs",
         "files": {
+          "/usr/share/doc/playstash/NOTICE": "../NOTICE",
           "/usr/share/metainfo/com.playstash.playstash.metainfo.xml": "linux/com.playstash.playstash.metainfo.xml"
         }
       }

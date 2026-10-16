@@ -39,7 +39,7 @@ Status: Released on 2026-10-15.
 - The desktop app shows a notice when it starts in offline mode and when the server is reachable again, and switches back to online mode reliably.
 - Added an import from the previous PlayStash client for Windows (profiles, settings, request headers, saved sessions, archive passwords and themes), plus adoption of games it installed so they show as installed without a new download.
 - Added "Copy API Key" to the user editor when the server provides the key.
-- Added a theme system with the seven PlayStash desktop themes (Default, Classic, Phalcode, Halloween, Christmas), a System option and the classic web look; the chosen theme applies instantly.
+- Added a theme system with the seven PlayStash desktop themes (Default, Classic, Emerald, Halloween, Christmas), a System option and the classic web look; the chosen theme applies instantly.
 - Added custom theme files (validated XAML) with a theme folder, reload and uninstall on desktop, theme file import on the web, overlay images, community themes from GitHub and a "Create a Theme" generator that exports and applies new themes.
 - Added a desktop startup sound (up to 20 MB, played at half volume for at most 10 seconds after login).
 - Added "Auto-Load Library from Server on Startup" and "Retain Sorting and Filter preferences after restart" settings.
@@ -163,11 +163,11 @@ Status: Released on 2026-10-13. This version marks the fresh PlayStash source ba
 - Release retries resume existing drafts even before their version tags are published; inaccessible release data stops publication.
 - Corrected corrupted punctuation on the sign-in and registration screens.
 - Added desktop and browser SSO, refreshed download artwork and improved freeze recovery.
-- [#21](https://github.com/Phalcode/gamevault-frontend/issues/21) Kept native video controls accessible while browsing trailers.
-- [#17](https://github.com/Phalcode/gamevault-frontend/issues/17) Added platform/install-type badges to game covers.
-- [#7](https://github.com/Phalcode/gamevault-frontend/issues/7) Added a collapsible list of games added in the last seven days.
-- [#24](https://github.com/Phalcode/gamevault-frontend/issues/24) Added saved library categories using tags and server folders.
-- [#10](https://github.com/Phalcode/gamevault-frontend/issues/10) Added an optional local post-install script with literal installation-folder arguments and visible failure feedback.
+- Kept native video controls accessible while browsing trailers.
+- Added platform/install-type badges to game covers.
+- Added a collapsible list of games added in the last seven days.
+- Added saved library categories using tags and server folders.
+- Added an optional local post-install script with literal installation-folder arguments and visible failure feedback.
 - Show all game website links instead of only the first.
 - Added shared archive passwords, Markdown system requirements and multiple launch profiles.
 - Added package extras, optional installer recipes and ordered addon installation with explicit overwrite confirmation.
@@ -178,9 +178,9 @@ Status: Released on 2026-10-13. This version marks the fresh PlayStash source ba
 - Added versioned save archive uploads, downloads, individual deletion and desktop restore into a chosen save folder.
 - Added a fullscreen Big Picture library shell using the existing controller navigation; Start toggles the mode.
 - Added lobby, game-room and direct chat with retry-safe sending and invisible presence.
-- [#24](https://github.com/Phalcode/gamevault-frontend/issues/24) Added persistent administrator folder-tag rules that apply to existing games and future library imports.
+- Added persistent administrator folder-tag rules that apply to existing games and future library imports.
 - Added recent server logs and a confirmed background refresh of provider metadata to Administration.
-- [#36](https://github.com/Phalcode/gamevault-frontend/issues/36) Improved UMU setup responsiveness, executable discovery, playtime diagnostics and uninstall folder cleanup.
+- Improved UMU setup responsiveness, executable discovery, playtime diagnostics and uninstall folder cleanup.
 
 ### Thanks
 
