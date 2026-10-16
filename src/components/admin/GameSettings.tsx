@@ -110,6 +110,11 @@ type InstalledGameInfo = SettingsInstalledGame;
 
 import { getRootPaths } from "@/utils/rootPaths";
 import { getErrorMessage } from "@/utils/apiError";
+import {
+  ScreenshotStoreError,
+  serverMediaAddress,
+  storeScreenshots,
+} from "@/utils/storeScreenshots";
 import { LibraryMetadataSettings } from "./LibraryMetadataSettings";
 import { GameAccessSettings } from "./GameAccessSettings";
 import { InstallationTab } from "@/components/gameSettings/InstallationTab";
@@ -1154,6 +1159,60 @@ export function GameSettings({
     return mid;
   };
 
+  /** Address of an uploaded image on the connected server. */
+  const mediaUrl = (id: number) => serverMediaAddress(serverUrl ?? "", id);
+
+  /**
+   * Custom screenshots are stored on the server: links to other sites are
+   * downloaded and uploaded as images, so no external link is saved. A link
+   * that cannot be stored stops the save instead of being kept.
+   */
+  const importScreenshots = async (urls: string[]): Promise<string[]> => {
+    try {
+      return await storeScreenshots(urls, {
+        serverUrl: serverUrl ?? "",
+        upload: uploadImage,
+      });
+    } catch (error) {
+      if (!(error instanceof ScreenshotStoreError)) throw error;
+      throw new Error(
+        fillTemplate(t("gameEditor.custom.screenshotImportFailed"), {
+          url: error.url,
+        }),
+      );
+    }
+  };
+
+  const screenshotInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingScreenshots, setUploadingScreenshots] = useState(false);
+  const uploadScreenshotFiles = async (files: File[]) => {
+    if (!files.length) return;
+    setUploadingScreenshots(true);
+    try {
+      const added: string[] = [];
+      for (const file of files) added.push(mediaUrl(await uploadImage(file)));
+      setCustomMetadata((current) => {
+        const existing = current.url_screenshots
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        return {
+          ...current,
+          url_screenshots: [...existing, ...added].join(", "),
+        };
+      });
+    } catch (e: any) {
+      await showAlert({
+        title: t("gameEditor.custom.saveFailed"),
+        description: e?.message || t("gameEditor.custom.saveFailedFallback"),
+        affirmativeText: t("common.ok"),
+      });
+    } finally {
+      setUploadingScreenshots(false);
+      if (screenshotInputRef.current) screenshotInputRef.current.value = "";
+    }
+  };
+
   const saveImages = async () => {
     if (!imagesDirty || savingImages) return;
     setSavingImages(true);
@@ -1530,10 +1589,12 @@ export function GameSettings({
           .map((s) => s.trim())
           .filter(Boolean);
       if (customMetadata.url_screenshots)
-        updateDto.url_screenshots = customMetadata.url_screenshots
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        updateDto.url_screenshots = await importScreenshots(
+          customMetadata.url_screenshots
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        );
 
       const payload: UpdateGameDto = {
         user_metadata: updateDto,
@@ -3306,6 +3367,35 @@ export function GameSettings({
                                 <ArrowUturnLeftIcon className="w-4 h-4" />
                               </button>
                             )}
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            <input
+                              ref={screenshotInputRef}
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              hidden
+                              onChange={(e) =>
+                                void uploadScreenshotFiles(
+                                  Array.from(e.target.files ?? []),
+                                )
+                              }
+                            />
+                            <Button
+                              outline
+                              type="button"
+                              disabled={uploadingScreenshots}
+                              onClick={() =>
+                                screenshotInputRef.current?.click()
+                              }
+                            >
+                              {uploadingScreenshots
+                                ? t("gameEditor.custom.uploadingScreenshots")
+                                : t("gameEditor.custom.uploadScreenshots")}
+                            </Button>
+                            <span className="text-xs text-ps-muted">
+                              {t("gameEditor.custom.screenshotsStoredHint")}
+                            </span>
                           </div>
                         </div>
                       </div>

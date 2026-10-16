@@ -7,6 +7,8 @@ Status: Released on 2026-10-16.
 ### Changes
 
 - The web app shows the "Server Games (X of Y)" heading above the server games, like the desktop app; previously the games followed directly below the recently added games.
+- Screenshots stored on your server are shown on game pages; they load with your session like covers and backgrounds.
+- Game Settings → Custom Metadata stores custom screenshots on the server: an "Upload screenshots" button adds image files, and links to other sites are downloaded and uploaded when you save. A link that cannot be stored stops the save instead of being kept.
 
 ## 17.3.3
 

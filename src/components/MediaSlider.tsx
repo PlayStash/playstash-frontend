@@ -14,12 +14,36 @@ import {
 } from "@heroicons/react/24/solid";
 import { isTauriApp } from "@/utils/tauri";
 import { useTranslation } from "@/i18n";
+import { useAuth } from "@/context/AuthContext";
+import { useAuthMediaUrl } from "@/hooks/useAuthMediaUrl";
+import { serverMediaId } from "@/utils/serverMediaUrl";
 import { fillTemplate } from "@/utils/downloadPipeline";
 import {
   getMediaVolume,
   setMediaVolume,
   youtubeVolumeCommands,
 } from "@/utils/mediaVolume";
+
+/**
+ * A screenshot. Images uploaded to the connected server (`/api/media/<id>`)
+ * need the session, so they load through the authenticated media cache like
+ * covers do; external URLs load directly.
+ */
+function SliderImage({ src, alt }: { src: string; alt: string }) {
+  const { serverUrl } = useAuth();
+  const mediaId = serverMediaId(src, serverUrl);
+  const { url } = useAuthMediaUrl(mediaId, undefined, mediaId != null);
+  const resolved = mediaId != null ? url : src;
+  if (!resolved) return null;
+  return (
+    <img
+      src={resolved}
+      alt={alt}
+      className="absolute inset-0 w-full h-full object-contain"
+      draggable={false}
+    />
+  );
+}
 
 export interface ResolvedStream {
   video: string; // Direct video stream URL (mp4/webm) OR image URL when type === image/placeholder
@@ -300,11 +324,9 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       className={`relative w-full ${aspect} bg-black rounded-3xl overflow-hidden ${className}`}
     >
       {isImageOnly ? (
-        <img
+        <SliderImage
           src={current.poster || current.video}
           alt={current.title || tr("game.media.screenshot")}
-          className="absolute inset-0 w-full h-full object-contain"
-          draggable={false}
         />
       ) : isYT && ytId ? (
         <iframe
