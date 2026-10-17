@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   setSaveFolders: vi.fn(),
   matchCloudSaveTitle: vi.fn(),
   open: vi.fn(),
+  sessionListener: null as null | ((event: any) => void),
 }));
 
 vi.mock("@/utils/tauri", () => ({ isTauriApp: () => true }));
@@ -25,6 +26,12 @@ vi.mock("@/context/AlertDialogContext", () => ({
   useAlertDialog: () => ({ showAlert: vi.fn() }),
 }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ open: mocks.open }));
+vi.mock("@/utils/gameSessions", () => ({
+  onGameSession: async (callback: (event: any) => void) => {
+    mocks.sessionListener = callback;
+    return () => undefined;
+  },
+}));
 vi.mock("@/utils/cloudSaves", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils/cloudSaves")>()),
   getSaveFolders: mocks.getSaveFolders,
@@ -119,4 +126,28 @@ it("uses the server's folders and hides local folder controls", async () => {
     expect.objectContaining({ serverPaths: ["%APPDATA%/Studio/Game"] }),
   );
   expect(screen.queryByText("Choose save folder")).toBeNull();
+});
+
+it("checks the folders again on focus and after the game's session ends", async () => {
+  mocks.getSaveFolders.mockResolvedValue({
+    source: "server",
+    paths: [{ path: "%INSTALLDIR%/game/saves", resolved: "x", exists: false }],
+  });
+  render(<CloudSaveRow game={game} installed={installed} />);
+  expect(await screen.findByText("(not created yet)")).toBeTruthy();
+  const calls = mocks.getSaveFolders.mock.calls.length;
+  mocks.getSaveFolders.mockResolvedValue({
+    source: "server",
+    paths: [{ path: "%INSTALLDIR%/game/saves", resolved: "x", exists: true }],
+  });
+  window.dispatchEvent(new Event("focus"));
+  await vi.waitFor(() =>
+    expect(screen.queryByText("(not created yet)")).toBeNull(),
+  );
+  expect(mocks.getSaveFolders.mock.calls.length).toBeGreaterThan(calls);
+  const afterFocus = mocks.getSaveFolders.mock.calls.length;
+  mocks.sessionListener?.({ gameId: 46, state: "ended", versionDirectory: "" });
+  await vi.waitFor(() =>
+    expect(mocks.getSaveFolders.mock.calls.length).toBeGreaterThan(afterFocus),
+  );
 });

@@ -14,6 +14,7 @@ import { useOnlineStatus } from "@/context/OfflineContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { useTranslation, type TranslationKey } from "@/i18n";
 import { isTauriApp } from "@/utils/tauri";
+import { onGameSession } from "@/utils/gameSessions";
 import {
   CLOUD_SAVES_README_URL,
   backupCloudSave,
@@ -107,13 +108,29 @@ export function CloudSaveRow({
 
   useEffect(() => {
     let cancelled = false;
-    refresh().catch(() => {
-      if (!cancelled) setMatch("");
-    });
+    const update = () =>
+      refresh().catch(() => {
+        if (!cancelled) setMatch("");
+      });
+    void update();
+    // Save folders appear when a game restores or first saves: check again
+    // when a session ends and when the window gets focus again.
+    window.addEventListener("focus", update);
+    let unlisten: (() => void) | undefined;
+    void onGameSession((event) => {
+      if (event.state === "ended" && event.gameId === gameId) void update();
+    })
+      .then((stop) => {
+        if (cancelled) stop();
+        else unlisten = stop;
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", update);
+      unlisten?.();
     };
-  }, [refresh]);
+  }, [refresh, gameId]);
 
   if (!desktop || !installed) return null;
 
@@ -160,6 +177,7 @@ export function CloudSaveRow({
       notifyOutcome({ status: "restoreFailed" });
     } finally {
       setBusy(null);
+      void refresh().catch(() => undefined);
     }
   };
 

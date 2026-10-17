@@ -7,6 +7,8 @@ Status: In development.
 ### Changes
 
 - Cloud saves are on by default (Settings → Integrations → Cloud Saves), so a game's save is restored before it starts and backed up after it exits without enabling them first. A choice made earlier in the settings is kept; launches on servers without save files show no message.
+- Cloud saves of games installed inside the user folder (for example the default `DocumentsPlayStash` library) are stored relative to the installation, so they restore into the game on another PC or library folder instead of the same path below the user profile.
+- The Cloud Saves row on the game page updates by itself when a save folder appears (after a game session and when the window regains focus) instead of showing "not created yet" until the page is reloaded.
 
 ## 17.3.5
 

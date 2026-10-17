@@ -438,6 +438,14 @@ fn prepare_config_yaml(config_dir: &Path, input: &ConfigInput<'_>) -> Result<Str
   }
 }
 
+/// True when `path` is `parent` or lies below it (case-insensitive, either
+/// separator), so a home folder never matches a longer sibling name.
+fn is_inside(path: &str, parent: &str) -> bool {
+  let normalize = |value: &str| value.trim().replace('\\', "/").trim_end_matches('/').to_lowercase();
+  let (path, parent) = (normalize(path), normalize(parent));
+  !parent.is_empty() && (path == parent || path.starts_with(&format!("{parent}/")))
+}
+
 /// Builds Ludusavi's `config.yaml` without broadening library roots.
 pub(crate) fn build_config_yaml(input: &ConfigInput<'_>) -> Result<String, String> {
   build_config_yaml_with_manifest(input, None)
@@ -461,16 +469,26 @@ fn build_config_yaml_with_manifest(input: &ConfigInput<'_>, local: Option<(&Path
       target: CURRENT_USER_TARGET,
     });
   }
-  redirects.push(Redirect {
+  let home = Redirect {
     kind: "bidirectional",
     source: input.home.to_string(),
     target: CURRENT_USER_TARGET,
-  });
-  redirects.push(Redirect {
+  };
+  let installation = Redirect {
     kind: "bidirectional",
     source: input.installation_path.to_string(),
     target: INSTALLATION_TARGET,
-  });
+  };
+  // Ludusavi applies the first matching redirect. A library inside the user
+  // folder (e.g. Documents\PlayStash) must map to the installation target,
+  // or its saves would only restore into the same folder below the profile.
+  if is_inside(input.installation_path, input.home) {
+    redirects.push(installation);
+    redirects.push(home);
+  } else {
+    redirects.push(home);
+    redirects.push(installation);
+  }
 
   let roots: Vec<_> = input
     .roots
@@ -1908,6 +1926,31 @@ mod tests {
       use_primary_manifest: use_primary,
       custom_manifests: manifests.iter().map(|entry| entry.to_string()).collect(),
     }
+  }
+
+  #[test]
+  fn installation_inside_home_maps_to_the_installation_target() {
+    let settings = settings(true, &[]);
+    let config = |installation: &str| -> serde_yaml::Value {
+      serde_yaml::from_str(
+        &build_config_yaml(&ConfigInput {
+          home: "C:\\Users\\Ada",
+          installation_path: installation,
+          roots: &[],
+          settings: &settings,
+          wine_prefix: None,
+        })
+        .unwrap(),
+      )
+      .unwrap()
+    };
+    let inside = config("C:\\Users\\Ada\\Documents\\PlayStash\\PlayStash\\Game\\Versions\\v1\\Installation");
+    assert_eq!(inside["redirects"][0]["target"], INSTALLATION_TARGET);
+    assert_eq!(inside["redirects"][1]["target"], CURRENT_USER_TARGET);
+    let outside = config("D:\\Games\\PlayStash\\Game\\Versions\\v1\\Installation");
+    assert_eq!(outside["redirects"][0]["target"], CURRENT_USER_TARGET);
+    assert!(!is_inside("C:/Users/Ada2/Game", "C:\\Users\\Ada"));
+    assert!(is_inside("c:/users/ada/Game", "C:\\Users\\Ada\\"));
   }
 
   #[test]

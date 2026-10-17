@@ -419,13 +419,13 @@ mod tests {
 
   #[test]
   fn converts_folders_to_placeholders_and_back() {
-    let home = Path::new("C:/Users/Niklas");
+    let home = Path::new("C:/Users/Ada");
     let install = Path::new("D:/PlayStash/Game/Installation");
-    let low = Path::new("C:/Users/Niklas/AppData/LocalLow/PinkySoul/ExquisiteFishing");
+    let low = Path::new("C:/Users/Ada/AppData/LocalLow/PinkySoul/ExquisiteFishing");
     assert_eq!(to_placeholder_path(low, home, install), "%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing");
-    assert_eq!(to_placeholder_path(Path::new("C:/Users/Niklas/AppData/Local/G/Saved"), home, install), "%LOCALAPPDATA%/G/Saved");
+    assert_eq!(to_placeholder_path(Path::new("C:/Users/Ada/AppData/Local/G/Saved"), home, install), "%LOCALAPPDATA%/G/Saved");
     assert_eq!(to_placeholder_path(Path::new("D:/PlayStash/Game/Installation/www/save"), home, install), "%INSTALLDIR%/www/save");
-    assert_eq!(to_placeholder_path(Path::new("C:/Users/Niklas/.game"), home, install), "%USERPROFILE%/.game");
+    assert_eq!(to_placeholder_path(Path::new("C:/Users/Ada/.game"), home, install), "%USERPROFILE%/.game");
     assert_eq!(to_placeholder_path(Path::new("E:/Saves"), home, install), "E:/Saves");
     assert_eq!(expand_placeholder_path("%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing", home, install).unwrap(), home.join("AppData").join("LocalLow").join("PinkySoul/ExquisiteFishing"));
     assert_eq!(expand_placeholder_path("%INSTALLDIR%/save", home, install).unwrap(), install.join("save"));
