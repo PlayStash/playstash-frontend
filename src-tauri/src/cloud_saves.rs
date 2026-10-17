@@ -24,6 +24,8 @@ use std::process::Command;
 use std::sync::OnceLock;
 use tauri::Manager;
 
+use crate::save_paths;
+
 pub(crate) const SETTINGS_SECTION: &str = "cloudsaves";
 /// Redirect targets of the WPF client. Must stay byte-identical so archives
 /// restore across both clients.
@@ -554,6 +556,7 @@ fn write_config(
   installation_path: &str,
   roots: &[String],
   wine_prefix: Option<&str>,
+  custom: Option<&CustomSaveGame>,
 ) -> Result<(), String> {
   let settings = load_settings(app);
   let home = home_dir(app);
@@ -564,7 +567,160 @@ fn write_config(
     settings: &settings,
     wine_prefix,
   })?;
+  let yaml = match custom {
+    Some(custom) => with_custom_game(&yaml, custom)?,
+    None => yaml,
+  };
   fs::write(dir.join("config.yaml"), yaml).map_err(|error| format!("Failed to write the Ludusavi config: {error}"))
+}
+
+/// A game Ludusavi's manifest does not know, defined by its save folders.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CustomSaveGame {
+  /// Ludusavi game name, unique per PlayStash game.
+  pub name: String,
+  /// Ludusavi file rules (see [`save_paths::to_ludusavi_rule`]).
+  pub rules: Vec<String>,
+}
+
+/// Adds `custom` to a generated config as an overriding custom game.
+pub(crate) fn with_custom_game(yaml: &str, custom: &CustomSaveGame) -> Result<String, String> {
+  let mut config: serde_yaml::Value =
+    serde_yaml::from_str(yaml).map_err(|error| format!("Failed to read the Ludusavi config: {error}"))?;
+  let mapping = config.as_mapping_mut().ok_or("The Ludusavi config is not a mapping.")?;
+  let game = serde_yaml::to_value(serde_json::json!({
+    "name": custom.name,
+    "integration": "override",
+    "files": custom.rules,
+    "registry": [],
+  }))
+  .map_err(|error| error.to_string())?;
+  mapping.insert("customGames".into(), serde_yaml::Value::Sequence(vec![game]));
+  serde_yaml::to_string(&config).map_err(|error| format!("Failed to build the Ludusavi config: {error}"))
+}
+
+/// Ludusavi name of a PlayStash game's custom save definition.
+pub(crate) fn custom_game_name(game_id: i64, title: &str) -> String {
+  let title = title.trim();
+  if title.is_empty() {
+    format!("PlayStash #{game_id}")
+  } else {
+    format!("PlayStash #{game_id} {title}")
+  }
+}
+
+/// Save folders of a request: the server's list, else this installation's.
+fn configured_save_paths(request: &CloudSaveRequest) -> Vec<String> {
+  let server: Vec<String> = request.save_paths.iter().map(|path| path.trim().to_string()).filter(|path| !path.is_empty()).collect();
+  if !server.is_empty() {
+    return server;
+  }
+  save_paths::read_local_save_paths(read_game_config(Path::new(&request.version_directory)).as_ref())
+}
+
+fn custom_save_game(request: &CloudSaveRequest, paths: &[String]) -> Option<CustomSaveGame> {
+  let rules: Vec<String> = paths
+    .iter()
+    .filter_map(|path| save_paths::to_ludusavi_rule(path, &request.installation_path))
+    .collect();
+  (!rules.is_empty()).then(|| CustomSaveGame {
+    name: custom_game_name(request.game_id, &request.title),
+    rules,
+  })
+}
+
+/// Merge-writes detected save folders into the installation's game config.
+fn store_local_save_paths(version_dir: &Path, paths: &[String]) -> Result<(), String> {
+  let config_path = version_dir.join(GAME_CONFIG_FILE);
+  let mut config = if config_path.exists() {
+    read_game_config(version_dir).ok_or_else(|| format!("{} is not a JSON object.", config_path.display()))?
+  } else {
+    serde_json::Map::new()
+  };
+  config.insert(save_paths::SAVE_PATHS_KEY.to_string(), serde_json::json!(paths));
+  let text = serde_json::to_string_pretty(&serde_json::Value::Object(config))
+    .map_err(|error| format!("Failed to serialize the game config: {error}"))?;
+  crate::fs_commands::fs_write_text_file(config_path.to_string_lossy().to_string(), text)
+}
+
+/// How the save files of a game are found.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum SaveTarget {
+  /// Ludusavi's manifest knows the game under this title.
+  Manifest(String),
+  /// Custom save folders (configured or detected).
+  Custom(CustomSaveGame),
+  /// Neither: no saves can be backed up.
+  Unknown,
+}
+
+impl SaveTarget {
+  fn title(&self) -> &str {
+    match self {
+      SaveTarget::Manifest(title) => title,
+      SaveTarget::Custom(custom) => &custom.name,
+      SaveTarget::Unknown => "",
+    }
+  }
+  fn custom(&self) -> Option<&CustomSaveGame> {
+    match self {
+      SaveTarget::Custom(custom) => Some(custom),
+      _ => None,
+    }
+  }
+}
+
+/// Resolves where a game's saves are and writes the matching config:
+/// configured folders first, then Ludusavi's manifest, then folders detected
+/// from the engine layout and, after a play session (`session_started_at`),
+/// from the folders it changed. Detected folders are remembered locally.
+/// Call under the Ludusavi lock.
+async fn resolve_save_target(
+  app: &tauri::AppHandle,
+  binary: &Path,
+  dir: &Path,
+  request: &CloudSaveRequest,
+  wine_prefix: Option<&str>,
+  session_started_at: Option<i64>,
+) -> Result<SaveTarget, String> {
+  let installation_path = request.installation_path.trim();
+  if let Some(custom) = custom_save_game(request, &configured_save_paths(request)) {
+    write_config(app, dir, installation_path, &request.roots, wine_prefix, Some(&custom))?;
+    return Ok(SaveTarget::Custom(custom));
+  }
+  write_config(app, dir, installation_path, &request.roots, wine_prefix, None)?;
+  let title = find_title(binary, dir, request.game_id, &request.title).await?;
+  if !title.is_empty() {
+    return Ok(SaveTarget::Manifest(title));
+  }
+  if installation_path.is_empty() || wine_prefix.is_some() {
+    return Ok(SaveTarget::Unknown);
+  }
+  let home = PathBuf::from(home_dir(app));
+  let installation = PathBuf::from(installation_path);
+  let mut detected = {
+    let (home, installation) = (home.clone(), installation.clone());
+    tauri::async_runtime::spawn_blocking(move || save_paths::detect_engine_save_paths(&installation, &home))
+      .await
+      .map_err(|error| error.to_string())?
+  };
+  if detected.is_empty() {
+    if let Some(started) = session_started_at {
+      let hints = save_paths::name_hints(&request.title, &installation);
+      detected = tauri::async_runtime::spawn_blocking(move || save_paths::detect_session_save_paths(&home, &installation, started, &hints))
+        .await
+        .map_err(|error| error.to_string())?;
+    }
+  }
+  let Some(custom) = custom_save_game(request, &detected) else {
+    return Ok(SaveTarget::Unknown);
+  };
+  if let Err(error) = store_local_save_paths(Path::new(&request.version_directory), &detected) {
+    log::warn!("cloud saves: failed to remember the detected save folders: {error}");
+  }
+  log::info!("cloud saves: detected save folders for game {}: {detected:?}", request.game_id);
+  write_config(app, dir, installation_path, &request.roots, wine_prefix, Some(&custom))?;
+  Ok(SaveTarget::Custom(custom))
 }
 
 // ── Title match ─────────────────────────────────────────────────────────────
@@ -640,6 +796,8 @@ pub(crate) async fn cloud_save_match_title(
   installation_path: Option<String>,
   roots: Option<Vec<String>>,
   profile_key: Option<String>,
+  version_directory: Option<String>,
+  save_paths: Option<Vec<String>>,
 ) -> Result<String, String> {
   if title.trim().is_empty() {
     return Ok(String::new());
@@ -647,16 +805,121 @@ pub(crate) async fn cloud_save_match_title(
   let Some(binary) = resolve_ludusavi() else {
     return Ok(String::new());
   };
+  let request = CloudSaveRequest {
+    game_id,
+    title,
+    installation_path: installation_path.unwrap_or_default(),
+    roots: roots.unwrap_or_default(),
+    profile_key,
+    version_directory: version_directory.unwrap_or_default(),
+    save_paths: save_paths.unwrap_or_default(),
+    ..CloudSaveRequest::default()
+  };
   let _guard = ludusavi_lock().lock().await;
-  let dir = config_dir(&app, profile_key.as_deref())?;
-  write_config(
-    &app,
-    &dir,
-    installation_path.as_deref().unwrap_or(""),
-    &roots.unwrap_or_default(),
-    None,
-  )?;
-  find_title(&binary, &dir, game_id, &title).await
+  let dir = config_dir(&app, request.profile_key.as_deref())?;
+  let target = resolve_save_target(&app, &binary, &dir, &request, None, None).await?;
+  Ok(target.title().to_string())
+}
+
+/// Where a game's saves are found: its save folders (placeholder form) and
+/// whether they came from the server, this installation or detection.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SaveFolders {
+  /// `server`, `local` or `detected` (empty `paths` with `none`).
+  pub source: &'static str,
+  pub paths: Vec<SaveFolder>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SaveFolder {
+  /// Placeholder form, e.g. `%LOCALAPPDATALOW%/Studio/Game`.
+  pub path: String,
+  /// The folder on this PC.
+  pub resolved: String,
+  pub exists: bool,
+}
+
+fn describe_folders(app: &tauri::AppHandle, source: &'static str, paths: Vec<String>, installation_path: &str) -> SaveFolders {
+  let home = PathBuf::from(home_dir(app));
+  let installation = PathBuf::from(installation_path.trim());
+  SaveFolders {
+    source,
+    paths: paths
+      .into_iter()
+      .map(|path| {
+        let resolved = save_paths::expand_placeholder_path(path.trim_end_matches("/Save*"), &home, &installation);
+        SaveFolder {
+          exists: resolved.as_ref().is_some_and(|folder| folder.exists()),
+          resolved: resolved.map(|folder| folder.to_string_lossy().to_string()).unwrap_or_default(),
+          path,
+        }
+      })
+      .collect(),
+  }
+}
+
+/// The save folders used for a game (server list, then this installation's)
+/// or, with `detect`, the folders detected from its engine layout.
+#[tauri::command]
+pub(crate) async fn cloud_save_folders(
+  app: tauri::AppHandle,
+  installation_path: String,
+  version_directory: String,
+  server_paths: Option<Vec<String>>,
+  detect: Option<bool>,
+) -> Result<SaveFolders, String> {
+  let server: Vec<String> = server_paths.unwrap_or_default().into_iter().filter(|path| !path.trim().is_empty()).collect();
+  if !server.is_empty() {
+    return Ok(describe_folders(&app, "server", server, &installation_path));
+  }
+  let local = save_paths::read_local_save_paths(read_game_config(Path::new(&version_directory)).as_ref());
+  if !local.is_empty() && !detect.unwrap_or(false) {
+    return Ok(describe_folders(&app, "local", local, &installation_path));
+  }
+  if detect.unwrap_or(false) && !installation_path.trim().is_empty() {
+    let home = PathBuf::from(home_dir(&app));
+    let installation = PathBuf::from(installation_path.trim());
+    let detected = tauri::async_runtime::spawn_blocking(move || save_paths::detect_engine_save_paths(&installation, &home))
+      .await
+      .map_err(|error| error.to_string())?;
+    if !detected.is_empty() {
+      store_local_save_paths(Path::new(&version_directory), &detected)?;
+      return Ok(describe_folders(&app, "detected", detected, &installation_path));
+    }
+  }
+  Ok(SaveFolders { source: "none", paths: Vec::new() })
+}
+
+/// Stores this installation's save folders (chosen folders are converted to
+/// placeholder form). An empty list clears them.
+#[tauri::command]
+pub(crate) async fn cloud_save_set_folders(
+  app: tauri::AppHandle,
+  installation_path: String,
+  version_directory: String,
+  folders: Vec<String>,
+) -> Result<SaveFolders, String> {
+  let home = PathBuf::from(home_dir(&app));
+  let installation = PathBuf::from(installation_path.trim());
+  let mut paths: Vec<String> = Vec::new();
+  for folder in folders.iter().map(|folder| folder.trim()).filter(|folder| !folder.is_empty()) {
+    let path = if folder.starts_with('%') {
+      folder.replace('\\', "/")
+    } else {
+      save_paths::to_placeholder_path(Path::new(folder), &home, &installation)
+    };
+    if save_paths::to_ludusavi_rule(&path, &installation_path).is_none() {
+      return Err(format!("Invalid save folder: {folder}"));
+    }
+    if !paths.iter().any(|known| known.eq_ignore_ascii_case(&path)) {
+      paths.push(path);
+    }
+  }
+  store_local_save_paths(Path::new(&version_directory), &paths)?;
+  let source = if paths.is_empty() { "none" } else { "local" };
+  Ok(describe_folders(&app, source, paths, &installation_path))
 }
 
 // ── Installation identity ───────────────────────────────────────────────────
@@ -1083,6 +1346,12 @@ pub(crate) struct CloudSaveRequest {
   pub roots: Vec<String>,
   /// Profile the Ludusavi config belongs to.
   pub profile_key: Option<String>,
+  /// The game's `save_paths` metadata (placeholder form); override Ludusavi's
+  /// manifest and this installation's folders.
+  pub save_paths: Vec<String>,
+  /// Start of the play session that just ended (Unix ms), so a backup can
+  /// detect the folders it changed when nothing else is known.
+  pub session_started_at: Option<i64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -1103,6 +1372,9 @@ pub(crate) enum CloudSaveStatus {
   KeptLocal,
   /// Ludusavi is not bundled with this build.
   ToolMissing,
+  /// Neither Ludusavi's manifest nor configured or detected folders say
+  /// where the game keeps its saves.
+  NoSaveFolders,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1254,15 +1526,11 @@ async fn backup(app: &tauri::AppHandle, request: &CloudSaveRequest) -> Result<Cl
   {
     let _guard = ludusavi_lock().lock().await;
     let dir = config_dir(app, request.profile_key.as_deref())?;
-    write_config(app, &dir, installation_path, &request.roots, wine_prefix.as_deref())?;
-    let title = find_title(&binary, &dir, request.game_id, &request.title).await?;
-    if title.is_empty() {
-      return Ok(CloudSaveOutcome::failed(
-        CloudSaveStatus::BackupFailed,
-        "Ludusavi has no confident match for this game.",
-      ));
+    let target = resolve_save_target(app, &binary, &dir, request, wine_prefix.as_deref(), request.session_started_at).await?;
+    if target == SaveTarget::Unknown {
+      return Ok(CloudSaveOutcome::new(CloudSaveStatus::NoSaveFolders));
     }
-    let output = run_ludusavi(&binary, backup_args(&dir, &temp.0, &title, wine_prefix.as_deref())?).await?;
+    let output = run_ludusavi(&binary, backup_args(&dir, &temp.0, target.title(), wine_prefix.as_deref())?).await?;
     if !output.status.success() {
       log::warn!(
         "cloud saves: ludusavi backup exited with {}: {}",
@@ -1443,6 +1711,7 @@ async fn restore(app: &tauri::AppHandle, request: &CloudSaveRequest, policy: Res
   let wine_prefix = resolve_wine_prefix(app, request);
   let dir = config_dir(app, request.profile_key.as_deref())?;
   let mut response = Some(response);
+  let mut custom = None;
 
   if policy != RestorePolicy::Overwrite {
     // Ask before overwriting local saves that are newer than the cloud save.
@@ -1450,12 +1719,12 @@ async fn restore(app: &tauri::AppHandle, request: &CloudSaveRequest, policy: Res
     response = None;
     let local = {
       let _guard = ludusavi_lock().lock().await;
-      write_config(app, &dir, installation_path, &request.roots, wine_prefix.as_deref())?;
-      let title = find_title(&binary, &dir, request.game_id, &request.title).await?;
-      if title.is_empty() {
+      let target = resolve_save_target(app, &binary, &dir, request, wine_prefix.as_deref(), None).await?;
+      custom = target.custom().cloned();
+      if target == SaveTarget::Unknown {
         None
       } else {
-        let output = run_ludusavi(&binary, preview_args(&dir, &title, wine_prefix.as_deref())?).await?;
+        let output = run_ludusavi(&binary, preview_args(&dir, target.title(), wine_prefix.as_deref())?).await?;
         newest_mtime_ms(&parse_preview_files(&String::from_utf8_lossy(&output.stdout)))
       }
     };
@@ -1509,7 +1778,7 @@ async fn restore(app: &tauri::AppHandle, request: &CloudSaveRequest, policy: Res
   };
   let output = {
     let _guard = ludusavi_lock().lock().await;
-    write_config(app, &dir, installation_path, &request.roots, wine_prefix.as_deref())?;
+    write_config(app, &dir, installation_path, &request.roots, wine_prefix.as_deref(), custom.as_ref())?;
     run_ludusavi(&binary, restore_args(&dir, &backup_dir, wine_prefix.as_deref())).await?
   };
   if !output.status.success() {
@@ -1572,6 +1841,39 @@ mod tests {
       use_primary_manifest: use_primary,
       custom_manifests: manifests.iter().map(|entry| entry.to_string()).collect(),
     }
+  }
+
+  #[test]
+  fn config_with_a_custom_save_game() {
+    let settings = settings(true, &[]);
+    let yaml = build_config_yaml(&ConfigInput {
+      home: "/home/ada",
+      installation_path: "/games/Fishing",
+      roots: &[],
+      settings: &settings,
+      wine_prefix: None,
+    })
+    .unwrap();
+    let request = CloudSaveRequest {
+      game_id: 46,
+      title: "Exquisite Fishing".into(),
+      installation_path: "/games/Fishing".into(),
+      save_paths: vec!["%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing".into(), " ".into(), "save".into()],
+      ..CloudSaveRequest::default()
+    };
+    let custom = custom_save_game(&request, &configured_save_paths(&request)).unwrap();
+    assert_eq!(custom.name, "PlayStash #46 Exquisite Fishing");
+    let config: serde_yaml::Value = serde_yaml::from_str(&with_custom_game(&yaml, &custom).unwrap()).unwrap();
+    let game = &config["customGames"][0];
+    assert_eq!(game["name"], "PlayStash #46 Exquisite Fishing");
+    assert_eq!(game["integration"], "override");
+    assert_eq!(
+      game["files"],
+      serde_yaml::to_value(vec!["<winLocalAppDataLow>/PinkySoul/ExquisiteFishing", "/games/Fishing/save"]).unwrap()
+    );
+    assert_eq!(config["redirects"][0]["source"], "/home/ada");
+    assert!(custom_save_game(&CloudSaveRequest::default(), &["%BAD%/x".to_string()]).is_none());
+    assert_eq!(custom_game_name(7, " "), "PlayStash #7");
   }
 
   #[test]

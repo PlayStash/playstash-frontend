@@ -36,6 +36,7 @@ mod integrations;
 mod steam;
 mod vdf;
 mod cloud_saves;
+mod save_paths;
 mod database_backup;
 mod game_sessions;
 mod launch_support;
@@ -706,6 +707,8 @@ pub fn run() {
       cloud_saves::set_cloud_save_custom_manifests,
       cloud_saves::get_ludusavi_status,
       cloud_saves::cloud_save_match_title,
+      cloud_saves::cloud_save_folders,
+      cloud_saves::cloud_save_set_folders,
       cloud_saves::get_cloud_save_installation_id,
       cloud_saves::get_cloud_save_installation_ids,
       cloud_saves::cloud_save_backup,

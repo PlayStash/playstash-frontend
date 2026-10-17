@@ -23,6 +23,8 @@ import {
   installedGameTitle,
   listInstalledVersions,
   matchCloudSaveTitle,
+  cloudSaveServerPaths,
+  installedGameSavePaths,
   newestInstalledVersion,
   pendingQueueKey,
   readPendingBackups,
@@ -161,6 +163,7 @@ export function useCloudSaveSync(): void {
       gameId: number,
       versionDirectory?: string,
       automatic = true,
+      sessionStartedAt?: number,
     ): Promise<CloudSaveOutcome | null> => {
       const current = state.current;
       const queueKey = pendingQueueKey(current.serverUrl, current.userId);
@@ -188,6 +191,8 @@ export function useCloudSaveSync(): void {
             serverUrl: current.serverUrl,
             userId: current.userId,
             accessToken,
+            savePaths: await installedGameSavePaths(installed),
+            sessionStartedAt,
           }),
         );
         if (outcome.status === "offline") addPendingBackup(queueKey, gameId);
@@ -203,10 +208,10 @@ export function useCloudSaveSync(): void {
   );
 
   const scheduleBackup = useCallback(
-    (gameId: number, versionDirectory?: string) => {
+    (gameId: number, versionDirectory?: string, sessionStartedAt?: number) => {
       if (!state.current.enabled || gameId <= 0) return;
       if (!deduper.current.shouldRun(gameId)) return;
-      void runBackup(gameId, versionDirectory);
+      void runBackup(gameId, versionDirectory, true, sessionStartedAt);
     },
     [runBackup],
   );
@@ -222,12 +227,18 @@ export function useCloudSaveSync(): void {
         if (!accessToken) return;
         toast("cloudSaves.status.syncing");
         let title = cloudSaveSearchTitle(context.game);
-        if (!title) {
+        let savePaths = cloudSaveServerPaths(context.game);
+        if (!title || !savePaths.length) {
           const installed = await findInstalledVersion(
             context.gameId,
             context.versionDirectory,
           );
-          title = installed ? await installedGameTitle(installed) : "";
+          if (installed) {
+            title ||= await installedGameTitle(installed);
+            if (!savePaths.length) {
+              savePaths = await installedGameSavePaths(installed);
+            }
+          }
         }
         const request = buildCloudSaveRequest({
           gameId: context.gameId,
@@ -238,6 +249,7 @@ export function useCloudSaveSync(): void {
           userId: current.userId,
           accessToken,
           winePrefix: context.umuWinePrefix,
+          savePaths,
         });
         // A hidden window (CLI / jump-list start) cannot ask: keep local.
         const outcome = await restoreWithConflictPrompt(request, {
@@ -264,16 +276,30 @@ export function useCloudSaveSync(): void {
       if (disposed) unlisten();
       else unlisteners.push(unlisten);
     };
+    // Session starts let a backup find the folders the session changed.
+    const startedAt = new Map<number, number>();
     void onGameSession((event) => {
-      if (event.state === "ended") {
-        scheduleBackup(event.gameId, event.versionDirectory);
+      if (event.state === "started") {
+        startedAt.set(event.gameId, Date.now());
+      } else if (event.state === "ended") {
+        const started =
+          startedAt.get(event.gameId) ??
+          Date.now() - ((event.minutes ?? 0) + 1) * 60_000;
+        startedAt.delete(event.gameId);
+        scheduleBackup(event.gameId, event.versionDirectory, started);
       }
     })
       .then(keep)
       .catch(() => undefined);
     void onGameExited((event) => {
       void isTrackerRunning().then((running) => {
-        if (!running) scheduleBackup(event.gameId, event.versionDirectory);
+        if (!running) {
+          scheduleBackup(
+            event.gameId,
+            event.versionDirectory,
+            Date.now() - event.ranMs,
+          );
+        }
       });
     })
       .then(keep)
@@ -301,6 +327,8 @@ export function useCloudSaveSync(): void {
           gameId: context.gameId,
           title,
           installationPath: context.installationPath,
+          versionDirectory: context.versionDirectory,
+          savePaths: installed ? await installedGameSavePaths(installed) : [],
         });
         if (!match) return;
         const confirmed = await current.showAlert({

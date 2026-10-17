@@ -90,6 +90,8 @@
   "gameEditor.custom.umu.gameId": "Game ID (GAMEID)",
   "gameEditor.custom.umu.store": "Store (STORE)",
   "gameEditor.custom.umu.protonPath": "Proton Version (PROTONPATH)",
+  "gameEditor.custom.savePaths": "Save Folders",
+  "gameEditor.custom.savePathsHelp": "One folder per line; cloud saves back it up with all subfolders on every PC. Placeholders: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %LOCALAPPDATALOW%, %DOCUMENTS%, %INSTALLDIR%. Leave empty to use Ludusavi or automatic detection.",
   "gameEditor.custom.installerExecutable": "Default Installer Executable",
   "gameEditor.custom.installerParameters": "Default Installer Parameters",
   "gameEditor.custom.uninstallerExecutable": "Default Uninstaller Executable",

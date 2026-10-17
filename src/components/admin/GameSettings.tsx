@@ -92,7 +92,17 @@ type CustomMetadataForm = {
   tags: string;
   publishers: string;
   developers: string;
+  /** Save folders, one per line (`save_paths`). */
+  save_paths: string;
 };
+
+/** Save folders of a game's metadata (missing on older servers). */
+function metadataSavePaths(metadata: GameMetadata | undefined): string[] {
+  const paths = (metadata as { save_paths?: unknown } | undefined)?.save_paths;
+  return Array.isArray(paths)
+    ? paths.filter((path): path is string => typeof path === "string")
+    : [];
+}
 
 /**
  * umu-launcher defaults for Linux clients (GAMEID/STORE/PROTONPATH).
@@ -228,6 +238,7 @@ export function GameSettings({
     url_trailers: "",
     url_gameplays: "",
     url_screenshots: "",
+    save_paths: "",
   });
 
   const [customMetadata, setCustomMetadata] = useState<CustomMetadataForm>(
@@ -1370,6 +1381,9 @@ export function GameSettings({
       case "umu_proton_path":
         value = metadata?.umu_proton_path || "";
         break;
+      case "save_paths":
+        value = metadataSavePaths(metadata).join("\n");
+        break;
       case "url_websites":
         value = Array.isArray(metadata?.url_websites)
           ? metadata.url_websites.join(", ")
@@ -1470,6 +1484,8 @@ export function GameSettings({
         return metadata?.umu_store || "";
       case "umu_proton_path":
         return metadata?.umu_proton_path || "";
+      case "save_paths":
+        return metadataSavePaths(metadata).join("\n");
       case "url_websites":
         return Array.isArray(metadata?.url_websites)
           ? metadata.url_websites.join(", ")
@@ -1552,6 +1568,12 @@ export function GameSettings({
         updateDto.umu_store = customMetadata.umu_store;
       if (customMetadata.umu_proton_path)
         updateDto.umu_proton_path = customMetadata.umu_proton_path;
+      const savePaths = customMetadata.save_paths
+        .split(/\r?\n/)
+        .map((path) => path.trim())
+        .filter(Boolean);
+      // Like the other fields, an empty input keeps the current folders.
+      if (savePaths.length) updateDto.save_paths = savePaths;
 
       if (customMetadata.url_websites)
         updateDto.url_websites = customMetadata.url_websites
@@ -2958,6 +2980,43 @@ export function GameSettings({
                               )}
                             </div>
                           </div>
+                        </div>
+
+                        {/* Save folders */}
+                        <div>
+                          <label className="block text-sm font-medium text-ps-muted mb-1">
+                            {t("gameEditor.custom.savePaths")}
+                          </label>
+                          <div className="relative">
+                            <textarea
+                              value={customMetadata.save_paths}
+                              onChange={(e) =>
+                                setCustomMetadata({
+                                  ...customMetadata,
+                                  save_paths: e.target.value,
+                                })
+                              }
+                              placeholder={
+                                getWatermark("save_paths") ||
+                                "%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing"
+                              }
+                              rows={2}
+                              className="w-full rounded-md border border-ps-line-strong bg-ps-panel px-3 py-2 font-mono text-xs text-ps-text placeholder:text-ps-muted focus:outline-none focus:ring-2 focus:ring-ps-accent-cool pr-10"
+                            />
+                            {getWatermark("save_paths") && (
+                              <button
+                                type="button"
+                                onClick={() => applyWatermark("save_paths")}
+                                className="absolute right-2 top-2 p-1 text-ps-muted hover:text-ps-text"
+                                title={t("gameEditor.custom.applyCurrent")}
+                              >
+                                <ArrowUturnLeftIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          <p className="mt-1 text-xs text-ps-muted">
+                            {t("gameEditor.custom.savePathsHelp")}
+                          </p>
                         </div>
 
                         {/* Installer Executable */}

@@ -3279,7 +3279,7 @@
   "info": {
     "title": "PlayStash Backend Server",
     "description": "Backend for PlayStash, the self-hosted gaming platform for drm-free games",
-    "version": "17.1.4",
+    "version": "17.1.7",
     "contact": {
       "name": "PlayStash",
       "url": "https://github.com/PlayStash/playstash-backend",
@@ -4171,6 +4171,16 @@
             "description": "Default umu-launcher PROTONPATH for the game, i.e. the Proton build folder name inside compatibilitytools.d.",
             "example": "GE-Proton9-5"
           },
+          "save_paths": {
+            "description": "Folders holding the game's save files, one entry per folder. Clients back them up with their contents and subfolders. Supports %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %LOCALAPPDATALOW%, %DOCUMENTS% and %INSTALLDIR%. An empty array clears the list.",
+            "example": [
+              "%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "publishers": {
             "description": "publishers of the game",
             "type": "array",
@@ -4733,6 +4743,17 @@
             "type": "string",
             "description": "Default umu-launcher PROTONPATH for the game, i.e. the Proton build folder name inside compatibilitytools.d.",
             "example": "GE-Proton9-5"
+          },
+          "save_paths": {
+            "description": "Folders holding the game's save files, one entry per folder. Clients back them up with their contents and subfolders. Supports %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %LOCALAPPDATALOW%, %DOCUMENTS% and %INSTALLDIR%. An empty array clears the list.",
+            "example": [
+              "%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing"
+            ],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "url_screenshots": {
             "description": "URLs of externally hosted screenshots of the game",

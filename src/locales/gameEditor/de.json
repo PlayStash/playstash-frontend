@@ -90,6 +90,8 @@
   "gameEditor.custom.umu.gameId": "Spiel-ID (GAMEID)",
   "gameEditor.custom.umu.store": "Store (STORE)",
   "gameEditor.custom.umu.protonPath": "Proton-Version (PROTONPATH)",
+  "gameEditor.custom.savePaths": "Spielstand-Ordner",
+  "gameEditor.custom.savePathsHelp": "Ein Ordner pro Zeile; Cloud-Spielstände sichern ihn mit allen Unterordnern auf jedem PC. Platzhalter: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %LOCALAPPDATALOW%, %DOCUMENTS%, %INSTALLDIR%. Leer lassen, um Ludusavi oder die automatische Erkennung zu nutzen.",
   "gameEditor.custom.installerExecutable": "Standard-Installationsprogramm",
   "gameEditor.custom.installerParameters": "Standard-Installationsparameter",
   "gameEditor.custom.uninstallerExecutable": "Standard-Deinstallationsprogramm",

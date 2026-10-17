@@ -2,7 +2,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addPendingBackup,
+  buildCloudSaveRequest,
   cloudSaveMessageKey,
+  cloudSaveServerPaths,
+  getSaveFolders,
+  setSaveFolders,
   cloudSaveSearchTitle,
   createBackupDeduper,
   formatTemplate,
@@ -173,5 +177,69 @@ describe("installed versions", () => {
       )?.versionDirectory,
     ).toBe("b");
     expect(newestInstalledVersion([], 1)).toBeUndefined();
+  });
+});
+
+describe("save folders", () => {
+  beforeEach(() => mocks.invoke.mockReset());
+
+  it("reads the server's save folders from game metadata", () => {
+    expect(
+      cloudSaveServerPaths({
+        metadata: { save_paths: ["%APPDATA%/Game", " ", 3 as any] },
+      }),
+    ).toEqual(["%APPDATA%/Game"]);
+    expect(cloudSaveServerPaths({ metadata: null })).toEqual([]);
+    expect(cloudSaveServerPaths(undefined)).toEqual([]);
+  });
+
+  it("sends save folders and the session start with a request", () => {
+    const request = buildCloudSaveRequest({
+      gameId: 46,
+      versionDirectory: "v",
+      installationPath: "i",
+      title: "Exquisite Fishing",
+      serverUrl: "https://games.test/",
+      userId: 1,
+      accessToken: "t",
+      roots: [],
+      profileKey: null,
+      savePaths: ["%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing"],
+      sessionStartedAt: 1234,
+    });
+    expect(request.savePaths).toEqual([
+      "%LOCALAPPDATALOW%/PinkySoul/ExquisiteFishing",
+    ]);
+    expect(request.sessionStartedAt).toBe(1234);
+    expect(request.serverUrl).toBe("https://games.test");
+    expect(
+      buildCloudSaveRequest({ ...request, roots: [], profileKey: null })
+        .sessionStartedAt,
+    ).toBe(1234);
+  });
+
+  it("asks Rust for and stores the folders of an installation", async () => {
+    mocks.invoke.mockResolvedValue({ source: "none", paths: [] });
+    await getSaveFolders({
+      installationPath: "C:/Games/Fishing",
+      versionDirectory: "C:/Games/v1",
+      detect: true,
+    });
+    expect(mocks.invoke).toHaveBeenLastCalledWith("cloud_save_folders", {
+      installationPath: "C:/Games/Fishing",
+      versionDirectory: "C:/Games/v1",
+      serverPaths: [],
+      detect: true,
+    });
+    await setSaveFolders({
+      installationPath: "C:/Games/Fishing",
+      versionDirectory: "C:/Games/v1",
+      folders: ["C:/Users/N/AppData/LocalLow/PinkySoul/ExquisiteFishing"],
+    });
+    expect(mocks.invoke).toHaveBeenLastCalledWith("cloud_save_set_folders", {
+      installationPath: "C:/Games/Fishing",
+      versionDirectory: "C:/Games/v1",
+      folders: ["C:/Users/N/AppData/LocalLow/PinkySoul/ExquisiteFishing"],
+    });
   });
 });

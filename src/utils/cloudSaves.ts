@@ -39,7 +39,8 @@ export type CloudSaveStatus =
   | "offline"
   | "localNewer"
   | "keptLocal"
-  | "toolMissing";
+  | "toolMissing"
+  | "noSaveFolders";
 
 export interface CloudSaveOutcome {
   status: CloudSaveStatus;
@@ -66,6 +67,10 @@ export interface CloudSaveRequest {
   roots: string[];
   /** The login profile; its folder holds the Ludusavi config (Rust). */
   profileKey?: string | null;
+  /** The game's `save_paths` metadata; overrides Ludusavi's manifest. */
+  savePaths?: string[];
+  /** Start of the session that just ended (Unix ms), for folder detection. */
+  sessionStartedAt?: number | null;
 }
 
 const STATUS_MESSAGES: Record<CloudSaveStatus, TranslationKey> = {
@@ -81,6 +86,7 @@ const STATUS_MESSAGES: Record<CloudSaveStatus, TranslationKey> = {
   localNewer: "cloudSaves.status.keptLocal",
   keptLocal: "cloudSaves.status.keptLocal",
   toolMissing: "cloudSaves.status.toolMissing",
+  noSaveFolders: "cloudSaves.status.noSaveFolders",
 };
 
 /**
@@ -113,6 +119,7 @@ export function cloudSaveTone(
     case "settingDisabled":
     case "offline":
     case "toolMissing":
+    case "noSaveFolders":
       return "warning";
     default:
       return "danger";
@@ -238,6 +245,37 @@ export function newestInstalledVersion(
 }
 
 /** Title of an installed game from its cached server data or folder name. */
+/** The game's `save_paths` metadata (folders set on the server). */
+export function cloudSaveServerPaths(
+  game:
+    { metadata?: { save_paths?: string[] | null } | null } | null | undefined,
+): string[] {
+  const paths = game?.metadata?.save_paths;
+  return Array.isArray(paths)
+    ? paths.filter((path) => typeof path === "string" && path.trim())
+    : [];
+}
+
+/** Server save folders of an installed game, from its cached game data. */
+export async function installedGameSavePaths(
+  installed: InstalledGameInfo,
+): Promise<string[]> {
+  const fromMetadata = cloudSaveServerPaths(
+    (installed.cachedMetadata as Parameters<typeof cloudSaveServerPaths>[0]) ??
+      null,
+  );
+  if (fromMetadata.length) return fromMetadata;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const cached = await invoke<string | null>("load_cached_game", {
+      gameId: installed.gameId,
+    });
+    return cached ? cloudSaveServerPaths(JSON.parse(cached)) : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function installedGameTitle(
   installed: InstalledGameInfo,
 ): Promise<string> {
@@ -326,6 +364,8 @@ export async function matchCloudSaveTitle(options: {
   gameId: number;
   title: string;
   installationPath?: string;
+  versionDirectory?: string;
+  savePaths?: string[];
 }): Promise<string> {
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<string>("cloud_save_match_title", {
@@ -334,7 +374,51 @@ export async function matchCloudSaveTitle(options: {
     installationPath: options.installationPath ?? null,
     roots: getRootPaths().map((root) => root.path),
     profileKey: getCurrentProfileId(),
+    versionDirectory: options.versionDirectory ?? null,
+    savePaths: options.savePaths ?? [],
   });
+}
+
+/** A save folder in placeholder form and where it is on this PC. */
+export interface SaveFolder {
+  path: string;
+  resolved: string;
+  exists: boolean;
+}
+
+export interface SaveFolders {
+  source: "server" | "local" | "detected" | "none";
+  paths: SaveFolder[];
+}
+
+/**
+ * The save folders used for an installed game: the server's list, else the
+ * folders remembered for this installation; `detect` re-detects them from
+ * the game's engine layout.
+ */
+export async function getSaveFolders(options: {
+  installationPath: string;
+  versionDirectory: string;
+  serverPaths?: string[];
+  detect?: boolean;
+}): Promise<SaveFolders> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<SaveFolders>("cloud_save_folders", {
+    installationPath: options.installationPath,
+    versionDirectory: options.versionDirectory,
+    serverPaths: options.serverPaths ?? [],
+    detect: options.detect ?? false,
+  });
+}
+
+/** Stores this installation's save folders; an empty list clears them. */
+export async function setSaveFolders(options: {
+  installationPath: string;
+  versionDirectory: string;
+  folders: string[];
+}): Promise<SaveFolders> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<SaveFolders>("cloud_save_set_folders", options);
 }
 
 export function buildCloudSaveRequest(options: {
@@ -348,6 +432,8 @@ export function buildCloudSaveRequest(options: {
   winePrefix?: string | null;
   roots?: string[];
   profileKey?: string | null;
+  savePaths?: string[];
+  sessionStartedAt?: number | null;
 }): CloudSaveRequest {
   return {
     gameId: options.gameId,
@@ -363,6 +449,8 @@ export function buildCloudSaveRequest(options: {
       options.profileKey === undefined
         ? getCurrentProfileId()
         : options.profileKey,
+    savePaths: options.savePaths ?? [],
+    sessionStartedAt: options.sessionStartedAt ?? null,
   };
 }
 
