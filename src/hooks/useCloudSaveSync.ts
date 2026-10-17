@@ -257,7 +257,9 @@ export function useCloudSaveSync(): void {
           confirmUseCloud: (conflict) =>
             current.showAlert(conflictDialog(conflict, current.t)),
         });
-        await report(outcome, false);
+        // Sync is on by default: a server without save files (HTTP 405)
+        // must not interrupt every launch with a message.
+        if (outcome.httpStatus !== 405) await report(outcome, false);
       } catch (error) {
         console.error("Cloud save restore before launch failed:", error);
         await report({ status: "restoreFailed" }, false);

@@ -50,7 +50,7 @@ const PROTON_PREFIX_USER: &str = "steamuser";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub(crate) struct CloudSaveSettings {
-  /// "Sync cloud saves" (default off).
+  /// "Sync cloud saves" (default on; the server may still have them disabled).
   pub enabled: bool,
   /// "Use Primary Manifest" (default on).
   pub use_primary_manifest: bool,
@@ -61,7 +61,7 @@ pub(crate) struct CloudSaveSettings {
 impl Default for CloudSaveSettings {
   fn default() -> Self {
     Self {
-      enabled: false,
+      enabled: true,
       use_primary_manifest: true,
       custom_manifests: Vec::new(),
     }

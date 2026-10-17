@@ -1,5 +1,13 @@
 # PlayStash Frontend Changelog
 
+## 17.3.6
+
+Status: In development.
+
+### Changes
+
+- Cloud saves are on by default (Settings → Integrations → Cloud Saves), so a game's save is restored before it starts and backed up after it exits without enabling them first. A choice made earlier in the settings is kept; launches on servers without save files show no message.
+
 ## 17.3.5
 
 Status: Released on 2026-10-17.

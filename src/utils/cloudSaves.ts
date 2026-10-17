@@ -22,7 +22,7 @@ export interface CloudSaveSettings {
 }
 
 export const DEFAULT_CLOUD_SAVE_SETTINGS: CloudSaveSettings = {
-  enabled: false,
+  enabled: true,
   usePrimaryManifest: true,
   customManifests: [],
 };
