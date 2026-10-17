@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { BookmarkFilter, EarlyAccessFilter, useGames } from "@/hooks/useGames";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { Divider } from "@tw/divider";
 import { Heading } from "@tw/heading";
 import { Input } from "@tw/input";
 import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
@@ -39,6 +38,8 @@ import {
   getInstalledOpen,
   getLibraryRetain,
   isLibraryLoadAllowed,
+  LIBRARY_COVER_SIZE_KEY,
+  LIBRARY_PREFERENCES_EVENT,
   requestLibraryLoad,
   setCoverSize as persistCoverSize,
   setInstalledOpen,
@@ -73,8 +74,7 @@ import { useInstalledGames } from "@/hooks/useInstalledGames";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { SectionExpander } from "@/components/SectionExpander";
 import { RowCountControl } from "@/components/RowCountControl";
-import { motion } from "motion/react";
-import { DURATION_SLOW, EASE_OUT } from "@/lib/motion";
+import "@/styles/library.css";
 import {
   activeFilterCount as computeActiveFilterCount,
   buildInstalledGameMap,
@@ -283,7 +283,12 @@ export default function Library() {
   const ageRatingLoadingRef = useRef(false);
   // Client-side only: hide server cards of installed games (desktop).
   const [hideInstalled, setHideInstalled] = useState(true);
-  const [coverSize, setCoverSizeState] = useState(getCoverSize);
+  const [coverSize, setCoverSizeState] = useState(() => {
+    try {
+      if (localStorage.getItem(LIBRARY_COVER_SIZE_KEY) === null) return 190;
+    } catch {}
+    return getCoverSize();
+  });
   // Auto-load off: server games load after the first search/filter/reload.
   const [loadAllowed, setLoadAllowed] = useState(isLibraryLoadAllowed);
   const [luckyBusy, setLuckyBusy] = useState(false);
@@ -296,6 +301,20 @@ export default function Library() {
   const allowLoad = useCallback(() => {
     requestLibraryLoad();
     setLoadAllowed(true);
+    window.dispatchEvent(new Event("playstash:library-load-requested"));
+  }, []);
+
+  useEffect(() => {
+    const syncLoading = () => setLoadAllowed(isLibraryLoadAllowed());
+    window.addEventListener("playstash:library-load-requested", syncLoading);
+    window.addEventListener(LIBRARY_PREFERENCES_EVENT, syncLoading);
+    return () => {
+      window.removeEventListener(
+        "playstash:library-load-requested",
+        syncLoading,
+      );
+      window.removeEventListener(LIBRARY_PREFERENCES_EVENT, syncLoading);
+    };
   }, []);
 
   // Dialog states
@@ -506,14 +525,15 @@ export default function Library() {
     } catch {}
   }, [sortBy, order]);
 
-  // Initialize from URL (first render)
+  // Reapply links from the persistent rail and browser history, including
+  // navigation between filters while this page stays mounted.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const params = new URL(window.location.href).searchParams;
+    const params = new URLSearchParams(location.search);
 
     const q = params.get("q");
-    if (q) setSearch(q);
+    setSearch(q || "");
 
     const sort = params.get("sort");
     if (sort && SORT_BY.some((o) => o.value === sort)) setSortBy(sort);
@@ -522,51 +542,51 @@ export default function Library() {
     if (ord === "ASC" || ord === "DESC") setOrder(ord);
 
     const bookmarked = params.get("bookmarked");
-    if (bookmarked && isBookmark(bookmarked)) {
-      setBookmarkFilter(bookmarked === "1" ? "mine" : bookmarked);
-    }
+    setBookmarkFilter(
+      bookmarked && isBookmark(bookmarked)
+        ? bookmarked === "1"
+          ? "mine"
+          : bookmarked
+        : "all",
+    );
 
     const types = getParamValues(params, "types").filter(isGameType);
-    if (types.length > 0) {
-      setSelectedGameTypes(
-        types
-          .map((t): FilterItem | null => {
-            const match = GAME_TYPES.find((gt) => gt.value === t);
-            return match ? { id: t, name: translate(match.label) } : null;
-          })
-          .filter((x): x is FilterItem => x !== null),
-      );
-    }
+    setSelectedGameTypes(
+      types
+        .map((t): FilterItem | null => {
+          const match = GAME_TYPES.find((gt) => gt.value === t);
+          return match ? { id: t, name: translate(match.label) } : null;
+        })
+        .filter((x): x is FilterItem => x !== null),
+    );
 
     const tags = getParamValues(params, "tags");
-    if (tags.length > 0) setSelectedTags(tags.map((t) => ({ id: t, name: t })));
+    setSelectedTags(tags.map((t) => ({ id: t, name: t })));
 
     const genres = getParamValues(params, "genres");
-    if (genres.length > 0)
-      setSelectedGenres(genres.map((g) => ({ id: g, name: g })));
+    setSelectedGenres(genres.map((g) => ({ id: g, name: g })));
 
     const developers = getParamValues(params, "developers");
-    if (developers.length > 0)
-      setSelectedDevelopers(developers.map((d) => ({ id: d, name: d })));
+    setSelectedDevelopers(developers.map((d) => ({ id: d, name: d })));
 
     const publishers = getParamValues(params, "publishers");
-    if (publishers.length > 0)
-      setSelectedPublishers(publishers.map((p) => ({ id: p, name: p })));
+    setSelectedPublishers(publishers.map((p) => ({ id: p, name: p })));
 
     const state = params.get("state");
-    if (state && isProgressState(state)) setSelectedGameState(state);
+    setSelectedGameState(state && isProgressState(state) ? state : "");
 
     const after = params.get("releasedAfter");
-    if (after) setReleaseDateFrom(after);
+    setReleaseDateFrom(after || "");
 
     const before = params.get("releasedBefore");
-    if (before) setReleaseDateTo(before);
+    setReleaseDateTo(before || "");
 
     const ea = params.get("earlyAccess");
-    if (ea && isEarlyAccess(ea)) setEarlyAccess(ea);
+    setEarlyAccess(ea && isEarlyAccess(ea) ? ea : "all");
 
     const rating = params.get("ageRating");
-    if (rating && isAgeRatingValue(rating)) setAgeRating(rating);
+    setAgeRating(rating && isAgeRatingValue(rating) ? rating : "all");
+    setLibraryFolder(params.get("folder") || "");
 
     // GameView pills open the Library with that single filter shown.
     if ((location.state as { openFilters?: boolean } | null)?.openFilters) {
@@ -574,7 +594,7 @@ export default function Library() {
     }
 
     urlInitializedRef.current = true;
-  }, [getParamValues, isBookmark, isEarlyAccess, isGameType, isProgressState]);
+  }, [location.search, location.key]);
 
   // Sync all filters into URL search params for shareable links (debounced)
   useEffect(() => {
@@ -640,16 +660,21 @@ export default function Library() {
       if (ageRating !== "all") params.set("ageRating", ageRating);
       else params.delete("ageRating");
 
+      if (libraryFolder.trim()) params.set("folder", libraryFolder.trim());
+      else params.delete("folder");
+
       // Only update URL if it actually changed to avoid rate-limiting errors
       const newUrl = url.toString();
       if (newUrl !== window.location.href) {
         window.history.replaceState({}, "", newUrl);
+        window.dispatchEvent(new Event("playstash:library-location-change"));
       }
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [
     ageRating,
+    libraryFolder,
     bookmarkFilter,
     earlyAccess,
     isGameType,
@@ -842,29 +867,32 @@ export default function Library() {
   const libraryNotLoaded = !!serverUrl && !loadAllowed;
 
   return (
-    <div className="flex min-h-full flex-col gap-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <Heading className="flex items-center gap-3">
-              {t("nav.library")}{" "}
-              {count && <Badge className="ml-1">{count}</Badge>}
-            </Heading>
-            <BigPictureButton />
-            <Text className="max-w-2xl">{t("library.subtitle")}</Text>
-          </div>
+    <div className="ps-library flex min-h-full flex-col">
+      <div className="ps-library-heading">
+        <div>
+          <Heading className="flex flex-wrap items-center gap-3">
+            {t("library.collection.title")}
+            {loadAllowed && !!count && (
+              <Badge>{count.toLocaleString(locale)}</Badge>
+            )}
+          </Heading>
+          <Text>{t("library.subtitle")}</Text>
         </div>
-        <Divider className="border-ps-line/80" />
+        <BigPictureButton />
       </div>
 
-      <section className="surface-panel rounded-3xl p-5 sm:p-6">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto_auto] lg:items-end">
+      <section
+        className="ps-library-toolbar"
+        aria-label={t("library.collection.controls")}
+      >
+        <div className="ps-library-toolbar-grid">
           <div className="w-full lg:col-span-1">
             <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
               {t("common.search")}
             </label>
             <Input
               name="search"
+              aria-label={t("library.search.placeholder")}
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
               clearable
@@ -951,6 +979,7 @@ export default function Library() {
                         })
                       : t("libraryFilters.show")
                 }
+                aria-expanded={showFilters}
                 onClick={() => setShowFilters((s) => !s)}
               >
                 <FunnelIcon className="h-4 w-4 sm:mr-1" />
@@ -977,7 +1006,7 @@ export default function Library() {
         </div>
       </section>
       {showFilters && (
-        <div className="surface-panel mb-2 shrink-0 rounded-3xl animate-[panel-in_0.18s_ease-out]">
+        <div className="ps-library-filters mb-2 shrink-0">
           <div className="px-4 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-5">
             {/* Header with Clear All Filters Button */}
             <div className="flex items-center justify-between mb-4">
@@ -1394,7 +1423,7 @@ export default function Library() {
           </div>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden text-center">
+      <div className="ps-library-content flex-1">
         <LibraryCategories
           storageKey={`playstash_library_categories:${serverUrl}:${user?.id}`}
           tags={tagNames}
@@ -1528,7 +1557,7 @@ export default function Library() {
                   style={{
                     gridTemplateRows: `repeat(${Math.min(installedRows, filteredInstalledGames.length)}, auto)`,
                     gridAutoFlow: "column",
-                    gridAutoColumns: "160px",
+                    gridAutoColumns: "180px",
                   }}
                 >
                   {filteredInstalledGames.map((g) => (
@@ -1586,7 +1615,7 @@ export default function Library() {
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-3/4 rounded-3xl bg-ps-panel-strong motion-safe:animate-pulse"
+                    className="ps-library-skeleton motion-safe:animate-pulse"
                     aria-hidden="true"
                   />
                 ))}
@@ -1616,10 +1645,10 @@ export default function Library() {
                 </div>
               )}
             <div
-              className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(var(--ps-cover-size),1fr))] py-2 pb-8"
+              className="ps-library-grid min-w-0 grid py-2 pb-8"
               style={coverGridStyle}
             >
-              {visibleGames.map((g, i) => {
+              {visibleGames.map((g) => {
                 const installed = installedByGameId.get(g.id);
                 const cardGame = installed
                   ? {
@@ -1634,19 +1663,9 @@ export default function Library() {
                     }
                   : g;
                 return (
-                  <motion.div
-                    key={g.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: Math.min(i * 0.03, 0.3),
-                      duration: DURATION_SLOW,
-                      ease: EASE_OUT,
-                    }}
-                    className="min-w-0"
-                  >
+                  <div key={g.id} className="min-w-0">
                     <GameCard game={cardGame} sortBy={sortBy} />
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>

@@ -1,10 +1,8 @@
 import clsx from "clsx";
 import type { ComponentType, ReactNode } from "react";
+import "@/styles/workspaces.css";
 
-/**
- * Grouped settings list, iOS Settings style: a rounded container with
- * hairline dividers and a small uppercase group caption above it.
- */
+/** A named settings section with a flat, divided list of controls. */
 export function SettingsGroup({
   caption,
   description,
@@ -19,18 +17,12 @@ export function SettingsGroup({
   id?: string;
 }) {
   return (
-    <div className={clsx(className)} id={id}>
-      {caption && (
-        <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-ps-muted">
-          {caption}
-        </p>
-      )}
+    <div className={clsx("settings-group", className)} id={id}>
+      {caption && <p className="settings-group-caption">{caption}</p>}
       {description && (
-        <p className="mb-2 px-1 text-xs leading-5 text-ps-muted">
-          {description}
-        </p>
+        <p className="settings-group-description">{description}</p>
       )}
-      <div className="divide-y divide-ps-line overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong shadow-sm">
+      <div className="settings-group-content divide-y divide-ps-line">
         {children}
       </div>
     </div>
@@ -51,7 +43,7 @@ export function SettingsRow({
     <div
       id={id}
       className={clsx(
-        "flex min-h-12 items-center justify-between gap-x-4 px-4 py-2.5",
+        "settings-row flex min-h-14 flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3",
         className,
       )}
     >
@@ -91,19 +83,13 @@ export function SettingsSectionHeader({
   description?: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-ps-panel-soft text-ps-accent ring-1 ring-ps-line">
+    <div className="settings-section-header">
+      <span>
         <Icon className="size-5" />
       </span>
-      <div className="min-w-0 pt-0.5">
-        <h2 className="text-base font-semibold tracking-[-0.01em] text-ps-text">
-          {title}
-        </h2>
-        {description && (
-          <p className="mt-0.5 text-xs text-ps-muted sm:text-sm">
-            {description}
-          </p>
-        )}
+      <div className="min-w-0">
+        <h2>{title}</h2>
+        {description && <p>{description}</p>}
       </div>
     </div>
   );

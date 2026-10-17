@@ -12,10 +12,7 @@ export const Textarea = forwardRef(function Textarea(
     className?: string;
     textareaClassName?: string;
     resizable?: boolean;
-  } & Omit<
-    Headless.TextareaProps,
-    "as" | "className"
-  >,
+  } & Omit<Headless.TextareaProps, "as" | "className">,
   ref: React.ForwardedRef<HTMLTextAreaElement>,
 ) {
   return (

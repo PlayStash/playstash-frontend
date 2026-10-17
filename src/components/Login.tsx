@@ -628,12 +628,12 @@ export function Login() {
       <>
         {dialogs}
         <div className="grid w-full max-w-md grid-cols-1 gap-6">
-          <div tabIndex={-1} aria-hidden="true">
-            <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
+          <div data-auth-brand tabIndex={-1} aria-hidden="true">
+            <Logo variant="brand" height="h-8" gap="gap-3" />
           </div>
           {(message || error) && (
             <div
-              className="rounded-2xl bg-red-500/10 px-3 py-2 text-sm text-red-500"
+              className="rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-500"
               role="alert"
             >
               {message || error}
@@ -688,19 +688,19 @@ export function Login() {
       <form
         onSubmit={confirmedServer ? onSubmit : handleContinue}
         onKeyDown={handleTrapKey}
-        className="grid w-full max-w-sm grid-cols-1 gap-6"
+        className="grid w-full max-w-md grid-cols-1 gap-6"
       >
-        <div tabIndex={-1} aria-hidden="true">
-          <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
+        <div data-auth-brand tabIndex={-1} aria-hidden="true">
+          <Logo variant="brand" height="h-8" gap="gap-3" />
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2 border-b border-ps-line pb-6">
           <Heading tabIndex={-1}>{t("accounts.signin.title")}</Heading>
           <Text>{t("accounts.signin.description")}</Text>
         </div>
 
         {notice && (
           <div
-            className="rounded-2xl bg-ps-accent/10 px-3 py-2 text-sm text-ps-text"
+            className="rounded-md bg-ps-accent/10 px-3 py-2 text-sm text-ps-text"
             role="status"
           >
             {notice}
@@ -708,7 +708,7 @@ export function Login() {
         )}
 
         {!confirmedServer && !backendServed && (
-          <div className="grid grid-cols-1 gap-6 animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none">
+          <div className="grid grid-cols-1 gap-6">
             <Field>
               <Label>{t("accounts.form.server")}</Label>
               <Input
@@ -737,7 +737,7 @@ export function Login() {
         )}
 
         {confirmedServer && (
-          <div className="grid grid-cols-1 gap-6 animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none">
+          <div className="grid grid-cols-1 gap-6">
             <Field>
               <Label>{t("accounts.form.server")}</Label>
               <div data-slot="control" className="flex gap-2">
@@ -818,7 +818,7 @@ export function Login() {
                 )}
                 {noAuthAvailable && (
                   <div
-                    className="rounded-2xl bg-rose-500/10 px-3 py-2 text-sm text-rose-500"
+                    className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-500"
                     role="alert"
                   >
                     {t("accounts.form.noAuth")}
@@ -826,7 +826,7 @@ export function Login() {
                 )}
                 {shownError && (
                   <div
-                    className="-mt-2 rounded-2xl bg-red-500/10 px-3 py-2 text-sm text-red-500"
+                    className="-mt-2 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-500"
                     role="alert"
                   >
                     {shownError}

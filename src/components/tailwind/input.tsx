@@ -57,7 +57,7 @@ export const Input = forwardRef(function Input(
         // Basic layout
         "relative block w-full",
         // Focus ring
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-2xl after:ring-transparent after:ring-inset sm:focus-within:after:ring-2 sm:focus-within:after:ring-ps-accent-cool",
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-md after:ring-transparent after:ring-inset focus-within:after:ring-2 focus-within:after:ring-ps-accent-cool",
         // Disabled state
         "has-data-disabled:opacity-50",
       ])}
@@ -83,13 +83,13 @@ export const Input = forwardRef(function Input(
               "[&::-webkit-datetime-edit-meridiem-field]:p-0",
             ],
           // Basic layout
-          "relative block w-full appearance-none rounded-2xl px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)]",
+          "relative block w-full appearance-none rounded-md px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)]",
           // Typography
           "text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6",
           // Border (transparent by default — no visible gray outline)
-          "border border-transparent",
+          "border border-ps-line-strong",
           // Background color
-          "bg-ps-panel-strong shadow-sm",
+          "bg-ps-shell",
           // Hide default focus styles
           "focus:outline-hidden",
           // Invalid state

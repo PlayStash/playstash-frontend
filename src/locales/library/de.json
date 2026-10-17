@@ -113,5 +113,14 @@
   "gameCard.clientDownload": "Über den PlayStash-Client herunterladen",
   "gameCard.queued": "{title} wurde zur Download-Warteschlange hinzugefügt",
   "gameCard.noVersion.title": "Keine herunterladbare Version gefunden",
-  "gameCard.noVersion.description": "Für dieses Spiel ist derzeit keine Version zum Herunterladen verfügbar."
+  "gameCard.noVersion.description": "Für dieses Spiel ist derzeit keine Version zum Herunterladen verfügbar.",
+  "library.collection.title": "Deine Sammlung.",
+  "library.collection.controls": "Bibliothekssteuerung",
+  "library.categories.manage": "Kategorien verwalten",
+  "library.rail.title": "Meine Bibliothek",
+  "library.rail.search": "Spiel finden",
+  "library.rail.favorites": "Favoriten",
+  "library.rail.alphabetical": "Spiele · Alphabetisch",
+  "library.rail.loadMore": "Weitere Spiele laden",
+  "library.rail.showing": "{loaded} von {total} Spielen"
 }

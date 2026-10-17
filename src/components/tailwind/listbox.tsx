@@ -30,11 +30,11 @@ export function Listbox<T>({
           "group relative block w-full",
           // Hide default focus styles
           "focus:outline-hidden",
-          // Focus ring — inherits the box radius so it always matches
+          // Focus ring â€” inherits the box radius so it always matches
           "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-transparent after:ring-inset data-focus:after:ring-2 data-focus:after:ring-ps-accent-cool",
           // Visible box: radius, border, background and shadow all live on the
           // SAME element so the border's corner radius always matches the box.
-          "rounded-2xl border border-ps-line bg-ps-panel-strong shadow-sm",
+          "rounded-md border border-ps-line bg-ps-shell",
           "py-[calc(--spacing(2.5)-1px)] sm:py-1.5",
           "min-h-11 sm:min-h-9",
           "pr-[calc(--spacing(7)-1px)] pl-[calc(--spacing(3.5)-1px)] sm:pl-[calc(--spacing(3)-1px)]",
@@ -86,7 +86,7 @@ export function Listbox<T>({
           // Anchor positioning
           "[--anchor-offset:-1.625rem] [--anchor-padding:--spacing(4)] sm:[--anchor-offset:-1.375rem]",
           // Base styles
-          "isolate w-max min-w-[calc(var(--button-width)+1.75rem)] max-w-[calc(100vw-2rem)] scroll-py-1 rounded-[1.25rem] p-1.5 select-none",
+          "isolate w-max min-w-[calc(var(--button-width)+1.75rem)] max-w-[calc(100vw-2rem)] scroll-py-1 rounded-lg p-1.5 select-none",
           // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
           "outline outline-transparent focus:outline-hidden",
           // Handle scrolling when menu won't fit in viewport
@@ -96,7 +96,7 @@ export function Listbox<T>({
           // Shadows
           "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
           // Transitions
-          "transition-opacity duration-100 ease-in data-closed:data-leave:opacity-0 data-transition:pointer-events-none",
+          "transition-opacity duration-100 ease-out data-closed:data-leave:opacity-0 data-transition:pointer-events-none",
         )}
       >
         {options}
@@ -137,11 +137,11 @@ export function ListboxOption<T>({
           <div
             className={clsx(
               // Basic layout
-              "group/option grid cursor-pointer grid-cols-[--spacing(5)_1fr] items-baseline gap-x-2 rounded-xl py-2.5 pr-3.5 pl-2.5 sm:grid-cols-[--spacing(4)_1fr] sm:py-1.5 sm:pr-3 sm:pl-2",
+              "group/option grid cursor-pointer grid-cols-[--spacing(5)_1fr] items-baseline gap-x-2 rounded-md py-2.5 pr-3.5 pl-2.5 sm:grid-cols-[--spacing(4)_1fr] sm:py-1.5 sm:pr-3 sm:pl-2",
               // Typography
               "text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
               // Focus
-              "outline-hidden data-focus:bg-ps-accent data-focus:text-white transition-colors duration-150",
+              "outline-hidden data-focus:bg-ps-accent data-focus:text-ps-on-accent transition-colors duration-150",
               // Forced colors mode
               "forced-color-adjust-none forced-colors:data-focus:bg-[Highlight] forced-colors:data-focus:text-[HighlightText]",
               // Disabled
@@ -196,7 +196,7 @@ export function ListboxDescription({
       {...props}
       className={clsx(
         className,
-        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-white before:w-2 before:min-w-0 before:shrink",
+        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-ps-on-accent before:w-2 before:min-w-0 before:shrink",
       )}
     >
       <span className="flex-1 truncate">{children}</span>

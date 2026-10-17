@@ -52,7 +52,7 @@ export function Combobox<T>({
           // Basic layout
           "relative block w-full",
           // Background color + shadow applied to inset pseudo element, so shadow blends with border in light mode
-          "before:absolute before:inset-px before:rounded-[calc(var(--radius-lg)-1px)] before:bg-white before:shadow-sm",
+          "before:absolute before:inset-px before:rounded-[calc(var(--radius-lg)-1px)] before:bg-ps-panel before:shadow-sm",
           // Background color is moved to control and shadow is removed in dark mode so hide `before` pseudo
           "dark:before:hidden",
           // Focus ring
@@ -77,17 +77,17 @@ export function Combobox<T>({
             // Horizontal padding
             "pr-[calc(--spacing(10)-1px)] pl-[calc(--spacing(3.5)-1px)] sm:pr-[calc(--spacing(9)-1px)] sm:pl-[calc(--spacing(3)-1px)]",
             // Typography
-            "text-base/6 text-zinc-950 placeholder:text-zinc-500 sm:text-sm/6 dark:text-white",
-            // Border (transparent by default — no visible gray outline)
+            "text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6 dark:text-ps-text",
+            // Border (transparent by default â€” no visible gray outline)
             "border border-transparent",
             // Background color
-            "bg-transparent dark:bg-white/5",
+            "bg-transparent dark:bg-ps-panel",
             // Hide default focus styles
             "focus:outline-hidden",
             // Invalid state
             "data-invalid:border-red-500 data-invalid:data-hover:border-red-500 dark:data-invalid:border-red-500 dark:data-invalid:data-hover:border-red-500",
             // Disabled state
-            "data-disabled:border-transparent dark:data-disabled:bg-white/2.5",
+            "data-disabled:border-transparent dark:data-disabled:bg-ps-panel/2.5",
             // System icons
             "dark:scheme-dark",
           ])}
@@ -121,13 +121,13 @@ export function Combobox<T>({
           // Anchor positioning
           "[--anchor-gap:--spacing(2)] [--anchor-padding:--spacing(4)] sm:data-[anchor~=start]:[--anchor-offset:-4px]",
           // Base styles,
-          "isolate min-w-[calc(var(--input-width)+8px)] scroll-py-1 rounded-xl p-1 select-none empty:invisible",
+          "isolate min-w-[calc(var(--input-width)+8px)] scroll-py-1 rounded-md p-1 select-none empty:invisible",
           // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
           "outline outline-transparent focus:outline-hidden",
           // Handle scrolling when menu won't fit in viewport
           "overflow-y-scroll overscroll-contain",
           // Popover background
-          "bg-white/75 backdrop-blur-xl dark:bg-zinc-800/75",
+          "bg-ps-panel/75 backdrop-blur-xl dark:bg-ps-panel/75",
           // Shadows
           "shadow-lg ring-1 ring-zinc-950/10 dark:ring-white/10 dark:ring-inset",
           // Transitions
@@ -153,7 +153,7 @@ export function ComboboxOption<T>({
     "flex min-w-0 items-center",
     // Icons
     "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-zinc-500 group-data-focus/option:*:data-[slot=icon]:text-white dark:*:data-[slot=icon]:text-zinc-400",
+    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-on-accent dark:*:data-[slot=icon]:text-ps-muted",
     "forced-colors:*:data-[slot=icon]:text-[CanvasText] forced-colors:group-data-focus/option:*:data-[slot=icon]:text-[Canvas]",
     // Avatars
     "*:data-[slot=avatar]:-mx-0.5 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:size-5",
@@ -166,9 +166,9 @@ export function ComboboxOption<T>({
         // Basic layout
         "group/option grid w-full cursor-pointer grid-cols-[1fr_--spacing(5)] items-baseline gap-x-2 rounded-lg py-2.5 pr-2 pl-3.5 sm:grid-cols-[1fr_--spacing(4)] sm:py-1.5 sm:pr-2 sm:pl-3",
         // Typography
-        "text-base/6 text-zinc-950 sm:text-sm/6 dark:text-white forced-colors:text-[CanvasText]",
+        "text-base/6 text-ps-text sm:text-sm/6 dark:text-ps-text forced-colors:text-[CanvasText]",
         // Focus
-        "outline-hidden data-focus:bg-blue-500 data-focus:text-white",
+        "outline-hidden data-focus:bg-blue-500 data-focus:text-ps-on-accent",
         // Forced colors mode
         "forced-color-adjust-none forced-colors:data-focus:bg-[Highlight] forced-colors:data-focus:text-[HighlightText]",
         // Disabled
@@ -218,7 +218,7 @@ export function ComboboxDescription({
       {...props}
       className={clsx(
         className,
-        "flex flex-1 overflow-hidden text-zinc-500 group-data-focus/option:text-white before:w-2 before:min-w-0 before:shrink dark:text-zinc-400",
+        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-ps-on-accent before:w-2 before:min-w-0 before:shrink dark:text-ps-muted",
       )}
     >
       <span className="flex-1 truncate">{children}</span>

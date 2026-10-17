@@ -1,3 +1,4 @@
+import "@/styles/game-view.css";
 import { GameWebsites } from "@/components/GameWebsites";
 import { PlaystashGame } from "@/api/models/PlaystashGame";
 import { Progress, ProgressStateEnum } from "@/api/models/Progress";
@@ -18,7 +19,6 @@ import { useOnlineStatus } from "@/context/OfflineContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { Button } from "@tw/button";
 import { Listbox, ListboxOption, ListboxLabel } from "@tw/listbox";
-import Card from "@/components/Card";
 import { useDownloads } from "@/context/DownloadContext";
 import { GameDownloadProgress } from "@/components/downloads/GameDownloadProgress";
 import { GameVersion } from "@/api/models/GameVersion";
@@ -30,14 +30,7 @@ import { buildShareUrl } from "@/utils/shareUrl";
 import { formatDate, formatTime, formatYear } from "@/utils/date";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
 import { formatDecimal } from "@/utils/number";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useCallback,
-  useRef,
-  useLayoutEffect,
-} from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
   CloudArrowDownIcon,
@@ -63,7 +56,6 @@ import {
   DropdownLabel,
   DropdownMenu,
 } from "@tw/dropdown";
-import { Alert, AlertTitle } from "@tw/alert";
 import { GameSettings } from "@/components/admin/GameSettings";
 import { useAuthMediaUrl } from "@/hooks/useAuthMediaUrl";
 import { useInstalledGames } from "@/hooks/useInstalledGames";
@@ -75,7 +67,7 @@ import {
   isGameUpdateAvailable,
   resolveServerVersionTag,
 } from "@/utils/gameUpdate";
-import { LayoutGroup, motion } from "motion/react";
+import { motion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
 import { GameChatButton } from "@/components/GameChatButton";
 import { translate, useTranslation, type TranslationKey } from "@/i18n";
@@ -265,51 +257,6 @@ export default function GameView() {
   >("description");
   const mediaSliderRef = useRef<HTMLDivElement | null>(null);
   const detailsCardRef = useRef<HTMLDivElement | null>(null);
-  const [mediaHeight, setMediaHeight] = useState<number | null>(null);
-  const [detailsHeight, setDetailsHeight] = useState<number | null>(null);
-  const [isXL, setIsXL] = useState<boolean>(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(min-width: 1280px)").matches
-      : false,
-  );
-
-  const recomputeHeights = useCallback(() => {
-    // Only sync heights on xl and above; on smaller screens allow natural height flow to avoid overlap
-    const xl =
-      typeof window !== "undefined"
-        ? window.matchMedia("(min-width: 1280px)").matches
-        : false;
-    setIsXL(xl);
-    if (xl) {
-      if (mediaSliderRef.current)
-        setMediaHeight(mediaSliderRef.current.offsetHeight);
-      if (detailsCardRef.current)
-        setDetailsHeight(detailsCardRef.current.offsetHeight);
-    } else {
-      setMediaHeight(null);
-      setDetailsHeight(null);
-    }
-  }, []);
-
-  useLayoutEffect(() => {
-    recomputeHeights();
-  }, [
-    game,
-    trailers.length,
-    screenshots.length,
-    description,
-    notes,
-    tags,
-    detailsTab,
-    recomputeHeights,
-  ]);
-
-  useEffect(() => {
-    window.addEventListener("resize", recomputeHeights);
-    // Initial measure
-    recomputeHeights();
-    return () => window.removeEventListener("resize", recomputeHeights);
-  }, [recomputeHeights]);
   const rawGenres = (game as any)?.metadata?.genres || [];
   const genres: string[] = Array.isArray(rawGenres)
     ? rawGenres
@@ -671,9 +618,6 @@ export default function GameView() {
     game?.metadata?.average_playtime ||
     (game as any)?.metadata?.average_playtime ||
     null;
-  const floatingIconButtonClassName =
-    "size-11 p-0 flex items-center justify-center border-white/35 bg-white/60 shadow-sm backdrop-blur-md hover:bg-white/78 dark:border-white/20 dark:bg-ps-panel/80 dark:hover:bg-ps-panel-strong";
-
   const gameSizeBytes = useMemo(() => {
     const sizeStr =
       (game as any)?.size ??
@@ -703,15 +647,6 @@ export default function GameView() {
     ? `${t("common.download")} (${formattedSize})`
     : t("common.download");
 
-  const glassPanelClassName =
-    "border border-white/35 bg-white/[0.42] backdrop-blur-md dark:border-white/10 dark:bg-ps-panel/80 dark:backdrop-blur-md";
-  const darkGlassInsetClassName = "dark:bg-ps-panel/80 dark:backdrop-blur-md";
-  const progressSelectClassName = clsx(
-    "before:bg-white/60 before:backdrop-blur-md before:shadow-sm",
-    "dark:before:hidden",
-    darkGlassInsetClassName,
-  );
-
   // Derive additional metadata fields
   // The merged metadata (provider data and admin edits) knows the real
   // release date; the game's own date is only parsed from the file name.
@@ -736,494 +671,344 @@ export default function GameView() {
           return `${val}%`;
         })()
       : null;
-  const backgroundMaskImage =
-    "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)";
-
-  // Removed h-full overflow-auto to prevent nested scroll area causing double vertical scrollbar; letting parent layout manage vertical scrolling.
-
   return (
-    <div className="relative isolate flex min-h-full flex-col overflow-hidden px-4 pb-4 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-y-0 left-1/2 z-0 w-screen -translate-x-1/2 animate-[media-fade-in_0.25s_ease-out] motion-reduce:animate-none">
-        <div className="absolute inset-0 bg-ps-bg" />
-
-        {backgroundUrl ? (
-          <>
-            <div
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage: `url(${backgroundUrl})`,
-                backgroundPosition: "center center",
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "cover",
-                WebkitMaskImage: backgroundMaskImage,
-                maskImage: backgroundMaskImage,
-                WebkitMaskComposite: "source-in",
-              }}
-            />
-            <div
-              className="absolute inset-[-6%] opacity-32 blur-3xl"
-              style={{
-                backgroundImage: `url(${backgroundUrl})`,
-                backgroundPosition: "center center",
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "cover",
-                WebkitMaskImage: backgroundMaskImage,
-                maskImage: backgroundMaskImage,
-                WebkitMaskComposite: "source-in",
-              }}
-            />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.14),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_38%,rgba(255,255,255,0)_100%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.18),transparent_42%),linear-gradient(180deg,rgba(24,24,27,0.24)_0%,rgba(24,24,27,0.1)_36%,rgba(24,24,27,0)_100%)]" />
-        )}
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.09),transparent_40%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.04),transparent_40%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.06)_18%,rgba(255,255,255,0)_42%,rgba(255,255,255,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(9,9,11,0.16)_0%,rgba(9,9,11,0.08)_18%,rgba(9,9,11,0)_42%,rgba(9,9,11,0)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(244,244,245,0.12)_0%,rgba(244,244,245,0.04)_24%,rgba(244,244,245,0)_45%,rgba(99,102,241,0.03)_100%)] dark:bg-[linear-gradient(135deg,rgba(24,24,27,0.12)_0%,rgba(24,24,27,0.05)_24%,rgba(24,24,27,0)_45%,rgba(99,102,241,0.05)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-white/10 to-transparent dark:from-ps-panel/10 dark:to-transparent sm:h-20 xl:h-24" />
-      </div>
-
-      <div className="relative z-10 flex w-full flex-1 flex-col">
-        {/* Back button — always visible so users can leave at any state */}
-        <div className="mx-auto w-full max-w-350 px-2 pt-4 pb-1">
+    <div className="game-view">
+      {(loading || error || !game) && (
+        <div className="game-view-message">
           <BackButton />
+          {loading && <Spinner label={t("gameView.loading")} />}
+          {error && (
+            <p role="alert" className="text-ps-danger">
+              {error}
+            </p>
+          )}
         </div>
-        {loading && (
-          <div className="flex flex-1 items-center justify-center py-20">
-            <Spinner label={t("gameView.loading")} />
-          </div>
-        )}
-        {error && (
-          <div className="p-6 text-sm text-red-500 bg-red-500/10 rounded-md max-w-xl">
-            {error}
-          </div>
-        )}
-        {!loading && !error && game && (
-          <div className="mx-auto grid w-full max-w-350 gap-10 px-2 pt-4 xl:grid-cols-[1fr_20rem]">
-            {/* Row 1: Cover/Title/Actions spans both columns on mobile but only left column on xl */}
-            <div className="flex flex-row gap-4 items-start xl:col-span-1 xl:row-span-1 min-w-0">
-              <div className="w-32 aspect-3/4 rounded-2xl overflow-hidden bg-ps-panel-strong flex items-center justify-center text-[10px] text-ps-muted">
-                {coverId ? (
-                  <Media
-                    media={game.metadata?.cover}
-                    size={180}
-                    className="w-full h-full object-contain"
-                    square
-                    alt={title}
-                    gameId={game.id}
-                    mediaSlot="cover"
-                    fallback={
-                      <CoverPlaceholder
-                        title={
-                          title || game.title || t("gameView.fallbackTitle")
-                        }
-                        size="large"
-                        className="h-full w-full"
-                      />
-                    }
-                  />
-                ) : (
-                  <CoverPlaceholder
-                    title={title || game.title || t("gameView.fallbackTitle")}
-                    size="large"
-                    className="h-full w-full"
-                  />
-                )}
-              </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowMappedTitle(!showMappedTitle)}
-                  title={
-                    showMappedTitle
-                      ? t("gameView.title.showFile")
-                      : t("gameView.title.showMapped")
-                  }
-                  className={clsx(
-                    "w-fit max-w-full cursor-pointer truncate pr-2 text-left text-xl font-semibold leading-tight text-ps-text",
-                    isDeleted && "line-through opacity-70",
-                  )}
-                >
-                  {shownTitle}
-                  {shownYear && (
-                    <span className="font-normal text-ps-muted">
-                      {shownYear}
-                    </span>
-                  )}
-                </button>
-                {updateAvailable && (
-                  <span
-                    title={
-                      installedInfo?.versionName && serverVersionTag
-                        ? `${installedInfo.versionName} → ${serverVersionTag}`
-                        : t("gameView.update.tooltip")
-                    }
-                    className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-300"
-                  >
-                    <ArrowUpCircleIcon
-                      className="h-3.5 w-3.5"
-                      aria-hidden="true"
+      )}
+      {!loading && !error && game && (
+        <>
+          <section
+            className={clsx(
+              "game-hero",
+              !backgroundUrl && "game-hero-without-art",
+            )}
+          >
+            {backgroundUrl && (
+              <img className="game-hero-art" src={backgroundUrl} alt="" />
+            )}
+            <div className="game-hero-navigation">
+              <BackButton />
+            </div>
+            <div className="game-hero-heading">
+              {!backgroundUrl && (
+                <div className="game-hero-cover">
+                  {coverId ? (
+                    <Media
+                      media={game.metadata?.cover}
+                      width={92}
+                      height={124}
+                      square
+                      fit="cover"
+                      alt={title}
+                      gameId={game.id}
+                      mediaSlot="cover"
+                      fallback={
+                        <CoverPlaceholder
+                          title={title || t("gameView.fallbackTitle")}
+                          className="h-full w-full"
+                        />
+                      }
                     />
-                    {t("gameView.update.available")}
-                  </span>
-                )}
-                {/* Added flex-wrap to allow buttons to wrap on extremely narrow viewports, preventing horizontal overflow that could push the media slider and cause cutoff */}
-                <div
-                  className={clsx(
-                    "flex flex-row flex-wrap gap-2",
-                    isDeleted && "hidden",
-                  )}
-                >
-                  {isTauri && installedInfo && (
-                    <Button
-                      color="indigo"
-                      aria-label={t("common.play")}
-                      title={t("common.play")}
-                      className="h-9 px-3 gap-2 flex items-center justify-center"
-                      onClick={handlePlayGame}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        className="h-4 w-4 fill-current"
-                      >
-                        <path d="M8 17.175V6.825q0-.425.3-.713t.7-.287q.125 0 .263.037t.262.113l8.15 5.175q.225.15.338.375t.112.475t-.112.475t-.338.375l-8.15 5.175q-.125.075-.262.113T9 18.175q-.4 0-.7-.288t-.3-.712" />
-                      </svg>
-                      {t("common.play")}
-                    </Button>
-                  )}
-                  {isTauri ? (
-                    <Button
-                      {...(installedInfo
-                        ? { outline: true }
-                        : { color: "indigo" })}
-                      aria-label={downloadLabel}
-                      className="h-9 px-3 gap-2 flex items-center justify-center"
-                      title={downloadLabel}
-                      onClick={handleTauriDownload}
-                      disabled={isTauri && !isOnline}
-                    >
-                      <CloudArrowDownIcon className="w-5 h-5 shrink-0" />
-                      {formattedSize && (
-                        <span className="text-xs font-medium whitespace-nowrap">
-                          {formattedSize}
-                        </span>
-                      )}
-                    </Button>
                   ) : (
-                    <Dropdown>
-                      <DropdownButton
-                        as={Button}
-                        color="indigo"
-                        aria-label={downloadLabel}
-                        className="h-9 px-3 gap-2 flex items-center justify-center"
-                        title={downloadLabel}
-                        disabled={isTauri && !isOnline}
-                        onClick={(e: React.MouseEvent) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                      >
-                        <CloudArrowDownIcon className="w-5 h-5 shrink-0" />
-                        {formattedSize && (
-                          <span className="text-xs font-medium whitespace-nowrap">
-                            {formattedSize}
-                          </span>
-                        )}
-                      </DropdownButton>
-                      <DropdownMenu className="min-w-48" anchor="bottom start">
-                        <DropdownItem onClick={handleDirectDownload}>
-                          <DropdownLabel>
-                            {t("gameView.download.direct")}
-                          </DropdownLabel>
-                        </DropdownItem>
-                        <DropdownItem onClick={handleClientDownload}>
-                          <DropdownLabel>
-                            {t("gameView.download.client")}
-                          </DropdownLabel>
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
+                    <CoverPlaceholder
+                      title={title || t("gameView.fallbackTitle")}
+                      className="h-full w-full"
+                    />
                   )}
-                  <Button
-                    outline
-                    onClick={() => setSettingsOpen(true)}
-                    className={floatingIconButtonClassName}
-                    title={t("gameView.settings")}
-                  >
-                    <Cog8ToothIcon className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    outline
-                    onClick={toggleBookmark}
-                    disabled={!user || bookmarkBusy || (isTauri && !isOnline)}
-                    className={clsx(
-                      bookmarked
-                        ? "size-11 p-0 flex items-center justify-center bg-yellow-400/20! border-yellow-400! text-yellow-400! backdrop-blur-md shadow-sm dark:bg-yellow-400/20! dark:border-yellow-400! dark:text-yellow-400!"
-                        : floatingIconButtonClassName,
-                    )}
-                    title={
-                      bookmarked
-                        ? t("gameView.bookmark.remove")
-                        : t("gameView.bookmark.add")
-                    }
-                    aria-pressed={bookmarked}
-                  >
-                    {bookmarked ? (
-                      <StarSolid className="w-5 h-5" />
-                    ) : (
-                      <StarOutline className="w-5 h-5" />
-                    )}
-                  </Button>
-                  <Button
-                    outline
-                    onClick={handleShare}
-                    className={floatingIconButtonClassName}
-                    title={t("gameView.share.copyLink")}
-                  >
-                    <ShareIcon className="w-5 h-5" />
-                  </Button>
-                  <GameChatButton
-                    gameId={game?.id}
-                    className={floatingIconButtonClassName}
-                  />
-                </div>
-                {isTauri && game?.id != null && (
-                  <GameDownloadProgress gameId={game.id} />
-                )}
-                {(genres && genres.length > 0) ||
-                game?.type ||
-                game?.early_access ||
-                (game as any)?.metadata?.early_access ? (
-                  <div className="flex flex-wrap gap-1 pt-1 items-center">
-                    {game?.type && game.type !== "UNDETECTABLE" && (
-                      <button
-                        type="button"
-                        onClick={() => openLibraryFilter("types", game.type!)}
-                        title={t("gameView.pill.filter")}
-                        className="px-2 py-0.5 rounded-full bg-ps-accent/15 text-ps-accent-strong text-[10px] font-medium cursor-pointer hover:bg-ps-accent/25"
-                      >
-                        {GAME_TYPE_LABEL[game.type]
-                          ? t(GAME_TYPE_LABEL[game.type])
-                          : game.type
-                              .replace(/_/g, " ")
-                              .toLowerCase()
-                              .replace(/\b\w/g, (c) => c.toUpperCase())}
-                      </button>
-                    )}
-                    {(game as any)?.early_access ||
-                    (game as any)?.metadata?.early_access ? (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300 text-[10px] font-medium">
-                        {t("gameView.earlyAccess")}
-                      </span>
-                    ) : null}
-                    {genres.map((g: string) => (
-                      <button
-                        type="button"
-                        key={g}
-                        onClick={() => openLibraryFilter("genres", g)}
-                        title={t("gameView.pill.filter")}
-                        className="px-2 py-0.5 rounded-full bg-ps-panel-strong text-[10px] font-medium text-ps-muted cursor-pointer hover:text-ps-text"
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            {/* Spacer so grid second column first row stays empty - ensures metadata card aligns with media slider start */}
-            {/* Right Column Row 1: Stats + Progress State */}
-            <div className="flex flex-col gap-6 xl:col-start-2 xl:row-start-1 min-w-0">
-              <div className="grid grid-cols-3 gap-2 animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none">
-                <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
-                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
-                    {t("gameView.stats.playtime")}
-                  </div>
-                  <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-ps-text">
-                    {playtimeHours >= 1
-                      ? `${formatDecimal(playtimeHours, playtimeHours < 10 ? 1 : 0)} h`
-                      : `${playtimeMinutes} m`}
-                  </div>
-                </div>
-                <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
-                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
-                    {t("gameView.stats.lastPlayed")}
-                  </div>
-                  <div
-                    className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight text-ps-text"
-                    title={
-                      lastPlayedTime
-                        ? `${lastPlayedDay}, ${lastPlayedTime}`
-                        : lastPlayedDay
-                    }
-                  >
-                    {lastPlayedTime ? (
-                      <>
-                        <div className="tabular-nums">{lastPlayedDay}</div>
-                        <div className="tabular-nums text-ps-muted">
-                          {lastPlayedTime}
-                        </div>
-                      </>
-                    ) : (
-                      lastPlayedDay
-                    )}
-                  </div>
-                </div>
-                <div className="surface-panel flex h-full min-h-16 flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
-                  <div className="text-[10px] font-medium uppercase tracking-[0.04em] leading-none whitespace-nowrap text-ps-muted">
-                    {t("gameView.stats.avgTime")}
-                  </div>
-                  <div className="flex min-h-9 flex-col items-center justify-center text-sm font-semibold leading-tight tabular-nums text-ps-text">
-                    {avgPlaytime
-                      ? `${formatDecimal(avgPlaytime / 60, avgPlaytime / 60 < 10 ? 1 : 0)} h`
-                      : "—"}
-                  </div>
-                </div>
-              </div>
-              <CloudSaveRow game={game} installed={installedInfo} />
-              <div>
-                <div className="text-xs font-medium text-ps-muted mb-1">
-                  {t("gameView.progress.label")}
-                </div>
-                <Listbox
-                  name="progressState"
-                  value={progressState || "UNPLAYED"}
-                  onChange={(v: any) => updateProgressState(v)}
-                  disabled={!user || progressUpdating || (isTauri && !isOnline)}
-                  className={progressSelectClassName}
-                >
-                  {progressStateOptions.map((o) => (
-                    <ListboxOption key={o.key} value={o.key}>
-                      <ListboxLabel>{o.label}</ListboxLabel>
-                    </ListboxOption>
-                  ))}
-                </Listbox>
-              </div>
-            </div>
-
-            {/* Row 2 Left: Media Slider + Details */}
-            {/* min-w-0 ensures the slider can shrink below intrinsic content width inside CSS grid to avoid right-side cutoff on very small screens */}
-            <div className="flex flex-col gap-6 xl:col-start-1 xl:row-start-2 min-w-0">
-              {(trailers.length > 0 || screenshots.length > 0) && (
-                <div className="w-full min-w-0" ref={mediaSliderRef}>
-                  <MediaSlider
-                    trailers={trailers}
-                    screenshots={screenshots}
-                    autoPlay={true}
-                    loop={false}
-                    className="w-full"
-                    aspect="aspect-[16/9]"
-                  />
                 </div>
               )}
-              <div ref={detailsCardRef} className="contents">
-                <Card
-                  title={t("gameView.details.title")}
-                  className="mb-0!"
-                  surfaceClassName="surface-panel"
+              <div className="min-w-0">
+                <h1>
+                  <button
+                    type="button"
+                    onClick={() => setShowMappedTitle(!showMappedTitle)}
+                    title={
+                      showMappedTitle
+                        ? t("gameView.title.showFile")
+                        : t("gameView.title.showMapped")
+                    }
+                    className={clsx(
+                      "game-hero-title",
+                      isDeleted && "line-through opacity-70",
+                    )}
+                  >
+                    {shownTitle}
+                    {shownYear && (
+                      <span className="game-hero-year">{shownYear}</span>
+                    )}
+                  </button>
+                </h1>
+                <div className="game-hero-genres">
+                  {genres.map((genre) => (
+                    <button
+                      key={genre}
+                      type="button"
+                      onClick={() => openLibraryFilter("genres", genre)}
+                      title={t("gameView.pill.filter")}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className={clsx("game-hero-utilities", isDeleted && "hidden")}>
+              <Button
+                plain
+                onClick={toggleBookmark}
+                disabled={!user || bookmarkBusy || (isTauri && !isOnline)}
+                className={clsx(
+                  "game-hero-icon",
+                  bookmarked && "game-hero-icon-selected",
+                )}
+                title={
+                  bookmarked
+                    ? t("gameView.bookmark.remove")
+                    : t("gameView.bookmark.add")
+                }
+                aria-label={
+                  bookmarked
+                    ? t("gameView.bookmark.remove")
+                    : t("gameView.bookmark.add")
+                }
+                aria-pressed={bookmarked}
+              >
+                {bookmarked ? <StarSolid /> : <StarOutline />}
+              </Button>
+              <Button
+                plain
+                onClick={handleShare}
+                className="game-hero-icon"
+                title={t("gameView.share.copyLink")}
+                aria-label={t("gameView.share.copyLink")}
+              >
+                <ShareIcon />
+              </Button>
+              <GameChatButton gameId={game.id} className="game-hero-icon" />
+              <Button
+                plain
+                onClick={() => setSettingsOpen(true)}
+                className="game-hero-icon"
+                title={t("gameView.settings")}
+                aria-label={t("gameView.settings")}
+              >
+                <Cog8ToothIcon />
+              </Button>
+            </div>
+          </section>
+          <section
+            className="game-command-bar"
+            aria-label={t("gameView.details.title")}
+          >
+            <div
+              className={clsx("game-primary-actions", isDeleted && "hidden")}
+            >
+              {isTauri && installedInfo && (
+                <Button
+                  color="indigo"
+                  className="game-play-button"
+                  aria-label={t("common.play")}
+                  onClick={handlePlayGame}
                 >
-                  <LayoutGroup id="details-tabs">
-                    <div className="flex flex-wrap border-b border-ps-line mb-4 gap-x-6 gap-y-3 text-sm">
-                      {Number(user?.role) >= 3 && (
-                        <button
-                          type="button"
-                          onClick={() => setDetailsTab("metrics")}
-                          className={clsx(
-                            "relative pb-2 -mb-px border-b-2 font-medium",
-                            detailsTab === "metrics"
-                              ? "border-ps-accent text-ps-accent-strong"
-                              : "border-transparent text-ps-muted hover:text-ps-text",
-                          )}
-                        >
-                          {t("gameView.tab.metrics")}
-                        </button>
-                      )}
-                      {(
-                        ["package", "requirements", "reviews", "saves"] as const
-                      ).map((tab) => (
-                        <button
-                          key={tab}
-                          type="button"
-                          onClick={() => setDetailsTab(tab)}
-                          className={clsx(
-                            "relative pb-2 -mb-px border-b-2 font-medium",
-                            detailsTab === tab
-                              ? "border-ps-accent text-ps-accent-strong"
-                              : "border-transparent text-ps-muted hover:text-ps-text",
-                          )}
-                        >
-                          {tab === "package"
-                            ? t("gameView.tab.package")
-                            : tab === "reviews"
-                              ? t("gameView.tab.reviews")
-                              : tab === "saves"
-                                ? t("gameView.tab.saves")
-                                : t("gameView.tab.requirements")}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => setDetailsTab("description")}
-                        className={clsx(
-                          "relative pb-2 -mb-px border-b-2 font-medium",
-                          detailsTab === "description"
-                            ? "border-transparent text-ps-accent-strong"
-                            : "border-transparent text-ps-muted hover:text-ps-text",
-                        )}
-                      >
-                        {t("common.description")}
-                        {detailsTab === "description" && (
-                          <motion.span
-                            layoutId="details-tab-underline"
-                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ps-accent"
-                            transition={{ duration: 0.18, ease: EASE_OUT }}
-                          />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setDetailsTab("notes")}
-                        className={clsx(
-                          "relative pb-2 -mb-px border-b-2 font-medium",
-                          detailsTab === "notes"
-                            ? "border-transparent text-ps-accent-strong"
-                            : "border-transparent text-ps-muted hover:text-ps-text",
-                        )}
-                      >
-                        {t("common.notes")}
-                        {detailsTab === "notes" && (
-                          <motion.span
-                            layoutId="details-tab-underline"
-                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ps-accent"
-                            transition={{ duration: 0.18, ease: EASE_OUT }}
-                          />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setDetailsTab("tags")}
-                        className={clsx(
-                          "relative pb-2 -mb-px border-b-2 font-medium",
-                          detailsTab === "tags"
-                            ? "border-transparent text-ps-accent-strong"
-                            : "border-transparent text-ps-muted hover:text-ps-text",
-                        )}
-                      >
-                        {t("common.tags")}
-                        {detailsTab === "tags" && (
-                          <motion.span
-                            layoutId="details-tab-underline"
-                            className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-ps-accent"
-                            transition={{ duration: 0.18, ease: EASE_OUT }}
-                          />
-                        )}
-                      </button>
-                    </div>
-                  </LayoutGroup>
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="size-5 fill-current"
+                  >
+                    <path d="M7 4v16l14-8z" />
+                  </svg>
+                  {t("common.play")}
+                </Button>
+              )}
+              {isTauri ? (
+                <Button
+                  {...(installedInfo
+                    ? { outline: true }
+                    : { color: "indigo" as const })}
+                  aria-label={
+                    installedInfo ? downloadLabel : t("common.install")
+                  }
+                  title={downloadLabel}
+                  className={clsx(
+                    "game-download-button",
+                    !installedInfo && "game-play-button",
+                  )}
+                  onClick={handleTauriDownload}
+                  disabled={!isOnline}
+                >
+                  <CloudArrowDownIcon className="size-5" />
+                  {updateAvailable
+                    ? t("gameView.update.available")
+                    : installedInfo
+                      ? t("common.download")
+                      : t("common.install")}
+                </Button>
+              ) : (
+                <Dropdown>
+                  <DropdownButton
+                    as={Button}
+                    color="indigo"
+                    aria-label={downloadLabel}
+                    title={downloadLabel}
+                    className="game-play-button"
+                  >
+                    <CloudArrowDownIcon className="size-5" />
+                    {t("common.download")}
+                  </DropdownButton>
+                  <DropdownMenu anchor="bottom start" className="min-w-56">
+                    <DropdownItem onClick={handleDirectDownload}>
+                      <DropdownLabel>
+                        {t("gameView.download.direct")}
+                      </DropdownLabel>
+                    </DropdownItem>
+                    <DropdownItem onClick={handleClientDownload}>
+                      <DropdownLabel>
+                        {t("gameView.download.client")}
+                      </DropdownLabel>
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              )}
+            </div>
+            <div className="game-build-info">
+              {formattedSize && <span>{formattedSize}</span>}
+              {(installedInfo?.versionName ||
+                serverVersionTag ||
+                versionTag) && (
+                <span>
+                  {t("common.version")}{" "}
+                  {installedInfo?.versionName || serverVersionTag || versionTag}
+                </span>
+              )}
+              {updateAvailable && (
+                <span className="game-update-notice">
+                  <ArrowUpCircleIcon className="size-3.5" />
+                  {t("gameView.update.available")}
+                </span>
+              )}
+            </div>
+            <dl className="game-session-stats">
+              <div>
+                <dt>{t("gameView.stats.playtime")}</dt>
+                <dd>
+                  {playtimeHours >= 1
+                    ? `${formatDecimal(playtimeHours, playtimeHours < 10 ? 1 : 0)} h`
+                    : `${playtimeMinutes} m`}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("gameView.stats.lastPlayed")}</dt>
+                <dd
+                  title={
+                    lastPlayedTime
+                      ? `${lastPlayedDay}, ${lastPlayedTime}`
+                      : lastPlayedDay
+                  }
+                >
+                  {lastPlayedDay}
+                </dd>
+              </div>
+              {avgPlaytime ? (
+                <div>
+                  <dt>{t("gameView.stats.avgTime")}</dt>
+                  <dd>
+                    {formatDecimal(
+                      avgPlaytime / 60,
+                      avgPlaytime / 60 < 10 ? 1 : 0,
+                    )}{" "}
+                    h
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </section>
+          <div className="game-state-bar">
+            <div className="game-platform-tags">
+              {game.type && game.type !== "UNDETECTABLE" && (
+                <button
+                  type="button"
+                  onClick={() => openLibraryFilter("types", game.type!)}
+                  title={t("gameView.pill.filter")}
+                >
+                  {GAME_TYPE_LABEL[game.type]
+                    ? t(GAME_TYPE_LABEL[game.type])
+                    : game.type.replace(/_/g, " ")}
+                </button>
+              )}
+              {(game.early_access || game.metadata?.early_access) && (
+                <span>{t("gameView.earlyAccess")}</span>
+              )}
+            </div>
+            <label className="game-progress-state">
+              <span>{t("gameView.progress.label")}</span>
+              <Listbox
+                name="progressState"
+                aria-label={t("gameView.progress.label")}
+                value={progressState || "UNPLAYED"}
+                onChange={(value: any) => updateProgressState(value)}
+                disabled={!user || progressUpdating || (isTauri && !isOnline)}
+              >
+                {progressStateOptions.map((option) => (
+                  <ListboxOption key={option.key} value={option.key}>
+                    <ListboxLabel>{option.label}</ListboxLabel>
+                  </ListboxOption>
+                ))}
+              </Listbox>
+            </label>
+          </div>
+          {isTauri && (
+            <div className="game-inline-download">
+              <GameDownloadProgress gameId={game.id} />
+            </div>
+          )}
+          <div className="game-detail-area">
+            <nav
+              className="game-detail-tabs"
+              aria-label={t("gameView.details.title")}
+            >
+              {(
+                [
+                  ["description", "common.description"],
+                  ["package", "gameView.tab.package"],
+                  ["saves", "gameView.tab.saves"],
+                  ["reviews", "gameView.tab.reviews"],
+                  ["requirements", "gameView.tab.requirements"],
+                  ["notes", "common.notes"],
+                  ["tags", "common.tags"],
+                  ...(Number(user?.role) >= 3
+                    ? [["metrics", "gameView.tab.metrics"]]
+                    : []),
+                ] as [typeof detailsTab, TranslationKey][]
+              ).map(([tab, label]) => (
+                <button
+                  type="button"
+                  key={tab}
+                  onClick={() => setDetailsTab(tab)}
+                  aria-pressed={detailsTab === tab}
+                  className={clsx(detailsTab === tab && "is-active")}
+                >
+                  {t(label)}
+                </button>
+              ))}
+            </nav>
+            <div className="game-detail-columns">
+              <div className="game-detail-main">
+                <section ref={detailsCardRef} className="game-detail-content">
                   <motion.div
                     key={detailsTab}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.12, ease: EASE_OUT }}
-                    className="text-sm leading-relaxed space-y-4 min-h-45 text-ps-text"
+                    className="space-y-4 text-sm leading-relaxed"
                   >
                     {detailsTab === "metrics" && Number(user?.role) >= 3 && (
                       <GameMetrics gameId={numericId} />
@@ -1341,283 +1126,289 @@ export default function GameView() {
                         </p>
                       ))}
                   </motion.div>
-                </Card>
+                </section>
+                {(trailers.length > 0 || screenshots.length > 0) && (
+                  <section className="game-media" ref={mediaSliderRef}>
+                    <MediaSlider
+                      trailers={trailers}
+                      screenshots={screenshots}
+                      aspect="aspect-[16/9]"
+                    />
+                  </section>
+                )}
               </div>
-            </div>
-
-            {/* Row 2 Right: Additional Metadata + Activity */}
-            <div className="flex flex-col gap-6 xl:col-start-2 xl:row-start-2 min-w-0">
-              <Card
-                title={t("gameView.metadata.title")}
-                className="min-h-40"
-                surfaceClassName="surface-panel"
-              >
-                <ul className="space-y-4 text-sm text-ps-text">
-                  <li className="flex items-start gap-3">
-                    <CalendarDaysIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {t("gameView.metadata.releaseYear")}
+              <aside className="game-metadata-rail">
+                <section className="game-metadata">
+                  <h2>{t("gameView.metadata.title")}</h2>
+                  <ul className="space-y-4 text-sm text-ps-text">
+                    <li className="flex items-start gap-3">
+                      <CalendarDaysIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {t("gameView.metadata.releaseYear")}
+                        </div>
+                        <div
+                          className="font-medium whitespace-nowrap truncate"
+                          title={(releaseYear || "—") + ""}
+                        >
+                          {releaseYear || "—"}
+                        </div>
                       </div>
-                      <div
-                        className="font-medium whitespace-nowrap truncate"
-                        title={(releaseYear || "—") + ""}
-                      >
-                        {releaseYear || "—"}
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <StarOutline className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {t("gameView.metadata.rating")}
+                        </div>
+                        <div
+                          className="font-medium whitespace-nowrap"
+                          title={formattedRating || "—"}
+                        >
+                          {formattedRating ?? "—"}
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <StarOutline className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {t("gameView.metadata.rating")}
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <HashtagIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {t("common.version")}
+                        </div>
+                        <div
+                          className="font-medium whitespace-nowrap truncate"
+                          title={versionTag || "—"}
+                        >
+                          {versionTag || "—"}
+                        </div>
                       </div>
-                      <div
-                        className="font-medium whitespace-nowrap"
-                        title={formattedRating || "—"}
-                      >
-                        {formattedRating ?? "—"}
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <GlobeAltIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {t("gameView.metadata.websites")}
+                        </div>
+                        <GameWebsites urls={websites} />
                       </div>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <HashtagIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {t("common.version")}
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <WrenchScrewdriverIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {devNames.length > 1
+                            ? t("gameView.metadata.developers")
+                            : t("gameView.metadata.developer")}
+                        </div>
+                        <div
+                          className="font-medium whitespace-nowrap truncate"
+                          title={devNames.length ? devNames.join(", ") : "—"}
+                        >
+                          {devNames.length
+                            ? devNames.map((name, index) => (
+                                <span key={name}>
+                                  {index > 0 && ", "}
+                                  <button
+                                    type="button"
+                                    className="cursor-pointer hover:text-ps-accent-cool"
+                                    onClick={() =>
+                                      openLibraryFilter("developers", name)
+                                    }
+                                  >
+                                    {name}
+                                  </button>
+                                </span>
+                              ))
+                            : "—"}
+                        </div>
                       </div>
-                      <div
-                        className="font-medium whitespace-nowrap truncate"
-                        title={versionTag || "—"}
-                      >
-                        {versionTag || "—"}
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <BuildingOffice2Icon className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {publisherNames.length > 1
+                            ? t("gameView.metadata.publishers")
+                            : t("gameView.metadata.publisher")}
+                        </div>
+                        <div
+                          className="font-medium whitespace-nowrap truncate"
+                          title={
+                            publisherNames.length
+                              ? publisherNames.join(", ")
+                              : "—"
+                          }
+                        >
+                          {publisherNames.length
+                            ? publisherNames.map((name, index) => (
+                                <span key={name}>
+                                  {index > 0 && ", "}
+                                  <button
+                                    type="button"
+                                    className="cursor-pointer hover:text-ps-accent-cool"
+                                    onClick={() =>
+                                      openLibraryFilter("publishers", name)
+                                    }
+                                  >
+                                    {name}
+                                  </button>
+                                </span>
+                              ))
+                            : "—"}
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <GlobeAltIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {t("gameView.metadata.websites")}
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <ShieldCheckIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
+                          {t("gameView.metadata.ageRating")}
+                        </div>
+                        <div
+                          className="font-medium whitespace-nowrap"
+                          title={ageRating ?? "—"}
+                        >
+                          {ageRating ?? "—"}
+                        </div>
                       </div>
-                      <GameWebsites urls={websites} />
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <WrenchScrewdriverIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {devNames.length > 1
-                          ? t("gameView.metadata.developers")
-                          : t("gameView.metadata.developer")}
-                      </div>
-                      <div
-                        className="font-medium whitespace-nowrap truncate"
-                        title={devNames.length ? devNames.join(", ") : "—"}
-                      >
-                        {devNames.length
-                          ? devNames.map((name, index) => (
-                              <span key={name}>
-                                {index > 0 && ", "}
-                                <button
-                                  type="button"
-                                  className="cursor-pointer hover:text-ps-accent-cool"
-                                  onClick={() =>
-                                    openLibraryFilter("developers", name)
-                                  }
-                                >
-                                  {name}
-                                </button>
-                              </span>
-                            ))
-                          : "—"}
-                      </div>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <BuildingOffice2Icon className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {publisherNames.length > 1
-                          ? t("gameView.metadata.publishers")
-                          : t("gameView.metadata.publisher")}
-                      </div>
-                      <div
-                        className="font-medium whitespace-nowrap truncate"
-                        title={
-                          publisherNames.length
-                            ? publisherNames.join(", ")
-                            : "—"
-                        }
-                      >
-                        {publisherNames.length
-                          ? publisherNames.map((name, index) => (
-                              <span key={name}>
-                                {index > 0 && ", "}
-                                <button
-                                  type="button"
-                                  className="cursor-pointer hover:text-ps-accent-cool"
-                                  onClick={() =>
-                                    openLibraryFilter("publishers", name)
-                                  }
-                                >
-                                  {name}
-                                </button>
-                              </span>
-                            ))
-                          : "—"}
-                      </div>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <ShieldCheckIcon className="w-5 h-5 mt-0.5 text-ps-muted" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] uppercase tracking-wide text-ps-muted whitespace-nowrap">
-                        {t("gameView.metadata.ageRating")}
-                      </div>
-                      <div
-                        className="font-medium whitespace-nowrap"
-                        title={ageRating ?? "—"}
-                      >
-                        {ageRating ?? "—"}
-                      </div>
-                    </div>
-                  </li>
-                </ul>
-              </Card>
-              <Card
-                title={t("gameView.activity.title")}
-                className="min-h-40"
-                surfaceClassName="surface-panel"
-              >
-                {(() => {
-                  const progresses: Progress[] =
-                    (game as any)?.progresses || [];
-                  // Exclude placeholder negative IDs and optionally current user (we show others)
-                  const others = progresses.filter(
-                    (p) =>
-                      p.id > 0 &&
-                      (p.user?.id ?? (p.user as any)?.ID) !== currentUserId,
-                  );
-                  if (!others.length) {
-                    return (
-                      <div className="text-xs text-ps-muted italic">
-                        {t("gameView.activity.empty")}
-                      </div>
+                    </li>
+                  </ul>
+                </section>
+                <div className="game-cloud-state">
+                  <CloudSaveRow game={game} installed={installedInfo} />
+                </div>
+                <section className="game-activity">
+                  <h2>{t("gameView.activity.title")}</h2>
+                  {(() => {
+                    const progresses: Progress[] =
+                      (game as any)?.progresses || [];
+                    // Exclude placeholder negative IDs and optionally current user (we show others)
+                    const others = progresses.filter(
+                      (p) =>
+                        p.id > 0 &&
+                        (p.user?.id ?? (p.user as any)?.ID) !== currentUserId,
                     );
-                  }
-                  const formatState = (s: string) =>
-                    PROGRESS_LABEL[s]
-                      ? t(PROGRESS_LABEL[s])
-                      : s
-                          .replace(/_/g, " ")
-                          .toLowerCase()
-                          .replace(/\b\w/g, (c) => c.toUpperCase());
-                  return (
-                    <ul className="flex flex-col gap-3 text-sm">
-                      {others.map((p) => {
-                        const uid = p.user?.id ?? (p.user as any)?.ID;
-                        const rawUname =
-                          (p.user as any)?.username ||
-                          fillTemplate(t("community.userFallback"), {
-                            id: uid,
-                          });
-                        const userSeed = uid != null ? String(uid) : rawUname;
-                        const uname = streamerMode
-                          ? maskDisplayName(userSeed)
-                          : rawUname;
-                        const avatarMedia = (p.user as any)?.avatar;
-                        const lastPlayedStr = p.last_played_at
-                          ? new Date(p.last_played_at).toLocaleDateString()
-                          : "—";
-                        const minutes = p.minutes_played || 0;
-                        const hours = minutes / 60;
-                        return (
-                          <li key={p.id} className="flex items-center gap-3">
-                            <UserAvatar
-                              media={avatarMedia}
-                              size={32}
-                              alt={uname}
-                              seed={userSeed}
-                              fallback={
-                                <div className="flex h-full w-full items-center justify-center rounded-[20%] bg-ps-panel-soft text-[10px] font-semibold text-ps-text">
-                                  {uname.slice(0, 2).toUpperCase()}
+                    if (!others.length) {
+                      return (
+                        <div className="text-xs text-ps-muted italic">
+                          {t("gameView.activity.empty")}
+                        </div>
+                      );
+                    }
+                    const formatState = (s: string) =>
+                      PROGRESS_LABEL[s]
+                        ? t(PROGRESS_LABEL[s])
+                        : s
+                            .replace(/_/g, " ")
+                            .toLowerCase()
+                            .replace(/\b\w/g, (c) => c.toUpperCase());
+                    return (
+                      <ul className="flex flex-col gap-3 text-sm">
+                        {others.map((p) => {
+                          const uid = p.user?.id ?? (p.user as any)?.ID;
+                          const rawUname =
+                            (p.user as any)?.username ||
+                            fillTemplate(t("community.userFallback"), {
+                              id: uid,
+                            });
+                          const userSeed = uid != null ? String(uid) : rawUname;
+                          const uname = streamerMode
+                            ? maskDisplayName(userSeed)
+                            : rawUname;
+                          const avatarMedia = (p.user as any)?.avatar;
+                          const lastPlayedStr = p.last_played_at
+                            ? new Date(p.last_played_at).toLocaleDateString()
+                            : "—";
+                          const minutes = p.minutes_played || 0;
+                          const hours = minutes / 60;
+                          return (
+                            <li key={p.id} className="flex items-center gap-3">
+                              <UserAvatar
+                                media={avatarMedia}
+                                size={32}
+                                alt={uname}
+                                seed={userSeed}
+                                fallback={
+                                  <div className="flex h-full w-full items-center justify-center rounded-[20%] bg-ps-panel-soft text-[10px] font-semibold text-ps-text">
+                                    {uname.slice(0, 2).toUpperCase()}
+                                  </div>
+                                }
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-medium truncate text-ps-text">
+                                    {uname}
+                                  </span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-ps-panel-soft text-ps-muted font-medium">
+                                    {formatState(p.state)}
+                                  </span>
                                 </div>
-                              }
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="font-medium truncate text-ps-text">
-                                  {uname}
-                                </span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-ps-panel-soft text-ps-muted font-medium">
-                                  {formatState(p.state)}
-                                </span>
+                                <div className="text-[11px] text-ps-muted mt-0.5 flex items-center justify-between gap-4">
+                                  <span className="truncate">
+                                    {fillTemplate(
+                                      t("gameView.activity.played"),
+                                      {
+                                        time:
+                                          hours >= 1
+                                            ? `${formatDecimal(hours, hours < 10 ? 1 : 0)} h`
+                                            : `${minutes} m`,
+                                      },
+                                    )}
+                                  </span>
+                                  <span className="shrink-0 text-right">
+                                    {fillTemplate(t("gameView.activity.last"), {
+                                      date: lastPlayedStr,
+                                    })}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="text-[11px] text-ps-muted mt-0.5 flex items-center justify-between gap-4">
-                                <span className="truncate">
-                                  {fillTemplate(t("gameView.activity.played"), {
-                                    time:
-                                      hours >= 1
-                                        ? `${formatDecimal(hours, hours < 10 ? 1 : 0)} h`
-                                        : `${minutes} m`,
-                                  })}
-                                </span>
-                                <span className="shrink-0 text-right">
-                                  {fillTemplate(t("gameView.activity.last"), {
-                                    date: lastPlayedStr,
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  );
-                })()}
-              </Card>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })()}
+                </section>
+              </aside>
             </div>
           </div>
-        )}
-
-        {/* Game Settings Modal */}
-        {settingsOpen && game && (
-          <GameSettings
-            game={game}
-            onClose={() => setSettingsOpen(false)}
-            onGameUpdated={(updatedGame) => setGame(updatedGame)}
-            onUninstalled={refetchInstalledGames}
-          />
-        )}
-        <RootPathSelectDialog
-          open={rootSelectOpen}
-          gameTitle={title || game?.title || t("gameView.fallbackTitle")}
-          rootPaths={(() => {
-            try {
-              return getRootPaths();
-            } catch {
-              return [];
-            }
-          })()}
-          onSelect={handleRootPathSelect}
-          onClose={() => setRootSelectOpen(false)}
-          onGoToSettings={handleGoToSettingsFromRootSelect}
+        </>
+      )}
+      {/* Game Settings Modal */}
+      {settingsOpen && game && (
+        <GameSettings
+          game={game}
+          onClose={() => setSettingsOpen(false)}
+          onGameUpdated={(updatedGame) => setGame(updatedGame)}
+          onUninstalled={refetchInstalledGames}
         />
-        <VersionSelectDialog
-          open={versionDialogOpen}
-          gameTitle={title || game?.title || t("gameView.fallbackTitle")}
-          versions={selectableVersions}
-          onClose={() => {
-            setVersionDialogOpen(false);
-            setPendingDownloadAction(null);
-            setPendingRootPath(null);
-            setSelectableVersions([]);
-          }}
-          onSelect={handleVersionSelect}
-        />
-      </div>
+      )}
+      <RootPathSelectDialog
+        open={rootSelectOpen}
+        gameTitle={title || game?.title || t("gameView.fallbackTitle")}
+        rootPaths={(() => {
+          try {
+            return getRootPaths();
+          } catch {
+            return [];
+          }
+        })()}
+        onSelect={handleRootPathSelect}
+        onClose={() => setRootSelectOpen(false)}
+        onGoToSettings={handleGoToSettingsFromRootSelect}
+      />
+      <VersionSelectDialog
+        open={versionDialogOpen}
+        gameTitle={title || game?.title || t("gameView.fallbackTitle")}
+        versions={selectableVersions}
+        onClose={() => {
+          setVersionDialogOpen(false);
+          setPendingDownloadAction(null);
+          setPendingRootPath(null);
+          setSelectableVersions([]);
+        }}
+        onSelect={handleVersionSelect}
+      />
     </div>
   );
 }

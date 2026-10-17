@@ -1,3 +1,4 @@
+import "@/styles/downloads.css";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
@@ -71,6 +72,33 @@ function getStatusChip(download: ActiveDownload): {
       icon: XMarkIcon,
     };
   }
+  if (
+    download.installationStatus === "error" ||
+    download.extractionStatus === "error"
+  ) {
+    return {
+      label: "downloads.status.failed",
+      color: "red",
+      icon: ExclamationTriangleIcon,
+    };
+  }
+  if (
+    download.extractionStatus === "needs-password" ||
+    download.extractionPasswordRequired
+  ) {
+    return {
+      label: "downloads.detail.passwordNeeded",
+      color: "amber",
+      icon: ExclamationTriangleIcon,
+    };
+  }
+  if (download.extractionStatus === "extracting") {
+    return {
+      label: "downloads.detail.extracting",
+      color: "blue",
+      icon: ArchiveBoxIcon,
+    };
+  }
   if (download.installationStatus === "completed") {
     return {
       label: "downloads.status.installed",
@@ -121,7 +149,7 @@ function getExtractionStepState(download: ActiveDownload): StepState {
   ) {
     return "error";
   }
-  return "active";
+  return "pending";
 }
 
 function getInstallationStepState(download: ActiveDownload): StepState {
@@ -180,7 +208,6 @@ function useFolderSize(download: ActiveDownload, isTauri: boolean) {
 
 export function DownloadCard({
   download,
-  index = 0,
 }: Readonly<{
   download: ActiveDownload;
   index?: number;
@@ -355,122 +382,89 @@ export function DownloadCard({
   })();
 
   return (
-    <div
-      className="surface-panel rounded-2xl p-4 transition-colors duration-150 hover:border-ps-line-strong animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none sm:p-5"
-      style={{ animationDelay: `${Math.min(index * 0.05, 0.3)}s` }}
-    >
-      <div className="flex items-center gap-4 sm:gap-5">
-        <div className="shrink-0">
-          {(download.gameMetadata as any)?.cover ? (
-            <Media
-              media={(download.gameMetadata as any).cover}
-              width={112}
-              height={150}
-              square
-              alt={fillTemplate(t("downloads.card.coverAlt"), { title })}
-              className="overflow-hidden rounded-lg border border-ps-line bg-ps-panel-soft shadow-sm"
-              gameId={download.gameId}
-              mediaSlot="cover"
-              fallback={
-                <CoverPlaceholder
-                  title={title || t("downloads.card.gameFallback")}
-                  size="large"
-                  className="h-full w-full"
-                />
-              }
-            />
-          ) : (
-            <div className="aspect-3/4 w-28 overflow-hidden rounded-lg border border-dashed border-ps-line bg-ps-panel-soft">
+    <article className="download-queue-item" data-status={download.status}>
+      <div className="download-queue-cover">
+        {(download.gameMetadata as any)?.cover ? (
+          <Media
+            media={(download.gameMetadata as any).cover}
+            width={64}
+            height={86}
+            square
+            fit="cover"
+            alt={fillTemplate(t("downloads.card.coverAlt"), { title })}
+            className="download-cover-image"
+            gameId={download.gameId}
+            mediaSlot="cover"
+            fallback={
               <CoverPlaceholder
                 title={title || t("downloads.card.gameFallback")}
-                size="large"
+                size="small"
                 className="h-full w-full"
               />
-            </div>
+            }
+          />
+        ) : (
+          <CoverPlaceholder
+            title={title || t("downloads.card.gameFallback")}
+            size="small"
+            className="h-full w-full"
+          />
+        )}
+      </div>
+      <div className="download-queue-main">
+        <div className="download-item-heading">
+          <h3 title={title || download.filename}>
+            {title || download.filename}
+          </h3>
+          <Badge color={status.color}>
+            <status.icon className="size-3.5" aria-hidden="true" />
+            {t(status.label)}
+          </Badge>
+        </div>
+        <p className="download-filename" title={download.filename}>
+          {download.filename}
+        </p>
+        <div className="download-transfer-numbers">
+          <span>
+            {formatBytes(download.received)} /{" "}
+            {download.total ? formatBytes(download.total) : t("common.unknown")}
+          </span>
+          {download.speedBps !== undefined &&
+            download.status === "downloading" && (
+              <strong>{formatSpeed(download.speedBps)}</strong>
+            )}
+          {folderSize > 0 && (
+            <span title={t("pipeline.card.folderSize")}>
+              {formatBytes(folderSize)}
+            </span>
           )}
         </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3
-                className="truncate text-base font-semibold tracking-[-0.02em] text-ps-text"
-                title={title || download.filename}
-              >
-                {title || download.filename}
-              </h3>
-              <p
-                className="mt-1 truncate font-mono text-sm text-ps-muted"
-                title={download.filename}
-              >
-                {download.filename}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ps-muted">
-                <span className="tabular-nums">
-                  {formatBytes(download.received)} /{" "}
-                  {download.total
-                    ? formatBytes(download.total)
-                    : t("common.unknown")}
-                </span>
-                {download.speedBps !== undefined &&
-                  download.status === "downloading" && (
-                    <span className="tabular-nums">
-                      {formatSpeed(download.speedBps)}
-                    </span>
-                  )}
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <Badge color={status.color} className="shrink-0">
-                <status.icon className="size-4" aria-hidden="true" />
-                {t(status.label)}
-              </Badge>
-              {folderSize > 0 && (
-                <span
-                  className="text-xs tabular-nums text-ps-muted"
-                  title={t("pipeline.card.folderSize")}
-                >
-                  {formatBytes(folderSize)}
-                </span>
-              )}
-            </div>
-          </div>
+        <div className="download-pipeline">
+          <PhaseSteps steps={steps} />
+        </div>
+        <div className="download-current-phase">
+          <PhaseDetail
+            download={download}
+            isTauri={isTauri}
+            password={password}
+            onPasswordChange={setPassword}
+            installState={installState}
+            onUpdateInstallState={updateInstallState}
+            onCloseInstallView={closeInstallView}
+            onSetUndetectedMode={setUndetectedMode}
+            onForceInstall={() => {
+              if (!installState) return;
+              // The uninstall flow reads the forced type from the version config.
+              void persistForcedGameType(
+                download.gameId,
+                installState.forcedType,
+              );
+              void openInstallFlow(installState.forcedType);
+            }}
+          />
         </div>
       </div>
-
-      {download.installationError && (
-        <p role="alert" className="mt-3 text-sm text-ps-danger">
-          {download.installationError}
-        </p>
-      )}
-
-      <div className="mt-4">
-        <PhaseSteps steps={steps} />
-      </div>
-
-      <div className="mt-4">
-        <PhaseDetail
-          download={download}
-          isTauri={isTauri}
-          password={password}
-          onPasswordChange={setPassword}
-          installState={installState}
-          onUpdateInstallState={updateInstallState}
-          onCloseInstallView={closeInstallView}
-          onSetUndetectedMode={setUndetectedMode}
-          onForceInstall={() => {
-            if (!installState) return;
-            // The uninstall flow reads the forced type from the version config.
-            void persistForcedGameType(
-              download.gameId,
-              installState.forcedType,
-            );
-            void openInstallFlow(installState.forcedType);
-          }}
-        />
-      </div>
-
-      <div className="mt-4 flex items-center justify-end gap-2 border-t border-ps-line pt-3">
+      <div className="download-queue-actions">
         {primaryAction}
         <Dropdown>
           <DropdownButton
@@ -525,6 +519,6 @@ export function DownloadCard({
           </DropdownMenu>
         </Dropdown>
       </div>
-    </div>
+    </article>
   );
 }

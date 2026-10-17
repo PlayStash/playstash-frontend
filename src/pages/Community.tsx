@@ -31,6 +31,7 @@ import type { PlaystashGame, PlaystashUser, Progress } from "../api";
 import { CommunityChatButton } from "@/components/GameChatButton";
 import { translate, useTranslation, type TranslationKey } from "@/i18n";
 import { formatMessage } from "@/utils/formatMessage";
+import "@/styles/workspaces.css";
 
 type UserDetailsMap = Record<number, PlaystashUser>;
 type ProfileProgressSort = "last" | "time" | "title" | "state";
@@ -193,7 +194,7 @@ function getAvatarFallback(user: PlaystashUser | null | undefined) {
     .toUpperCase();
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,rgba(84,73,198,0.32),rgba(24,24,39,0.96))] text-sm font-bold uppercase tracking-[0.14em] text-white/90">
+    <div className="flex h-full w-full items-center justify-center bg-ps-panel-strong text-sm font-semibold text-ps-muted">
       {source || "PS"}
     </div>
   );
@@ -307,10 +308,7 @@ function GamePoster({
 
   return (
     <div
-      className={clsx(
-        "overflow-hidden rounded-2xl border border-ps-line/70 bg-ps-panel-soft shadow-sm",
-        className,
-      )}
+      className={clsx("community-poster", className)}
       style={{ width: `${width}px`, height: `${height}px` }}
     >
       {coverId ? (
@@ -320,7 +318,7 @@ function GamePoster({
           height={height}
           square
           alt={title}
-          className="h-full w-full rounded-2xl"
+          className="h-full w-full"
           gameId={game?.id}
           mediaSlot="cover"
           fallback={
@@ -360,29 +358,23 @@ function NetworkUserCard({
   return (
     <Link
       to={`/community/${user.id}`}
-      className="group block h-full rounded-[1.75rem] focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
+      className="group block min-w-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ps-accent"
     >
-      <article
-        className={clsx(
-          "surface-panel relative flex h-full flex-col overflow-hidden rounded-[1.75rem] p-5 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)",
-          isCurrentUser && "ring-1 ring-ps-accent/35",
-        )}
-      >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(120%_90%_at_50%_0%,rgba(132,123,237,0.14),transparent_65%)]" />
+      <article className="community-member relative flex h-full flex-col">
         <div className="relative flex flex-1 flex-col">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
               <UserAvatar
                 media={user.avatar}
-                size={76}
+                size={56}
                 alt={displayName}
                 fallback={getAvatarFallback(user)}
                 seed={String(user.id)}
-                className="border border-ps-line/70 bg-ps-panel-soft shadow-sm"
+                className="bg-ps-panel-soft"
               />
               <div className="min-w-0 space-y-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <h3 className="min-w-0 truncate text-lg font-semibold tracking-[-0.02em] text-ps-text">
+                  <h3 className="min-w-0 truncate text-base font-semibold tracking-[-0.02em] text-ps-text">
                     {displayName}
                   </h3>
                   {isCurrentUser && (
@@ -415,35 +407,25 @@ function NetworkUserCard({
               </div>
             </div>
 
-            <ArrowRightIcon className="size-5 shrink-0 text-ps-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-ps-accent-cool" />
+            <ArrowRightIcon className="size-4 shrink-0 text-ps-muted group-hover:text-ps-accent" />
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="community-member-stats">
             {[
               { label: t("community.stat.tracked"), value: stats.tracked },
               { label: t("community.stat.current"), value: stats.playing },
               { label: t("community.stat.finished"), value: stats.completed },
               { label: t("community.stat.saved"), value: stats.bookmarks },
             ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-ps-line/70 bg-ps-panel-soft px-3 py-2 text-center"
-              >
-                <div className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-ps-muted">
-                  {item.label}
-                </div>
-                <div
-                  className="mt-2 text-lg font-semibold text-ps-text"
-                  data-numeric
-                >
-                  {item.value}
-                </div>
+              <div key={item.label}>
+                <p className="truncate">{item.label}</p>
+                <strong data-numeric>{item.value}</strong>
               </div>
             ))}
           </div>
 
-          <div className="mt-auto pt-5">
-            <div className="mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+          <div className="mt-auto">
+            <div className="mb-3 text-xs font-medium text-ps-muted">
               {t("community.recentlyPlayed")}
             </div>
             <div className="flex gap-2 overflow-hidden">
@@ -464,7 +446,7 @@ function NetworkUserCard({
                   );
                 })
               ) : (
-                <div className="flex h-27 w-full items-center justify-center rounded-2xl border border-dashed border-ps-line bg-ps-panel-soft text-sm text-ps-muted">
+                <div className="flex h-27 w-full items-center border border-dashed border-ps-line px-4 text-sm text-ps-muted">
                   {t("community.freshProfile")}
                 </div>
               )}
@@ -486,9 +468,9 @@ function ProfileProgressCard({ progress }: { progress: Progress }) {
   return (
     <Link
       to={game?.id ? `/library/${game.id}` : "/library"}
-      className="group block rounded-3xl focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
+      className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ps-accent"
     >
-      <article className="surface-panel h-full rounded-3xl p-4 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)">
+      <article className="profile-progress h-full">
         <div className="flex gap-4">
           <GamePoster
             game={game || undefined}
@@ -526,7 +508,7 @@ function ProfileProgressCard({ progress }: { progress: Progress }) {
                 </span>
               </div>
             </div>
-            <div className="mt-4 text-xs uppercase tracking-[0.16em] text-ps-muted/80">
+            <div className="mt-4 text-xs text-ps-muted">
               {t("community.openGamePage")}
             </div>
           </div>
@@ -712,10 +694,10 @@ export default function Community() {
 
   if (!serverUrl) {
     return (
-      <div className="flex min-h-full flex-col gap-6">
+      <div className="ps-workspace flex min-h-full flex-col gap-6">
         <Heading>{t("nav.community")}</Heading>
         <Divider className="border-ps-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+        <div className="border-y border-ps-line py-8 text-sm text-ps-muted">
           {t("community.noServer")}
         </div>
       </div>
@@ -723,8 +705,8 @@ export default function Community() {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="ps-workspace flex min-h-full flex-col gap-6">
+      <div className="workspace-heading">
         <div className="space-y-2">
           <Heading>{t("nav.community")}</Heading>
           <Text className="max-w-2xl">{t("community.description")}</Text>
@@ -745,10 +727,8 @@ export default function Community() {
           </span>
         </div>
       </div>
-      <Divider className="border-ps-line/80" />
-
       <div className="w-full max-w-sm">
-        <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+        <label className="mb-2 block text-xs font-medium text-ps-muted">
           {t("community.searchMembers")}
         </label>
         <Input
@@ -762,28 +742,24 @@ export default function Community() {
       </div>
 
       {error && (
-        <div className="rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-500">
+        <div className="rounded-md bg-rose-500/10 px-4 py-3 text-sm text-rose-500">
           {error}
         </div>
       )}
 
       {loading || !detailsDone ? (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="community-members">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="surface-panel h-96 animate-pulse rounded-[1.75rem]"
+              className="h-80 animate-pulse border-b border-ps-line bg-ps-panel-soft"
             />
           ))}
         </div>
       ) : filteredMembers.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredMembers.map((member, i) => (
-            <div
-              key={member.id}
-              className="animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none"
-              style={{ animationDelay: `${Math.min(i * 0.04, 0.3)}s` }}
-            >
+        <div className="community-members">
+          {filteredMembers.map((member) => (
+            <div key={member.id}>
               <NetworkUserCard
                 user={member}
                 isCurrentUser={member.id === currentUserId}
@@ -792,7 +768,7 @@ export default function Community() {
           ))}
         </div>
       ) : (
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+        <div className="border-y border-ps-line py-8 text-sm text-ps-muted">
           {userSearch.trim()
             ? t("community.noMatches")
             : t("community.noMembers")}

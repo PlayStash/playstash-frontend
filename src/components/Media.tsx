@@ -74,7 +74,7 @@ export function Media({
         borderRadius: square ? 0 : "50%",
         overflow: "hidden",
         background:
-          "linear-gradient(110deg,#232230 8%,#2d2c3a 18%,#232230 33%)",
+          "linear-gradient(110deg,var(--color-ps-panel) 8%,var(--color-ps-panel-strong) 18%,var(--color-ps-panel) 33%)",
       }}
     >
       {/* Only animate while a fetch is actually in flight. Media that is still
@@ -90,7 +90,7 @@ export function Media({
             inset: 0,
             animation: "avatar-shimmer 1.2s linear infinite",
             background:
-              "linear-gradient(110deg,#232230 8%,#2d2c3a 18%,#232230 33%)",
+              "linear-gradient(110deg,var(--color-ps-panel) 8%,var(--color-ps-panel-strong) 18%,var(--color-ps-panel) 33%)",
             backgroundSize: "200% 100%",
           }}
         />

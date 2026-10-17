@@ -17,7 +17,7 @@ export function Sidebar({
       {...props}
       className={clsx(
         className,
-        "surface-shell flex h-full min-h-0 flex-col overflow-hidden rounded-[1.75rem]",
+        "surface-shell flex h-full min-h-0 flex-col overflow-hidden",
       )}
     />
   );
@@ -92,10 +92,7 @@ export function SidebarDivider({
   return (
     <hr
       {...props}
-      className={clsx(
-        className,
-        "my-4 border-t border-ps-line lg:-mx-4",
-      )}
+      className={clsx(className, "my-4 border-t border-ps-line lg:-mx-4")}
     />
   );
 }
@@ -122,7 +119,7 @@ export function SidebarHeading({
       {...props}
       className={clsx(
         className,
-        "mb-1 px-3 text-[0.72rem]/6 font-semibold uppercase tracking-[0.16em] text-ps-muted",
+        "mb-1 px-3 text-xs/6 font-medium text-ps-muted",
       )}
     />
   );
@@ -145,7 +142,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
 ) {
   let classes = clsx(
     // Base
-    "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[0.95rem]/6 font-medium tracking-[-0.01em] text-ps-text sm:py-2.5 sm:text-sm/6",
+    "flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-[0.95rem]/6 font-medium tracking-[-0.01em] text-ps-text sm:py-2.5 sm:text-sm/6",
     // Transition
     "transition-colors duration-150",
     // Leading icon/icon-only
@@ -175,7 +172,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
             duration: DURATION_BASE,
             ease: EASE_OUT,
           }}
-          className="absolute inset-y-2 left-0 w-1 rounded-full bg-ps-accent"
+          className="absolute inset-y-2 left-0 w-px bg-ps-accent"
         />
       )}
       {typeof props.href === "string" ? (

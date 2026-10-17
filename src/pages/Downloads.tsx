@@ -1,15 +1,15 @@
+import "@/styles/downloads.css";
 import { useDownloads } from "@/context/DownloadContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { DownloadCard } from "@/components/downloads/DownloadCard";
 import { confirmPipeline } from "@/components/downloads/PipelineDialogs";
 import { Heading } from "@tw/heading";
 import { Text } from "@tw/text";
-import { Divider } from "@tw/divider";
 import { Button } from "@tw/button";
 import { ArrowDownTrayIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useMemo, useState } from "react";
 import { useTranslation } from "@/i18n";
-import { deleteAllDownloadCards } from "@/utils/downloadPipeline";
+import { deleteAllDownloadCards, isCardBusy } from "@/utils/downloadPipeline";
 
 export default function Downloads() {
   const { downloads, deleteDownloadCard } = useDownloads();
@@ -17,6 +17,41 @@ export default function Downloads() {
   const { t } = useTranslation();
   const [deletingAll, setDeletingAll] = useState(false);
   const downloadArray = useMemo(() => Object.values(downloads), [downloads]);
+
+  const queue = useMemo(
+    () =>
+      [...downloadArray].sort((a, b) => {
+        const priority = (download: typeof a) =>
+          isCardBusy(download)
+            ? 0
+            : download.status === "paused"
+              ? 1
+              : download.status === "error" ||
+                  download.extractionStatus === "error" ||
+                  download.installationStatus === "error"
+                ? 2
+                : 3;
+        return (
+          priority(a) - priority(b) || (b.startedAt || 0) - (a.startedAt || 0)
+        );
+      }),
+    [downloadArray],
+  );
+  const phaseCounts = useMemo(
+    () => ({
+      download: downloadArray.filter((item) => item.status === "downloading")
+        .length,
+      extraction: downloadArray.filter(
+        (item) => item.extractionStatus === "extracting",
+      ).length,
+      installation: downloadArray.filter((item) =>
+        ["copying", "launching", "running"].includes(
+          item.installationStatus || "",
+        ),
+      ).length,
+    }),
+    [downloadArray],
+  );
 
   const handleDeleteAll = async () => {
     const confirmed = await confirmPipeline({
@@ -40,7 +75,7 @@ export default function Downloads() {
   };
 
   return (
-    <div className="flex min-h-full flex-col gap-6">
+    <div className="downloads-page">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
           <Heading>{t("nav.downloads")}</Heading>
@@ -62,11 +97,29 @@ export default function Downloads() {
           </Button>
         )}
       </div>
-      <Divider className="border-ps-line/80" />
+      {downloadArray.length > 0 && (
+        <div
+          className="download-queue-summary"
+          aria-label={t("downloads.step.phases")}
+        >
+          <span>
+            {t("downloads.step.download")}
+            <strong>{phaseCounts.download}</strong>
+          </span>
+          <span>
+            {t("downloads.step.extraction")}
+            <strong>{phaseCounts.extraction}</strong>
+          </span>
+          <span>
+            {t("downloads.step.installation")}
+            <strong>{phaseCounts.installation}</strong>
+          </span>
+        </div>
+      )}
 
       {downloadArray.length > 0 && (
-        <div className="space-y-4">
-          {downloadArray.map((download, index) => (
+        <div className="download-queue">
+          {queue.map((download, index) => (
             <DownloadCard
               key={download.gameId}
               download={download}
@@ -77,8 +130,8 @@ export default function Downloads() {
       )}
 
       {downloadArray.length === 0 && (
-        <div className="surface-panel-soft rounded-3xl px-6 py-16 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-ps-line bg-ps-panel">
+        <div className="download-empty">
+          <div className="download-empty-icon">
             <ArrowDownTrayIcon
               className="size-7 text-ps-muted"
               aria-hidden="true"
@@ -90,6 +143,9 @@ export default function Downloads() {
           <p className="mt-1 text-sm text-ps-muted">
             {t("downloads.page.emptyHint")}
           </p>
+          <Button outline href="/library" className="mt-6">
+            {t("nav.library")}
+          </Button>
         </div>
       )}
     </div>

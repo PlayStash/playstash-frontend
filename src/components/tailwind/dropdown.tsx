@@ -16,7 +16,11 @@ export function DropdownButton<T extends React.ElementType = typeof Button>({
   ...props
 }: { className?: string } & Omit<Headless.MenuButtonProps<T>, "className">) {
   return (
-    <Headless.MenuButton as={as} {...props} className={clsx(className, "cursor-pointer")} />
+    <Headless.MenuButton
+      as={as}
+      {...props}
+      className={clsx(className, "cursor-pointer")}
+    />
   );
 }
 
@@ -35,7 +39,7 @@ export function DropdownMenu({
         // Anchor positioning
         "[--anchor-gap:--spacing(2)] [--anchor-padding:--spacing(1)] data-[anchor~=end]:[--anchor-offset:6px] data-[anchor~=start]:[--anchor-offset:-6px] sm:data-[anchor~=end]:[--anchor-offset:4px] sm:data-[anchor~=start]:[--anchor-offset:-4px]",
         // Base styles
-        "isolate w-max rounded-[1.25rem] p-1.5",
+        "isolate w-max rounded-lg p-1.5",
         // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
         "outline outline-transparent focus:outline-hidden",
         // Handle scrolling when menu won't fit in viewport
@@ -47,7 +51,7 @@ export function DropdownMenu({
         // Define grid at the menu level if subgrid is supported
         "supports-[grid-template-columns:subgrid]:grid supports-[grid-template-columns:subgrid]:grid-cols-[auto_1fr_1.5rem_0.5rem_auto]",
         // Transitions
-        "transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0",
+        "transition data-leave:duration-100 data-leave:ease-out data-closed:data-leave:opacity-0",
       )}
     />
   );
@@ -69,13 +73,13 @@ export function DropdownItem({
   let classes = clsx(
     className,
     // Base styles
-    "group cursor-pointer rounded-xl px-3.5 py-2.5 focus:outline-hidden sm:px-3 sm:py-1.5",
+    "group cursor-pointer rounded-md px-3.5 py-2.5 focus:outline-hidden sm:px-3 sm:py-1.5",
     // Smooth hover/focus transitions
     "transition-colors duration-150",
     // Text styles
     "text-left text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
     // Focus
-    "data-focus:bg-ps-accent data-focus:text-white",
+    "data-focus:bg-ps-accent data-focus:text-ps-on-accent",
     // Disabled state
     "data-disabled:opacity-50",
     // Forced colors mode
@@ -84,7 +88,7 @@ export function DropdownItem({
     "col-span-full grid grid-cols-[auto_1fr_1.5rem_0.5rem_auto] items-center supports-[grid-template-columns:subgrid]:grid-cols-subgrid",
     // Icons
     "*:data-[slot=icon]:col-start-1 *:data-[slot=icon]:row-start-1 *:data-[slot=icon]:mr-2.5 *:data-[slot=icon]:-ml-0.5 *:data-[slot=icon]:size-5 sm:*:data-[slot=icon]:mr-2 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-ps-muted data-focus:*:data-[slot=icon]:text-white",
+    "*:data-[slot=icon]:text-ps-muted data-focus:*:data-[slot=icon]:text-ps-on-accent",
     // Avatar
     "*:data-[slot=avatar]:mr-2.5 *:data-[slot=avatar]:-ml-1 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:mr-2 sm:*:data-[slot=avatar]:size-5",
   );
@@ -195,7 +199,7 @@ export function DropdownDescription({
       {...props}
       className={clsx(
         className,
-        "col-span-2 col-start-2 row-start-2 text-sm/5 text-ps-muted group-data-focus:text-white sm:text-xs/5 forced-colors:group-data-focus:text-[HighlightText]",
+        "col-span-2 col-start-2 row-start-2 text-sm/5 text-ps-muted group-data-focus:text-ps-on-accent sm:text-xs/5 forced-colors:group-data-focus:text-[HighlightText]",
       )}
     />
   );
@@ -222,7 +226,7 @@ export function DropdownShortcut({
         <kbd
           key={index}
           className={clsx([
-            "min-w-[2ch] text-center font-sans text-ps-muted capitalize group-data-focus:text-white forced-colors:group-data-focus:text-[HighlightText]",
+            "min-w-[2ch] text-center font-sans text-ps-muted capitalize group-data-focus:text-ps-on-accent forced-colors:group-data-focus:text-[HighlightText]",
             // Make sure key names that are longer than one character (like "Tab") have extra space
             index > 0 && char.length > 1 && "pl-1",
           ])}

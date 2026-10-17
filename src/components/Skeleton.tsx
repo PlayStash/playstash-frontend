@@ -32,11 +32,6 @@ export function SkeletonText({
 /** A card-shaped skeleton placeholder. */
 export function SkeletonCard({ className }: { className?: string }) {
   return (
-    <Skeleton
-      className={clsx(
-        "aspect-3/4 w-full rounded-3xl",
-        className,
-      )}
-    />
+    <Skeleton className={clsx("aspect-2/3 w-full rounded-md", className)} />
   );
 }
