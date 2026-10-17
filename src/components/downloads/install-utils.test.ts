@@ -31,6 +31,29 @@ describe("pickPreferredExecutable", () => {
     );
   });
 
+  it("skips prerequisite installers and helper tools", () => {
+    expect(
+      pickPreferredExecutable([
+        "_Redist/dotNetFx40_Full_setup.exe",
+        "_Redist/vcredist_x64.exe",
+        "Exquisite Fishing/ExquisiteFishing.exe",
+        "Exquisite Fishing/UnityCrashHandler64.exe",
+      ]),
+    ).toBe("Exquisite Fishing/ExquisiteFishing.exe");
+  });
+
+  it("prefers the shallowest executable and Ren'Py's 64-bit build", () => {
+    expect(
+      pickPreferredExecutable([
+        "Game/Binaries/Win64/Game-Win64-Shipping.exe",
+        "Game.exe",
+      ]),
+    ).toBe("Game.exe");
+    expect(
+      pickPreferredExecutable(["Sexbot/SexBot-32.exe", "Sexbot/SexBot.exe"]),
+    ).toBe("Sexbot/SexBot.exe");
+  });
+
   it("falls back to the first executable when the preferred one is not found", () => {
     expect(pickPreferredExecutable(executables, "missing/foo.exe")).toBe(
       "Game/Game.exe",

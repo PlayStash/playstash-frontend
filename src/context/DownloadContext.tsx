@@ -25,7 +25,10 @@ import {
   getSkipAutoResumeIds,
   setSkipAutoResume,
 } from "@/utils/downloadFormat";
-import { pickPreferredInstaller } from "@/components/downloads/install-utils";
+import {
+  pickPreferredExecutable,
+  pickPreferredInstaller,
+} from "@/components/downloads/install-utils";
 import { mergeLaunchDefaults } from "@/components/downloads/launch-defaults";
 import type { PlayStashConfig } from "@/models/playstashconfig";
 import type { GameMetadata } from "@/api/models/GameMetadata";
@@ -2447,7 +2450,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
           "list_launch_executables",
           { installationPath: d.installationDirectory },
         ).catch(() => ({ executables: [] as string[] }));
-        executable = executables[0] ?? "";
+        executable = pickPreferredExecutable(executables);
       }
       if (!executable) {
         pipelineToast(translate("pipeline.shortcut.noExecutable"));

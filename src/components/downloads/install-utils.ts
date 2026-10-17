@@ -142,14 +142,34 @@ export function pickPreferredInstaller(options: string[], preferred?: string) {
   );
 }
 
+// Folders that only ship prerequisites (e.g. `_Redist`, `_CommonRedist`).
+const PREREQUISITE_FOLDER =
+  /^(_?common_?redist|_?redist(ributables?)?|directx|dotnet|vcredist|physx|prerequisites?|installers?|support)$/i;
+// Prerequisite installers and helper tools that are never the game itself.
+const HELPER_EXECUTABLE =
+  /(vc_?redist|dxsetup|dxwebsetup|dotnetfx|ndp\d|oalinst|physx|xnafx|ue\d?prereq|windowsdesktop-runtime|unitycrashhandler|crashpad|crashreport|notification_helper|^unins\d*|^setup|^install)/i;
+
+/** Lower is a better launch candidate: the game before helpers, shallow first. */
+function launchPreferenceScore(path: string) {
+  const parts = normalizeRelativePath(path).split("/");
+  const name = parts[parts.length - 1].replace(/\.[^.]+$/, "");
+  let score = parts.length;
+  if (parts.slice(0, -1).some((part) => PREREQUISITE_FOLDER.test(part)))
+    score += 1000;
+  if (HELPER_EXECUTABLE.test(name)) score += 1000;
+  // Ren'Py ships a 32-bit twin (`Game-32.exe`) next to the 64-bit game.
+  if (/-32$/.test(name)) score += 1;
+  return score;
+}
+
 /**
  * Resolve the launch executable to auto-select after installation.
  *
  * Prefers the game's configured `launch_executable` when it matches a real
  * candidate (case-insensitive, separator-normalized). When nothing is
- * configured or nothing matches, falls back to auto-detecting the first
- * available executable — restoring the legacy client's behavior of picking a
- * default launch executable automatically.
+ * configured or nothing matches, auto-detects the most likely game
+ * executable: prerequisite installers (`_Redist/vcredist_x64.exe`) and helper
+ * tools rank last, shallower files first, otherwise the listed order.
  */
 export function pickPreferredExecutable(options: string[], preferred?: string) {
   if (!options.length) return "";
@@ -162,5 +182,11 @@ export function pickPreferredExecutable(options: string[], preferred?: string) {
     if (exactMatch) return exactMatch;
   }
 
-  return options[0];
+  return options
+    .map((option, index) => ({ option, index }))
+    .sort(
+      (a, b) =>
+        launchPreferenceScore(a.option) - launchPreferenceScore(b.option) ||
+        a.index - b.index,
+    )[0].option;
 }
