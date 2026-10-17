@@ -7,17 +7,121 @@ on:
       - dev
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      windows_preview:
+        description: Build a Windows preview installer without publishing a release
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
-  group: deploy-${{ github.repository }}
+  group: deploy-${{ github.repository }}${{ inputs.windows_preview && format('-preview-{0}', github.ref) || '' }}
   cancel-in-progress: false
 
 jobs:
   test:
+    if: inputs.windows_preview != true
     uses: ./.github/workflows/test.yml
+
+  windows-preview:
+    name: Build Windows preview
+    if: github.event_name == 'workflow_dispatch' && inputs.windows_preview
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          cache-on-failure: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Setup Java for API generation
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        env:
+          PLAYSTASH_API_SPEC_PATH: api-spec/playstash.openapi.json
+        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Compute preview build metadata
+        id: build-info
+        env:
+          PLAYSTASH_BUILD_CHANNEL: unstable
+        run: node scripts/compute-build-info.mjs package.json
+
+      - name: Prepare preview bundle configuration
+        shell: pwsh
+        run: |
+          node scripts/write-cargo-version.mjs src-tauri/Cargo.toml '${{ steps.build-info.outputs.build_version }}'
+          $config = Get-Content src-tauri/tauri.release.conf.json -Raw | ConvertFrom-Json
+          $config.bundle.createUpdaterArtifacts = $false
+          $config | ConvertTo-Json -Depth 20 | Set-Content src-tauri/tauri.release.generated.json -Encoding utf8
+
+      - name: Restore Ludusavi build cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/index
+            ${{ runner.temp }}/ludusavi-target
+          key: ludusavi-v1-${{ runner.os }}-${{ runner.arch }}-windows-${{ hashFiles('tooling/ludusavi/**', 'scripts/build-ludusavi.mjs') }}
+
+      - name: Build patched Ludusavi sidecar
+        shell: bash
+        run: node scripts/build-ludusavi.mjs --upstream-tests --target x86_64-pc-windows-msvc --target-dir "$RUNNER_TEMP/ludusavi-target"
+
+      - name: Verify Ludusavi sidecar provenance
+        run: node scripts/build-ludusavi.mjs --verify --target x86_64-pc-windows-msvc
+
+      - name: Remove stale installer bundles
+        shell: pwsh
+        run: |
+          $workspacePath = [IO.Path]::GetFullPath($PWD.Path) + [IO.Path]::DirectorySeparatorChar
+          $bundlePath = [IO.Path]::GetFullPath((Join-Path $PWD 'src-tauri/target/release/bundle'))
+          if (-not $bundlePath.StartsWith($workspacePath, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Bundle path must stay inside the checked-out workspace.'
+          }
+          if (Test-Path -LiteralPath $bundlePath) {
+            Remove-Item -LiteralPath $bundlePath -Recurse -Force
+          }
+
+      - name: Build Windows installer
+        env:
+          PLAYSTASH_BUILD_VERSION: ${{ steps.build-info.outputs.build_version }}
+          PLAYSTASH_BUILD_CHANNEL: ${{ steps.build-info.outputs.build_channel }}
+          PLAYSTASH_BUILD_COMMIT: ${{ steps.build-info.outputs.build_commit }}
+          PLAYSTASH_BUILD_ID: ${{ steps.build-info.outputs.build_id }}
+          PLAYSTASH_RELEASE_REF: ${{ github.ref_name }}
+        run: pnpm exec tauri build --config src-tauri/tauri.release.generated.json --bundles nsis
+
+      - name: Upload preview installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: playstash-windows-preview-${{ steps.build-info.outputs.build_commit }}
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
 
   release:
     needs: test
