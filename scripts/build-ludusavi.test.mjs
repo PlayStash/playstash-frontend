@@ -24,6 +24,7 @@ import {
   evaluateAudit,
   executableFormat,
   loadVerifiedTooling,
+  ludusaviAuditIgnoreArgs,
   mergeProvenance,
   parseArgs,
   parseRustcHost,
@@ -95,6 +96,65 @@ test("rejects a changed lockfile before downloading anything", () => {
       /Integrity verification failed/,
     );
   });
+});
+
+test("scopes ZIP audit applicability to the exact reviewed build inputs", () => {
+  const { provenance, auditApplicabilityArgs } = loadVerifiedTooling();
+  assert.deepEqual(auditApplicabilityArgs, [
+    "--ignore",
+    "RUSTSEC-2026-0367",
+    "--ignore",
+    "RUSTSEC-2026-0368",
+    "--ignore",
+    "RUSTSEC-2026-0369",
+  ]);
+  const changes = [
+    (pins) => (pins.source.archive_sha256 = "a".repeat(64)),
+    (pins) => (pins.lockfile_sha256 = "a".repeat(64)),
+    (pins) => (pins.patches[0].sha256 = "a".repeat(64)),
+    (pins) => (pins.patches[0].path = "patches/new.json"),
+    (pins) => pins.patches.pop(),
+    (pins) => pins.patches.push({ path: "new.json", sha256: "a".repeat(64) }),
+    (pins) => (pins.vendor_sources[0].archive_sha256 = "a".repeat(64)),
+  ];
+  for (const change of changes) {
+    const changed = structuredClone(provenance);
+    change(changed);
+    assert.throws(
+      () => ludusaviAuditIgnoreArgs(changed),
+      /applicability no longer matches/,
+    );
+  }
+});
+
+test("does not expand applicability to unrelated advisories or hide findings", () => {
+  const { provenance } = loadVerifiedTooling();
+  withTempDir((directory) => {
+    const tooling = copyTooling(directory);
+    const file = path.join(tooling, "audit-applicability.json");
+    const review = JSON.parse(readFileSync(file, "utf8"));
+    review.advisories.push({
+      id: "RUSTSEC-2099-0001",
+      reason: "Unreviewed finding",
+      evidence: ["none"],
+    });
+    writeFileSync(file, JSON.stringify(review));
+    assert.throws(
+      () => ludusaviAuditIgnoreArgs(provenance, tooling),
+      /applicability no longer matches/,
+    );
+  });
+  assert.throws(
+    () =>
+      evaluateAudit({
+        vulnerabilities: {
+          count: 1,
+          list: [{ advisory: { id: "RUSTSEC-2099-0001" } }],
+        },
+        warnings: {},
+      }),
+    /unresolved vulnerabilities/,
+  );
 });
 
 test("rejects a changed patch before downloading anything", () => {

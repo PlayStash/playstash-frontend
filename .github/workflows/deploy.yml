@@ -86,6 +86,7 @@ jobs:
             ~/.cargo/registry/index
             ${{ runner.temp }}/ludusavi-target
           key: ludusavi-v1-${{ runner.os }}-${{ runner.arch }}-windows-${{ hashFiles('tooling/ludusavi/**', 'scripts/build-ludusavi.mjs') }}
+          restore-keys: ludusavi-v1-${{ runner.os }}-${{ runner.arch }}-windows-
 
       - name: Build patched Ludusavi sidecar
         shell: bash

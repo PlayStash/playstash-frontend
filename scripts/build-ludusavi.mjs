@@ -163,7 +163,50 @@ export function loadVerifiedTooling(toolingDir = TOOLING_DIR) {
       throw new Error("Invalid vendored source provenance.");
     }
   }
-  return { provenance, lockfile, patches };
+  const auditApplicabilityArgs = ludusaviAuditIgnoreArgs(
+    provenance,
+    toolingDir,
+  );
+  return { provenance, lockfile, patches, auditApplicabilityArgs };
+}
+
+/**
+ * These reviewed findings concern APIs that the pinned Ludusavi source never
+ * calls. Any source, dependency graph or patch change requires another review.
+ * This policy belongs only to the sidecar; it is not a native-app audit waiver.
+ */
+export function ludusaviAuditIgnoreArgs(provenance, toolingDir = TOOLING_DIR) {
+  const review = JSON.parse(
+    readFileSync(path.join(toolingDir, "audit-applicability.json"), "utf8"),
+  );
+  const pins = {
+    source_archive_sha256: provenance.source?.archive_sha256,
+    lockfile_sha256: provenance.lockfile_sha256,
+    patches: provenance.patches,
+    vendor_sources: provenance.vendor_sources,
+  };
+  const reviewedIds = [
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+  ];
+  if (
+    review.schema_version !== 1 ||
+    review.package?.name !== "zip" ||
+    review.package?.version !== "0.6.6" ||
+    stableJson(review.pins) !== stableJson(pins) ||
+    !Array.isArray(review.advisories) ||
+    stableJson(review.advisories.map((entry) => entry.id)) !==
+      stableJson(reviewedIds) ||
+    review.advisories.some(
+      (entry) => !entry.reason?.trim() || !entry.evidence?.length,
+    )
+  ) {
+    throw new Error(
+      "Ludusavi audit applicability no longer matches the reviewed source, lockfile and patches; review it before building.",
+    );
+  }
+  return reviewedIds.flatMap((id) => ["--ignore", id]);
 }
 
 /**
@@ -624,7 +667,12 @@ export async function prepareSource(work, provenance, lockfile, patches) {
   return sourceDir;
 }
 
-async function auditLockfile(work, provenance, lockfilePath) {
+async function auditLockfile(
+  work,
+  provenance,
+  lockfilePath,
+  applicabilityArgs,
+) {
   const host = `${process.platform}-${process.arch}`;
   const hostTargets = {
     "win32-x64": "x86_64-pc-windows-msvc",
@@ -659,6 +707,7 @@ async function auditLockfile(work, provenance, lockfilePath) {
       "--deny",
       "unsound",
       ...auditIgnoreArgs(),
+      ...applicabilityArgs,
       "--json",
     ],
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
@@ -679,7 +728,7 @@ async function auditLockfile(work, provenance, lockfilePath) {
     );
   }
   console.log(
-    "Full lockfile security audit passed (no vulnerabilities, no unsoundness).",
+    "Full lockfile security audit passed (no applicable vulnerabilities or unsoundness; three source-pinned ZIP extraction findings are unreachable in Ludusavi).",
   );
 }
 
@@ -850,7 +899,7 @@ function readJsonOrNull(file) {
 }
 
 async function build(target, options, tooling) {
-  const { provenance, lockfile, patches } = tooling;
+  const { provenance, lockfile, patches, auditApplicabilityArgs } = tooling;
   const spec = TARGET_SPECS[target];
   const host = `${process.platform}-${process.arch}`;
   if (!spec.hosts.includes(process.platform)) {
@@ -925,7 +974,12 @@ async function build(target, options, tooling) {
         `${LICENSE_OUTPUT} differs from the pinned upstream LICENSE.`,
       );
     }
-    await auditLockfile(work, provenance, path.join(sourceDir, "Cargo.lock"));
+    await auditLockfile(
+      work,
+      provenance,
+      path.join(sourceDir, "Cargo.lock"),
+      auditApplicabilityArgs,
+    );
 
     const cargo = ["cargo", `+${toolchain}`];
     const env = {
