@@ -1,0 +1,5 @@
+{
+  "until": "2026-10-24",
+  "reason": "zip < 9 (RUSTSEC-2026-0367, -0368, -0369, published 2026-10-09) has no fix in tauri-plugin-updater 2.14, libsodium-sys-stable 1.24.3 or Ludusavi 0.31.0 yet. Allowed once for the 17.3.5 release; remove this file right after it to make the audit strict again.",
+  "advisories": ["RUSTSEC-2026-0367", "RUSTSEC-2026-0368", "RUSTSEC-2026-0369"]
+}

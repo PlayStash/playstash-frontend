@@ -62,6 +62,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gunzipSync, inflateRawSync } from "node:zlib";
+import { auditIgnoreArgs } from "./audit-exceptions.mjs";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -651,7 +652,15 @@ async function auditLockfile(work, provenance, lockfilePath) {
   chmodSync(auditor, 0o755);
   const result = spawnSync(
     auditor,
-    ["audit", "--file", lockfilePath, "--deny", "unsound", "--json"],
+    [
+      "audit",
+      "--file",
+      lockfilePath,
+      "--deny",
+      "unsound",
+      ...auditIgnoreArgs(),
+      "--json",
+    ],
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   let report;

@@ -10,6 +10,7 @@ Status: Released on 2026-10-17.
 - After installing a game without a configured launch file, the app picks the game itself instead of the first file alphabetically: prerequisite installers (e.g. `_Redist/vcredist_x64.exe`, `dotNetFx40_Full_setup.exe`) and helper tools come last, files closer to the top folder first, and Ren'Py's 64-bit build before its `-32` twin. The desktop shortcut uses the same choice.
 - Game pages in the desktop app show the running download, extraction or installation of that game with its progress, speed and current file, plus pause, resume and cancel and a link to Downloads.
 - Cloud saves work for games Ludusavi does not know: the save folders set in Game Settings → Custom Metadata ("Save Folders", needs server 17.1.7) are used first, otherwise the app detects them from the game itself (Unity, Unreal, Ren'Py, RPG Maker, Wolf RPG and save folders inside the game) and, after you play, from the folders the game changed. On the game page the Cloud Saves row is now always shown for installed games, lists the save folders and lets you choose a folder or detect it again; folders are backed up with all subfolders.
+- Known issue: the desktop app still bundles the `zip` library before 9.0 (in the updater, the Stronghold build and the Ludusavi save tool), which has the advisories RUSTSEC-2026-0367, -0368 and -0369 about extracting crafted ZIP files. Upstream fixes are not available yet; they are allowed for this release only and the next one updates them.
 
 ## 17.3.4
 
