@@ -8,6 +8,7 @@ Status: Released on 2026-10-17.
 
 - The library search also filters "Recently Added": while you search, the section only shows recently added games that match, and says so when none do.
 - After installing a game without a configured launch file, the app picks the game itself instead of the first file alphabetically: prerequisite installers (e.g. `_Redist/vcredist_x64.exe`, `dotNetFx40_Full_setup.exe`) and helper tools come last, files closer to the top folder first, and Ren'Py's 64-bit build before its `-32` twin. The desktop shortcut uses the same choice.
+- Game pages in the desktop app show the running download, extraction or installation of that game with its progress, speed and current file, plus pause, resume and cancel and a link to Downloads.
 
 ## 17.3.4
 

@@ -20,6 +20,7 @@ import { Button } from "@tw/button";
 import { Listbox, ListboxOption, ListboxLabel } from "@tw/listbox";
 import Card from "@/components/Card";
 import { useDownloads } from "@/context/DownloadContext";
+import { GameDownloadProgress } from "@/components/downloads/GameDownloadProgress";
 import { GameVersion } from "@/api/models/GameVersion";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
@@ -987,6 +988,9 @@ export default function GameView() {
                     className={floatingIconButtonClassName}
                   />
                 </div>
+                {isTauri && game?.id != null && (
+                  <GameDownloadProgress gameId={game.id} />
+                )}
                 {(genres && genres.length > 0) ||
                 game?.type ||
                 game?.early_access ||

@@ -20,6 +20,7 @@
   "gameView.download.queued": "Added {title} to the download queue",
   "gameView.download.direct": "Direct Download",
   "gameView.download.client": "Download via PlayStash Client",
+  "gameView.download.showInDownloads": "Show in Downloads",
   "gameView.settings": "Settings",
   "gameView.update.available": "Update available",
   "gameView.update.tooltip": "A newer version is available on the server",
