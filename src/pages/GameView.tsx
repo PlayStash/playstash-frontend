@@ -5,6 +5,7 @@ import { Progress, ProgressStateEnum } from "@/api/models/Progress";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Media } from "@/components/Media";
+import { DecodedImage } from "@/components/DecodedImage";
 import MediaSlider from "@/components/MediaSlider";
 import MarkdownContent from "@/components/MarkdownContent";
 import { PackageContents } from "@/components/PackageContents";
@@ -67,7 +68,7 @@ import {
   isGameUpdateAvailable,
   resolveServerVersionTag,
 } from "@/utils/gameUpdate";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { EASE_OUT } from "@/lib/motion";
 import { GameChatButton } from "@/components/GameChatButton";
 import { translate, useTranslation, type TranslationKey } from "@/i18n";
@@ -98,6 +99,7 @@ const GAME_TYPE_LABEL: Record<string, TranslationKey> = {
 
 export default function GameView() {
   const { id } = useParams<{ id: string }>();
+  const reducedMotion = useReducedMotion();
   const numericId = Number(id);
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -165,6 +167,9 @@ export default function GameView() {
     });
   }, [numericId, navigate]);
   const backgroundMediaId = game?.metadata?.background?.id;
+  // Loading an existing backdrop must not remove a cover from the title row.
+  // The composition is decided by metadata, independently of fetch/decode time.
+  const hasBackgroundMedia = Boolean(backgroundMediaId);
   const { url: backgroundUrl } = useAuthMediaUrl(
     backgroundMediaId,
     game?.id ? { gameId: game.id, slot: "background" } : undefined,
@@ -689,17 +694,23 @@ export default function GameView() {
           <section
             className={clsx(
               "game-hero",
-              !backgroundUrl && "game-hero-without-art",
+              !hasBackgroundMedia && "game-hero-without-art",
             )}
           >
             {backgroundUrl && (
-              <img className="game-hero-art" src={backgroundUrl} alt="" />
+              <DecodedImage
+                className="game-hero-art"
+                src={backgroundUrl}
+                alt=""
+                decoding="async"
+                draggable={false}
+              />
             )}
             <div className="game-hero-navigation">
               <BackButton />
             </div>
             <div className="game-hero-heading">
-              {!backgroundUrl && (
+              {!hasBackgroundMedia && (
                 <div className="game-hero-cover">
                   {coverId ? (
                     <Media
@@ -1005,9 +1016,9 @@ export default function GameView() {
                 <section ref={detailsCardRef} className="game-detail-content">
                   <motion.div
                     key={detailsTab}
-                    initial={{ opacity: 0 }}
+                    initial={reducedMotion ? false : { opacity: 0.68 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.12, ease: EASE_OUT }}
+                    transition={{ duration: 0.24, ease: EASE_OUT }}
                     className="space-y-4 text-sm leading-relaxed"
                   >
                     {detailsTab === "metrics" && Number(user?.role) >= 3 && (

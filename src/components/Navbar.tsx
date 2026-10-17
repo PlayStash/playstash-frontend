@@ -44,12 +44,17 @@ export function Navbar() {
     if (hasNewNews) setBadgeVisible(true);
   }, [hasNewNews]);
   const [showNews, setShowNews] = useState(false);
+  const [newsMounted, setNewsMounted] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const masked = streamerMode && user ? maskUser(user) : null;
   const username =
     masked?.displayName ?? user?.username ?? t("profile.unknown");
   const unavailable = isTauri && !isOnline;
   const isAdmin = Number(user?.role) >= 3;
+  const openNews = () => {
+    setNewsMounted(true);
+    setShowNews(true);
+  };
 
   return (
     <>
@@ -98,7 +103,7 @@ export function Navbar() {
             type="button"
             className="app-icon-button relative hidden sm:inline-flex"
             aria-label={t("nav.news")}
-            onClick={() => setShowNews(true)}
+            onClick={openNews}
           >
             <NewspaperIcon className="size-5" />
             {badgeVisible && (
@@ -140,7 +145,7 @@ export function Navbar() {
                 </DropdownItem>
               )}
               <DropdownDivider />
-              <DropdownItem onClick={() => setShowNews(true)}>
+              <DropdownItem onClick={openNews}>
                 <NewspaperIcon />
                 <DropdownLabel>{t("nav.news")}</DropdownLabel>
               </DropdownItem>
@@ -186,8 +191,9 @@ export function Navbar() {
           </Dropdown>
         </div>
       </div>
-      {showNews && (
+      {newsMounted && (
         <NewsDialog
+          open={showNews}
           onClose={() => {
             setShowNews(false);
             setBadgeVisible(false);

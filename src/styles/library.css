@@ -391,6 +391,7 @@
   box-shadow: none !important;
   transition:
     opacity 0.16s ease-out,
+    scale 0.14s var(--ease-out),
     background-color 0.16s ease-out !important;
   transform: none !important;
 }

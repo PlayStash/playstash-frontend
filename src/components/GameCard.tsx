@@ -441,7 +441,7 @@ const GameCard = memo(function GameCard({
                 bookmarked
                   ? "border-ps-warning/40 bg-ps-warning/15"
                   : "border-ps-line bg-ps-panel-soft/80 hover:border-ps-line-strong hover:bg-ps-panel",
-                "active:scale-95",
+                "active:scale-[0.98]",
               )}
             >
               {bookmarked ? (
@@ -460,7 +460,7 @@ const GameCard = memo(function GameCard({
                 "ps-card-action ps-card-action-top absolute top-2 left-2 flex size-9 cursor-pointer items-center justify-center border border-ps-line text-ps-muted",
                 "opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!",
                 "hover:border-ps-line-strong hover:bg-ps-panel hover:text-ps-text",
-                "active:scale-95",
+                "active:scale-[0.98]",
               )}
               title={t("nav.settings")}
             >

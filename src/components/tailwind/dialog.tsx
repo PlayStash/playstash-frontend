@@ -31,7 +31,7 @@ export function Dialog({
     <Headless.Dialog {...props}>
       <Headless.DialogBackdrop
         transition
-        className="fixed inset-0 flex w-screen justify-center overflow-y-auto bg-ps-bg/70 px-2 py-2 transition duration-150 ease-out focus:outline-0 data-closed:opacity-0 data-enter:ease-out data-leave:ease-out sm:px-6 sm:py-8 lg:px-8 lg:py-16"
+        className="fixed inset-0 flex w-screen justify-center overflow-y-auto bg-ps-bg/70 px-2 py-2 transition-opacity duration-220 ease-(--ease-out) focus:outline-0 data-closed:opacity-0 data-leave:duration-150 motion-reduce:duration-100 sm:px-6 sm:py-8 lg:px-8 lg:py-16"
       />
 
       <div className="fixed inset-0 w-screen overflow-y-auto pt-6 sm:pt-0">
@@ -42,7 +42,7 @@ export function Dialog({
               className,
               sizes[size],
               "row-start-2 w-full min-w-0 rounded-t-xl bg-ps-shell p-(--gutter) shadow-(--shadow-shell) ring-1 ring-ps-line [--gutter:--spacing(8)] sm:mb-auto sm:rounded-lg forced-colors:outline",
-              "transition duration-150 ease-out will-change-transform data-closed:translate-y-12 data-closed:opacity-0 data-enter:ease-out data-leave:ease-out sm:data-closed:translate-y-0 sm:data-closed:data-enter:scale-95",
+              "origin-center transition-[opacity,transform] duration-220 ease-(--ease-out) data-closed:[transform:translateY(6px)_scale(.98)] data-closed:opacity-0 data-leave:duration-150 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
               "max-h-[calc(100vh-2rem)] overflow-y-auto",
             )}
           >

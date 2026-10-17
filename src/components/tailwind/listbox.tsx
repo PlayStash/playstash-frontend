@@ -95,8 +95,8 @@ export function Listbox<T>({
           "surface-panel",
           // Shadows
           "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
-          // Transitions
-          "transition-opacity duration-100 ease-out data-closed:data-leave:opacity-0 data-transition:pointer-events-none",
+          // Keep the selected option aligned with the control while fading both ways.
+          "transition-opacity duration-150 ease-(--ease-out) data-closed:opacity-0 data-leave:duration-100 motion-reduce:duration-100",
         )}
       >
         {options}

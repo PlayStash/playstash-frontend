@@ -1,0 +1,103 @@
+{
+  "source": {
+    "path": "public/playstash-logo.png",
+    "sha256": "7093041ffd86233231edcca987acda01467ae9909a36ec4602702868994f8a23",
+    "description": "Existing PlayStash logo artwork, split with complementary front/rear card mattes."
+  },
+  "authoring": {
+    "application": "Adobe After Effects 2026",
+    "composition": {
+      "width": 256,
+      "height": 256,
+      "frameRate": 60,
+      "durationSeconds": 1.1
+    },
+    "layers": [
+      {
+        "name": "Rear card",
+        "positionKeys": [
+          {
+            "time": 0,
+            "value": [143, 114]
+          },
+          {
+            "time": 0.12,
+            "value": [141, 116]
+          },
+          {
+            "time": 0.78,
+            "value": [128, 128]
+          }
+        ],
+        "rotationKeys": [
+          {
+            "time": 0,
+            "value": -7
+          },
+          {
+            "time": 0.78,
+            "value": 0
+          }
+        ]
+      },
+      {
+        "name": "Front card",
+        "positionKeys": [
+          {
+            "time": 0,
+            "value": [118, 140]
+          },
+          {
+            "time": 0.08,
+            "value": [120, 139]
+          },
+          {
+            "time": 0.68,
+            "value": [128, 128]
+          }
+        ],
+        "rotationKeys": [
+          {
+            "time": 0,
+            "value": 4
+          },
+          {
+            "time": 0.68,
+            "value": 0
+          }
+        ]
+      }
+    ],
+    "sourceScalePercent": 20,
+    "temporalEase": {
+      "incomingInfluence": 76,
+      "outgoingInfluence": 28,
+      "speed": 0
+    },
+    "motionBlur": {
+      "enabled": true,
+      "shutterAngle": 120
+    }
+  },
+  "export": {
+    "format": "Animated WebP with alpha",
+    "width": 192,
+    "height": 192,
+    "durationMs": 1099,
+    "encodedFrames": 48,
+    "playCount": 1,
+    "encoder": "FFmpeg libwebp_anim, quality 84, compression level 6"
+  },
+  "assets": [
+    {
+      "path": "public/motion/playstash-load.webp",
+      "bytes": 249890,
+      "sha256": "112f2a6c77d68ce9b68d7011e6325df6ba4d723198670fb62f48f56c75851403"
+    },
+    {
+      "path": "public/motion/playstash-load-still.webp",
+      "bytes": 4980,
+      "sha256": "90c24ee67ff890c4f2895d8e5cbb02c3149b3448c81b21e8b677c7ac79923293"
+    }
+  ]
+}

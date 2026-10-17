@@ -23,8 +23,14 @@ import { useAppUpdater } from "@/context/AppUpdaterContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { Switch } from "@tw/switch";
 import { Text } from "@/components/tailwind/text";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useIsPresent,
+  type HTMLMotionProps,
+} from "motion/react";
 import {
   isTauriApp,
   isTauriDesktop,
@@ -435,6 +441,21 @@ function localizeSearchEntry(
     keywords: [...entry.keywords, ...englishAliases],
   };
 }
+
+const SettingsPanel = forwardRef<HTMLDivElement, HTMLMotionProps<"div">>(
+  function SettingsPanel(props, ref) {
+    const isPresent = useIsPresent();
+
+    return (
+      <motion.div
+        {...props}
+        ref={ref}
+        inert={!isPresent}
+        aria-hidden={isPresent ? undefined : true}
+      />
+    );
+  },
+);
 
 export default function Settings() {
   const { t, locale } = useTranslation();
@@ -1342,16 +1363,23 @@ export default function Settings() {
               );
             })}
           </nav>
-          <div className="settings-content">
-            <AnimatePresence mode="wait" initial={false}>
+          <div className="settings-content relative">
+            <AnimatePresence mode="popLayout" initial={false}>
               {activeCategory === null ? (
-                <motion.div
+                <SettingsPanel
                   key="overview"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                  className="space-y-6"
+                  initial={{ opacity: 0.72 }}
+                  animate={{ opacity: 1, pointerEvents: "auto" }}
+                  exit={{
+                    opacity: 0,
+                    pointerEvents: "none",
+                    transition: {
+                      duration: 0.1,
+                      ease: [0.23, 1, 0.32, 1],
+                    },
+                  }}
+                  transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                  className="w-full space-y-6"
                 >
                   <SettingsGroup>
                     <SettingsRow>
@@ -1463,15 +1491,22 @@ export default function Settings() {
                       {navCategories.map(renderCategoryRow)}
                     </SettingsGroup>
                   )}
-                </motion.div>
+                </SettingsPanel>
               ) : (
-                <motion.div
+                <SettingsPanel
                   key={activeCategory}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                  className="space-y-6"
+                  initial={{ opacity: 0.72 }}
+                  animate={{ opacity: 1, pointerEvents: "auto" }}
+                  exit={{
+                    opacity: 0,
+                    pointerEvents: "none",
+                    transition: {
+                      duration: 0.1,
+                      ease: [0.23, 1, 0.32, 1],
+                    },
+                  }}
+                  transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                  className="w-full space-y-6"
                 >
                   {activeCategory === "downloads" && (
                     <>
@@ -2879,7 +2914,7 @@ export default function Settings() {
                       isLinux={isLinux}
                     />
                   ))}
-                </motion.div>
+                </SettingsPanel>
               )}
             </AnimatePresence>
           </div>

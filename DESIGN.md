@@ -257,7 +257,9 @@ Use the existing accessible primitives, shell/panel fill, one-pixel edge, and fl
 
 ### Motion
 
-Routes update immediately and the library rail persists across detail navigation. Keep UI feedback brief: workspaces use 120ms state changes, base controls 140–150ms, drawers 200ms, and shared motion presets 120/180/220ms. Menu exit can use the existing 100ms fade. Transform/opacity animation uses the shared ease-out curve; color and border changes remain local control feedback. Respect the global reduced-motion rules and `MotionConfig` behavior.
+Routes update immediately and the library rail persists across detail navigation. Artwork fades over 280ms after its pixels decode, with stable title geometry while media loads. Game tabs and settings start visibly and settle over 220–240ms; settings exits take 100ms and immediately leave keyboard navigation and the accessibility tree. Menus use 180ms entry and 120ms exit, dialogs 220/150ms, and mobile drawers 240/180ms. Library filters expand over 240ms and absorb the responsive 20/24px gap before unmounting. Preserve mounted overlay content through its exit and allow rapid reversal. Transform/opacity animation uses the shared ease-out curve; color and border changes remain local control feedback. Respect reduced motion and `MotionConfig`.
+
+The one authored brand moment is the existing logo's card stack settling during a longer page load. The 1.1-second alpha WebP plays once, appears only after 160ms, and never holds navigation. A static companion serves reduced motion and hidden documents; the small activity spinner pauses when hidden. These are rendered runtime files, not an AE dependency. Source and export provenance is in `public/motion/provenance.json`; `design-system/motion/README.md` describes their use.
 
 ## Do's and Don'ts
 

@@ -40,11 +40,11 @@ function NavigationDrawer({
     >
       <Headless.DialogBackdrop
         transition
-        className="fixed inset-0 bg-black/60 transition-opacity duration-150 data-closed:opacity-0"
+        className="fixed inset-0 bg-black/60 transition-opacity duration-240 ease-(--ease-out) data-closed:opacity-0 data-leave:duration-180 motion-reduce:duration-100"
       />
       <Headless.DialogPanel
         transition
-        className="fixed inset-y-0 left-0 flex w-[min(88vw,320px)] flex-col bg-ps-shell transition-transform duration-200 ease-out data-closed:-translate-x-full motion-reduce:transition-none"
+        className="fixed inset-y-0 left-0 flex w-[min(88vw,320px)] flex-col bg-ps-shell transition-[opacity,transform] duration-240 ease-(--ease-out) data-closed:[transform:translateX(-100%)] data-closed:opacity-0 data-leave:duration-180 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none"
       >
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-ps-line px-4">
           <span className="text-sm font-semibold text-ps-text">{label}</span>
@@ -139,9 +139,9 @@ export function SidebarLayout({
                 </Link>
               </aside>
             )}
-            {!desktop && showLibrary && (
+            {!desktop && (
               <NavigationDrawer
-                open
+                open={showLibrary}
                 close={() => setShowLibrary(false)}
                 label={t("nav.library")}
               >

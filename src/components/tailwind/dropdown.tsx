@@ -50,8 +50,10 @@ export function DropdownMenu({
         "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
         // Define grid at the menu level if subgrid is supported
         "supports-[grid-template-columns:subgrid]:grid supports-[grid-template-columns:subgrid]:grid-cols-[auto_1fr_1.5rem_0.5rem_auto]",
-        // Transitions
-        "transition data-leave:duration-100 data-leave:ease-out data-closed:data-leave:opacity-0",
+        // Scale from the trigger, including when viewport constraints flip placement.
+        "origin-top data-[anchor~=top]:origin-bottom data-[anchor~=left]:origin-right data-[anchor~=right]:origin-left data-[anchor~=bottom]:data-[anchor~=start]:origin-top-left data-[anchor~=bottom]:data-[anchor~=end]:origin-top-right data-[anchor~=top]:data-[anchor~=start]:origin-bottom-left data-[anchor~=top]:data-[anchor~=end]:origin-bottom-right data-[anchor~=left]:data-[anchor~=start]:origin-top-right data-[anchor~=left]:data-[anchor~=end]:origin-bottom-right data-[anchor~=right]:data-[anchor~=start]:origin-top-left data-[anchor~=right]:data-[anchor~=end]:origin-bottom-left",
+        // Retargetable enter and exit states keep rapid toggles continuous.
+        "transition-[opacity,transform] duration-180 ease-(--ease-out) data-closed:[transform:scale(.98)] data-closed:opacity-0 data-leave:duration-120 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
       )}
     />
   );

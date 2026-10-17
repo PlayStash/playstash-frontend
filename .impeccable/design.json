@@ -697,8 +697,23 @@
       },
       {
         "name": "drawer",
-        "value": "200ms",
-        "purpose": "Navigation/library drawer translation."
+        "value": "240ms / 180ms",
+        "purpose": "Navigation/library drawer entry and exit, preserving mounted content through closing."
+      },
+      {
+        "name": "artwork",
+        "value": "280ms",
+        "purpose": "Decode-ready opacity transition with stable title geometry."
+      },
+      {
+        "name": "filters",
+        "value": "240ms",
+        "purpose": "Finite panel expansion with responsive 20/24px flex-gap compensation."
+      },
+      {
+        "name": "loading-identity",
+        "value": "1100ms once / 160ms threshold",
+        "purpose": "Existing rendered logo settles during longer loads; static for reduced motion or hidden documents, never delays navigation."
       },
       {
         "name": "reduced",

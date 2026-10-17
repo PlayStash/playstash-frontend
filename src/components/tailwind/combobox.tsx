@@ -130,8 +130,10 @@ export function Combobox<T>({
           "bg-ps-panel/75 backdrop-blur-xl dark:bg-ps-panel/75",
           // Shadows
           "shadow-lg ring-1 ring-zinc-950/10 dark:ring-white/10 dark:ring-inset",
-          // Transitions
-          "transition-opacity duration-100 ease-in data-closed:data-leave:opacity-0 data-transition:pointer-events-none",
+          // Follow the resolved placement when the popup flips above the control.
+          "origin-top data-[anchor~=top]:origin-bottom",
+          // Retargetable enter and exit states keep rapid toggles continuous.
+          "transition-[opacity,transform] duration-180 ease-(--ease-out) data-closed:[transform:scale(.98)] data-closed:opacity-0 data-leave:duration-120 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
         )}
       >
         {({ option }) => children(option)}

@@ -14,12 +14,13 @@ import { useNews } from "../../hooks/useNews";
 import { useTranslation } from "@/i18n";
 
 interface NewsDialogProps {
+  open?: boolean;
   onClose: () => void;
 }
 
 type TabKey = "playstash" | "server";
 
-export function NewsDialog({ onClose }: NewsDialogProps) {
+export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
   const [tab, setTab] = useState<TabKey>("playstash");
   const [isEditingServerNews, setIsEditingServerNews] = useState(false);
   const [draftContent, setDraftContent] = useState("");
@@ -40,8 +41,8 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
   const showEditor = canEditServerNews && isEditingServerNews;
 
   useEffect(() => {
-    markNewsAsRead();
-  }, [markNewsAsRead]);
+    if (open) markNewsAsRead();
+  }, [open, markNewsAsRead]);
 
   useEffect(() => {
     if (!showEditor) {
@@ -84,7 +85,7 @@ export function NewsDialog({ onClose }: NewsDialogProps) {
 
   return (
     <Dialog
-      open
+      open={open}
       onClose={onClose}
       size="3xl"
       className="!h-[min(85vh,850px)] flex flex-col"

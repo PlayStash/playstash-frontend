@@ -3,6 +3,7 @@ import { useInView } from "@/hooks/useInView";
 import { GameMediaSlot } from "@/utils/mediaCache";
 import React, { useEffect, useState } from "react";
 import { Media as MediaType } from "../api";
+import { DecodedImage } from "./DecodedImage";
 
 interface Props {
   media?: MediaType;
@@ -113,14 +114,13 @@ export function Media({
         </div>
       )}
       {blobUrl && !error && (
-        <img
+        <DecodedImage
           src={blobUrl}
           alt={alt}
           style={{
             width: "100%",
             height: "100%",
             objectFit: fit,
-            animation: "media-fade-in 0.2s var(--ease-out)",
           }}
           loading="lazy"
           decoding="async"
