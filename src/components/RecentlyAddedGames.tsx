@@ -6,14 +6,15 @@ import { Button } from "./tailwind/button";
 import { useTranslation } from "@/i18n";
 import { fillTemplate } from "@/utils/downloadPipeline";
 
-export function RecentlyAddedGames() {
+/** Games added in the last week, narrowed by the library search text. */
+export function RecentlyAddedGames({ search = "" }: { search?: string }) {
   const { t } = useTranslation();
   const addedSince = useMemo(
     () => new Date(Date.now() - 7 * 86400000).toISOString(),
     [],
   );
   const { games, count, loading, error, loadMore, hasMore } = useGames({
-    search: "",
+    search,
     sortBy: "created_at",
     order: "DESC",
     limit: 20,
@@ -30,7 +31,11 @@ export function RecentlyAddedGames() {
         </p>
       )}
       {!loading && !error && games.length === 0 && (
-        <p className="p-4 text-sm text-ps-muted">{t("library.recent.empty")}</p>
+        <p className="p-4 text-sm text-ps-muted">
+          {search.trim()
+            ? t("library.recent.noMatch")
+            : t("library.recent.empty")}
+        </p>
       )}
       <div className="flex gap-5 overflow-x-auto py-2 pb-4">
         {games.map((game) => (

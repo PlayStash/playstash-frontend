@@ -1,5 +1,13 @@
 # PlayStash Frontend Changelog
 
+## 17.3.5
+
+Status: Released on 2026-10-17.
+
+### Changes
+
+- The library search also filters "Recently Added": while you search, the section only shows recently added games that match, and says so when none do.
+
 ## 17.3.4
 
 Status: Released on 2026-10-16.

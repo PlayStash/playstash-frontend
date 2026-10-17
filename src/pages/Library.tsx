@@ -1545,7 +1545,9 @@ export default function Library() {
           </SectionExpander>
         )}
 
-        {serverUrl && isOnline && loadAllowed && <RecentlyAddedGames />}
+        {serverUrl && isOnline && loadAllowed && (
+          <RecentlyAddedGames search={deferredSearch} />
+        )}
 
         {libraryNotLoaded && (
           <div className="surface-panel-soft mb-4 rounded-3xl p-8 text-sm text-ps-muted">

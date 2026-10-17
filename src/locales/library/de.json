@@ -36,6 +36,7 @@
   "library.categories.saveFailed": "Kategorien konnten nicht gespeichert werden. Prüfe die Speicherberechtigungen des Browsers.",
   "library.recent.title": "Kürzlich hinzugefügt · Letzte 7 Tage ({count})",
   "library.recent.empty": "In der letzten Woche wurden keine Spiele hinzugefügt.",
+  "library.recent.noMatch": "Keine kürzlich hinzugefügten Spiele passen zur Suche.",
   "library.recent.loading": "Kürzlich hinzugefügte Spiele werden geladen…",
   "library.recent.loadMore": "Weitere kürzlich hinzugefügte Spiele laden",
   "library.pagination.label": "Seitennavigation",

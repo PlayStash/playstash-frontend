@@ -1,3 +1,9 @@
+playstash (17.3.5) unstable; urgency=medium
+
+  * Apply the library search to the recently added games.
+
+ -- PlayStash Maintainers <maintainers@playstash.invalid>  Sat, 17 Oct 2026 00:00:00 +0000
+
 playstash (17.3.4) unstable; urgency=medium
 
   * Show the server games heading in the web app.

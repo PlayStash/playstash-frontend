@@ -36,6 +36,7 @@
   "library.categories.saveFailed": "Couldn't save categories. Check browser storage permissions.",
   "library.recent.title": "Recently Added · Last 7 days ({count})",
   "library.recent.empty": "No games added in the last week.",
+  "library.recent.noMatch": "No recently added games match the search.",
   "library.recent.loading": "Loading recently added games…",
   "library.recent.loadMore": "Load more recently added games",
   "library.pagination.label": "Page navigation",
