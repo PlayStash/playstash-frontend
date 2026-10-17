@@ -556,7 +556,7 @@ fn write_config(
   installation_path: &str,
   roots: &[String],
   wine_prefix: Option<&str>,
-  custom: Option<&CustomSaveGame>,
+  custom: &[CustomSaveGame],
 ) -> Result<(), String> {
   let settings = load_settings(app);
   let home = home_dir(app);
@@ -567,10 +567,7 @@ fn write_config(
     settings: &settings,
     wine_prefix,
   })?;
-  let yaml = match custom {
-    Some(custom) => with_custom_game(&yaml, custom)?,
-    None => yaml,
-  };
+  let yaml = if custom.is_empty() { yaml } else { with_custom_games(&yaml, custom)? };
   fs::write(dir.join("config.yaml"), yaml).map_err(|error| format!("Failed to write the Ludusavi config: {error}"))
 }
 
@@ -585,18 +582,87 @@ pub(crate) struct CustomSaveGame {
 
 /// Adds `custom` to a generated config as an overriding custom game.
 pub(crate) fn with_custom_game(yaml: &str, custom: &CustomSaveGame) -> Result<String, String> {
+  with_custom_games(yaml, std::slice::from_ref(custom))
+}
+
+/// Adds overriding custom games to a generated config.
+pub(crate) fn with_custom_games(yaml: &str, custom: &[CustomSaveGame]) -> Result<String, String> {
   let mut config: serde_yaml::Value =
     serde_yaml::from_str(yaml).map_err(|error| format!("Failed to read the Ludusavi config: {error}"))?;
   let mapping = config.as_mapping_mut().ok_or("The Ludusavi config is not a mapping.")?;
-  let game = serde_yaml::to_value(serde_json::json!({
-    "name": custom.name,
-    "integration": "override",
-    "files": custom.rules,
-    "registry": [],
-  }))
-  .map_err(|error| error.to_string())?;
-  mapping.insert("customGames".into(), serde_yaml::Value::Sequence(vec![game]));
+  let games = custom
+    .iter()
+    .map(|custom| {
+      serde_yaml::to_value(serde_json::json!({
+        "name": custom.name,
+        "integration": "override",
+        "files": custom.rules,
+        "registry": [],
+      }))
+      .map_err(|error| error.to_string())
+    })
+    .collect::<Result<Vec<_>, _>>()?;
+  mapping.insert("customGames".into(), serde_yaml::Value::Sequence(games));
   serde_yaml::to_string(&config).map_err(|error| format!("Failed to build the Ludusavi config: {error}"))
+}
+
+/// Custom PlayStash games stored in an extracted backup: Ludusavi restores
+/// only games its config knows, so each one is declared again on restore
+/// (with `target`'s folders when it is the same game). Manifest games need
+/// nothing extra.
+/// File rules for the files a Ludusavi `mapping.yaml` stores, mapped back
+/// from the portable `G:playstash...` targets (Ludusavi restores only
+/// files a known game's rules cover).
+fn archived_file_rules(mapping: &serde_yaml::Value, installation_path: &str) -> Vec<String> {
+  let installation = save_paths::glob_escape(&installation_path.trim().replace('\\', "/"));
+  let installation = installation.trim_end_matches('/');
+  let mut rules: Vec<String> = Vec::new();
+  for backup in mapping.get("backups").and_then(|backups| backups.as_sequence()).into_iter().flatten() {
+    for file in backup.get("files").and_then(|files| files.as_mapping()).into_iter().flat_map(|files| files.keys()) {
+      let Some(path) = file.as_str().map(|path| path.replace('\\', "/")) else { continue };
+      let rule = if let Some(rest) = path.strip_prefix("G:/playstash/currentuser") {
+        format!("<home>{}", save_paths::glob_escape(rest))
+      } else if let Some(rest) = path.strip_prefix("G:/playstash/installation") {
+        if installation.is_empty() {
+          continue;
+        }
+        format!("{installation}{}", save_paths::glob_escape(rest))
+      } else {
+        save_paths::glob_escape(&path)
+      };
+      if !rules.contains(&rule) {
+        rules.push(rule);
+      }
+    }
+  }
+  rules
+}
+
+pub(crate) fn archived_custom_games(
+  backup_dir: &Path,
+  target: Option<&CustomSaveGame>,
+  installation_path: &str,
+) -> Vec<CustomSaveGame> {
+  let Ok(entries) = fs::read_dir(backup_dir) else { return Vec::new() };
+  let mut games = Vec::new();
+  for entry in entries.flatten() {
+    let Ok(text) = fs::read_to_string(entry.path().join("mapping.yaml")) else { continue };
+    let Ok(mapping) = serde_yaml::from_str::<serde_yaml::Value>(&text) else { continue };
+    let Some(name) = mapping.get("name").and_then(|name| name.as_str()).map(str::to_string) else {
+      continue;
+    };
+    if !name.starts_with("PlayStash #") || games.iter().any(|game: &CustomSaveGame| game.name == name) {
+      continue;
+    }
+    let mut rules = target.filter(|target| target.name == name).map(|target| target.rules.clone()).unwrap_or_default();
+    if rules.is_empty() {
+      rules = archived_file_rules(&mapping, installation_path);
+    }
+    if !rules.is_empty() {
+      games.push(CustomSaveGame { name, rules });
+    }
+  }
+  games
 }
 
 /// Ludusavi name of a PlayStash game's custom save definition.
@@ -685,10 +751,10 @@ async fn resolve_save_target(
 ) -> Result<SaveTarget, String> {
   let installation_path = request.installation_path.trim();
   if let Some(custom) = custom_save_game(request, &configured_save_paths(request)) {
-    write_config(app, dir, installation_path, &request.roots, wine_prefix, Some(&custom))?;
+    write_config(app, dir, installation_path, &request.roots, wine_prefix, std::slice::from_ref(&custom))?;
     return Ok(SaveTarget::Custom(custom));
   }
-  write_config(app, dir, installation_path, &request.roots, wine_prefix, None)?;
+  write_config(app, dir, installation_path, &request.roots, wine_prefix, &[])?;
   let title = find_title(binary, dir, request.game_id, &request.title).await?;
   if !title.is_empty() {
     return Ok(SaveTarget::Manifest(title));
@@ -719,7 +785,7 @@ async fn resolve_save_target(
     log::warn!("cloud saves: failed to remember the detected save folders: {error}");
   }
   log::info!("cloud saves: detected save folders for game {}: {detected:?}", request.game_id);
-  write_config(app, dir, installation_path, &request.roots, wine_prefix, Some(&custom))?;
+  write_config(app, dir, installation_path, &request.roots, wine_prefix, std::slice::from_ref(&custom))?;
   Ok(SaveTarget::Custom(custom))
 }
 
@@ -1778,7 +1844,8 @@ async fn restore(app: &tauri::AppHandle, request: &CloudSaveRequest, policy: Res
   };
   let output = {
     let _guard = ludusavi_lock().lock().await;
-    write_config(app, &dir, installation_path, &request.roots, wine_prefix.as_deref(), custom.as_ref())?;
+    let archived = archived_custom_games(&backup_dir, custom.as_ref(), installation_path);
+    write_config(app, &dir, installation_path, &request.roots, wine_prefix.as_deref(), &archived)?;
     run_ludusavi(&binary, restore_args(&dir, &backup_dir, wine_prefix.as_deref())).await?
   };
   if !output.status.success() {
@@ -1841,6 +1908,33 @@ mod tests {
       use_primary_manifest: use_primary,
       custom_manifests: manifests.iter().map(|entry| entry.to_string()).collect(),
     }
+  }
+
+  #[test]
+  fn restore_declares_archived_custom_games() {
+    let dir = std::env::temp_dir().join(format!("playstash-archived-{}", new_uuid().unwrap()));
+    let game_dir = dir.join("PlayStash #46 Exquisite Fishing");
+    fs::create_dir_all(&game_dir).unwrap();
+    fs::create_dir_all(dir.join("Celeste")).unwrap();
+    fs::write(
+      game_dir.join("mapping.yaml"),
+      "name: \"PlayStash #46 Exquisite Fishing\"\nbackups:\n  - name: b.zip\n    files:\n      \"G:/playstash/currentuser/AppData/LocalLow/PinkySoul/ExquisiteFishing/sav_0\":\n        size: 1\n      \"G:/playstash/installation/Game/save/s1\":\n        size: 1\n",
+    )
+    .unwrap();
+    fs::write(dir.join("Celeste").join("mapping.yaml"), "name: Celeste\nbackups: []\n").unwrap();
+    let games = archived_custom_games(&dir, None, "D:\\Games\\Fish [1]");
+    assert_eq!(games.len(), 1);
+    assert_eq!(games[0].name, "PlayStash #46 Exquisite Fishing");
+    assert_eq!(
+      games[0].rules,
+      vec![
+        "<home>/AppData/LocalLow/PinkySoul/ExquisiteFishing/sav_0".to_string(),
+        "D:/Games/Fish [[]1[]]/Game/save/s1".to_string(),
+      ]
+    );
+    let target = CustomSaveGame { name: "PlayStash #46 Exquisite Fishing".into(), rules: vec!["<winLocalAppDataLow>/PinkySoul/ExquisiteFishing".into()] };
+    assert_eq!(archived_custom_games(&dir, Some(&target), "")[0].rules, target.rules);
+    let _ = fs::remove_dir_all(&dir);
   }
 
   #[test]
