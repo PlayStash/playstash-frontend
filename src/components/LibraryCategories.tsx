@@ -58,6 +58,7 @@ export function LibraryCategories({
     <div className="ps-library-categories">
       <div
         className="ps-library-category-tabs"
+        role="group"
         aria-label={t("library.categories.select")}
       >
         <button
@@ -75,6 +76,7 @@ export function LibraryCategories({
             type="button"
             key={category.id}
             aria-pressed={selected === category.id}
+            title={category.name}
             onClick={() => {
               setSelected(category.id);
               onSelect(category);
@@ -101,7 +103,7 @@ export function LibraryCategories({
               <select
                 aria-label={t("library.categories.select")}
                 value={selected}
-                className="mt-1 block min-h-11 w-full bg-ps-panel px-3 text-ps-text"
+                className="mt-1 block min-h-11 w-full bg-ps-panel px-3 text-sm text-ps-text sm:min-h-9"
                 onChange={(event) => {
                   setSelected(event.target.value);
                   onSelect(

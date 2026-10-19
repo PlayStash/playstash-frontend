@@ -3,7 +3,7 @@ import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import { useTranslation, type TranslationKey } from "@/i18n";
 import { isCardBusy } from "@/utils/downloadPipeline";
 import { Button } from "../tailwind/button";
-import { ProgressBar } from "../tailwind/progress";
+import { TransferMeter } from "./TransferMeter";
 
 /** Label, percentage and detail of the phase a download card is in. */
 function currentPhase(
@@ -23,9 +23,13 @@ function currentPhase(
       label: t("downloads.status.installing"),
       value: download.installationProgress,
       valueText: percent(download.installationProgress),
-      detail:
+      file:
         download.installationStatus === "copying"
           ? download.installationCurrentFile
+          : undefined,
+      detail:
+        download.installationStatus === "copying"
+          ? undefined
           : t("downloads.detail.installRunning"),
     };
   }
@@ -34,7 +38,8 @@ function currentPhase(
       label: t("downloads.detail.extracting"),
       value: download.extractionProgress,
       valueText: percent(download.extractionProgress),
-      detail: download.extractionCurrentFile,
+      file: download.extractionCurrentFile,
+      detail: undefined,
     };
   }
   const bytes = `${formatBytes(download.received)}${
@@ -47,6 +52,7 @@ function currentPhase(
         : t("downloads.status.downloading"),
     value: download.progress,
     valueText: percent(download.progress),
+    file: undefined,
     detail:
       download.status === "downloading" && download.speedBps
         ? `${bytes} · ${formatSpeed(download.speedBps)}`
@@ -77,13 +83,15 @@ export function GameDownloadProgress({ gameId }: { gameId: number }) {
   return (
     <section
       aria-label={t("downloads.step.phases")}
-      className="surface-panel-soft space-y-3 rounded-2xl p-4"
+      className="surface-panel-soft space-y-3 rounded-lg p-4"
     >
-      <ProgressBar
+      <TransferMeter
         value={phase.value}
         label={phase.label}
         valueText={phase.valueText}
-        currentFile={phase.detail}
+        currentFile={phase.file}
+        detail={phase.detail}
+        paused={download.status === "paused"}
       />
       <div className="flex flex-wrap gap-2">
         {downloading && (
@@ -103,7 +111,7 @@ export function GameDownloadProgress({ gameId }: { gameId: number }) {
         )}
         <Link
           to="/downloads"
-          className="self-center text-sm text-ps-accent hover:underline"
+          className="inline-flex min-h-11 items-center self-center rounded-sm text-sm text-ps-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool sm:min-h-10"
         >
           {t("gameView.download.showInDownloads")}
         </Link>

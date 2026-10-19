@@ -38,9 +38,14 @@ export function Listbox<T>({
           "py-[calc(--spacing(2.5)-1px)] sm:py-1.5",
           "min-h-11 sm:min-h-9",
           "pr-[calc(--spacing(7)-1px)] pl-[calc(--spacing(3.5)-1px)] sm:pl-[calc(--spacing(3)-1px)]",
-          "text-left text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6 forced-colors:text-[CanvasText]",
+          // 16px on touch devices so iOS never zooms; compact 14px with a mouse.
+          "text-left text-base/6 text-ps-text placeholder:text-ps-muted sm:pointer-fine:text-sm/6 forced-colors:text-[CanvasText]",
+          // Touch: respond on first tap, never select the value on long-press
+          "touch-manipulation select-none",
           // Invalid state
           "data-invalid:border-red-500 data-hover:data-invalid:border-red-500 dark:data-invalid:border-red-600 dark:data-hover:data-invalid:border-red-600",
+          // Hover: strengthen the line (Headless only reports real pointer hover)
+          "transition-[border-color] duration-150 ease-(--ease-out) data-hover:not-data-invalid:border-ps-line-strong",
           // Disabled state
           "data-disabled:opacity-50 data-disabled:bg-ps-panel-soft data-disabled:shadow-none",
         ])}
@@ -90,13 +95,15 @@ export function Listbox<T>({
           // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
           "outline outline-transparent focus:outline-hidden",
           // Handle scrolling when menu won't fit in viewport
-          "overflow-y-scroll overscroll-contain",
+          "overflow-y-auto overscroll-contain",
           // Popover background
           "surface-panel",
           // Shadows
           "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
           // Keep the selected option aligned with the control while fading both ways.
-          "transition-opacity duration-150 ease-(--ease-out) data-closed:opacity-0 data-leave:duration-100 motion-reduce:duration-100",
+          // Anchored to the selection, so it fades in place instead of scaling.
+          // Menu timing: 180ms in, 120ms out.
+          "transition-opacity duration-180 ease-(--ease-out) data-closed:opacity-0 data-leave:duration-120 motion-reduce:duration-100",
         )}
       >
         {options}
@@ -118,7 +125,7 @@ export function ListboxOption<T>({
     "cursor-pointer flex min-w-0 items-center",
     // Icons
     "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-text",
+    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-on-accent",
     "forced-colors:*:data-[slot=icon]:text-[CanvasText] forced-colors:group-data-focus/option:*:data-[slot=icon]:text-[Canvas]",
     // Avatars
     "*:data-[slot=avatar]:-mx-0.5 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:size-5",
@@ -141,7 +148,7 @@ export function ListboxOption<T>({
               // Typography
               "text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
               // Focus
-              "outline-hidden data-focus:bg-ps-accent data-focus:text-ps-on-accent transition-colors duration-150",
+              "outline-hidden transition-none data-focus:bg-ps-accent data-focus:text-ps-on-accent",
               // Forced colors mode
               "forced-color-adjust-none forced-colors:data-focus:bg-[Highlight] forced-colors:data-focus:text-[HighlightText]",
               // Disabled

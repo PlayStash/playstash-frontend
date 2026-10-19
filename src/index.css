@@ -148,12 +148,26 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Feel installed, not embedded: no grey tap flash, no landscape font
+       inflation, no pull-to-refresh/rubber-band on the shell (inner scroll
+       areas own their own overscroll). */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior: none;
+  }
+  body {
+    overscroll-behavior: none;
   }
   #root {
     height: 100dvh;
     min-height: 100dvh;
     overflow: hidden;
     isolation: isolate;
+    /* viewport-fit=cover lets the shell paint edge to edge; keep content
+       clear of the notch, Dynamic Island and home indicator. 0 on desktop. */
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
   h1,
   h2,
@@ -181,8 +195,10 @@
     color: var(--color-ps-accent-cool);
     text-underline-offset: 0.2em;
   }
-  a:hover {
-    color: var(--color-ps-accent-strong);
+  @media (hover: hover) and (pointer: fine) {
+    a:hover {
+      color: var(--color-ps-accent-strong);
+    }
   }
   button,
   a,
@@ -192,6 +208,25 @@
     transition-property: color, background-color, border-color, opacity;
     transition-duration: 140ms;
     transition-timing-function: var(--ease-out);
+  }
+  /* Controls respond on the first tap (no double-tap-zoom wait) and a
+     long-press never selects their label or opens the link callout. Content
+     text elsewhere stays selectable. */
+  button,
+  a,
+  summary,
+  label,
+  [role="button"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+  button,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
@@ -204,6 +239,9 @@
   :focus-visible {
     outline: 2px solid var(--color-ps-accent-cool);
     outline-offset: 3px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
   }
   .ps-gamepad-focus {
     outline: 2px solid var(--color-ps-accent) !important;
@@ -266,12 +304,21 @@
     color: var(--color-ps-text);
     font-weight: 600;
   }
+  /* Reduced motion means fewer and gentler, not none: drop every moving
+     transition (transform, translate, scale, size, position) but keep the
+     authored opacity and colour fades that explain state changes. Keyframe
+     loops stop after a single, near-instant iteration. Motion components are
+     handled separately by MotionConfig reducedMotion="user". */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
+      transition-property:
+        opacity, color, background-color, border-color, outline-color,
+        text-decoration-color, fill, stroke !important;
       animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
       scroll-behavior: auto !important;
     }
   }
@@ -306,8 +353,17 @@
     white-space: nowrap;
     color: var(--color-ps-muted);
   }
-  .app-nav-link:hover {
-    color: var(--color-ps-text);
+  @media (hover: hover) and (pointer: fine) {
+    .app-nav-link:hover {
+      color: var(--color-ps-text);
+    }
+    .app-profile-button:hover {
+      background: var(--color-ps-panel);
+    }
+    .app-icon-button:hover {
+      background: var(--color-ps-panel);
+      color: var(--color-ps-text);
+    }
   }
   .app-nav-link[aria-current="page"] {
     color: var(--color-ps-accent);
@@ -337,8 +393,10 @@
     color: var(--color-ps-text);
     font-size: 0.8125rem;
     box-shadow: none;
+    transition-property: color, background-color, transform;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
   }
-  .app-profile-button:hover,
   .app-profile-button[data-open] {
     background: var(--color-ps-panel);
   }
@@ -354,10 +412,21 @@
     min-height: 2.75rem;
     border-radius: 0.375rem;
     color: var(--color-ps-muted);
+    transition-property: color, background-color, transform;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
   }
-  .app-icon-button:hover {
+  /* Press feedback lands on pointer-down, for touch and mouse alike. */
+  .app-icon-button:active,
+  .app-profile-button:active {
+    transform: scale(0.97);
+  }
+  .app-icon-button:active {
     background: var(--color-ps-panel);
-    color: var(--color-ps-text);
+  }
+  .app-icon-button:disabled,
+  .app-icon-button[aria-disabled="true"] {
+    transform: none;
   }
   .app-library-column {
     width: 264px;

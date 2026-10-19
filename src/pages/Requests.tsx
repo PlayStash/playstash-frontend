@@ -179,7 +179,7 @@ export default function Requests() {
           }
         >
           {error && (
-            <p role="alert" className="text-sm text-red-400">
+            <p role="alert" className="text-sm break-words text-ps-danger">
               {error}
             </p>
           )}
@@ -189,7 +189,7 @@ export default function Requests() {
             </p>
           )}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-semibold">
+            <h2 className="min-w-0 font-semibold tabular-nums">
               {admin && !mine ? t("requests.adminQueue") : t("requests.mine")}{" "}
               {data
                 ? formatMessage(t("requests.counts"), {
@@ -200,9 +200,10 @@ export default function Requests() {
             </h2>
             <div className="flex items-center gap-3">
               {admin && (
-                <label className="flex items-center gap-2 text-sm">
+                <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm">
                   <input
                     type="checkbox"
+                    className="request-checkbox size-4"
                     checked={mine}
                     onChange={(event) => {
                       setMine(event.target.checked);
@@ -258,7 +259,7 @@ export default function Requests() {
               >
                 {t("common.previous")}
               </Button>
-              <span className="text-sm">
+              <span className="text-sm tabular-nums">
                 {formatMessage(t("requests.page"), { page })}
               </span>
               <Button
@@ -304,9 +305,11 @@ function RequestRow({
   return (
     <article className="request-row space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold">{request.title}</h3>
-          <p className="text-xs text-ps-muted">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold [overflow-wrap:anywhere]">
+            {request.title}
+          </h3>
+          <p className="text-xs break-words text-ps-muted">
             {request.anonymous
               ? t("requests.anonymousRequester")
               : request.username || t("requests.yourRequest")}{" "}
@@ -316,7 +319,10 @@ function RequestRow({
             })}
           </p>
         </div>
-        <span className="request-status">
+        <span
+          className="request-status"
+          data-unread={request.unread || undefined}
+        >
           {STATUS_LABELS[request.status]
             ? t(STATUS_LABELS[request.status])
             : request.status}
@@ -324,13 +330,13 @@ function RequestRow({
         </span>
       </div>
       {request.note && (
-        <p className="whitespace-pre-wrap break-words text-sm">
+        <p className="max-w-[72ch] whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">
           {request.note}
         </p>
       )}
       {request.game_id && (
         <Link
-          className="text-sm text-ps-accent-strong underline"
+          className="inline-flex min-h-10 items-center rounded-sm text-sm text-ps-accent-strong underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
           to={`/library/${request.game_id}`}
         >
           {t("requests.openGame")}
@@ -387,18 +393,20 @@ function RequestRow({
           </Button>
         </div>
       )}
-      <div className="flex gap-2">
-        {request.mine && request.unread && (
-          <Button outline disabled={busy} onClick={onSeen}>
-            {t("requests.markRead")}
-          </Button>
-        )}
-        {request.mine && request.status === "open" && (
-          <Button outline disabled={busy} onClick={onCancel}>
-            {t("requests.cancel.confirm")}
-          </Button>
-        )}
-      </div>
+      {request.mine && (request.unread || request.status === "open") && (
+        <div className="flex flex-wrap gap-2">
+          {request.mine && request.unread && (
+            <Button outline disabled={busy} onClick={onSeen}>
+              {t("requests.markRead")}
+            </Button>
+          )}
+          {request.mine && request.status === "open" && (
+            <Button outline disabled={busy} onClick={onCancel}>
+              {t("requests.cancel.confirm")}
+            </Button>
+          )}
+        </div>
+      )}
     </article>
   );
 }

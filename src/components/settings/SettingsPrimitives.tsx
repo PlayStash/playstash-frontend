@@ -64,9 +64,11 @@ export function SettingsLabel({
 }) {
   return (
     <div className={clsx("min-w-0 flex-1", className)}>
-      <p className="text-sm font-medium text-ps-text">{title}</p>
+      <p className="text-sm font-medium break-words text-ps-text">{title}</p>
       {description && (
-        <p className="mt-0.5 text-xs leading-5 text-ps-muted">{description}</p>
+        <p className="mt-0.5 max-w-[70ch] text-xs leading-5 break-words text-ps-muted">
+          {description}
+        </p>
       )}
     </div>
   );
@@ -87,7 +89,7 @@ export function SettingsSectionHeader({
       <span>
         <Icon className="size-5" />
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 break-words">
         <h2>{title}</h2>
         {description && <p>{description}</p>}
       </div>

@@ -373,8 +373,11 @@ function NetworkUserCard({
                 className="bg-ps-panel-soft"
               />
               <div className="min-w-0 space-y-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <h3 className="min-w-0 truncate text-base font-semibold tracking-[-0.02em] text-ps-text">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <h3
+                    className="min-w-0 max-w-full truncate text-base font-semibold tracking-[-0.02em] text-ps-text"
+                    title={displayName}
+                  >
                     {displayName}
                   </h3>
                   {isCurrentUser && (
@@ -389,7 +392,12 @@ function NetworkUserCard({
                     {getRoleLabel(Number(user.role))}
                   </Badge>
                 </div>
-                <div className="truncate text-sm text-ps-muted">@{handle}</div>
+                <div
+                  className="truncate text-sm text-ps-muted"
+                  title={`@${handle}`}
+                >
+                  @{handle}
+                </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ps-muted">
                   <span
                     title={formatFullDateTime(stats.lastPlayed) ?? undefined}
@@ -407,7 +415,10 @@ function NetworkUserCard({
               </div>
             </div>
 
-            <ArrowRightIcon className="size-4 shrink-0 text-ps-muted group-hover:text-ps-accent" />
+            <ArrowRightIcon
+              className="size-4 shrink-0 text-ps-muted transition-[color,translate] duration-150 ease-out group-hover:translate-x-0.5 group-hover:text-ps-accent motion-reduce:transition-colors motion-reduce:group-hover:translate-x-0"
+              aria-hidden="true"
+            />
           </div>
 
           <div className="community-member-stats">
@@ -418,7 +429,7 @@ function NetworkUserCard({
               { label: t("community.stat.saved"), value: stats.bookmarks },
             ].map((item) => (
               <div key={item.label}>
-                <p className="truncate">{item.label}</p>
+                <p title={item.label}>{item.label}</p>
                 <strong data-numeric>{item.value}</strong>
               </div>
             ))}
@@ -728,10 +739,14 @@ export default function Community() {
         </div>
       </div>
       <div className="w-full max-w-sm">
-        <label className="mb-2 block text-xs font-medium text-ps-muted">
+        <label
+          htmlFor="community-member-search"
+          className="mb-2 block text-xs font-medium text-ps-muted"
+        >
           {t("community.searchMembers")}
         </label>
         <Input
+          id="community-member-search"
           name="userSearch"
           value={userSearch}
           onChange={(e: any) => setUserSearch(e.target.value)}
@@ -742,7 +757,10 @@ export default function Community() {
       </div>
 
       {error && (
-        <div className="rounded-md bg-rose-500/10 px-4 py-3 text-sm text-rose-500">
+        <div
+          role="alert"
+          className="rounded-md bg-ps-danger/10 px-4 py-3 text-sm break-words text-ps-danger"
+        >
           {error}
         </div>
       )}
@@ -752,7 +770,8 @@ export default function Community() {
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="h-80 animate-pulse border-b border-ps-line bg-ps-panel-soft"
+              aria-hidden="true"
+              className="h-80 animate-pulse border-b border-ps-line bg-ps-panel-soft motion-reduce:animate-none"
             />
           ))}
         </div>

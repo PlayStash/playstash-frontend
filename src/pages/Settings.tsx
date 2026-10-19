@@ -367,7 +367,7 @@ function AboutLinkRow({
       className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
     >
       <SettingsLabel title={title} />
-      <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
+      <span className="flex min-w-0 max-w-[60%] items-center gap-1.5 text-sm font-medium text-ps-accent">
         <span className="truncate">{value}</span>
         <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
       </span>
@@ -649,6 +649,26 @@ export default function Settings() {
       return false;
     }
   });
+  const navigationRef = useRef<HTMLElement>(null);
+  // Below 768px the navigation is a horizontal strip: scroll the selected
+  // entry into view (horizontally only, never the page) when it changes.
+  useEffect(() => {
+    const nav = navigationRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    const current = nav.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!current) return;
+    const start = current.offsetLeft - nav.offsetLeft;
+    const end = start + current.offsetWidth;
+    if (start >= nav.scrollLeft && end <= nav.scrollLeft + nav.clientWidth)
+      return;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    nav.scrollTo?.({
+      left: Math.max(0, start - 16),
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [activeCategory]);
   const versionClickCount = useRef(0);
   const versionClickTimer = useRef<number | null>(null);
   const [editingRootId, setEditingRootId] = useState<string | null>(null);
@@ -1336,7 +1356,11 @@ export default function Settings() {
           )}
         </div>
         <div className="settings-workspace">
-          <nav className="settings-navigation" aria-label={t("nav.settings")}>
+          <nav
+            ref={navigationRef}
+            className="settings-navigation"
+            aria-label={t("nav.settings")}
+          >
             <button
               type="button"
               aria-current={activeCategory === null ? "page" : undefined}
@@ -1368,8 +1392,12 @@ export default function Settings() {
               {activeCategory === null ? (
                 <SettingsPanel
                   key="overview"
-                  initial={{ opacity: 0.72 }}
-                  animate={{ opacity: 1, pointerEvents: "auto" }}
+                  initial={{ opacity: 0.72, transform: "translateY(4px)" }}
+                  animate={{
+                    opacity: 1,
+                    transform: "translateY(0px)",
+                    pointerEvents: "auto",
+                  }}
                   exit={{
                     opacity: 0,
                     pointerEvents: "none",
@@ -1447,22 +1475,15 @@ export default function Settings() {
                             </div>
                           </SettingsRow>
                         ) : (
-                          searchResults.map((result, i) => (
-                            <motion.button
+                          searchResults.map((result) => (
+                            <button
                               key={result.id}
                               type="button"
                               onClick={() => openSearchResult(result)}
-                              initial={{ opacity: 0, y: 4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{
-                                delay: 0.02 + i * 0.02,
-                                duration: 0.16,
-                                ease: [0.23, 1, 0.32, 1],
-                              }}
-                              className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
+                              className="group flex min-h-12 w-full cursor-pointer touch-manipulation items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ps-accent-cool active:bg-ps-panel-strong"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-ps-text">
+                                <p className="text-sm font-medium break-words text-ps-text">
                                   {result.title}
                                 </p>
                                 {result.description && (
@@ -1475,7 +1496,7 @@ export default function Settings() {
                                 </p>
                               </div>
                               <ChevronRightIcon className="size-4 shrink-0 text-ps-muted transition-transform group-hover:translate-x-0.5" />
-                            </motion.button>
+                            </button>
                           ))
                         )}
                       </SettingsGroup>
@@ -1495,8 +1516,12 @@ export default function Settings() {
               ) : (
                 <SettingsPanel
                   key={activeCategory}
-                  initial={{ opacity: 0.72 }}
-                  animate={{ opacity: 1, pointerEvents: "auto" }}
+                  initial={{ opacity: 0.72, transform: "translateY(4px)" }}
+                  animate={{
+                    opacity: 1,
+                    transform: "translateY(0px)",
+                    pointerEvents: "auto",
+                  }}
                   exit={{
                     opacity: 0,
                     pointerEvents: "none",
@@ -1630,7 +1655,7 @@ export default function Settings() {
                                     onClick={() =>
                                       handleRemoveRootPath(root.id)
                                     }
-                                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+                                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger cursor-pointer"
                                     aria-label={t(
                                       "settings.downloads.locations.remove",
                                     )}
@@ -1922,7 +1947,7 @@ export default function Settings() {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveIgnore(name)}
-                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger cursor-pointer"
                                   aria-label={fillTemplate(
                                     t("settings.games.ignoreList.remove"),
                                     { name },
@@ -2052,7 +2077,7 @@ export default function Settings() {
                                 <button
                                   type="button"
                                   onClick={() => void handleClearWinePrefix()}
-                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger cursor-pointer"
                                   aria-label={t(
                                     "settings.games.winePrefix.clear",
                                   )}
@@ -2605,7 +2630,7 @@ export default function Settings() {
                             <SettingsLabel
                               title={t("settings.about.license.title")}
                             />
-                            <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
+                            <span className="flex min-w-0 max-w-[60%] items-center gap-1.5 text-sm font-medium text-ps-accent">
                               <span className="truncate">CC BY-NC-SA 4.0</span>
                               <ChevronRightIcon
                                 className={clsx(
@@ -2640,7 +2665,7 @@ export default function Settings() {
                                 "settings.about.openSourceLicenses.title",
                               )}
                             />
-                            <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
+                            <span className="flex min-w-0 max-w-[60%] items-center gap-1.5 text-sm font-medium text-ps-accent">
                               <span className="truncate">
                                 {licenseData
                                   ? fillTemplate(
@@ -2836,7 +2861,7 @@ export default function Settings() {
                                 }
                               />
                               {updaterErrorText ? (
-                                <ExclamationTriangleIcon className="size-4 shrink-0 text-red-400" />
+                                <ExclamationTriangleIcon className="size-4 shrink-0 text-ps-danger" />
                               ) : (
                                 <span
                                   className={clsx(

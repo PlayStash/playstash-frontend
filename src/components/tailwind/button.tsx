@@ -9,8 +9,11 @@ const styles = {
     "relative isolate inline-flex min-h-11 items-center justify-center gap-x-2 rounded-md border text-base/6 font-medium tracking-[-0.01em] sm:min-h-10",
     // Sizing
     "px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)] sm:text-sm/6",
-    // Motion
-    "transition-[transform,translate,scale,background-color,border-color,box-shadow,color] duration-150 ease-out active:scale-[0.98]",
+    // Motion: press feedback lands on pointer-down (touch and mouse alike) and
+    // releases on the same 150ms curve; disabled controls never press.
+    "transition-[scale,background-color,border-color,color] duration-150 ease-(--ease-out) active:scale-[0.97] data-disabled:active:scale-100",
+    // Touch: no double-tap-zoom delay, no label selection or callout on long-press
+    "touch-manipulation select-none [-webkit-touch-callout:none]",
     // Focus
     "focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-ps-accent-cool",
     // Disabled
@@ -32,7 +35,7 @@ const styles = {
     // Dark mode: Subtle white outline is applied using a border
     "dark:border-ps-line",
     // Shim/overlay, inset to match button foreground and used for hover state + highlight shadow
-    "after:absolute after:inset-0 after:-z-10 after:rounded-[inherit]",
+    "after:absolute after:inset-0 after:-z-10 after:rounded-[inherit] after:transition-[background-color] after:duration-150 after:ease-(--ease-out)",
     // Inner highlight shadow
     "after:shadow-none",
     // White overlay on hover

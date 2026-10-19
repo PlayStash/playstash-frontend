@@ -51,16 +51,10 @@ export function Combobox<T>({
           className,
           // Basic layout
           "relative block w-full",
-          // Background color + shadow applied to inset pseudo element, so shadow blends with border in light mode
-          "before:absolute before:inset-px before:rounded-[calc(var(--radius-lg)-1px)] before:bg-ps-panel before:shadow-sm",
-          // Background color is moved to control and shadow is removed in dark mode so hide `before` pseudo
-          "dark:before:hidden",
-          // Focus ring
-          "after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:ring-transparent after:ring-inset sm:focus-within:after:ring-2 sm:focus-within:after:ring-blue-500",
+          // Focus ring (matches Input)
+          "after:pointer-events-none after:absolute after:inset-0 after:rounded-md after:ring-transparent after:ring-inset focus-within:after:ring-2 focus-within:after:ring-ps-accent-cool",
           // Disabled state
-          "has-data-disabled:opacity-50 has-data-disabled:before:bg-zinc-950/5 has-data-disabled:before:shadow-none",
-          // Invalid state
-          "has-data-invalid:before:shadow-red-500/10",
+          "has-data-disabled:opacity-50",
         ])}
       >
         <Headless.ComboboxInput
@@ -73,28 +67,27 @@ export function Combobox<T>({
           className={clsx([
             className,
             // Basic layout
-            "relative block w-full appearance-none rounded-lg py-[calc(--spacing(2.5)-1px)] sm:py-[calc(--spacing(1.5)-1px)]",
+            "relative block w-full appearance-none rounded-md py-[calc(--spacing(2.5)-1px)] sm:py-[calc(--spacing(1.75)-1px)]",
             // Horizontal padding
             "pr-[calc(--spacing(10)-1px)] pl-[calc(--spacing(3.5)-1px)] sm:pr-[calc(--spacing(9)-1px)] sm:pl-[calc(--spacing(3)-1px)]",
             // Typography
-            "text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6 dark:text-ps-text",
-            // Border (transparent by default â€” no visible gray outline)
-            "border border-transparent",
-            // Background color
-            "bg-transparent dark:bg-ps-panel",
+            // 16px on touch devices so iOS never zooms; compact 14px with a mouse.
+            "text-base/6 text-ps-text placeholder:text-ps-muted sm:pointer-fine:text-sm/6",
+            // Border and fill share the Input field treatment
+            "border border-ps-line-strong bg-ps-shell",
             // Hide default focus styles
             "focus:outline-hidden",
             // Invalid state
             "data-invalid:border-red-500 data-invalid:data-hover:border-red-500 dark:data-invalid:border-red-500 dark:data-invalid:data-hover:border-red-500",
             // Disabled state
-            "data-disabled:border-transparent dark:data-disabled:bg-ps-panel/2.5",
+            "data-disabled:border-transparent data-disabled:bg-ps-panel-soft",
             // System icons
             "dark:scheme-dark",
           ])}
         />
-        <Headless.ComboboxButton className="group absolute inset-y-0 right-0 flex items-center px-2">
+        <Headless.ComboboxButton className="group absolute inset-y-0 right-0 flex touch-manipulation items-center px-2">
           <svg
-            className="size-5 stroke-zinc-500 group-data-disabled:stroke-zinc-600 group-data-hover:stroke-zinc-700 sm:size-4 dark:stroke-zinc-400 dark:group-data-hover:stroke-zinc-300 forced-colors:stroke-[CanvasText]"
+            className="size-5 stroke-ps-muted transition-[stroke] duration-150 group-data-hover:stroke-ps-text sm:size-4 forced-colors:stroke-[CanvasText]"
             viewBox="0 0 16 16"
             aria-hidden="true"
             fill="none"
@@ -121,17 +114,17 @@ export function Combobox<T>({
           // Anchor positioning
           "[--anchor-gap:--spacing(2)] [--anchor-padding:--spacing(4)] sm:data-[anchor~=start]:[--anchor-offset:-4px]",
           // Base styles,
-          "isolate min-w-[calc(var(--input-width)+8px)] scroll-py-1 rounded-md p-1 select-none empty:invisible",
+          "isolate min-w-[calc(var(--input-width)+8px)] scroll-py-1 rounded-lg p-1.5 select-none empty:invisible",
           // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
           "outline outline-transparent focus:outline-hidden",
           // Handle scrolling when menu won't fit in viewport
-          "overflow-y-scroll overscroll-contain",
-          // Popover background
-          "bg-ps-panel/75 backdrop-blur-xl dark:bg-ps-panel/75",
+          "overflow-y-auto overscroll-contain",
+          // Popover background: flat panel, no glass (matches Dropdown)
+          "surface-panel",
           // Shadows
-          "shadow-lg ring-1 ring-zinc-950/10 dark:ring-white/10 dark:ring-inset",
-          // Follow the resolved placement when the popup flips above the control.
-          "origin-top data-[anchor~=top]:origin-bottom",
+          "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
+          // Scale from the control, following the resolved (possibly flipped) placement.
+          "origin-top data-[anchor~=top]:origin-bottom data-[anchor~=bottom]:data-[anchor~=start]:origin-top-left data-[anchor~=bottom]:data-[anchor~=end]:origin-top-right data-[anchor~=top]:data-[anchor~=start]:origin-bottom-left data-[anchor~=top]:data-[anchor~=end]:origin-bottom-right",
           // Retargetable enter and exit states keep rapid toggles continuous.
           "transition-[opacity,transform] duration-180 ease-(--ease-out) data-closed:[transform:scale(.98)] data-closed:opacity-0 data-leave:duration-120 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
         )}
@@ -155,7 +148,7 @@ export function ComboboxOption<T>({
     "flex min-w-0 items-center",
     // Icons
     "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-on-accent dark:*:data-[slot=icon]:text-ps-muted",
+    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-on-accent",
     "forced-colors:*:data-[slot=icon]:text-[CanvasText] forced-colors:group-data-focus/option:*:data-[slot=icon]:text-[Canvas]",
     // Avatars
     "*:data-[slot=avatar]:-mx-0.5 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:size-5",
@@ -166,11 +159,11 @@ export function ComboboxOption<T>({
       {...props}
       className={clsx(
         // Basic layout
-        "group/option grid w-full cursor-pointer grid-cols-[1fr_--spacing(5)] items-baseline gap-x-2 rounded-lg py-2.5 pr-2 pl-3.5 sm:grid-cols-[1fr_--spacing(4)] sm:py-1.5 sm:pr-2 sm:pl-3",
+        "group/option grid w-full cursor-pointer grid-cols-[1fr_--spacing(5)] items-baseline gap-x-2 rounded-md py-2.5 pr-2 pl-3.5 sm:grid-cols-[1fr_--spacing(4)] sm:py-1.5 sm:pr-2 sm:pl-3",
         // Typography
-        "text-base/6 text-ps-text sm:text-sm/6 dark:text-ps-text forced-colors:text-[CanvasText]",
-        // Focus
-        "outline-hidden data-focus:bg-blue-500 data-focus:text-ps-on-accent",
+        "text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
+        // Focus: instant accent highlight, like Dropdown and Listbox
+        "outline-hidden transition-none data-focus:bg-ps-accent data-focus:text-ps-on-accent",
         // Forced colors mode
         "forced-color-adjust-none forced-colors:data-focus:bg-[Highlight] forced-colors:data-focus:text-[HighlightText]",
         // Disabled
@@ -220,7 +213,7 @@ export function ComboboxDescription({
       {...props}
       className={clsx(
         className,
-        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-ps-on-accent before:w-2 before:min-w-0 before:shrink dark:text-ps-muted",
+        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-ps-on-accent before:w-2 before:min-w-0 before:shrink",
       )}
     >
       <span className="flex-1 truncate">{children}</span>

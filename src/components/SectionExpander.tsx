@@ -44,17 +44,20 @@ export function SectionExpander({
         <div>
           <OpenStateReporter open={open} onOpenChange={onOpenChange} />
           <div className="flex items-center gap-2 py-2 select-none">
-            <DisclosureButton className="flex items-center gap-2 text-sm font-semibold text-ps-text hover:text-ps-text transition-colors cursor-pointer">
+            <DisclosureButton className="relative -ml-1 flex min-w-0 cursor-pointer items-center gap-2 rounded-[4px] py-0.5 pr-1.5 pl-1 text-left text-sm font-semibold text-ps-text tabular-nums select-none after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']">
               <ChevronRightIcon
+                aria-hidden="true"
                 className={clsx(
-                  "h-4 w-4 transition-transform duration-200",
+                  "h-4 w-4 shrink-0 text-ps-muted transition-transform duration-200 ease-[var(--ease-out)] motion-reduce:transition-none",
                   open && "rotate-90",
                 )}
               />
-              <span>{title}</span>
+              <span className="min-w-0">{title}</span>
             </DisclosureButton>
             {headerRight && (
-              <div className="ml-auto flex items-center">{headerRight}</div>
+              <div className="ml-auto flex shrink-0 items-center">
+                {headerRight}
+              </div>
             )}
           </div>
           <AnimatePresence initial={false}>
@@ -65,7 +68,8 @@ export function SectionExpander({
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.18, ease: EASE_OUT }}
-                className="overflow-hidden"
+                // The bleed keeps edge focus rings visible inside the clip.
+                className="ps-library-section-body overflow-hidden"
               >
                 {children}
               </motion.div>

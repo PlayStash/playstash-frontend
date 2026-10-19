@@ -31,7 +31,14 @@ import { buildShareUrl } from "@/utils/shareUrl";
 import { formatDate, formatTime, formatYear } from "@/utils/date";
 import { hasOpenOverlay, isEditableTarget } from "@/utils/overlay";
 import { formatDecimal } from "@/utils/number";
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { useParams, useNavigate } from "react-router";
 import {
   CloudArrowDownIcon,
@@ -167,13 +174,18 @@ export default function GameView() {
     });
   }, [numericId, navigate]);
   const backgroundMediaId = game?.metadata?.background?.id;
-  // Loading an existing backdrop must not remove a cover from the title row.
-  // The composition is decided by metadata, independently of fetch/decode time.
-  const hasBackgroundMedia = Boolean(backgroundMediaId);
-  const { url: backgroundUrl } = useAuthMediaUrl(
+  const {
+    url: backgroundUrl,
+    error: backgroundError,
+    retryAfterDecodeError: retryBackgroundDecode,
+  } = useAuthMediaUrl(
     backgroundMediaId,
     game?.id ? { gameId: game.id, slot: "background" } : undefined,
   );
+  // Loading an existing backdrop must not remove a cover from the title row.
+  // The composition is decided by metadata, independently of fetch/decode
+  // time; only a backdrop that definitively failed falls back to the cover.
+  const hasBackgroundMedia = Boolean(backgroundMediaId) && !backgroundError;
 
   useEffect(() => {
     if (!serverUrl || !numericId || Number.isNaN(numericId)) return;
@@ -262,6 +274,48 @@ export default function GameView() {
   >("description");
   const mediaSliderRef = useRef<HTMLDivElement | null>(null);
   const detailsCardRef = useRef<HTMLDivElement | null>(null);
+  const detailTabsRef = useRef<HTMLElement | null>(null);
+  const tabIndicatorRef = useRef<HTMLSpanElement | null>(null);
+  const detailsVisible = !loading && !error && Boolean(game);
+  const userRole = user?.role;
+
+  // One shared tab indicator glides between tabs. It is positioned with a
+  // composite-only transform (translateX + scaleX of a 100px bar), and its CSS
+  // transition retargets mid-flight when tabs are switched rapidly. The first
+  // placement and any resize snap without animating.
+  useLayoutEffect(() => {
+    const nav = detailTabsRef.current;
+    const indicator = tabIndicatorRef.current;
+    if (!detailsVisible || !nav || !indicator) return;
+    const place = (animate: boolean) => {
+      const active = nav.querySelector<HTMLElement>("button.is-active");
+      if (!active || !active.offsetWidth) {
+        indicator.style.opacity = "0";
+        return;
+      }
+      indicator.dataset.animate = animate ? "true" : "false";
+      indicator.style.transform = `translateX(${active.offsetLeft}px) scaleX(${active.offsetWidth / 100})`;
+      indicator.style.opacity = "1";
+    };
+    place(indicator.dataset.placed === "true");
+    indicator.dataset.placed = "true";
+    if (typeof ResizeObserver === "undefined") return;
+    // The observer reports every target once on observe(); that first batch
+    // must not cancel the transition that place(true) just started.
+    let initialBatch = true;
+    const observer = new ResizeObserver(() => {
+      if (initialBatch) {
+        initialBatch = false;
+        return;
+      }
+      place(false);
+    });
+    observer.observe(nav);
+    nav
+      .querySelectorAll("button")
+      .forEach((button) => observer.observe(button));
+    return () => observer.disconnect();
+  }, [detailsTab, detailsVisible, userRole, t]);
   const rawGenres = (game as any)?.metadata?.genres || [];
   const genres: string[] = Array.isArray(rawGenres)
     ? rawGenres
@@ -531,20 +585,31 @@ export default function GameView() {
     void selectVersionAndRun("client");
   }, [game, selectVersionAndRun]);
 
+  // A launch runs pre-launch hooks and executable detection before the
+  // process starts; a second click during that window must not spawn twice.
+  const launchPendingRef = useRef(false);
+  const [launchPending, setLaunchPending] = useState(false);
   const handlePlayGame = useCallback(
     async (e: React.MouseEvent, profile?: LaunchProfileDto) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!installedInfo) return;
-      // Shared launch path: hooks, emulator, auto-detection, metrics and
-      // error alerts all live in launchInstalledGame.
-      await launchInstalledGame({
-        gameId: installedInfo.gameId,
-        profile,
-        source: "game-view",
-        game,
-        installed: installedInfo,
-      });
+      if (!installedInfo || launchPendingRef.current) return;
+      launchPendingRef.current = true;
+      setLaunchPending(true);
+      try {
+        // Shared launch path: hooks, emulator, auto-detection, metrics and
+        // error alerts all live in launchInstalledGame.
+        await launchInstalledGame({
+          gameId: installedInfo.gameId,
+          profile,
+          source: "game-view",
+          game,
+          installed: installedInfo,
+        });
+      } finally {
+        launchPendingRef.current = false;
+        setLaunchPending(false);
+      }
     },
     [installedInfo, game],
   );
@@ -633,7 +698,7 @@ export default function GameView() {
   }, [game]);
 
   const formatBytes = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024) return `${bytes}\u00a0B`;
     const units = ["KB", "MB", "GB", "TB", "PB"];
     let value = bytes / 1024;
     let unitIndex = 0;
@@ -641,7 +706,7 @@ export default function GameView() {
       value /= 1024;
       unitIndex++;
     }
-    return `${formatDecimal(value, value < 10 ? 2 : value < 100 ? 1 : 0)} ${units[unitIndex]}`;
+    return `${formatDecimal(value, value < 10 ? 2 : value < 100 ? 1 : 0)}\u00a0${units[unitIndex]}`;
   };
 
   const formattedSize = useMemo(
@@ -676,6 +741,10 @@ export default function GameView() {
           return `${val}%`;
         })()
       : null;
+  const metadataEmpty = <span className="game-metadata-empty">—</span>;
+  const titleLength = (shownTitle ?? "").length;
+  const titleLengthClass =
+    titleLength > 48 ? "long" : titleLength > 28 ? "medium" : undefined;
   return (
     <div className="game-view">
       {(loading || error || !game) && (
@@ -697,13 +766,14 @@ export default function GameView() {
               !hasBackgroundMedia && "game-hero-without-art",
             )}
           >
-            {backgroundUrl && (
+            {backgroundUrl && hasBackgroundMedia && (
               <DecodedImage
                 className="game-hero-art"
                 src={backgroundUrl}
                 alt=""
                 decoding="async"
                 draggable={false}
+                onError={retryBackgroundDecode}
               />
             )}
             <div className="game-hero-navigation">
@@ -747,15 +817,18 @@ export default function GameView() {
                         ? t("gameView.title.showFile")
                         : t("gameView.title.showMapped")
                     }
+                    data-length={titleLengthClass}
                     className={clsx(
                       "game-hero-title",
                       isDeleted && "line-through opacity-70",
                     )}
                   >
-                    {shownTitle}
-                    {shownYear && (
-                      <span className="game-hero-year">{shownYear}</span>
-                    )}
+                    <span className="game-hero-title-text">
+                      {shownTitle}
+                      {shownYear && (
+                        <span className="game-hero-year">{shownYear}</span>
+                      )}
+                    </span>
                   </button>
                 </h1>
                 <div className="game-hero-genres">
@@ -828,15 +901,35 @@ export default function GameView() {
                   color="indigo"
                   className="game-play-button"
                   aria-label={t("common.play")}
+                  aria-busy={launchPending || undefined}
                   onClick={handlePlayGame}
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    className="size-5 fill-current"
-                  >
-                    <path d="M7 4v16l14-8z" />
-                  </svg>
+                  {launchPending ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      className="game-play-spinner size-5"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="8.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeDasharray="40 14"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      className="size-5 fill-current"
+                    >
+                      <path d="M7 4v16l14-8z" />
+                    </svg>
+                  )}
                   {t("common.play")}
                 </Button>
               )}
@@ -912,8 +1005,8 @@ export default function GameView() {
                 <dt>{t("gameView.stats.playtime")}</dt>
                 <dd>
                   {playtimeHours >= 1
-                    ? `${formatDecimal(playtimeHours, playtimeHours < 10 ? 1 : 0)} h`
-                    : `${playtimeMinutes} m`}
+                    ? `${formatDecimal(playtimeHours, playtimeHours < 10 ? 1 : 0)}\u00a0h`
+                    : `${playtimeMinutes}\u00a0m`}
                 </dd>
               </div>
               <div>
@@ -935,8 +1028,8 @@ export default function GameView() {
                     {formatDecimal(
                       avgPlaytime / 60,
                       avgPlaytime / 60 < 10 ? 1 : 0,
-                    )}{" "}
-                    h
+                    )}
+                    {"\u00a0h"}
                   </dd>
                 </div>
               ) : null}
@@ -983,9 +1076,15 @@ export default function GameView() {
           )}
           <div className="game-detail-area">
             <nav
+              ref={detailTabsRef}
               className="game-detail-tabs"
               aria-label={t("gameView.details.title")}
             >
+              <span
+                ref={tabIndicatorRef}
+                className="game-detail-tab-indicator"
+                aria-hidden="true"
+              />
               {(
                 [
                   ["description", "common.description"],
@@ -1125,7 +1224,7 @@ export default function GameView() {
                               key={tag}
                               onClick={() => openLibraryFilter("tags", tag)}
                               title={t("gameView.pill.filter")}
-                              className="px-2 py-1 rounded-md bg-ps-panel-strong text-xs font-medium text-ps-muted cursor-pointer hover:text-ps-text"
+                              className="game-tag"
                             >
                               {tag}
                             </button>
@@ -1162,7 +1261,9 @@ export default function GameView() {
                           className="font-medium whitespace-nowrap truncate"
                           title={(releaseYear || "—") + ""}
                         >
-                          {releaseYear || "—"}
+                          {releaseYear || (
+                            <span className="game-metadata-empty">—</span>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -1176,7 +1277,9 @@ export default function GameView() {
                           className="font-medium whitespace-nowrap"
                           title={formattedRating || "—"}
                         >
-                          {formattedRating ?? "—"}
+                          {formattedRating ?? (
+                            <span className="game-metadata-empty">—</span>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -1190,7 +1293,9 @@ export default function GameView() {
                           className="font-medium whitespace-nowrap truncate"
                           title={versionTag || "—"}
                         >
-                          {versionTag || "—"}
+                          {versionTag || (
+                            <span className="game-metadata-empty">—</span>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -1230,7 +1335,7 @@ export default function GameView() {
                                   </button>
                                 </span>
                               ))
-                            : "—"}
+                            : metadataEmpty}
                         </div>
                       </div>
                     </li>
@@ -1265,7 +1370,7 @@ export default function GameView() {
                                   </button>
                                 </span>
                               ))
-                            : "—"}
+                            : metadataEmpty}
                         </div>
                       </div>
                     </li>
@@ -1279,7 +1384,9 @@ export default function GameView() {
                           className="font-medium whitespace-nowrap"
                           title={ageRating ?? "—"}
                         >
-                          {ageRating ?? "—"}
+                          {ageRating ?? (
+                            <span className="game-metadata-empty">—</span>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -1328,7 +1435,7 @@ export default function GameView() {
                             : rawUname;
                           const avatarMedia = (p.user as any)?.avatar;
                           const lastPlayedStr = p.last_played_at
-                            ? new Date(p.last_played_at).toLocaleDateString()
+                            ? formatDate(new Date(p.last_played_at), "—")
                             : "—";
                           const minutes = p.minutes_played || 0;
                           const hours = minutes / 60;
@@ -1350,19 +1457,19 @@ export default function GameView() {
                                   <span className="font-medium truncate text-ps-text">
                                     {uname}
                                   </span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-ps-panel-soft text-ps-muted font-medium">
+                                  <span className="shrink-0 whitespace-nowrap text-[10px] px-1.5 py-0.5 rounded bg-ps-panel-soft text-ps-muted font-medium">
                                     {formatState(p.state)}
                                   </span>
                                 </div>
-                                <div className="text-[11px] text-ps-muted mt-0.5 flex items-center justify-between gap-4">
+                                <div className="text-[11px] text-ps-muted mt-0.5 flex items-center justify-between gap-4 tabular-nums">
                                   <span className="truncate">
                                     {fillTemplate(
                                       t("gameView.activity.played"),
                                       {
                                         time:
                                           hours >= 1
-                                            ? `${formatDecimal(hours, hours < 10 ? 1 : 0)} h`
-                                            : `${minutes} m`,
+                                            ? `${formatDecimal(hours, hours < 10 ? 1 : 0)}\u00a0h`
+                                            : `${minutes}\u00a0m`,
                                       },
                                     )}
                                   </span>

@@ -219,6 +219,42 @@ function DiceIcon({ className }: { className?: string }) {
   );
 }
 
+/** A selected filter value with a remove control sized for touch. */
+function RemovableFilterChip({
+  label,
+  color,
+  onRemove,
+}: {
+  label: string;
+  color: "pink" | "blue" | "green" | "purple" | "orange";
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Badge
+      color={color}
+      className="flex max-w-full min-w-0 items-center gap-1 text-xs"
+    >
+      <span className="min-w-0 truncate" title={label}>
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={fillTemplate(t("libraryFilters.removeItem"), {
+          name: label,
+        })}
+        className="ps-library-chip-remove"
+      >
+        <XMarkIcon className="h-3 w-3" aria-hidden="true" />
+      </button>
+    </Badge>
+  );
+}
+
+/** Cards that take part in the one-time grid entrance (about one screen). */
+const GRID_INTRO_COUNT = 12;
+
 const compactLibraryQuery = "(max-width: 640px)";
 
 function subscribeCompactLibrary(onChange: () => void) {
@@ -911,6 +947,27 @@ export default function Library() {
     el?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  // Settle the first page of covers once, right after the skeleton gives way.
+  // Results already present on mount (returning from a game), later pages and
+  // filter changes appear immediately.
+  const [gridIntro, setGridIntro] = useState(false);
+  const gridIntroPhase = useRef<"idle" | "pending" | "done">("idle");
+  useEffect(() => {
+    if (gridIntroPhase.current === "done") return;
+    if (visibleGames.length === 0) {
+      gridIntroPhase.current = "pending";
+      return;
+    }
+    const wasPending = gridIntroPhase.current === "pending";
+    gridIntroPhase.current = "done";
+    if (wasPending) setGridIntro(true);
+  }, [visibleGames.length]);
+  useEffect(() => {
+    if (!gridIntro) return;
+    const timer = window.setTimeout(() => setGridIntro(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [gridIntro]);
+
   const coverGridStyle = {
     "--ps-cover-size": `${coverSize}px`,
   } as CSSProperties;
@@ -1041,7 +1098,7 @@ export default function Library() {
                 </span>
                 {activeFilterCount > 0 && (
                   <span
-                    className="ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-ps-accent px-1 text-[0.65rem] font-bold leading-none text-white"
+                    className="ps-library-filter-count ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-ps-accent px-1 text-[0.65rem] font-bold leading-none text-ps-on-accent"
                     aria-label={fillTemplate(t("libraryFilters.activeCount"), {
                       count: activeFilterCount,
                     })}
@@ -1377,104 +1434,64 @@ export default function Library() {
                   <div className="mt-4 border-t border-ps-line pt-4">
                     <div className="flex flex-wrap gap-1.5">
                       {selectedGameTypes.map((item) => (
-                        <Badge
+                        <RemovableFilterChip
                           key={item.name}
+                          label={gameTypeLabel(t, item)}
                           color="pink"
-                          className="text-xs flex items-center gap-1"
-                        >
-                          {gameTypeLabel(t, item)}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedGameTypes((prev) =>
-                                prev.filter((t) => t.name !== item.name),
-                              )
-                            }
-                            className="hover:text-red-400 ml-0.5"
-                          >
-                            <XMarkIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
+                          onRemove={() =>
+                            setSelectedGameTypes((prev) =>
+                              prev.filter((x) => x.name !== item.name),
+                            )
+                          }
+                        />
                       ))}
                       {selectedTags.map((tag) => (
-                        <Badge
+                        <RemovableFilterChip
                           key={tag.name}
+                          label={tag.name}
                           color="blue"
-                          className="text-xs flex items-center gap-1"
-                        >
-                          {tag.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedTags((prev) =>
-                                prev.filter((t) => t.name !== tag.name),
-                              )
-                            }
-                            className="hover:text-red-400 ml-0.5"
-                          >
-                            <XMarkIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
+                          onRemove={() =>
+                            setSelectedTags((prev) =>
+                              prev.filter((x) => x.name !== tag.name),
+                            )
+                          }
+                        />
                       ))}
                       {selectedGenres.map((genre) => (
-                        <Badge
+                        <RemovableFilterChip
                           key={genre.name}
+                          label={genre.name}
                           color="green"
-                          className="text-xs flex items-center gap-1"
-                        >
-                          {genre.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedGenres((prev) =>
-                                prev.filter((g) => g.name !== genre.name),
-                              )
-                            }
-                            className="hover:text-red-400 ml-0.5"
-                          >
-                            <XMarkIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
+                          onRemove={() =>
+                            setSelectedGenres((prev) =>
+                              prev.filter((x) => x.name !== genre.name),
+                            )
+                          }
+                        />
                       ))}
                       {selectedDevelopers.map((dev) => (
-                        <Badge
+                        <RemovableFilterChip
                           key={dev.name}
+                          label={dev.name}
                           color="purple"
-                          className="text-xs flex items-center gap-1"
-                        >
-                          {dev.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedDevelopers((prev) =>
-                                prev.filter((d) => d.name !== dev.name),
-                              )
-                            }
-                            className="hover:text-red-400 ml-0.5"
-                          >
-                            <XMarkIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
+                          onRemove={() =>
+                            setSelectedDevelopers((prev) =>
+                              prev.filter((x) => x.name !== dev.name),
+                            )
+                          }
+                        />
                       ))}
                       {selectedPublishers.map((pub) => (
-                        <Badge
+                        <RemovableFilterChip
                           key={pub.name}
+                          label={pub.name}
                           color="orange"
-                          className="text-xs flex items-center gap-1"
-                        >
-                          {pub.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedPublishers((prev) =>
-                                prev.filter((p) => p.name !== pub.name),
-                              )
-                            }
-                            className="hover:text-red-400 ml-0.5"
-                          >
-                            <XMarkIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
+                          onRemove={() =>
+                            setSelectedPublishers((prev) =>
+                              prev.filter((x) => x.name !== pub.name),
+                            )
+                          }
+                        />
                       ))}
                     </div>
                   </div>
@@ -1498,12 +1515,15 @@ export default function Library() {
           }}
         />
         {!serverUrl && (
-          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+          <div className="surface-panel-soft rounded-lg p-8 text-sm text-ps-muted">
             {t("library.noServer")}
           </div>
         )}
         {serverUrl && error && (
-          <div className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-500">
+          <div
+            role="alert"
+            className="mb-4 rounded-md border border-ps-danger/30 bg-ps-danger/10 p-4 text-sm break-words text-ps-danger"
+          >
             {error}
           </div>
         )}
@@ -1512,7 +1532,7 @@ export default function Library() {
         {isTauri && (
           <SectionExpander
             title={fillTemplate(t("library.installed.section"), {
-              count: filteredInstalledGames.length,
+              count: filteredInstalledGames.length.toLocaleString(locale),
             })}
             defaultOpen={getInstalledOpen()}
             onOpenChange={setInstalledOpen}
@@ -1608,11 +1628,11 @@ export default function Library() {
               </div>
             </div>
             {filteredInstalledGames.length === 0 ? (
-              <div className="surface-panel-soft rounded-2xl p-4 text-sm text-ps-muted">
+              <div className="surface-panel-soft rounded-lg p-4 text-sm text-ps-muted">
                 {t("library.installed.empty")}
               </div>
             ) : (
-              <div className="overflow-x-auto overflow-y-hidden pb-3">
+              <div className="-mx-1.5 overflow-x-auto overflow-y-hidden px-1.5 pb-3 [overscroll-behavior-x:contain]">
                 <div
                   className="grid gap-5 py-2"
                   style={{
@@ -1640,7 +1660,7 @@ export default function Library() {
         )}
 
         {libraryNotLoaded && (
-          <div className="surface-panel-soft mb-4 rounded-3xl p-8 text-sm text-ps-muted">
+          <div className="surface-panel-soft mb-4 rounded-lg p-8 text-sm text-ps-muted">
             <p>{t("library.notLoaded")}</p>
             <Button outline className="mt-3" onClick={reloadLibrary}>
               <ArrowPathIcon className="h-4 w-4" />
@@ -1651,7 +1671,7 @@ export default function Library() {
 
         {/* Server Games Section */}
         {isTauri && !isOnline ? (
-          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted text-center">
+          <div className="surface-panel-soft rounded-lg p-8 text-sm text-ps-muted text-center">
             <p className="font-semibold text-ps-text mb-2">
               {t("library.offline.title")}
             </p>
@@ -1666,34 +1686,46 @@ export default function Library() {
               visible: Math.max(
                 0,
                 (count ?? 0) - (games.length - visibleGames.length),
-              ),
-              total: count ?? 0,
+              ).toLocaleString(locale),
+              total: (count ?? 0).toLocaleString(locale),
             })}
             defaultOpen={true}
           >
             {serverUrl && loading && games.length === 0 && (
-              <div className="grid gap-4 sm:gap-6 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="ps-library-skeleton motion-safe:animate-pulse"
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
+              <>
+                <p role="status" className="sr-only">
+                  {t("common.loading")}
+                </p>
+                {/* Same grid and card rhythm as the real covers, so nothing
+                    shifts when the first page replaces it. */}
+                <div
+                  className="ps-library-grid grid min-w-0 py-2 pb-8 motion-safe:animate-pulse"
+                  style={coverGridStyle}
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: GRID_INTRO_COUNT }).map((_, i) => (
+                    <div key={i} className="ps-library-skeleton-card">
+                      <div className="ps-library-skeleton" />
+                      <div className="ps-library-skeleton-line" />
+                      <div className="ps-library-skeleton-line" />
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
             {serverUrl &&
               loadAllowed &&
               !loading &&
               games.length === 0 &&
               !error && (
-                <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+                <div className="surface-panel-soft rounded-lg p-8 text-sm text-ps-muted">
                   {t("library.empty")}
                   {(search.trim() || hasActiveFilters) && (
                     <div className="mt-2">
                       <TextLink
                         href="#"
-                        onClick={() => {
+                        onClick={(event: React.MouseEvent) => {
+                          event.preventDefault();
                           clearAllFilters();
                           setShowFilters(false);
                           setSearch("");
@@ -1708,8 +1740,9 @@ export default function Library() {
             <div
               className="ps-library-grid min-w-0 grid py-2 pb-8"
               style={coverGridStyle}
+              data-intro={gridIntro ? "" : undefined}
             >
-              {visibleGames.map((g) => {
+              {visibleGames.map((g, index) => {
                 const installed = installedByGameId.get(g.id);
                 const cardGame = installed
                   ? {
@@ -1723,8 +1756,18 @@ export default function Library() {
                       _onUninstalled: refetchInstalledGames,
                     }
                   : g;
+                const intro = gridIntro && index < GRID_INTRO_COUNT;
                 return (
-                  <div key={g.id} className="min-w-0">
+                  <div
+                    key={g.id}
+                    className="min-w-0"
+                    data-intro-index={intro ? index : undefined}
+                    style={
+                      intro
+                        ? ({ "--ps-intro-index": index } as CSSProperties)
+                        : undefined
+                    }
+                  >
                     <GameCard game={cardGame} sortBy={sortBy} />
                   </div>
                 );
@@ -1732,7 +1775,10 @@ export default function Library() {
             </div>
             {hasMore && <div ref={sentinelRef} className="h-10 -mt-10" />}
             {loading && games.length > 0 && (
-              <div className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted">
+              <div
+                role="status"
+                className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted"
+              >
                 <svg
                   className="h-3.5 w-3.5 motion-safe:animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
@@ -1767,9 +1813,9 @@ export default function Library() {
           onClick={scrollToTop}
           aria-label={t("library.scrollTop")}
           title={t("library.scrollTop")}
-          className="fixed right-6 bottom-6 z-30 flex size-[50px] items-center justify-center rounded-full bg-ps-accent text-ps-on-accent shadow-[var(--shadow-card)] hover:bg-ps-accent-hover active:bg-ps-accent-pressed"
+          className="ps-library-scroll-top fixed right-6 bottom-6 z-30 flex size-[50px] items-center justify-center rounded-full bg-ps-accent text-ps-on-accent shadow-[var(--shadow-card)] hover:bg-ps-accent-hover active:bg-ps-accent-pressed"
         >
-          <ChevronUpIcon className="size-6" />
+          <ChevronUpIcon className="size-6" aria-hidden="true" />
         </button>
       )}
 

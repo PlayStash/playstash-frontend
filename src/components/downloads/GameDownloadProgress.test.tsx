@@ -48,6 +48,9 @@ it("shows the download progress with pause and cancel", () => {
     speedBps: 50,
   });
   expect(screen.getByText("42.0%")).toBeTruthy();
+  expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe(
+    "42",
+  );
   expect(screen.getByText("420 B / 1000 B · 50 B/s")).toBeTruthy();
   fireEvent.click(screen.getByText("Pause"));
   expect(actions.pauseDownload).toHaveBeenCalledWith(7);
@@ -62,7 +65,9 @@ it("shows extraction and installation phases", () => {
     extractionProgress: 10,
     extractionCurrentFile: "Game/data.pak",
   });
-  expect(screen.getByText("Game/data.pak")).toBeTruthy();
+  // The folder truncates on its own so the file name stays readable.
+  expect(screen.getByTitle("Game/data.pak").textContent).toBe("Game/data.pak");
+  expect(screen.getByText("data.pak")).toBeTruthy();
   expect(screen.getByText("10.0%")).toBeTruthy();
   cleanup();
   renderWith({

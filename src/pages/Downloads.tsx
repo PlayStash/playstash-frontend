@@ -77,7 +77,7 @@ export default function Downloads() {
   return (
     <div className="downloads-page">
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Heading>{t("nav.downloads")}</Heading>
           <Text className="max-w-2xl">{t("downloads.page.description")}</Text>
         </div>
@@ -100,20 +100,21 @@ export default function Downloads() {
       {downloadArray.length > 0 && (
         <div
           className="download-queue-summary"
+          role="group"
           aria-label={t("downloads.step.phases")}
         >
-          <span>
-            {t("downloads.step.download")}
-            <strong>{phaseCounts.download}</strong>
-          </span>
-          <span>
-            {t("downloads.step.extraction")}
-            <strong>{phaseCounts.extraction}</strong>
-          </span>
-          <span>
-            {t("downloads.step.installation")}
-            <strong>{phaseCounts.installation}</strong>
-          </span>
+          {(
+            [
+              ["downloads.step.download", phaseCounts.download],
+              ["downloads.step.extraction", phaseCounts.extraction],
+              ["downloads.step.installation", phaseCounts.installation],
+            ] as const
+          ).map(([label, count]) => (
+            <span key={label} data-idle={count === 0 || undefined}>
+              {t(label)}
+              <strong>{count}</strong>
+            </span>
+          ))}
         </div>
       )}
 

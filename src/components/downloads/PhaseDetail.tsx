@@ -1,6 +1,6 @@
 import { Input } from "@tw/input";
 import type { ActiveDownload } from "@/context/DownloadContext";
-import { ProgressBar } from "@/components/tailwind/progress";
+import { TransferMeter } from "./TransferMeter";
 import { InstallFlow } from "./InstallFlow";
 import type { InstallCardState } from "./install-utils";
 import { ExclamationTriangleIcon, KeyIcon } from "@heroicons/react/24/outline";
@@ -27,7 +27,7 @@ function ErrorNote({ message }: Readonly<{ message: string }>) {
         className="mt-0.5 size-4 shrink-0"
         aria-hidden="true"
       />
-      <span className="min-w-0">{message}</span>
+      <span className="min-w-0 [overflow-wrap:anywhere]">{message}</span>
     </div>
   );
 }
@@ -86,8 +86,9 @@ export function PhaseDetail({
           onForceInstall={onForceInstall}
         />
       ) : isDownloadingOrPaused ? (
-        <ProgressBar
+        <TransferMeter
           label={t("downloads.detail.downloadProgress")}
+          paused={download.status === "paused"}
           value={download.progress}
           valueText={
             download.status === "paused"
@@ -123,7 +124,7 @@ export function PhaseDetail({
             </div>
           )}
           {isExtracting && (
-            <ProgressBar
+            <TransferMeter
               label={t("downloads.detail.extracting")}
               value={download.extractionProgress}
               valueText={extractionProgressText}
@@ -146,7 +147,7 @@ export function PhaseDetail({
           {download.extractionStatus === "completed" && isTauri && (
             <div className="space-y-2">
               {isInstallCopyingOrLaunching && (
-                <ProgressBar
+                <TransferMeter
                   label={
                     download.installationStatus === "copying"
                       ? t("downloads.detail.installationCopy")

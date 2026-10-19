@@ -3,7 +3,7 @@ import { Badge } from "@/components/tailwind/badge";
 import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
 import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
-import { ProgressBar } from "@/components/tailwind/progress";
+import { TransferMeter } from "./TransferMeter";
 import type { PlaystashGameTypeEnum as GameType } from "@/api/models/PlaystashGame";
 import {
   ClipboardDocumentIcon,
@@ -150,7 +150,7 @@ export function InstallFlow({
           </p>
 
           {download.installationStatus === "copying" && (
-            <ProgressBar
+            <TransferMeter
               label={t("downloads.install.copyProgress")}
               value={download.installationProgress}
               valueText={copyProgressText}
@@ -195,7 +195,7 @@ export function InstallFlow({
             <li>{t("downloads.install.setupStep4")}</li>
           </ol>
 
-          <div className="surface-panel-soft rounded-xl p-3">
+          <div className="surface-panel-soft rounded-md p-3">
             {windowsInstallPath ? (
               <div className="space-y-2">
                 <p className="text-xs text-ps-muted">
@@ -259,7 +259,7 @@ export function InstallFlow({
           </div>
 
           {installState.installerLoadError && (
-            <p className="text-xs text-red-600 dark:text-red-400">
+            <p className="text-xs text-ps-danger [overflow-wrap:anywhere]">
               {installState.installerLoadError}
             </p>
           )}
@@ -287,7 +287,7 @@ export function InstallFlow({
       )}
 
       {download.installationError && (
-        <div className="text-xs text-red-600 dark:text-red-400">
+        <div className="text-xs text-ps-danger [overflow-wrap:anywhere]">
           {download.installationError}
         </div>
       )}

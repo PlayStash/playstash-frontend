@@ -44,7 +44,7 @@ function NavigationDrawer({
       />
       <Headless.DialogPanel
         transition
-        className="fixed inset-y-0 left-0 flex w-[min(88vw,320px)] flex-col bg-ps-shell transition-[opacity,transform] duration-240 ease-(--ease-out) data-closed:[transform:translateX(-100%)] data-closed:opacity-0 data-leave:duration-180 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none"
+        className="fixed inset-y-0 left-0 flex w-[min(88vw,calc(320px+env(safe-area-inset-left,0px)))] flex-col bg-ps-shell pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)] shadow-(--shadow-shell) transition-[opacity,transform] duration-240 ease-(--ease-out) data-closed:[transform:translateX(-100%)] data-closed:opacity-0 data-leave:duration-180 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none"
       >
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-ps-line px-4">
           <span className="text-sm font-semibold text-ps-text">{label}</span>
@@ -56,7 +56,7 @@ function NavigationDrawer({
           </Headless.CloseButton>
         </div>
         <div
-          className="min-h-0 flex-1"
+          className="min-h-0 flex-1 overscroll-contain"
           onClick={(event) => {
             if ((event.target as HTMLElement).closest("a[href]")) close();
           }}
@@ -132,7 +132,7 @@ export function SidebarLayout({
                 <div className="min-h-0 flex-1">{secondaryNavigation}</div>
                 <Link
                   to="/settings"
-                  className="flex min-h-12 items-center gap-2 border-t border-ps-line px-5 text-xs text-ps-muted hover:bg-ps-panel hover:text-ps-text"
+                  className="flex min-h-12 items-center gap-2 border-t border-ps-line px-5 text-xs text-ps-muted hover:bg-ps-panel hover:text-ps-text active:bg-ps-panel active:text-ps-text"
                 >
                   <Cog6ToothIcon className="size-4" />
                   {t("nav.settings")}
@@ -168,7 +168,7 @@ export function SidebarLayout({
             </div>
           )}
           <div
-            className={`app-scroll-area min-h-0 flex-1 overflow-x-hidden overflow-y-auto ${fullBleed ? "" : "app-page-padding"}`}
+            className={`app-scroll-area min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain ${fullBleed ? "" : "app-page-padding"}`}
             data-scroll-container=""
           >
             <div

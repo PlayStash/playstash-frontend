@@ -43,7 +43,7 @@ export function DropdownMenu({
         // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
         "outline outline-transparent focus:outline-hidden",
         // Handle scrolling when menu won't fit in viewport
-        "overflow-y-auto max-h-[min(24rem,70vh)]",
+        "overflow-y-auto overscroll-contain max-h-[min(24rem,70dvh)]",
         // Popover background
         "surface-panel",
         // Shadows
@@ -76,8 +76,9 @@ export function DropdownItem({
     className,
     // Base styles
     "group cursor-pointer rounded-md px-3.5 py-2.5 focus:outline-hidden sm:px-3 sm:py-1.5",
-    // Smooth hover/focus transitions
-    "transition-colors duration-150",
+    // Highlight follows the pointer and arrow keys instantly, like a native
+    // menu; a fade here makes keyboard navigation feel laggy.
+    "transition-none",
     // Text styles
     "text-left text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
     // Focus

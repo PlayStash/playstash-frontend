@@ -445,9 +445,15 @@ const GameCard = memo(function GameCard({
               )}
             >
               {bookmarked ? (
-                <StarSolid className="h-5 w-5 text-ps-warning" />
+                <StarSolid
+                  className="h-5 w-5 text-ps-warning"
+                  aria-hidden="true"
+                />
               ) : (
-                <StarOutline className="h-5 w-5 text-ps-muted" />
+                <StarOutline
+                  className="h-5 w-5 text-ps-muted"
+                  aria-hidden="true"
+                />
               )}
             </button>
 
@@ -464,7 +470,7 @@ const GameCard = memo(function GameCard({
               )}
               title={t("nav.settings")}
             >
-              <Cog8ToothIcon className="h-5 w-5" />
+              <Cog8ToothIcon className="h-5 w-5" aria-hidden="true" />
             </button>
 
             {/* Centered primary action: Download / Play */}
@@ -474,14 +480,16 @@ const GameCard = memo(function GameCard({
                 aria-label={t("common.play")}
                 onClick={handlePlayGame}
                 className={clsx(
-                  "ps-card-action ps-card-action-primary ps-card-action-bottom absolute bottom-3 left-1/2 flex cursor-pointer items-center justify-center gap-2 px-4 py-2 text-sm font-semibold",
+                  "ps-card-action ps-card-action-primary ps-card-action-bottom absolute bottom-3 left-1/2 flex min-h-9 cursor-pointer items-center justify-center gap-2 px-4 py-2 text-sm font-semibold",
                   "opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!",
+                  "active:scale-[0.97]",
                 )}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 fill-current"
+                  className="h-4 w-4 shrink-0 fill-current"
+                  aria-hidden="true"
                 >
                   <path d="M8 17.175V6.825q0-.425.3-.713t.7-.287q.125 0 .263.037t.262.113l8.15 5.175q.225.15.338.375t.112.475t-.112.475t-.338.375l-8.15 5.175q-.125.075-.262.113T9 18.175q-.4 0-.7-.288t-.3-.712" />
                 </svg>
@@ -568,14 +576,18 @@ const GameCard = memo(function GameCard({
 
           {/* Metadata footer */}
           <div className="ps-game-card-footer">
+            {/* Two lines: long titles stay identifiable instead of collapsing
+              into a shared prefix ("The Legend of Zelda: …"). */}
             <h3
-              className="truncate text-sm font-semibold tracking-[-0.02em] text-ps-text"
+              className="line-clamp-2 text-sm font-semibold tracking-[-0.02em] text-ps-text"
               title={shownTitle}
             >
               {shownTitle}
             </h3>
             {sortMetric && (
-              <p className="truncate text-xs text-ps-muted">{sortMetric}</p>
+              <p className="truncate text-xs text-ps-muted tabular-nums">
+                {sortMetric}
+              </p>
             )}
           </div>
         </div>

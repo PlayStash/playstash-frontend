@@ -8,7 +8,7 @@ import { fillTemplate } from "@/utils/downloadPipeline";
 
 /** Games added in the last week, narrowed by the library search text. */
 export function RecentlyAddedGames({ search = "" }: { search?: string }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const addedSince = useMemo(
     () => new Date(Date.now() - 7 * 86400000).toISOString(),
     [],
@@ -25,11 +25,13 @@ export function RecentlyAddedGames({ search = "" }: { search?: string }) {
   return (
     <section className="ps-library-recent">
       <SectionExpander
-        title={fillTemplate(t("library.recent.title"), { count })}
+        title={fillTemplate(t("library.recent.title"), {
+          count: count.toLocaleString(locale),
+        })}
         defaultOpen
       >
         {error && (
-          <div role="alert" className="py-3 text-sm text-ps-danger">
+          <div role="alert" className="py-3 text-sm break-words text-ps-danger">
             <p>{error}</p>
             <Button outline className="mt-3" onClick={() => void refetch()}>
               {t("library.reload")}

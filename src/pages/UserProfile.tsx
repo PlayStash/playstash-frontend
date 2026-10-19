@@ -391,7 +391,7 @@ function ProfileProgressCard({
               const gid = (progress.game as any)?.id ?? (game as any)?.id ?? 0;
               onDelete(progress.id, gid, title);
             }}
-            className="absolute bottom-3 right-3 rounded-md p-2 text-ps-muted hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer"
+            className="absolute right-2 bottom-2 inline-flex size-11 cursor-pointer touch-manipulation sm:size-10 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool active:bg-ps-danger/15"
             aria-label={formatMessage(t("userProfile.delete.label"), { title })}
             title={formatMessage(t("userProfile.delete.label"), { title })}
           >
@@ -597,7 +597,10 @@ export default function UserProfile() {
           <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
-        <div className="h-64 animate-pulse border-y border-ps-line bg-ps-panel-soft" />
+        <div
+          aria-hidden="true"
+          className="h-64 animate-pulse border-y border-ps-line bg-ps-panel-soft motion-reduce:animate-none"
+        />
       </div>
     );
   }
@@ -663,10 +666,13 @@ export default function UserProfile() {
                   )}
                 </div>
                 <div>
-                  <h2 className="truncate text-2xl font-semibold tracking-[-0.03em] text-ps-text">
+                  <h2
+                    className="truncate text-2xl font-semibold tracking-[-0.03em] text-ps-text"
+                    title={masked?.displayName ?? getDisplayName(user)}
+                  >
                     {masked?.displayName ?? getDisplayName(user)}
                   </h2>
-                  <p className="mt-1 text-sm text-ps-muted">
+                  <p className="mt-1 truncate text-sm text-ps-muted">
                     @{masked?.handle ?? getUserHandle(user)}
                   </p>
                 </div>
@@ -718,9 +724,11 @@ export default function UserProfile() {
                 },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className="flex items-center gap-2 text-xs text-ps-muted">
-                    <item.icon className="size-4" />
-                    {item.label}
+                  <div className="flex min-w-0 items-center gap-2 text-xs text-ps-muted">
+                    <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate" title={item.label}>
+                      {item.label}
+                    </span>
                   </div>
                   <strong data-numeric>{item.value}</strong>
                 </div>
@@ -753,7 +761,7 @@ export default function UserProfile() {
                 />
               ))
             ) : (
-              <div className="border-y border-ps-line py-6 text-sm text-ps-muted">
+              <div className="col-span-full border-y border-ps-line py-6 text-sm text-ps-muted">
                 {t("userProfile.recent.empty")}
               </div>
             )}
@@ -779,10 +787,14 @@ export default function UserProfile() {
           </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
             <div className="w-full">
-              <label className="mb-2 block text-xs font-medium text-ps-muted">
+              <label
+                htmlFor="profile-progress-search"
+                className="mb-2 block text-xs font-medium text-ps-muted"
+              >
                 {t("userProfile.searchGames")}
               </label>
               <Input
+                id="profile-progress-search"
                 name="progressSearch"
                 value={progressSearch}
                 onChange={(event: any) => setProgressSearch(event.target.value)}
@@ -856,7 +868,7 @@ export default function UserProfile() {
               })}
             </Badge>
           </div>
-          <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
+          <div className="profile-bookmarks mt-5 flex gap-4 overflow-x-auto pb-2">
             {bookmarks.length > 0 ? (
               bookmarks.map((game) => {
                 const title =
@@ -874,7 +886,7 @@ export default function UserProfile() {
                         width={126}
                         height={170}
                       />
-                      <div className="mt-3 line-clamp-2 text-sm font-medium text-ps-text">
+                      <div className="mt-3 line-clamp-2 text-sm font-medium break-words text-ps-text transition-colors group-hover:text-ps-accent-strong">
                         {title}
                       </div>
                     </div>
@@ -882,7 +894,7 @@ export default function UserProfile() {
                 );
               })
             ) : (
-              <div className="border-y border-ps-line py-6 text-sm text-ps-muted">
+              <div className="w-full border-y border-ps-line py-6 text-sm text-ps-muted">
                 {t("userProfile.bookmarks.empty")}
               </div>
             )}

@@ -250,7 +250,7 @@ export default function Administration() {
               {reindexError && (
                 <p
                   role="alert"
-                  className="col-span-full rounded-md bg-red-500/10 p-3 text-sm text-red-500"
+                  className="col-span-full rounded-md bg-ps-danger/10 p-3 text-sm break-words text-ps-danger"
                 >
                   {reindexError}
                 </p>
@@ -268,7 +268,10 @@ export default function Administration() {
           </Card>
           <Card title={t("admin.users.title")}>
             {error && (
-              <div className="mb-4 rounded-md bg-red-500/10 p-3 text-sm text-red-500">
+              <div
+                role="alert"
+                className="mb-4 rounded-md bg-ps-danger/10 p-3 text-sm break-words text-ps-danger"
+              >
                 {error}
               </div>
             )}
@@ -390,9 +393,9 @@ export default function Administration() {
                               seed={String(u.id)}
                             />
                           </Link>
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              <span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                              <span className="min-w-0 [overflow-wrap:anywhere]">
                                 {displayName}{" "}
                                 {!streamerMode && (first_name || last_name) && (
                                   <span className="font-normal">
@@ -401,13 +404,13 @@ export default function Administration() {
                                 )}
                               </span>
                               {deleted && (
-                                <span className="rounded-sm bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
+                                <span className="shrink-0 rounded-sm bg-ps-danger/15 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-ps-danger">
                                   {t("admin.users.deleted")}
                                 </span>
                               )}
                             </div>
                             {displayEmail && (
-                              <div className="text-ps-muted">
+                              <div className="text-ps-muted [overflow-wrap:anywhere]">
                                 <a
                                   href={
                                     streamerMode ? undefined : `mailto:${email}`

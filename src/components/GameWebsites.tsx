@@ -13,7 +13,7 @@ export function GameWebsites({ urls }: { urls?: unknown }) {
         ),
       ]
     : [];
-  if (!websites.length) return <span>—</span>;
+  if (!websites.length) return <span className="game-metadata-empty">—</span>;
   return (
     <ul className="space-y-1 font-medium">
       {websites.map((url) => (

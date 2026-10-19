@@ -1,4 +1,11 @@
 .game-view {
+  /* Artwork exception (DESIGN.md): neutral, theme-independent media chrome. */
+  --game-art-text: #fff;
+  --game-art-text-soft: #e4edf3;
+  --game-art-control: rgb(9 15 23 / 64%);
+  --game-art-control-hover: rgb(9 15 23 / 82%);
+  --game-art-line: rgb(255 255 255 / 24%);
+  --game-art-base: #0d151f;
   min-height: 100%;
   color: var(--color-ps-text);
   background: var(--color-ps-bg);
@@ -11,23 +18,36 @@
   padding: 24px;
 }
 .game-hero {
-  height: 340px;
+  /* Grows gently with the container; the height never depends on media. */
+  height: clamp(320px, 26cqw, 400px);
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: var(--color-ps-panel-strong);
+  /* Dark neutral base so decoding artwork fades in from shadow, not a flash. */
+  background: var(--game-art-base);
 }
 .game-hero::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(
-    180deg,
-    rgb(0 0 0 / 26%),
-    transparent 30%,
-    rgb(0 0 0 / 76%)
-  );
+  /* A top band for the utility controls, a left-weighted wash behind the
+     title and a deep bottom scrim keep white text legible on bright art. */
+  background:
+    linear-gradient(
+      90deg,
+      rgb(0 0 0 / 34%),
+      rgb(0 0 0 / 12%) 42%,
+      transparent 70%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(0 0 0 / 30%),
+      transparent 28%,
+      transparent 42%,
+      rgb(0 0 0 / 58%) 72%,
+      rgb(0 0 0 / 82%)
+    );
 }
 .game-hero-art {
   position: absolute;
@@ -37,6 +57,8 @@
   object-fit: cover;
   object-position: center 36%;
   z-index: -2;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .game-hero-navigation {
   position: absolute;
@@ -44,23 +66,37 @@
   left: 22px;
 }
 .game-hero-navigation button {
+  min-height: 36px;
   color: #f0f5fa;
-  background: rgb(9 15 23 / 56%);
-  border: 1px solid rgb(255 255 255 / 24%);
+  background: var(--game-art-control);
+  border: 1px solid var(--game-art-line);
   border-radius: 5px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.game-hero-navigation button:hover {
-  color: white;
-  background: rgb(9 15 23 / 78%);
+.game-hero-navigation button:active {
+  background: var(--game-art-control-hover);
 }
 .game-hero-heading {
   position: absolute;
+  /* The top guard keeps a long title clear of the back/utility controls. */
+  top: 66px;
   left: 30px;
   right: 30px;
   bottom: 29px;
   display: flex;
   align-items: flex-end;
   gap: 22px;
+  pointer-events: none;
+}
+.game-hero-heading > * {
+  pointer-events: auto;
+}
+/* Accent outlines vanish on bright artwork; white reads on every backdrop. */
+.game-hero :focus-visible,
+.game-view .game-hero-icon[data-focus] {
+  outline-color: var(--game-art-text);
 }
 .game-hero-heading h1 {
   margin: 0;
@@ -68,42 +104,67 @@
   line-height: 1.08;
 }
 .game-hero-title {
-  color: #fff;
+  color: var(--game-art-text);
   text-align: left;
   font-size: clamp(30px, 4cqw, 58px);
   font-weight: 650;
   letter-spacing: -0.035em;
   text-wrap: balance;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 30%);
   cursor: pointer;
   padding: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  border-radius: 3px;
+}
+.game-hero-title-text {
+  /* The padding/margin pair keeps descenders inside the clamped box. */
+  padding: 0.06em 0;
+  margin: -0.06em 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+/* Long names step down the container-relative scale instead of wrapping into
+   a four-line wall over the artwork. */
+.game-hero-title[data-length="medium"] {
+  font-size: clamp(28px, 3.4cqw, 48px);
+}
+.game-hero-title[data-length="long"] {
+  font-size: clamp(26px, 2.8cqw, 40px);
+  letter-spacing: -0.03em;
 }
 .game-hero-year {
   display: inline-block;
   margin-left: 0.35em;
-  font-size: 0.4em;
+  font-size: max(0.4em, 13px);
   font-weight: 450;
   letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
   color: #e2e9ee;
 }
 .game-hero-genres {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px 16px;
-  margin-top: 13px;
+  gap: 0 16px;
+  margin-top: 8px;
 }
 .game-hero-genres button {
-  padding: 0;
-  color: #e4edf3;
+  /* Vertical padding enlarges the hit area without moving the text. */
+  padding: 4px 0;
+  color: var(--game-art-text-soft);
   font-size: 12px;
   font-weight: 500;
-  cursor: pointer;
-}
-.game-hero-genres button:hover {
-  color: #fff;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 35%);
   text-decoration: underline;
+  text-decoration-color: transparent;
   text-underline-offset: 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition-property: color, text-decoration-color;
 }
 .game-hero-cover {
   width: 92px;
@@ -111,6 +172,7 @@
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 4px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 12%);
 }
 .game-hero-utilities {
   position: absolute;
@@ -128,11 +190,12 @@
   height: 36px;
   width: 36px;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 25%);
+  border: 1px solid var(--game-art-line);
   color: #f0f5fa;
-  background: rgb(9 15 23 / 64%);
+  background: var(--game-art-control);
   border-radius: 5px;
   box-shadow: none;
+  touch-action: manipulation;
   --btn-icon: #f0f5fa;
 }
 .game-view .game-hero-icon svg {
@@ -140,16 +203,24 @@
   height: 17px;
   color: inherit;
 }
-.game-view .game-hero-icon:hover {
+.game-view .game-hero-icon:active {
   background: #25384b;
-  color: #fff;
 }
 .game-view .game-hero-icon-selected {
   color: #ffdf80;
   --btn-icon: #ffdf80;
 }
+/* Without artwork the theme panel tints the band, darkened so the white
+   title keeps its contrast in the light theme as well. */
+.game-hero-without-art {
+  background: color-mix(
+    in srgb,
+    var(--color-ps-panel-strong) 38%,
+    var(--game-art-base)
+  );
+}
 .game-hero-without-art::after {
-  background: linear-gradient(180deg, rgb(0 0 0 / 8%), rgb(0 0 0 / 68%));
+  background: linear-gradient(180deg, rgb(0 0 0 / 8%), rgb(0 0 0 / 62%));
 }
 .game-command-bar {
   min-height: 102px;
@@ -160,6 +231,11 @@
   padding: 22px 30px;
   background: var(--color-ps-panel);
   border-bottom: 1px solid var(--color-ps-line);
+}
+.game-command-bar :is(button, [role="button"]) {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .game-primary-actions {
   display: flex;
@@ -173,9 +249,22 @@
   font-size: 15px;
   font-weight: 650;
   border-radius: 6px;
+  white-space: nowrap;
+}
+.game-view .game-play-button[aria-busy="true"] {
+  cursor: progress;
+}
+.game-play-spinner {
+  animation: game-play-spin 800ms linear infinite;
+}
+@keyframes game-play-spin {
+  to {
+    rotate: 360deg;
+  }
 }
 .game-view .game-download-button {
   min-height: 44px;
+  white-space: nowrap;
 }
 .game-build-info {
   display: flex;
@@ -184,6 +273,8 @@
   max-width: 220px;
   color: var(--color-ps-muted);
   font-size: 11px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 .game-update-notice {
@@ -191,6 +282,9 @@
   align-items: center;
   gap: 5px;
   color: var(--color-ps-warning);
+}
+.game-update-notice > svg {
+  flex-shrink: 0;
 }
 .game-session-stats {
   display: flex;
@@ -206,6 +300,7 @@
   color: var(--color-ps-muted);
   font-size: 11px;
   line-height: 1.4;
+  white-space: nowrap;
 }
 .game-session-stats dd {
   color: var(--color-ps-text);
@@ -213,6 +308,7 @@
   font-weight: 550;
   line-height: 1.5;
   margin: 6px 0 0;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .game-state-bar {
@@ -239,9 +335,7 @@
 }
 .game-platform-tags button {
   cursor: pointer;
-}
-.game-platform-tags button:hover {
-  color: var(--color-ps-accent-cool);
+  touch-action: manipulation;
 }
 .game-progress-state {
   display: flex;
@@ -250,6 +344,9 @@
   color: var(--color-ps-muted);
   font-size: 11px;
   margin-left: auto;
+}
+.game-progress-state > span {
+  white-space: nowrap;
 }
 .game-progress-state > button {
   width: 190px;
@@ -270,11 +367,13 @@
   padding: 0 30px 36px;
 }
 .game-detail-tabs {
+  position: relative;
   display: flex;
   gap: 23px;
   align-items: stretch;
   min-height: 56px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scrollbar-width: thin;
   border-bottom: 1px solid var(--color-ps-line);
 }
@@ -285,14 +384,37 @@
   color: var(--color-ps-muted);
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.game-detail-tabs > button:hover {
-  color: var(--color-ps-text);
+/* The scroller clips anything outside it, so the ring is drawn inside. */
+.game-detail-tabs > button:focus-visible {
+  outline-offset: -2px;
+  border-radius: 4px;
 }
 .game-detail-tabs > button.is-active {
   color: var(--color-ps-text);
-  border-bottom-color: var(--color-ps-accent);
+}
+/* Shared indicator: a 100px bar placed via translateX + scaleX from JS, so
+   the glide stays on the compositor and retargets when tabs change quickly. */
+.game-detail-tab-indicator {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100px;
+  height: 2px;
+  background: var(--color-ps-accent);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+}
+.game-detail-tab-indicator[data-animate="true"] {
+  transition:
+    transform 220ms var(--ease-out),
+    opacity 140ms var(--ease-out);
 }
 .game-detail-columns {
   display: grid;
@@ -306,6 +428,7 @@
 .game-detail-content {
   min-height: 140px;
   color: var(--color-ps-muted);
+  overflow-wrap: break-word;
 }
 .game-detail-content .prose {
   max-width: 72ch;
@@ -318,6 +441,11 @@
 .game-detail-content .prose :is(h1, h2, h3, h4) {
   font-size: 20px;
   letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.game-detail-content .prose :is(img, video, iframe) {
+  max-width: 100%;
+  height: auto;
 }
 .game-media {
   margin-top: 28px;
@@ -327,6 +455,26 @@
 .game-media > * {
   border-radius: 6px;
   box-shadow: none;
+}
+.game-view .game-tag {
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: var(--color-ps-panel-strong);
+  color: var(--color-ps-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition-property: color, background-color, scale;
+}
+.game-view .game-tag:active {
+  scale: 0.97;
 }
 .game-metadata-rail {
   min-width: 0;
@@ -346,6 +494,7 @@
   gap: 10px;
 }
 .game-metadata > ul > li > svg {
+  flex-shrink: 0;
   width: 15px;
   height: 15px;
   margin-top: 2px;
@@ -354,15 +503,18 @@
   font-size: 10px;
   text-transform: none;
   letter-spacing: 0;
+  white-space: normal;
 }
-.game-metadata > ul > li > div > div:last-child {
+.game-metadata > ul > li > div > :last-child {
   white-space: normal;
   font-size: 12px;
   margin-top: 3px;
   overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
 }
-.game-metadata > ul > li button {
-  text-align: left;
+.game-metadata-empty {
+  color: var(--color-ps-muted);
+  font-weight: 400;
 }
 .game-activity {
   margin-top: 26px;
@@ -393,6 +545,49 @@
 .game-cloud-state a {
   font-size: 12px;
 }
+/* Touch input gets no sticky hover: every :hover lives behind this query. */
+@media (hover: hover) and (pointer: fine) {
+  .game-hero-navigation button:hover {
+    color: var(--game-art-text);
+    background: var(--game-art-control-hover);
+  }
+  .game-hero-genres button:hover {
+    color: var(--game-art-text);
+    text-decoration-color: currentColor;
+  }
+  .game-view .game-hero-icon:hover {
+    background: #25384b;
+    color: var(--game-art-text);
+  }
+  .game-platform-tags button:hover {
+    color: var(--color-ps-accent-cool);
+  }
+  .game-detail-tabs > button:hover {
+    color: var(--color-ps-text);
+  }
+  .game-view .game-tag:hover {
+    color: var(--color-ps-text);
+    background: var(--color-ps-panel-soft);
+  }
+}
+/* Touch: lift hero and chip controls toward the 44px target guidance. */
+@media (pointer: coarse) {
+  .game-hero-navigation button,
+  .game-view .game-hero-icon {
+    min-height: 40px;
+    height: 40px;
+  }
+  .game-view .game-hero-icon {
+    width: 40px;
+  }
+  .game-hero-genres button {
+    padding-block: 8px;
+  }
+  .game-view .game-tag {
+    min-height: 36px;
+    padding-inline: 11px;
+  }
+}
 @container (max-width: 850px) {
   .game-command-bar {
     gap: 16px 20px;
@@ -416,13 +611,20 @@
     height: 280px;
   }
   .game-hero-heading {
+    top: 60px;
     left: 20px;
     right: 20px;
     bottom: 23px;
     gap: 15px;
   }
   .game-hero-title {
-    font-size: 34px;
+    font-size: clamp(26px, 7.5cqw, 34px);
+  }
+  .game-hero-title[data-length="medium"] {
+    font-size: clamp(24px, 6.5cqw, 30px);
+  }
+  .game-hero-title[data-length="long"] {
+    font-size: clamp(22px, 5.6cqw, 26px);
   }
   .game-hero-cover {
     width: 69px;
@@ -442,7 +644,7 @@
     gap: 5px;
   }
   .game-view .game-hero-icon {
-    width: 32px;
+    width: 34px;
     height: 34px;
     min-height: 34px;
   }
@@ -478,5 +680,14 @@
   }
   .game-inline-download {
     padding: 0 20px;
+  }
+}
+@container (max-width: 640px) {
+  @media (pointer: coarse) {
+    .game-view .game-hero-icon {
+      width: 40px;
+      height: 40px;
+      min-height: 40px;
+    }
   }
 }

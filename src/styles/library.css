@@ -1,3 +1,33 @@
+/* Library overview + persistent library rail.
+ *
+ * Interaction conventions used throughout this file:
+ * - Hover styles live behind `(hover: hover) and (pointer: fine)` so a tap on
+ *   a touch screen never leaves a sticky hover state behind.
+ * - Pressables answer on pointer-down: scale 0.97–0.98 for buttons/chips,
+ *   a tonal step for list rows. Press feedback uses the shared --ease-out.
+ * - Transitions name their exact properties; nothing uses `transition: all`.
+ */
+.ps-library,
+.ps-library-rail {
+  -webkit-tap-highlight-color: transparent;
+}
+.ps-library :is(a, button, [role="button"], summary),
+.ps-library-rail :is(a, button) {
+  touch-action: manipulation;
+}
+/* Controls are not content: no text selection or link callout on long-press. */
+.ps-library-rail-collections > a,
+.ps-library-rail-games a,
+.ps-library-category-tabs > button,
+.ps-game-card-link,
+.ps-card-action,
+.ps-library-scroll-top {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* ---------------------------------------------------------------- rail */
 .ps-library-rail {
   display: flex;
   flex-direction: column;
@@ -18,11 +48,16 @@
   margin-bottom: 18px;
 }
 .ps-library-rail-heading h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.025em;
 }
 .ps-library-rail-heading > span {
+  flex-shrink: 0;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   color: var(--color-ps-muted);
@@ -34,9 +69,10 @@
   border: 1px solid var(--color-ps-line-strong);
   border-radius: 4px;
   min-height: 38px;
-  padding: 0 10px;
+  padding: 0 4px 0 10px;
   background: var(--color-ps-bg);
   color: var(--color-ps-muted);
+  transition: border-color 140ms var(--ease-out);
 }
 .ps-library-rail-search > svg,
 .ps-library-rail-search button svg {
@@ -47,10 +83,16 @@
 .ps-library-rail-search input {
   width: 100%;
   min-width: 0;
+  min-height: 36px;
   outline: none;
   background: transparent;
   font-size: 0.75rem;
   color: var(--color-ps-text);
+}
+/* The native search clear button duplicates ours. */
+.ps-library-rail-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 .ps-library-rail-search input::placeholder {
   color: var(--color-ps-muted);
@@ -58,12 +100,24 @@
 .ps-library-rail-search:focus-within {
   border-color: var(--color-ps-accent);
 }
+.ps-library-rail-search:has(input:disabled) {
+  opacity: 0.6;
+}
 .ps-library-rail-search button {
   display: grid;
   place-items: center;
+  flex-shrink: 0;
   cursor: pointer;
-  min-width: 24px;
-  min-height: 32px;
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  transition:
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+.ps-library-rail-search button:active {
+  transform: scale(0.94);
 }
 .ps-library-rail-collections {
   padding: 0 10px 18px;
@@ -78,16 +132,19 @@
   border-radius: 4px;
   color: var(--color-ps-muted);
   transition:
-    background-color 0.15s ease-out,
-    color 0.15s ease-out;
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
 }
 .ps-library-rail-collections > a svg {
   width: 17px;
   height: 17px;
+  flex-shrink: 0;
 }
-.ps-library-rail a:hover {
-  background: var(--color-ps-panel);
-  color: var(--color-ps-text);
+.ps-library-rail-collections > a span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ps-library-rail a.is-current {
   background: color-mix(
@@ -97,21 +154,44 @@
   );
   color: var(--color-ps-text);
 }
+/* Rows are navigation the user hits tens of times a day: a tonal step on
+   press, no scale. */
+.ps-library-rail-collections > a:active,
+.ps-library-rail-games a:active {
+  background: var(--color-ps-panel-strong);
+  color: var(--color-ps-text);
+  transition-duration: 0ms;
+}
 .ps-library-rail-list-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 17px 18px 10px;
+  gap: 8px;
+  padding: 17px 12px 10px 18px;
   color: var(--color-ps-muted);
   font-size: 0.6875rem;
+}
+.ps-library-rail-list-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ps-library-rail-list-label button {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
   border-radius: 4px;
+  transition:
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+.ps-library-rail-list-label button:not(:disabled):active {
+  transform: scale(0.94);
 }
 .ps-library-rail-list-label button:disabled {
   cursor: default;
@@ -141,10 +221,14 @@
   min-height: 46px;
   padding: 5px 10px;
   border-radius: 4px;
-  transition: background-color 0.15s ease-out;
+  transition:
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
   color: var(--color-ps-muted);
 }
 .ps-library-rail-game-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -164,11 +248,36 @@
   background: var(--color-ps-panel-strong);
   color: var(--color-ps-muted);
   font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
   border-radius: 2px;
 }
 .ps-library-rail-thumbnail .ps-library-rail-initial {
   width: 100%;
   height: 100%;
+}
+/* Placeholder rows keep the list geometry stable during the first load. */
+.ps-library-rail-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 5px 10px;
+}
+.ps-library-rail-skeleton::before {
+  content: "";
+  width: 25px;
+  height: 35px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--color-ps-panel-strong);
+}
+.ps-library-rail-skeleton::after {
+  content: "";
+  height: 8px;
+  width: var(--ps-skeleton-width, 60%);
+  border-radius: 2px;
+  background: var(--color-ps-panel);
 }
 .ps-library-rail-message {
   margin: 0;
@@ -176,6 +285,7 @@
   color: var(--color-ps-muted);
   font-size: 0.75rem;
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 .ps-library-rail-message p {
   margin-bottom: 12px;
@@ -186,11 +296,14 @@
 .ps-library-rail-footer {
   border-top: 1px solid var(--color-ps-line);
   padding: 15px 18px;
+  padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
   margin: 0;
   font-size: 0.6875rem;
   color: var(--color-ps-muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ------------------------------------------------------------ overview */
 .ps-library {
   min-width: 0;
   gap: 24px !important;
@@ -202,16 +315,26 @@
   gap: 20px;
   padding-bottom: 2px;
 }
+.ps-library-heading > div:first-child {
+  min-width: 0;
+}
 .ps-library-heading h1 {
   font-size: clamp(1.75rem, 2.5vw, 2.25rem);
   font-weight: 550;
   letter-spacing: -0.035em;
   line-height: 1.15;
+  text-wrap: balance;
+}
+.ps-library-heading h1 > span {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
 }
 .ps-library-heading p {
   font-size: 0.8125rem;
   line-height: 1.65;
   margin-top: 8px;
+  max-width: 72ch;
+  text-wrap: pretty;
 }
 .ps-library-toolbar {
   padding: 0 0 22px;
@@ -230,10 +353,37 @@
   gap: 10px;
   align-items: end;
 }
+.ps-library-filter-count {
+  font-variant-numeric: tabular-nums;
+}
 .ps-library-filters {
   border-bottom: 1px solid var(--color-ps-line);
   background: var(--color-ps-panel);
   border-radius: 6px;
+}
+/* Removable filter chips: the glyph is 12px, the hit area is not. */
+.ps-library-chip-remove {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  margin: -2px -4px -2px 0;
+  padding: 2px;
+  border-radius: 3px;
+  color: inherit;
+  opacity: 0.75;
+  cursor: pointer;
+  transition:
+    color 140ms var(--ease-out),
+    opacity 140ms var(--ease-out);
+}
+.ps-library-chip-remove::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.ps-library-chip-remove:active {
+  color: var(--color-ps-danger);
+  opacity: 1;
 }
 .ps-library-content {
   overflow: visible !important;
@@ -251,10 +401,41 @@
   gap: 24px 20px !important;
   padding-top: 12px !important;
 }
+/* Short, one-time settle of the first batch after the skeleton is replaced.
+   Only the first 12 cards carry a delay; later pages never animate. */
+.ps-library-grid[data-intro] > [data-intro-index] {
+  animation: ps-library-card-in 240ms var(--ease-out) backwards;
+  animation-delay: calc(var(--ps-intro-index, 0) * 30ms);
+}
+@keyframes ps-library-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+/* Skeleton card: same 2:3 cover and footer rhythm as a real card, so the
+   grid does not jump when the first page arrives. */
+.ps-library-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .ps-library-skeleton {
   aspect-ratio: 2/3;
   border-radius: 5px;
   background: var(--color-ps-panel-strong);
+}
+.ps-library-skeleton-line {
+  height: 9px;
+  margin-top: 16px;
+  width: 72%;
+  border-radius: 2px;
+  background: var(--color-ps-panel-strong);
+}
+.ps-library-skeleton-line + .ps-library-skeleton-line {
+  margin-top: 9px;
+  width: 38%;
+  background: var(--color-ps-panel);
 }
 .ps-library-categories {
   margin-bottom: 28px;
@@ -270,36 +451,55 @@
 }
 .ps-library-category-tabs > button {
   cursor: pointer;
+  max-width: min(100%, 28ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 8px 12px;
   min-height: 36px;
   border-radius: 4px;
   font-size: 0.8125rem;
   color: var(--color-ps-muted);
   transition:
-    background-color 0.15s ease-out,
-    color 0.15s ease-out;
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out),
+    transform 160ms var(--ease-out);
 }
 .ps-library-category-tabs > button[aria-pressed="true"] {
   background: var(--color-ps-panel-strong);
   color: var(--color-ps-text);
 }
-.ps-library-category-tabs > button:hover {
-  background: var(--color-ps-panel);
-  color: var(--color-ps-text);
+.ps-library-category-tabs > button:active {
+  transform: scale(0.97);
 }
 .ps-library-category-tabs .ps-library-categories-manage {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 7px;
   margin-left: auto;
+  max-width: none;
   font-size: 0.75rem;
+}
+.ps-library-categories-manage[aria-expanded="true"] {
+  color: var(--color-ps-text);
 }
 .ps-library-categories-manage svg {
   width: 15px;
   height: 15px;
+  flex-shrink: 0;
 }
 .ps-library-category-editor {
   padding-top: 18px;
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+@starting-style {
+  .ps-library-category-editor {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 .ps-library-category-editor label {
   font-size: 0.75rem;
@@ -317,7 +517,11 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding: 12px 0 18px;
+  /* Inline room for the 2px focus ring + 4px offset of the first/last card,
+     which the scroller would otherwise clip. */
+  padding: 12px 6px 18px;
+  margin-inline: -6px;
+  scroll-padding-inline: 6px;
   scrollbar-width: thin;
   scrollbar-color: var(--color-ps-line-strong) transparent;
 }
@@ -326,6 +530,14 @@
   flex-shrink: 0;
   scroll-snap-align: start;
 }
+/* SectionExpander clips while it animates its height; this inline bleed keeps
+   the edge cards' focus rings visible without shifting the content. */
+.ps-library-section-body {
+  margin-inline: -6px;
+  padding-inline: 6px;
+}
+
+/* ----------------------------------------------------------- game card */
 .ps-game-card {
   position: relative;
   min-width: 0;
@@ -354,6 +566,12 @@
   border-radius: 5px;
   overflow: hidden;
   background: var(--color-ps-panel);
+  transition: scale 160ms var(--ease-out);
+}
+/* Press feedback for the whole card (the link overlays it). The cover is
+   flat at rest and never lifts; it only yields slightly under the finger. */
+.ps-game-card:has(.ps-game-card-link:active) .ps-game-card-cover {
+  scale: 0.98;
 }
 .ps-game-card-art {
   position: absolute;
@@ -392,7 +610,9 @@
   transition:
     opacity 0.16s ease-out,
     scale 0.14s var(--ease-out),
-    background-color 0.16s ease-out !important;
+    background-color 0.16s ease-out,
+    border-color 0.16s ease-out,
+    color 0.16s ease-out !important;
   transform: none !important;
 }
 .ps-card-action-top {
@@ -404,6 +624,9 @@
   color: var(--color-ps-on-accent) !important;
   border: 0 !important;
 }
+.ps-card-action-primary:active {
+  background: var(--color-ps-accent-pressed) !important;
+}
 .ps-card-action-bottom {
   transform: translateX(-50%) !important;
   white-space: nowrap;
@@ -414,25 +637,85 @@
   gap: 5px;
   padding: 12px 0 0;
   min-height: 51px;
+  min-width: 0;
 }
 .ps-game-card-footer h3 {
   font-size: 0.8125rem;
   line-height: 1.4;
   font-weight: 550;
   letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+  transition: color 140ms var(--ease-out);
 }
 .ps-game-card-footer p {
   font-size: 0.6875rem;
   line-height: 1.4;
+  font-variant-numeric: tabular-nums;
 }
-.ps-game-card:has(.ps-game-card-link:hover) h3 {
-  color: var(--color-ps-accent-strong);
+
+/* ------------------------------------------------------ scroll to top */
+.ps-library-scroll-top {
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: calc(24px + env(safe-area-inset-right, 0px));
+  transition:
+    background-color 140ms var(--ease-out),
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
 }
+@starting-style {
+  .ps-library-scroll-top {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.ps-library-scroll-top:active {
+  transform: scale(0.95);
+  transition-duration: 100ms;
+}
+
+/* -------------------------------------------------------------- focus */
 .ps-library :focus-visible,
 .ps-library-rail :focus-visible {
   outline: 2px solid var(--color-ps-accent);
   outline-offset: 3px;
 }
+.ps-library-rail-games a:focus-visible,
+.ps-library-rail-collections > a:focus-visible {
+  outline-offset: -2px;
+}
+/* The rail search draws its own focus on the container. */
+.ps-library-rail-search input:focus-visible {
+  outline: none;
+}
+
+/* -------------------------------------------------------------- hover */
+@media (hover: hover) and (pointer: fine) {
+  .ps-library-rail a:not(.is-current):hover {
+    background: var(--color-ps-panel);
+    color: var(--color-ps-text);
+  }
+  .ps-library-rail a.is-current:hover {
+    color: var(--color-ps-text);
+  }
+  .ps-library-rail-search button:hover,
+  .ps-library-rail-list-label button:not(:disabled):hover {
+    background: var(--color-ps-panel);
+    color: var(--color-ps-text);
+  }
+  .ps-library-category-tabs > button:not([aria-pressed="true"]):hover {
+    background: var(--color-ps-panel);
+    color: var(--color-ps-text);
+  }
+  .ps-library-chip-remove:hover {
+    color: var(--color-ps-danger);
+    opacity: 1;
+  }
+  .ps-game-card:has(.ps-game-card-link:hover) h3 {
+    color: var(--color-ps-accent-strong);
+  }
+}
+
+/* -------------------------------------------------------------- touch */
 @media (hover: none) {
   .ps-game-card .ps-card-action {
     opacity: 1 !important;
@@ -445,6 +728,51 @@
     bottom: 8px !important;
   }
 }
+@media (pointer: coarse) {
+  /* 16px stops iOS Safari from zooming into the rail search on focus. */
+  .ps-library-rail-search {
+    min-height: 44px;
+  }
+  .ps-library-rail-search input {
+    font-size: 1rem;
+  }
+  .ps-library-rail-search button,
+  .ps-library-rail-list-label button {
+    width: 40px;
+    height: 40px;
+  }
+  .ps-library-rail-collections > a {
+    min-height: 44px;
+  }
+  .ps-library-category-tabs > button {
+    min-height: 44px;
+  }
+  .ps-library-category-editor select {
+    font-size: 1rem;
+  }
+  .ps-library-chip-remove::after {
+    inset: -10px;
+  }
+}
+
+/* ------------------------------------------------------ reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  /* The global override shortens durations but keeps delays, which would
+     hold staggered cards invisible; skip the entrance entirely. */
+  .ps-library-grid[data-intro] > [data-intro-index] {
+    animation: none;
+  }
+  .ps-game-card:has(.ps-game-card-link:active) .ps-game-card-cover,
+  .ps-library-category-tabs > button:active,
+  .ps-library-scroll-top:active,
+  .ps-library-rail-search button:active,
+  .ps-library-rail-list-label button:not(:disabled):active {
+    scale: none;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------- breakpoints */
 @media (min-width: 1024px) {
   .ps-library-toolbar-grid > div:nth-child(2) {
     display: contents;
@@ -477,6 +805,18 @@
   }
   .ps-library-heading p {
     font-size: 0.75rem;
+  }
+  .ps-library-category-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* Room for focus rings inside the horizontal scroller. */
+    margin-inline: -6px;
+    padding: 4px 6px;
+  }
+  .ps-library-category-tabs > button {
+    flex-shrink: 0;
   }
   .ps-library-category-tabs .ps-library-categories-manage {
     margin-left: 0;

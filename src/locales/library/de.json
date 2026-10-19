@@ -50,6 +50,7 @@
   "libraryFilters.activeCount": "{count} aktive Filter",
   "libraryFilters.active": "Filter aktiv",
   "libraryFilters.noneActive": "Keine Filter aktiv",
+  "libraryFilters.removeItem": "{name} entfernen",
   "libraryFilters.clearAll": "Alle zurücksetzen",
   "libraryFilters.selectedCount": "{count} ausgewählt",
   "libraryFilters.type": "Typ",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -111,6 +111,11 @@ export default function Chat() {
   const sendTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ownId = user?.id ?? 0;
+  // Messages received live (not from history) settle in; history is instant.
+  const liveIds = useRef(new Set<string>());
+  const messagesRef = useRef<HTMLElement>(null);
+  // Follow new messages only while the reader is at (or near) the bottom.
+  const stickToBottom = useRef(true);
 
   const clearTimers = () => {
     if (sendTimer.current) clearTimeout(sendTimer.current);
@@ -201,8 +206,10 @@ export default function Chat() {
   // ── Socket events ────────────────────────────────────────────────────────
   useEffect(() => {
     const accept = (message: ChatMessage) => {
-      if (message && messageInConversation(message, targetRef.current, ownId))
+      if (message && messageInConversation(message, targetRef.current, ownId)) {
+        liveIds.current.add(String(message.id));
         setMessages((previous) => mergeChatMessages(previous, [message]));
+      }
     };
     const offs = [
       on(
@@ -261,7 +268,12 @@ export default function Chat() {
     setWaiting(false);
     setMessages([]);
     setError("");
+    stickToBottom.current = true;
   }, [key]);
+  useLayoutEffect(() => {
+    const list = messagesRef.current;
+    if (list && stickToBottom.current) list.scrollTop = list.scrollHeight;
+  }, [messages]);
   useEffect(() => {
     setOpenConversation(target);
     return () => setOpenConversation(null);
@@ -479,10 +491,10 @@ export default function Chat() {
         </Button>
       </form>
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <span>
+        <span className="min-w-0 break-words">
           {currentLabel} · {status}
         </span>
-        <span className="text-ps-muted">
+        <span className="text-ps-muted tabular-nums">
           {t("chat.visibleUsers").replace(
             "{count}",
             String(
@@ -526,21 +538,33 @@ export default function Chat() {
           )}
         </section>
         <section
+          ref={messagesRef}
           className="chat-messages"
           aria-label={t("chat.messagesLabel")}
           aria-live="polite"
+          onScroll={(event) => {
+            const list = event.currentTarget;
+            stickToBottom.current =
+              list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+          }}
         >
           {loading && <p role="status">{t("chat.loading")}</p>}
           {!loading && !messages.length && (
             <p className="text-ps-muted">{t("chat.empty")}</p>
           )}
           {messages.map((message) => (
-            <article key={message.id}>
-              <p className="text-xs text-ps-muted">
+            <article
+              key={message.id}
+              data-live={liveIds.current.has(String(message.id)) || undefined}
+            >
+              <p className="text-xs break-words text-ps-muted">
                 <span className="font-medium text-ps-text">
                   {message.username}
                 </span>{" "}
-                · {new Date(message.created_at).toLocaleString(locale)}
+                ·{" "}
+                <time dateTime={message.created_at}>
+                  {new Date(message.created_at).toLocaleString(locale)}
+                </time>
               </p>
               <p className="mt-1 whitespace-pre-wrap break-words text-sm">
                 {message.text}
@@ -550,7 +574,7 @@ export default function Chat() {
         </section>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm break-words text-ps-danger">
           {error}
         </p>
       )}

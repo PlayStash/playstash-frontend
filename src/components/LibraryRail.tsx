@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
   ArrowPathIcon,
@@ -24,6 +24,42 @@ import { Media } from "./Media";
 import { Button } from "./tailwind/button";
 import "@/styles/library.css";
 
+/**
+ * First user-perceived character of a title for the missing-art placeholder.
+ * `charAt(0)` would split emoji and combined characters into broken halves.
+ */
+function titleInitial(title: string): string {
+  const trimmed = title.trim();
+  if (!trimmed) return "";
+  // Intl.Segmenter is ES2022; the project's TS lib targets ES2021.
+  const Segmenter = (
+    Intl as unknown as {
+      Segmenter?: new (
+        locale?: string,
+        options?: { granularity: "grapheme" },
+      ) => { segment(input: string): Iterable<{ segment: string }> };
+    }
+  ).Segmenter;
+  if (Segmenter) {
+    const segments = new Segmenter(undefined, { granularity: "grapheme" });
+    const [first] = segments.segment(trimmed);
+    if (first) return first.segment;
+  }
+  return Array.from(trimmed)[0] ?? "";
+}
+
+/** Varied widths so placeholder rows read as a list, not a stripe. */
+const SKELETON_WIDTHS = [
+  "68%",
+  "52%",
+  "74%",
+  "46%",
+  "61%",
+  "56%",
+  "70%",
+  "49%",
+];
+
 /** Persistent library navigation, shared by the collection and game pages. */
 export function LibraryRail({
   onNavigate,
@@ -38,6 +74,7 @@ export function LibraryRail({
   const location = useLocation();
   const showMappedTitle = useShowMappedTitle();
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [loadAllowed, setLoadAllowed] = useState(isLibraryLoadAllowed);
   const [browserSearch, setBrowserSearch] = useState(location.search);
   const deferredSearch = useDebouncedValue(search.trim(), 250);
@@ -109,7 +146,11 @@ export function LibraryRail({
         <div className="ps-library-rail-search">
           <MagnifyingGlassIcon aria-hidden="true" />
           <input
+            ref={searchInputRef}
             type="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            spellCheck={false}
             value={search}
             aria-label={t("library.rail.search")}
             placeholder={t("library.rail.search")}
@@ -123,7 +164,11 @@ export function LibraryRail({
             <button
               type="button"
               aria-label={t("common.clear")}
-              onClick={() => setSearch("")}
+              onClick={() => {
+                setSearch("");
+                // The button unmounts; keep focus in the field.
+                searchInputRef.current?.focus();
+              }}
             >
               <XMarkIcon aria-hidden="true" />
             </button>
@@ -232,14 +277,20 @@ export function LibraryRail({
                       mediaSlot="cover"
                       className="ps-library-rail-thumbnail"
                       fallback={
-                        <span className="ps-library-rail-initial">
-                          {title.charAt(0)}
+                        <span
+                          className="ps-library-rail-initial"
+                          aria-hidden="true"
+                        >
+                          {titleInitial(title)}
                         </span>
                       }
                     />
                   ) : (
-                    <span className="ps-library-rail-initial">
-                      {title.charAt(0)}
+                    <span
+                      className="ps-library-rail-initial"
+                      aria-hidden="true"
+                    >
+                      {titleInitial(title)}
                     </span>
                   )}
                   <span className="ps-library-rail-game-title">{title}</span>
@@ -256,7 +307,25 @@ export function LibraryRail({
           !games.length && (
             <p className="ps-library-rail-message">{t("library.empty")}</p>
           )}
-        {loading && (
+        {loading && !games.length && (
+          <>
+            <ul className="ps-library-rail-games" aria-hidden="true">
+              {SKELETON_WIDTHS.map((width, index) => (
+                <li
+                  key={index}
+                  className="ps-library-rail-skeleton motion-safe:animate-pulse"
+                  style={
+                    { "--ps-skeleton-width": width } as React.CSSProperties
+                  }
+                />
+              ))}
+            </ul>
+            <p className="sr-only" role="status">
+              {t("common.loading")}
+            </p>
+          </>
+        )}
+        {loading && games.length > 0 && (
           <p className="ps-library-rail-message" role="status">
             {t("library.loadingMore")}
           </p>
@@ -272,8 +341,8 @@ export function LibraryRail({
       {loadAllowed && serverUrl && (
         <p className="ps-library-rail-footer">
           {fillTemplate(t("library.rail.showing"), {
-            loaded: games.length,
-            total: count,
+            loaded: games.length.toLocaleString(locale),
+            total: count.toLocaleString(locale),
           })}
         </p>
       )}

@@ -95,7 +95,7 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-ps-line text-ps-muted hover:text-ps-text hover:bg-ps-panel-soft"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-ps-line text-ps-muted transition-[background-color,color,scale] duration-150 ease-(--ease-out) hover:bg-ps-panel-soft hover:text-ps-text active:scale-[0.97] active:bg-ps-panel-soft active:text-ps-text"
           aria-label={t("common.close")}
         >
           <svg
@@ -104,6 +104,7 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
             viewBox="0 0 24 24"
             stroke="currentColor"
             fill="none"
+            aria-hidden="true"
           >
             <path strokeWidth="2" strokeLinecap="round" d="M6 6 18 18" />
             <path strokeWidth="2" strokeLinecap="round" d="M18 6 6 18" />
@@ -113,9 +114,11 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
       <div className="px-6 mt-1 flex items-center gap-3 border-b border-ps-line text-sm">
         <div className="flex gap-2">
           <button
+            type="button"
+            aria-pressed={tab === "playstash"}
             onClick={() => setTab("playstash")}
             className={
-              "px-3 py-2 border-b-2 transition-colors " +
+              "-mb-px min-h-11 px-3 py-2 border-b-2 transition-colors sm:min-h-0 " +
               (tab === "playstash"
                 ? "border-ps-accent text-ps-accent"
                 : "border-transparent text-ps-muted hover:text-ps-text")
@@ -124,9 +127,11 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
             {t("news.tab.playstash")}
           </button>
           <button
+            type="button"
+            aria-pressed={tab === "server"}
             onClick={() => setTab("server")}
             className={
-              "px-3 py-2 border-b-2 transition-colors " +
+              "-mb-px min-h-11 px-3 py-2 border-b-2 transition-colors sm:min-h-0 " +
               (tab === "server"
                 ? "border-ps-accent text-ps-accent"
                 : "border-transparent text-ps-muted hover:text-ps-text")
@@ -138,7 +143,9 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
       </div>
       <DialogBody className="pt-4 overflow-y-auto flex-1 min-h-0">
         {!showEditor && hasErr && (
-          <div className="mb-4 text-sm text-rose-500">{hasErr}</div>
+          <div role="alert" className="mb-4 text-sm text-ps-danger">
+            {hasErr}
+          </div>
         )}
 
         {showEditor ? (
@@ -148,7 +155,9 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
             </div>
 
             {saveError && (
-              <div className="text-sm text-rose-500">{saveError}</div>
+              <div role="alert" className="text-sm text-ps-danger">
+                {saveError}
+              </div>
             )}
 
             <Textarea

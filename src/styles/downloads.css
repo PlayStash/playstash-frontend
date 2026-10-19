@@ -23,6 +23,12 @@
   font-weight: 600;
   color: var(--color-ps-text);
   font-variant-numeric: tabular-nums;
+  transition: color 150ms ease;
+}
+/* A phase with nothing in it recedes; running phases keep full ink. */
+.download-queue-summary > span[data-idle] strong {
+  color: var(--color-ps-muted);
+  font-weight: 500;
 }
 .download-queue {
   border-top: 1px solid var(--color-ps-line);
@@ -152,6 +158,13 @@
 .download-queue-actions > button:last-child {
   padding-inline: 8px;
 }
+/* Touch keeps the 44px target the compact desktop sizing gives up. */
+@media (pointer: coarse) {
+  .download-queue-actions > button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
 .download-queue-item [role="progressbar"] {
   border-radius: 2px;
 }
@@ -224,5 +237,83 @@
   }
   .download-queue-summary {
     gap: 13px 20px;
+  }
+}
+
+/* Transfer meter: one quiet track per phase. The fill scales on the
+   compositor (no width/layout work per tick) and moves linearly over the
+   500 ms UI throttle, so progress reads as constant motion. */
+.transfer-meter {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.transfer-meter-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-ps-muted);
+}
+.transfer-meter-value {
+  flex-shrink: 0;
+  color: var(--color-ps-text);
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.transfer-meter-track {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--color-ps-line);
+}
+.transfer-meter-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-ps-accent);
+  transform-origin: left center;
+  transition:
+    transform 500ms linear,
+    background-color 150ms ease;
+}
+[dir="rtl"] .transfer-meter-fill {
+  transform-origin: right center;
+}
+.transfer-meter[data-paused] .transfer-meter-fill {
+  background: var(--color-ps-muted);
+}
+.transfer-meter-file {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-ps-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* The folder yields first (shrink 100 vs 1), then the file name truncates. */
+.transfer-meter-folder {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transfer-meter-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-ps-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .transfer-meter-fill {
+    transition: background-color 150ms ease;
   }
 }
