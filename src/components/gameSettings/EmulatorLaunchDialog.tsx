@@ -173,7 +173,7 @@ export function EmulatorLaunchDialog({
     }
   };
 
-  const useNative = async () => {
+  const switchToNative = async () => {
     setSaving(true);
     try {
       const romRelative = configString(config, "emulatorrom");
@@ -287,7 +287,11 @@ export function EmulatorLaunchDialog({
       </DialogBody>
       <DialogActions>
         {emulatorActive && (
-          <Button outline onClick={() => void useNative()} disabled={saving}>
+          <Button
+            outline
+            onClick={() => void switchToNative()}
+            disabled={saving}
+          >
             {t("emulator.useNative")}
           </Button>
         )}

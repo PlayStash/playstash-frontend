@@ -88,7 +88,11 @@ async function invokeTracker<T>(
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<T>(command, args);
   } catch (error) {
-    await logTrackerLine("error", "invoke", `${command} failed: ${String(error)}`);
+    await logTrackerLine(
+      "error",
+      "invoke",
+      `${command} failed: ${String(error)}`,
+    );
     return null;
   }
 }
@@ -159,7 +163,8 @@ async function reconcileOfflineTime(options: {
     }
   }
 
-  const age = oldestFileMinutes > 0 ? `, oldest file ${oldestFileMinutes} min old` : "";
+  const age =
+    oldestFileMinutes > 0 ? `, oldest file ${oldestFileMinutes} min old` : "";
   await logTrackerLine(
     pendingMinutes > 0 ? "warn" : "info",
     "offline",
@@ -209,7 +214,11 @@ export function useGameTimeTracker() {
           reason: "credentials unavailable (logout or missing session)",
         });
       } else {
-        void logTrackerLine("info", "lifecycle", "tracker idle: waiting for credentials");
+        void logTrackerLine(
+          "info",
+          "lifecycle",
+          "tracker idle: waiting for credentials",
+        );
       }
       return;
     }
@@ -235,7 +244,11 @@ export function useGameTimeTracker() {
     }
 
     const started = startedRef.current;
-    if (started && started.serverUrl === serverUrl && started.userId === userId) {
+    if (
+      started &&
+      started.serverUrl === serverUrl &&
+      started.userId === userId
+    ) {
       // Same session (token may have refreshed); leave the loop running.
       return;
     }
@@ -271,8 +284,14 @@ export function useGameTimeTracker() {
     return () => {
       if (!startedRef.current) return;
       startedRef.current = null;
-      void logTrackerLine("info", "lifecycle", "stopping tracker: hook unmounted");
-      void invokeTracker("stop_game_time_tracker", { reason: "hook unmounted" });
+      void logTrackerLine(
+        "info",
+        "lifecycle",
+        "stopping tracker: hook unmounted",
+      );
+      void invokeTracker("stop_game_time_tracker", {
+        reason: "hook unmounted",
+      });
     };
   }, []);
 
@@ -417,7 +436,8 @@ export function useGameTimeTracker() {
     const id = window.setInterval(async () => {
       if (syncInFlightRef.current) return;
 
-      const status = await invokeTracker<TrackerStatusSummary>("get_tracker_status");
+      const status =
+        await invokeTracker<TrackerStatusSummary>("get_tracker_status");
       if (!status || status.pendingOfflineMinutes <= 0) return;
 
       const token = await getAccessToken();
@@ -473,7 +493,11 @@ export function useGameTimeTracker() {
     if (!isTauriApp()) return;
 
     const handleVisibility = () => {
-      void logTrackerLine("info", "app", `window visibility: ${document.visibilityState}`);
+      void logTrackerLine(
+        "info",
+        "app",
+        `window visibility: ${document.visibilityState}`,
+      );
     };
     const handleFocus = () => {
       void logTrackerLine("info", "app", "window focused");

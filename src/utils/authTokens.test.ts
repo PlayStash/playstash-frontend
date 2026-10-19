@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  computeNextTokenRefresh,
-  isAuthError,
-  parseJwt,
-} from "./authTokens";
+import { computeNextTokenRefresh, isAuthError, parseJwt } from "./authTokens";
 
 function b64url(input: string): string {
   return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

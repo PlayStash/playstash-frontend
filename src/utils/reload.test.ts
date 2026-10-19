@@ -52,4 +52,3 @@ describe("registerReloadHotkey", () => {
     expect(event.defaultPrevented).toBe(false);
   });
 });
-

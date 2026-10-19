@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  axisWithDeadzone,
-  resolveDirection,
-  resolvePressed,
-} from "./gamepad";
+import { axisWithDeadzone, resolveDirection, resolvePressed } from "./gamepad";
 
 function mockGamepad({
   buttons = [] as { pressed: boolean }[],

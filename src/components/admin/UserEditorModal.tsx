@@ -377,6 +377,7 @@ export function UserEditorModal({
           nativeDragHandledRef.current = true;
           void loadDroppedPath(paths, target);
         });
+        if (cancelled) unlisten();
       } catch (err) {
         console.error("Failed to init native drag-drop listener:", err);
       }

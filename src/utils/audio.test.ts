@@ -37,16 +37,19 @@ describe("getAudioVolume / setAudioVolume", () => {
     const dispatched = spy.mock.calls.find(
       (c) => (c[0] as CustomEvent).type === AUDIO_VOLUME_EVENT,
     );
-    expect((dispatched?.[0] as CustomEvent).detail).toEqual({ volume: 0.5 });
+    expect((dispatched![0] as CustomEvent).detail).toEqual({ volume: 0.5 });
   });
 });
 
 describe("playSound", () => {
   it("plays a fetched sound and returns the audio element", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      blob: async () => new Blob(["x"]),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["x"]),
+      }),
+    );
     (URL as any).createObjectURL = vi.fn(() => "blob:mock");
 
     const play = vi.fn().mockResolvedValue(undefined);
@@ -62,10 +65,13 @@ describe("playSound", () => {
   });
 
   it("returns null when autoplay is blocked", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      blob: async () => new Blob(["x"]),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["x"]),
+      }),
+    );
     (URL as any).createObjectURL = vi.fn(() => "blob:mock");
     const play = vi.fn().mockRejectedValue(new Error("autoplay blocked"));
     const audio = { volume: 1, play, addEventListener: vi.fn() } as any;

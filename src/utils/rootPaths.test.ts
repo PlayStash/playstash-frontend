@@ -4,10 +4,8 @@ import {
   addRootPath,
   getRootPaths,
   removeRootPath,
-  setRootPaths,
   updateRootPath,
   updateRootPathLabel,
-  type RootPathEntry,
 } from "./rootPaths";
 
 const ROOT_PATHS_KEY = "tauri_download_paths";

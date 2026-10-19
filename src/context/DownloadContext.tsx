@@ -326,7 +326,6 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const SPEED_WINDOW_MS = 5000;
   const UI_THROTTLE_MS = 500;
   const SAMPLE_INTERVAL_MS = 250;
-  const DISK_WRITE_BATCH_BYTES = 512 * 1024;
   const DEBUG_DOWNLOAD_LOGS = false;
   const dlog = (...args: any[]) => {
     if (DEBUG_DOWNLOAD_LOGS) console.log(...args);
@@ -1594,7 +1593,6 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         return;
       }
       d.abortController.abort();
-      6;
       updateDownload(gameId, {
         status: "paused",
         speedBps: undefined,
@@ -3284,7 +3282,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         }
 
         // Load cached game data so recovered cards have full metadata (cover, etc.)
-        for (const [idStr, dl] of Object.entries(recovered)) {
+        for (const idStr of Object.keys(recovered)) {
           try {
             const cached = await invoke<string | null>("load_cached_game", {
               gameId: Number(idStr),

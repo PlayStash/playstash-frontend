@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "import", "vitest"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "varsIgnorePattern": "^_",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "none"
+      }
+    ],
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/refs": "warn",
+    "react/error-boundaries": "warn",
+    "react/set-state-in-effect": "warn",
+    "react/immutability": "warn",
+    "react/purity": "warn",
+    "react/globals": "warn",
+    "react/preserve-manual-memoization": "warn",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/valid-expect": "off",
+    "vitest/require-to-throw-message": "off",
+    "vitest/expect-expect": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/no-standalone-expect": "off"
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "coverage/**",
+    ".local/**",
+    "src/api/**",
+    "src-tauri/target/**",
+    "src-tauri/gen/**",
+    "container-context/**",
+    "release-assets/**",
+    "updater-metadata/**"
+  ]
+}

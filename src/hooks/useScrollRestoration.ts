@@ -13,10 +13,7 @@ import { useEffect, useRef } from "react";
  * @param storageKey  Unique sessionStorage key per page (e.g. "library_scroll")
  * @param readySignal Set to `true` when the scrollable content is mounted
  */
-export function useScrollRestoration(
-  storageKey: string,
-  readySignal: boolean,
-) {
+export function useScrollRestoration(storageKey: string, readySignal: boolean) {
   const restoredRef = useRef(false);
 
   // ── 1. Save on scroll events ──────────────────────────────────────────

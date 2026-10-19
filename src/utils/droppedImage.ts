@@ -12,8 +12,7 @@
  */
 
 export type ResolvedDropImage =
-  | { kind: "url"; url: string }
-  | { kind: "file"; file: File };
+  { kind: "url"; url: string } | { kind: "file"; file: File };
 
 /** True for URLs that end in a common image extension. */
 export function isProbablyImageUrl(value: string): boolean {

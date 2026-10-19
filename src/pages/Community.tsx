@@ -1,107 +1,30 @@
 import { Badge } from "@/components/tailwind/badge";
-import { Button } from "@/components/tailwind/button";
 import CoverPlaceholder from "@/components/CoverPlaceholder";
 import { Divider } from "@tw/divider";
-import { Heading, Subheading } from "@tw/heading";
+import { Heading } from "@tw/heading";
 import { Input } from "@tw/input";
-import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
 import { Text } from "@tw/text";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Media } from "@/components/Media";
 import { useAuth } from "@/context/AuthContext";
-import { useAuthMediaUrl } from "@/hooks/useAuthMediaUrl";
 import { formatDecimal } from "@/utils/number";
 import { getGameCoverMediaId } from "@/hooks/useGames";
 import { getRoleLabel } from "@/utils/roles";
 import clsx from "clsx";
-import {
-  ArrowRightIcon,
-  BookmarkIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  PlayCircleIcon,
-  SparklesIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { maskUser, useStreamerMode } from "@/utils/streamerMode";
-import type { PlaystashGame, PlaystashUser, Progress } from "../api";
+import type { PlaystashGame, PlaystashUser } from "../api";
 import { CommunityChatButton } from "@/components/GameChatButton";
-import { translate, useTranslation, type TranslationKey } from "@/i18n";
+import { translate, useTranslation } from "@/i18n";
 import { formatMessage } from "@/utils/formatMessage";
 import "@/styles/workspaces.css";
 
 type UserDetailsMap = Record<number, PlaystashUser>;
-type ProfileProgressSort = "last" | "time" | "title" | "state";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
-
-const PROGRESS_STATE_META: Record<
-  string,
-  { label: TranslationKey; tone: string; chip: keyof typeof badgeTones }
-> = {
-  UNPLAYED: {
-    label: "community.progress.unplayed",
-    tone: "text-ps-muted",
-    chip: "zinc",
-  },
-  INFINITE: {
-    label: "community.progress.ongoing",
-    tone: "text-sky-400",
-    chip: "blue",
-  },
-  PLAYING: {
-    label: "community.progress.playing",
-    tone: "text-emerald-400",
-    chip: "green",
-  },
-  COMPLETED: {
-    label: "community.progress.finished",
-    tone: "text-violet-300",
-    chip: "indigo",
-  },
-  ABORTED_TEMPORARY: {
-    label: "community.progress.onHold",
-    tone: "text-amber-400",
-    chip: "amber",
-  },
-  ABORTED_PERMANENT: {
-    label: "community.progress.dropped",
-    tone: "text-rose-400",
-    chip: "rose",
-  },
-};
-
-const badgeTones = {
-  zinc: true,
-  blue: true,
-  green: true,
-  indigo: true,
-  amber: true,
-  rose: true,
-} as const;
-
-const PROFILE_FILTER_OPTIONS: { value: string; label: TranslationKey }[] = [
-  { value: "all", label: "userProfile.filter.all" },
-  { value: "PLAYING", label: "community.progress.playing" },
-  { value: "INFINITE", label: "community.progress.ongoing" },
-  { value: "COMPLETED", label: "community.progress.finished" },
-  { value: "ABORTED_TEMPORARY", label: "community.progress.onHold" },
-  { value: "ABORTED_PERMANENT", label: "community.progress.dropped" },
-  { value: "UNPLAYED", label: "community.progress.unplayed" },
-];
-
-const PROFILE_SORT_OPTIONS: {
-  value: ProfileProgressSort;
-  label: TranslationKey;
-}[] = [
-  { value: "last", label: "userProfile.sort.last" },
-  { value: "time", label: "userProfile.sort.time" },
-  { value: "title", label: "userProfile.sort.title" },
-  { value: "state", label: "userProfile.sort.state" },
-];
 
 function normalizeUser<T>(user: T): T {
   if (!user || typeof user !== "object") return user;
@@ -216,42 +139,8 @@ function getRecentProgresses(
     .slice(0, limit);
 }
 
-function getRecentWindowProgresses(
-  user: PlaystashUser | null | undefined,
-  sinceMs: number,
-) {
-  return getProgresses(user)
-    .filter((progress) => toTimestamp(progress.last_played_at) >= sinceMs)
-    .sort(
-      (left, right) =>
-        toTimestamp(right.last_played_at) - toTimestamp(left.last_played_at),
-    );
-}
-
 function getBookmarkedGames(user: PlaystashUser | null | undefined) {
   return Array.isArray(user?.bookmarked_games) ? user.bookmarked_games : [];
-}
-
-function getPrimaryBackdropMediaId(user: PlaystashUser | null | undefined) {
-  if (!user) return null;
-  if (user.background?.id) return user.background.id;
-
-  const fromRecentBackground = getRecentProgresses(user, 12).find(
-    (progress) => progress.game?.metadata?.background?.id,
-  );
-  if (fromRecentBackground?.game?.metadata?.background?.id) {
-    return fromRecentBackground.game.metadata.background.id;
-  }
-
-  const fromRecentCover = getRecentProgresses(user, 12)
-    .map((progress) => getGameCoverMediaId(progress.game as PlaystashGame))
-    .find(Boolean);
-  if (fromRecentCover) return Number(fromRecentCover);
-
-  const bookmarkCover = getBookmarkedGames(user)
-    .map((game) => getGameCoverMediaId(game))
-    .find(Boolean);
-  return bookmarkCover ? Number(bookmarkCover) : null;
 }
 
 function getUserStats(user: PlaystashUser | null | undefined) {
@@ -282,12 +171,6 @@ function getRoleBadgeColor(role?: string) {
   if (numericRole >= 3) return "amber" as const;
   if (numericRole >= 2) return "indigo" as const;
   return "zinc" as const;
-}
-
-function getProgressMeta(state?: string) {
-  return (
-    PROGRESS_STATE_META[state || "UNPLAYED"] || PROGRESS_STATE_META.UNPLAYED
-  );
 }
 
 function GamePoster({
@@ -469,70 +352,9 @@ function NetworkUserCard({
   );
 }
 
-function ProfileProgressCard({ progress }: { progress: Progress }) {
-  const game = progress.game;
-  const { t } = useTranslation();
-  const title =
-    game?.metadata?.title || game?.title || t("community.unknownGame");
-  const meta = getProgressMeta(progress.state);
-
-  return (
-    <Link
-      to={game?.id ? `/library/${game.id}` : "/library"}
-      className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ps-accent"
-    >
-      <article className="profile-progress h-full">
-        <div className="flex gap-4">
-          <GamePoster
-            game={game || undefined}
-            title={title}
-            width={88}
-            height={120}
-            className="shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-3">
-              <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold tracking-[-0.02em] text-ps-text">
-                {title}
-              </h3>
-              <Badge color={meta.chip} className="shrink-0 self-start">
-                {t(meta.label)}
-              </Badge>
-            </div>
-            <div className="mt-3 space-y-2 text-sm text-ps-muted">
-              <div className="flex items-center gap-2">
-                <ClockIcon className="size-4 text-ps-accent-cool" />
-                <span>
-                  {formatPlaytime(Number(progress.minutes_played ?? 0) || 0)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <SparklesIcon className="size-4 text-ps-accent-cool" />
-                <span
-                  title={
-                    formatFullDateTime(progress.last_played_at) ?? undefined
-                  }
-                >
-                  {formatMessage(t("community.lastPlayed"), {
-                    date: formatDate(progress.last_played_at),
-                  })}
-                </span>
-              </div>
-            </div>
-            <div className="mt-4 text-xs text-ps-muted">
-              {t("community.openGamePage")}
-            </div>
-          </div>
-        </div>
-      </article>
-    </Link>
-  );
-}
-
 export default function Community() {
   const { serverUrl, authFetch, user: loggedIn } = useAuth();
   const { t } = useTranslation();
-  const { id } = useParams<{ id?: string }>();
 
   const [users, setUsers] = useState<PlaystashUser[]>([]);
   const [detailsById, setDetailsById] = useState<UserDetailsMap>({});

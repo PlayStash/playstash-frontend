@@ -181,7 +181,6 @@ export function DropdownLabel({
 }: React.ComponentPropsWithoutRef<"div">) {
   return (
     <div
-      {...props}
       data-slot="label"
       className={clsx(className, "col-start-2 row-start-1")}
       {...props}

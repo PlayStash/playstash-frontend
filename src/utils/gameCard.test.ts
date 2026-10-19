@@ -46,9 +46,9 @@ describe("initialGameBookmarked", () => {
     expect(
       initialGameBookmarked({ bookmarked_users: [{ id: 2 }, { id: 1 }] }, 1),
     ).toBe(true);
-    expect(
-      initialGameBookmarked({ bookmarkedUsers: [{ ID: 1 }] }, 1),
-    ).toBe(true);
+    expect(initialGameBookmarked({ bookmarkedUsers: [{ ID: 1 }] }, 1)).toBe(
+      true,
+    );
     expect(initialGameBookmarked({ bookmarked_users: [{ id: 3 }] }, 1)).toBe(
       false,
     );
@@ -73,15 +73,17 @@ describe("resolveSortMetric", () => {
 
   it("resolves created_at and release_date", () => {
     expect(resolveSortMetric("created_at", game, "x")).toContain("2023");
-    expect(
-      resolveSortMetric("metadata.release_date", game, "x"),
-    ).toContain("2022");
+    expect(resolveSortMetric("metadata.release_date", game, "x")).toContain(
+      "2022",
+    );
     expect(resolveSortMetric("created_at", {}, "x")).toBeNull();
   });
 
   it("resolves rating, download count, and playtime", () => {
     expect(resolveSortMetric("metadata.rating", game, "x")).toBe("87.0%");
     expect(resolveSortMetric("download_count", game, "x")).toBe("5");
-    expect(resolveSortMetric("metadata.average_playtime", game, "x")).toBe("1h");
+    expect(resolveSortMetric("metadata.average_playtime", game, "x")).toBe(
+      "1h",
+    );
   });
 });

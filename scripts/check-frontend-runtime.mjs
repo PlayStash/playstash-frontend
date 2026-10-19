@@ -331,7 +331,7 @@ try {
   assert.match(index, /<title>PlayStash<\/title>/);
   assert.equal(await (await request("/library/123")).text(), index);
   const scripts = [
-    ...index.matchAll(/(?:src|href)="(\/assets\/[^\"]+\.(?:js|css))"/g),
+    ...index.matchAll(/(?:src|href)="(\/assets\/[^"]+\.(?:js|css))"/g),
   ].map((match) => match[1]);
   assert.ok(scripts.length > 1);
   for (const asset of scripts) {
@@ -442,6 +442,8 @@ try {
       assert.equal(info.Config.Labels["com.playstash.runtime-test"], project);
       docker("image", "rm", tag);
     } catch (cause) {
+      // Cleanup must fail loudly when an image cannot be removed.
+      // oxlint-disable-next-line no-unsafe-finally
       if (!/no such image/i.test(String(cause.stderr))) throw cause;
     }
   }

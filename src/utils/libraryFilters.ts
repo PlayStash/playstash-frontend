@@ -51,10 +51,7 @@ export function activeFilterCount(state: LibraryFilterState): number {
 /**
  * Read a repeated-or-comma-separated URL param into a trimmed non-empty list.
  */
-export function getParamValues(
-  params: URLSearchParams,
-  key: string,
-): string[] {
+export function getParamValues(params: URLSearchParams, key: string): string[] {
   const repeated = params.getAll(key).filter(Boolean);
   if (repeated.length > 0) return repeated;
   const single = params.get(key);
@@ -115,10 +112,7 @@ export interface InstalledGamesFilters {
   publishers: string[];
 }
 
-function matchesAnyName(
-  metaList: any,
-  names: string[],
-): boolean {
+function matchesAnyName(metaList: any, names: string[]): boolean {
   if (!Array.isArray(metaList)) return false;
   return names.some((name) =>
     metaList.some(
@@ -154,16 +148,24 @@ export function filterAndSortInstalledGames(
   }
 
   if (filters.tags.length > 0) {
-    filtered = filtered.filter((g) => matchesAnyName(g.metadata?.tags, filters.tags));
+    filtered = filtered.filter((g) =>
+      matchesAnyName(g.metadata?.tags, filters.tags),
+    );
   }
   if (filters.genres.length > 0) {
-    filtered = filtered.filter((g) => matchesAnyName(g.metadata?.genres, filters.genres));
+    filtered = filtered.filter((g) =>
+      matchesAnyName(g.metadata?.genres, filters.genres),
+    );
   }
   if (filters.developers.length > 0) {
-    filtered = filtered.filter((g) => matchesAnyName(g.metadata?.developers, filters.developers));
+    filtered = filtered.filter((g) =>
+      matchesAnyName(g.metadata?.developers, filters.developers),
+    );
   }
   if (filters.publishers.length > 0) {
-    filtered = filtered.filter((g) => matchesAnyName(g.metadata?.publishers, filters.publishers));
+    filtered = filtered.filter((g) =>
+      matchesAnyName(g.metadata?.publishers, filters.publishers),
+    );
   }
 
   return [...filtered].sort((a, b) => {

@@ -30,9 +30,7 @@ export function emitGameDeleted(gameId: number): void {
   );
 }
 
-export function onGameDeleted(
-  callback: (gameId: number) => void,
-): () => void {
+export function onGameDeleted(callback: (gameId: number) => void): () => void {
   const listener = (event: Event) => {
     callback((event as CustomEvent<number>).detail);
   };

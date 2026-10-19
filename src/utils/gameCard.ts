@@ -48,7 +48,9 @@ export function resolveSortMetric(
     case "created_at":
       return game.created_at ? formatShortDate(game.created_at) : null;
     case "metadata.release_date":
-      return game.metadata?.release_date ? formatShortDate(game.metadata.release_date) : null;
+      return game.metadata?.release_date
+        ? formatShortDate(game.metadata.release_date)
+        : null;
     case "metadata.rating":
       return game.metadata?.rating != null
         ? `${formatDecimal(game.metadata.rating, 1)}%`

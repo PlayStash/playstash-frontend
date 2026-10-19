@@ -54,7 +54,11 @@ export function getRootPaths(): RootPathEntry[] {
     }
 
     return (parsed as RootPathEntry[]).filter(
-      (e) => typeof e.id === "string" && e.id.length > 0 && typeof e.path === "string" && e.path.trim().length > 0,
+      (e) =>
+        typeof e.id === "string" &&
+        e.id.length > 0 &&
+        typeof e.path === "string" &&
+        e.path.trim().length > 0,
     );
   } catch {
     return [];
@@ -87,7 +91,11 @@ export function addRootPath(pathInput: string, label = ""): RootPathEntry[] {
 
   // Deduplicate by path (case-insensitive on Windows, but normalized here)
   const normalized = clean.replace(/\\/g, "/").toLowerCase();
-  if (existing.some((e) => e.path.replace(/\\/g, "/").toLowerCase() === normalized)) {
+  if (
+    existing.some(
+      (e) => e.path.replace(/\\/g, "/").toLowerCase() === normalized,
+    )
+  ) {
     return existing;
   }
 
@@ -106,14 +114,19 @@ export function removeRootPath(id: string): RootPathEntry[] {
   if (updated.length === 0) {
     try {
       localStorage.removeItem(LEGACY_KEY);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   return updated;
 }
 
 /** Update label for a root path entry. */
-export function updateRootPathLabel(id: string, label: string): RootPathEntry[] {
+export function updateRootPathLabel(
+  id: string,
+  label: string,
+): RootPathEntry[] {
   const updated = getRootPaths().map((e) =>
     e.id === id ? { ...e, label } : e,
   );

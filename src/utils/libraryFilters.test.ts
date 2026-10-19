@@ -153,9 +153,24 @@ describe("filterAndSortInstalledGames", () => {
 
   it("sorts by most-recent activity with a title tie-break", () => {
     const games = [
-      base({ id: 1, title: "Beta", sort_title: "beta", _installedInfo: { installedAt: 50, lastPlayedAt: 0 } }),
-      base({ id: 2, title: "Alpha", sort_title: "alpha", _installedInfo: { installedAt: 200, lastPlayedAt: 0 } }),
-      base({ id: 3, title: "Same B", sort_title: "same b", _installedInfo: { installedAt: 50, lastPlayedAt: 0 } }),
+      base({
+        id: 1,
+        title: "Beta",
+        sort_title: "beta",
+        _installedInfo: { installedAt: 50, lastPlayedAt: 0 },
+      }),
+      base({
+        id: 2,
+        title: "Alpha",
+        sort_title: "alpha",
+        _installedInfo: { installedAt: 200, lastPlayedAt: 0 },
+      }),
+      base({
+        id: 3,
+        title: "Same B",
+        sort_title: "same b",
+        _installedInfo: { installedAt: 50, lastPlayedAt: 0 },
+      }),
     ];
     const result = filterAndSortInstalledGames(games, {
       search: "",

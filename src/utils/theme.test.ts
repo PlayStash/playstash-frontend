@@ -35,7 +35,7 @@ describe("applyTheme", () => {
     const evt = spy.mock.calls.find(
       (c) => (c[0] as CustomEvent).type === "darkMode",
     );
-    expect((evt?.[0] as CustomEvent).detail).toEqual({ darkMode: true });
+    expect((evt![0] as CustomEvent).detail).toEqual({ darkMode: true });
   });
 
   it("removes the storage key when set to system", () => {

@@ -38,7 +38,6 @@ import {
   setDebugTauriOverride,
 } from "@/utils/tauri";
 import {
-  filterSearchableSettings,
   isAvailableOnPlatform,
   type PlatformFlags,
   searchResultCategories as searchResultCategoriesFn,
@@ -459,13 +458,8 @@ const SettingsPanel = forwardRef<HTMLDivElement, HTMLMotionProps<"div">>(
 
 export default function Settings() {
   const { t, locale } = useTranslation();
-  const {
-    speedLimitKB,
-    setSpeedLimitKB,
-    formatSpeed,
-    formatLimit,
-    simulateDownload,
-  } = useDownloads() as any;
+  const { speedLimitKB, setSpeedLimitKB, formatLimit, simulateDownload } =
+    useDownloads() as any;
   const kbValue = speedLimitKB;
   const [analyticsConsent, setAnalyticsConsent] = useState<boolean>(() => {
     return isAnalyticsEnabled();
@@ -576,11 +570,6 @@ export default function Settings() {
 
   const trimmedQuery = searchQuery.trim().toLowerCase();
   const platformFlags = { isTauri, isDesktopApp, isLinux };
-  // On the web build, desktop-only settings don't exist, so never suggest them.
-  const searchableSettings = filterSearchableSettings(
-    SETTINGS_SEARCH_INDEX,
-    platformFlags,
-  );
   const localizedSearchIndex = useMemo(
     () =>
       SETTINGS_SEARCH_INDEX.map((entry) => localizeSearchEntry(entry, locale)),

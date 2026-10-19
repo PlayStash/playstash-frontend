@@ -27,7 +27,6 @@ import {
 } from "@/utils/gameCard";
 import { isGameUpdateAvailable } from "@/utils/gameUpdate";
 import { launchInstalledGame } from "@/utils/launchInstalledGame";
-import { Alert, AlertTitle } from "@tw/alert";
 import {
   Dropdown,
   DropdownButton,

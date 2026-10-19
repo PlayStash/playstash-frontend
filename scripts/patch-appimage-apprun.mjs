@@ -58,7 +58,7 @@ if [ -n "$WAYLAND_DISPLAY" ]; then
     /usr/lib/libwayland-client.so.0 \\
     /usr/lib/libwayland-client.so; do
     if [ -e "$lib" ]; then
-      export LD_PRELOAD="$lib\${LD_PRELOAD:+:\$LD_PRELOAD}"
+      export LD_PRELOAD="$lib\${LD_PRELOAD:+:$LD_PRELOAD}"
       break
     fi
   done
@@ -99,7 +99,8 @@ async function resolveAppImage(bundleRoot) {
 
 async function downloadAppimageTool(destDir) {
   const dest = path.join(destDir, "appimagetool");
-  const url = "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage";
+  const url =
+    "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage";
   log(`Downloading appimagetool from ${url}`);
   const response = await fetch(url);
   if (!response.ok) {

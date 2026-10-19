@@ -30,7 +30,8 @@ export function setDebugTauriOverride(enabled: boolean): void {
  */
 export function isTauriDesktop(): boolean {
   return (
-    typeof window !== "undefined" && Boolean((window as any).__TAURI_INTERNALS__)
+    typeof window !== "undefined" &&
+    Boolean((window as any).__TAURI_INTERNALS__)
   );
 }
 
@@ -102,8 +103,7 @@ export function registerExternalLinkHandler(): () => void {
     if (!external && /^https?:\/\//i.test(href)) {
       try {
         external =
-          new URL(href, window.location.href).origin !==
-          window.location.origin;
+          new URL(href, window.location.href).origin !== window.location.origin;
       } catch {
         external = false;
       }

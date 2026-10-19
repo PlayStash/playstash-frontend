@@ -7,10 +7,7 @@ import {
   ListboxOption,
   ListboxLabel,
 } from "@/components/tailwind/listbox";
-import {
-  PlaystashGame,
-  PlaystashGameTypeEnum,
-} from "@/api/models/PlaystashGame";
+import { PlaystashGame } from "@/api/models/PlaystashGame";
 import { GameVersion } from "@/api/models/GameVersion";
 import { PlaystashUserRoleEnum } from "@/api/models/PlaystashUser";
 import { UpdateGameDto } from "@/api/models/UpdateGameDto";
@@ -178,7 +175,6 @@ export function GameSettings({
   const [installedGame, setInstalledGame] = useState<InstalledGameInfo | null>(
     null,
   );
-  const [uninstalling, setUninstalling] = useState(false);
   const isTauri = isTauriApp();
   const { isOnline } = useOnlineStatus();
 
@@ -1091,6 +1087,7 @@ export function GameSettings({
           nativeDragHandledRef.current = true;
           void loadDroppedPath(paths, target);
         });
+        if (cancelled) unlisten();
       } catch (err) {
         console.error("Failed to init native drag-drop listener:", err);
       }

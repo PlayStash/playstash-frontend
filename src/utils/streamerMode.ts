@@ -10,7 +10,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { adjectives, animals, uniqueNamesGenerator } from "unique-names-generator";
+import {
+  adjectives,
+  animals,
+  uniqueNamesGenerator,
+} from "unique-names-generator";
 
 const STREAMER_MODE_KEY = "playstash_streamer_mode";
 const STREAMER_MODE_EVENT = "playstash:streamer-mode-change";
@@ -31,9 +35,10 @@ const capitalize = (value: string) =>
  * display name and the handle/email always line up (same words). Kept short —
  * adjective + animal is enough for OPSEC mode.
  */
-function maskParts(
-  seed: string | number,
-): { adjective: string; animal: string } {
+function maskParts(seed: string | number): {
+  adjective: string;
+  animal: string;
+} {
   const generated = uniqueNamesGenerator({
     dictionaries: [adjectives, animals],
     length: 2,

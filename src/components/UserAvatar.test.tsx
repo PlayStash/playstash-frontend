@@ -15,8 +15,8 @@ vi.mock("@/utils/streamerMode", () => ({
 }));
 
 vi.mock("@/utils/dicebearAvatar", () => ({
-  createDicebearAvatar: vi.fn((seed: string) =>
-    `data:image/svg+xml;base64,${seed}`,
+  createDicebearAvatar: vi.fn(
+    (seed: string) => `data:image/svg+xml;base64,${seed}`,
   ),
 }));
 

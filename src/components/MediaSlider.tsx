@@ -266,7 +266,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       (el as any).mozRequestFullScreen ||
       (el as any).msRequestFullscreen;
     try {
-      fn && fn.call(el);
+      fn?.call(el);
     } catch {}
   }, []);
 
@@ -278,7 +278,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
       doc.mozCancelFullScreen ||
       doc.msExitFullscreen;
     try {
-      fn && fn.call(document);
+      fn?.call(document);
     } catch {}
   }, []);
 

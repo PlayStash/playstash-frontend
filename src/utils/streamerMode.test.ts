@@ -23,9 +23,7 @@ describe("maskDisplayName", () => {
 
   it("produces different stand-ins for different user ids", () => {
     const names = new Set(
-      ["1", "2", "3", "4", "5", "6", "7", "8"].map((id) =>
-        maskDisplayName(id),
-      ),
+      ["1", "2", "3", "4", "5", "6", "7", "8"].map((id) => maskDisplayName(id)),
     );
     // The adjective+animal space is huge, so collisions are virtually
     // impossible; all stand-ins should be distinct and look like a name.

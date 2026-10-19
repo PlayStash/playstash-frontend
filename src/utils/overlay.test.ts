@@ -24,10 +24,18 @@ describe("hasOpenOverlay", () => {
 
 describe("isEditableTarget", () => {
   it("detects editable form controls", () => {
-    expect(isEditableTarget({ target: document.createElement("input") } as any)).toBe(true);
-    expect(isEditableTarget({ target: document.createElement("textarea") } as any)).toBe(true);
-    expect(isEditableTarget({ target: document.createElement("select") } as any)).toBe(true);
+    expect(
+      isEditableTarget({ target: document.createElement("input") } as any),
+    ).toBe(true);
+    expect(
+      isEditableTarget({ target: document.createElement("textarea") } as any),
+    ).toBe(true);
+    expect(
+      isEditableTarget({ target: document.createElement("select") } as any),
+    ).toBe(true);
     // jsdom does not implement isContentEditable; a plain div is not editable.
-    expect(isEditableTarget({ target: document.createElement("div") } as any)).toBeFalsy();
+    expect(
+      isEditableTarget({ target: document.createElement("div") } as any),
+    ).toBeFalsy();
   });
 });
