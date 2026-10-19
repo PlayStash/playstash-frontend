@@ -1,53 +1,66 @@
 "use client";
 
 import * as Headless from "@headlessui/react";
-import React, { useState } from "react";
-import { NavbarItem } from "./navbar";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  QueueListIcon,
+} from "@heroicons/react/24/outline";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
+import { Link, useLocation } from "react-router";
+import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useTranslation } from "@/i18n";
 import WindowTitlebar from "../WindowTitlebar";
-import { isTauriApp } from "@/utils/tauri";
 
-function OpenMenuIcon() {
-  return (
-    <svg data-slot="icon" viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M2 6.75C2 6.33579 2.33579 6 2.75 6H17.25C17.6642 6 18 6.33579 18 6.75C18 7.16421 17.6642 7.5 17.25 7.5H2.75C2.33579 7.5 2 7.16421 2 6.75ZM2 13.25C2 12.8358 2.33579 12.5 2.75 12.5H17.25C17.6642 12.5 18 12.8358 18 13.25C18 13.6642 17.6642 14 17.25 14H2.75C2.33579 14 2 13.6642 2 13.25Z" />
-    </svg>
-  );
+const desktopQuery = "(min-width: 1024px)";
+function subscribeDesktop(onChange: () => void) {
+  const query = window.matchMedia(desktopQuery);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
 }
+const getDesktopSnapshot = () => window.matchMedia(desktopQuery).matches;
 
-function CloseMenuIcon() {
-  return (
-    <svg data-slot="icon" viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-    </svg>
-  );
-}
-
-function MobileSidebar({
+function NavigationDrawer({
   open,
   close,
+  label,
   children,
-}: React.PropsWithChildren<{ open: boolean; close: () => void }>) {
+}: React.PropsWithChildren<{
+  open: boolean;
+  close: () => void;
+  label: string;
+}>) {
   const { t } = useTranslation();
   return (
-    <Headless.Dialog open={open} onClose={close} className="lg:hidden">
+    <Headless.Dialog
+      open={open}
+      onClose={close}
+      aria-label={label}
+      className="relative z-50 lg:hidden"
+    >
       <Headless.DialogBackdrop
         transition
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in"
+        className="fixed inset-0 bg-black/60 transition-opacity duration-240 ease-(--ease-out) data-closed:opacity-0 data-leave:duration-180 motion-reduce:duration-100"
       />
       <Headless.DialogPanel
         transition
-        className="fixed inset-y-0 w-full max-w-88 p-3 transition duration-300 ease-out data-closed:-translate-x-full"
+        className="fixed inset-y-0 left-0 flex w-[min(88vw,calc(320px+env(safe-area-inset-left,0px)))] flex-col bg-ps-shell pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)] shadow-(--shadow-shell) transition-[opacity,transform] duration-240 ease-(--ease-out) data-closed:[transform:translateX(-100%)] data-closed:opacity-0 data-leave:duration-180 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none"
       >
-        <div className="relative h-full">
-          <span className="absolute top-5 right-2 z-10">
-            <Headless.CloseButton
-              as={NavbarItem}
-              aria-label={t("shell.navigation.close")}
-            >
-              <CloseMenuIcon />
-            </Headless.CloseButton>
-          </span>
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-ps-line px-4">
+          <span className="text-sm font-semibold text-ps-text">{label}</span>
+          <Headless.CloseButton
+            className="app-icon-button"
+            aria-label={t("shell.navigation.close")}
+          >
+            <XMarkIcon className="size-5" />
+          </Headless.CloseButton>
+        </div>
+        <div
+          className="min-h-0 flex-1 overscroll-contain"
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest("a[href]")) close();
+          }}
+        >
           {children}
         </div>
       </Headless.DialogPanel>
@@ -56,76 +69,116 @@ function MobileSidebar({
 }
 
 export function SidebarLayout({
-  navbar: _navbar,
+  navbar,
   sidebar,
+  secondaryNavigation,
   fullWidth = false,
   fullBleed = false,
   children,
 }: React.PropsWithChildren<{
   navbar: React.ReactNode;
   sidebar: React.ReactNode;
+  secondaryNavigation?: React.ReactNode;
   fullWidth?: boolean;
   fullBleed?: boolean;
 }>) {
-  let [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
   const { t } = useTranslation();
+  const location = useLocation();
+  const desktop = useSyncExternalStore(
+    subscribeDesktop,
+    getDesktopSnapshot,
+    () => true,
+  );
 
-  // In the desktop app the custom window titlebar owns the top edge, so the
-  // dashboard and sidebar should sit flush against it (no top margin).
-  const hasTitlebar = isTauriApp();
-
-  const mainClassName =
-    "flex min-h-0 flex-1 flex-col lg:min-w-0 lg:pb-4 lg:pl-72 lg:pr-4" +
-    (hasTitlebar ? "" : " lg:pt-4");
-  const contentClassName = fullBleed
-    ? "surface-shell flex min-h-0 grow flex-col overflow-hidden max-lg:overflow-visible max-lg:rounded-none max-lg:border-0 max-lg:shadow-none lg:rounded-[1.75rem]"
-    : "surface-shell flex min-h-0 grow flex-col overflow-hidden max-lg:overflow-visible max-lg:rounded-none max-lg:border-0 max-lg:shadow-none lg:rounded-[1.75rem] lg:p-3";
-  const scrollAreaClassName = fullBleed
-    ? "min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
-    : "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 lg:px-8 lg:py-8";
+  useEffect(() => {
+    setShowSidebar(false);
+    setShowLibrary(false);
+  }, [location.pathname, location.search]);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col bg-ps-bg text-ps-text">
+    <div className="app-shell flex h-full min-h-0 w-full flex-col bg-ps-bg text-ps-text">
       <WindowTitlebar />
-      <div className="relative isolate mx-auto flex min-h-0 flex-1 w-full max-w-[2560px] max-lg:flex-col">
-        {/* Sidebar on desktop */}
-        <div
-          className={
-            "absolute inset-y-0 left-0 z-20 w-72 max-lg:hidden " +
-            (hasTitlebar ? "px-4 pb-4" : "p-4")
-          }
+      <a href="#main-content" className="app-skip-link">
+        {t("shell.navigation.skip")}
+      </a>
+      <header className="app-header flex shrink-0 items-center">
+        <button
+          type="button"
+          onClick={() => setShowSidebar(true)}
+          className="app-icon-button ml-2 shrink-0 lg:hidden"
+          aria-label={t("shell.navigation.open")}
         >
-          {sidebar}
-        </div>
-
-        {/* Sidebar on mobile */}
-        <MobileSidebar open={showSidebar} close={() => setShowSidebar(false)}>
-          {sidebar}
-        </MobileSidebar>
-
-        {/* Navbar on mobile — hamburger only; full nav (incl. logo) is in the slide-out sidebar */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 bg-ps-shell/90 px-3 backdrop-blur-xl lg:hidden">
-          <div className="py-3">
-            <NavbarItem
-              onClick={() => setShowSidebar(true)}
-              aria-label={t("shell.navigation.open")}
-            >
-              <OpenMenuIcon />
-            </NavbarItem>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className={mainClassName}>
-          <div className={contentClassName}>
-            <div className={scrollAreaClassName} data-scroll-container="">
-              <div
-                className={
-                  fullWidth ? "h-full w-full" : "mx-auto min-h-full max-w-7xl"
-                }
+          <Bars3Icon className="size-5" />
+        </button>
+        {navbar}
+      </header>
+      <NavigationDrawer
+        open={showSidebar}
+        close={() => setShowSidebar(false)}
+        label={t("shell.navigation.open")}
+      >
+        {sidebar}
+      </NavigationDrawer>
+      <div className="flex min-h-0 flex-1">
+        {secondaryNavigation && (
+          <>
+            {desktop && (
+              <aside
+                className="app-library-column flex min-h-0 shrink-0 flex-col"
+                aria-label={t("nav.library")}
               >
-                {children}
-              </div>
+                <div className="min-h-0 flex-1">{secondaryNavigation}</div>
+                <Link
+                  to="/settings"
+                  className="flex min-h-12 items-center gap-2 border-t border-ps-line px-5 text-xs text-ps-muted hover:bg-ps-panel hover:text-ps-text active:bg-ps-panel active:text-ps-text"
+                >
+                  <Cog6ToothIcon className="size-4" />
+                  {t("nav.settings")}
+                </Link>
+              </aside>
+            )}
+            {!desktop && (
+              <NavigationDrawer
+                open={showLibrary}
+                close={() => setShowLibrary(false)}
+                label={t("nav.library")}
+              >
+                {secondaryNavigation}
+              </NavigationDrawer>
+            )}
+          </>
+        )}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex min-h-0 min-w-0 flex-1 flex-col outline-none"
+        >
+          {secondaryNavigation && (
+            <div className="flex shrink-0 border-b border-ps-line bg-ps-shell px-3 py-1.5 lg:hidden">
+              <button
+                type="button"
+                className="app-library-toggle"
+                onClick={() => setShowLibrary(true)}
+              >
+                <QueueListIcon className="size-4" />
+                {t("shell.library.browse")}
+              </button>
+            </div>
+          )}
+          <div
+            className={`app-scroll-area min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain ${fullBleed ? "" : "app-page-padding"}`}
+            data-scroll-container=""
+          >
+            <div
+              className={
+                fullWidth || fullBleed
+                  ? "min-h-full w-full"
+                  : "mx-auto min-h-full w-full max-w-[1480px]"
+              }
+            >
+              {children}
             </div>
           </div>
         </main>

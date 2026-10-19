@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router";
 
 const mocks = vi.hoisted(() => ({
   downloads: {} as Record<number, unknown>,
@@ -50,7 +51,11 @@ describe("Downloads page", () => {
   afterEach(cleanup);
 
   it("Delete all skips active cards", async () => {
-    render(<Downloads />);
+    render(
+      <MemoryRouter>
+        <Downloads />
+      </MemoryRouter>,
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Delete all Downloads" }),
     );
@@ -74,7 +79,11 @@ describe("Downloads page", () => {
 
   it("deletes nothing when the confirmation is declined", async () => {
     mocks.confirmPipeline.mockResolvedValueOnce(false);
-    render(<Downloads />);
+    render(
+      <MemoryRouter>
+        <Downloads />
+      </MemoryRouter>,
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Delete all Downloads" }),
     );
@@ -84,7 +93,11 @@ describe("Downloads page", () => {
 
   it("shows the empty state", () => {
     mocks.downloads = {};
-    render(<Downloads />);
+    render(
+      <MemoryRouter>
+        <Downloads />
+      </MemoryRouter>,
+    );
     expect(screen.getByText("No downloads")).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Delete all Downloads" }),

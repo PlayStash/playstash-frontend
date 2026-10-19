@@ -14,7 +14,7 @@ export function InputGroup({
         "has-[[data-slot=icon]:first-child]:[&_input]:pl-10 has-[[data-slot=icon]:last-child]:[&_input]:pr-10 sm:has-[[data-slot=icon]:first-child]:[&_input]:pl-8 sm:has-[[data-slot=icon]:last-child]:[&_input]:pr-8",
         "*:data-[slot=icon]:pointer-events-none *:data-[slot=icon]:absolute *:data-[slot=icon]:top-3 *:data-[slot=icon]:z-10 *:data-[slot=icon]:size-5 sm:*:data-[slot=icon]:top-2.5 sm:*:data-[slot=icon]:size-4",
         "[&>[data-slot=icon]:first-child]:left-3 sm:[&>[data-slot=icon]:first-child]:left-2.5 [&>[data-slot=icon]:last-child]:right-3 sm:[&>[data-slot=icon]:last-child]:right-2.5",
-        "*:data-[slot=icon]:text-zinc-500 dark:*:data-[slot=icon]:text-zinc-400",
+        "*:data-[slot=icon]:text-ps-muted",
       )}
     >
       {children}
@@ -57,7 +57,7 @@ export const Input = forwardRef(function Input(
         // Basic layout
         "relative block w-full",
         // Focus ring
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-2xl after:ring-transparent after:ring-inset sm:focus-within:after:ring-2 sm:focus-within:after:ring-ps-accent-cool",
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-md after:ring-transparent after:ring-inset focus-within:after:ring-2 focus-within:after:ring-ps-accent-cool",
         // Disabled state
         "has-data-disabled:opacity-50",
       ])}
@@ -83,13 +83,14 @@ export const Input = forwardRef(function Input(
               "[&::-webkit-datetime-edit-meridiem-field]:p-0",
             ],
           // Basic layout
-          "relative block w-full appearance-none rounded-2xl px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)]",
-          // Typography
-          "text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6",
-          // Border (transparent by default — no visible gray outline)
-          "border border-transparent",
+          "relative block w-full appearance-none rounded-md px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)]",
+          // Typography: 16px on touch devices so iOS never zooms into the
+          // field; the compact 14px scale only applies with a fine pointer.
+          "text-base/6 text-ps-text placeholder:text-ps-muted sm:pointer-fine:text-sm/6",
+          // Border
+          "border border-ps-line-strong",
           // Background color
-          "bg-ps-panel-strong shadow-sm",
+          "bg-ps-shell",
           // Hide default focus styles
           "focus:outline-hidden",
           // Invalid state
@@ -106,8 +107,8 @@ export const Input = forwardRef(function Input(
           onClick={onClear}
           className={clsx([
             "absolute inset-y-0 right-0 flex items-center pr-2",
-            "text-ps-muted hover:text-ps-text",
-            "focus:outline-hidden",
+            "text-ps-muted hover:text-ps-text active:text-ps-text",
+            "focus:outline-hidden touch-manipulation",
           ])}
           aria-label={t("shell.input.clear")}
           tabIndex={-1}

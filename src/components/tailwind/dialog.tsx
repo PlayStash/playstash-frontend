@@ -31,19 +31,22 @@ export function Dialog({
     <Headless.Dialog {...props}>
       <Headless.DialogBackdrop
         transition
-        className="fixed inset-0 flex w-screen justify-center overflow-y-auto bg-ps-bg/70 px-2 py-2 backdrop-blur-sm transition duration-150 ease-out focus:outline-0 data-closed:opacity-0 data-enter:ease-out data-leave:ease-in sm:px-6 sm:py-8 lg:px-8 lg:py-16"
+        className="fixed inset-0 flex w-screen justify-center overflow-y-auto bg-ps-bg/70 px-2 py-2 transition-opacity duration-220 ease-(--ease-out) focus:outline-0 data-closed:opacity-0 data-leave:duration-150 motion-reduce:duration-100 sm:px-6 sm:py-8 lg:px-8 lg:py-16"
       />
 
-      <div className="fixed inset-0 w-screen overflow-y-auto pt-6 sm:pt-0">
+      <div className="fixed inset-0 w-screen overflow-y-auto overscroll-contain pt-[max(--spacing(6),env(safe-area-inset-top))] sm:pt-0">
         <div className="grid min-h-full grid-rows-[1fr_auto] justify-items-center sm:grid-rows-[1fr_auto_3fr] sm:p-4">
           <Headless.DialogPanel
             transition
             className={clsx(
               className,
               sizes[size],
-              "row-start-2 w-full min-w-0 rounded-t-3xl bg-ps-shell p-(--gutter) shadow-(--shadow-shell) ring-1 ring-ps-line [--gutter:--spacing(8)] sm:mb-auto sm:rounded-2xl forced-colors:outline",
-              "transition duration-150 ease-out will-change-transform data-closed:translate-y-12 data-closed:opacity-0 data-enter:ease-out data-leave:ease-in sm:data-closed:translate-y-0 sm:data-closed:data-enter:scale-95",
-              "max-h-[calc(100vh-2rem)] overflow-y-auto",
+              "row-start-2 w-full min-w-0 rounded-t-xl bg-ps-shell p-(--gutter) shadow-(--shadow-shell) ring-1 ring-ps-line [--gutter:--spacing(8)] sm:mb-auto sm:rounded-lg forced-colors:outline",
+              // Bottom sheet on phones: keep actions clear of the home indicator.
+              "pb-[calc(var(--gutter)+env(safe-area-inset-bottom,0px))] sm:pb-(--gutter)",
+              "origin-center transition-[opacity,transform] duration-220 ease-(--ease-out) data-closed:[transform:translateY(6px)_scale(.98)] data-closed:opacity-0 data-leave:duration-150 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
+              // Track the visible viewport (URL bar, keyboard) and keep scroll inside.
+              "max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain",
             )}
           >
             {children}
@@ -66,7 +69,7 @@ export function DialogTitle({
       {...props}
       className={clsx(
         className,
-        "text-base/6 font-semibold text-balance text-ps-text sm:text-sm/6",
+        "text-lg/7 font-semibold text-balance text-ps-text",
       )}
     />
   );

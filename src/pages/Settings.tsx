@@ -10,7 +10,6 @@ import { PostInstallSettings } from "@/components/PostInstallSettings";
 import { AccountPrivacySettings } from "@/components/AccountPrivacySettings";
 import clsx from "clsx";
 import { useSearchParams } from "react-router";
-import { Divider } from "@tw/divider";
 import { Heading } from "@tw/heading";
 import { Input, InputGroup } from "@tw/input";
 import {
@@ -24,8 +23,14 @@ import { useAppUpdater } from "@/context/AppUpdaterContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { Switch } from "@tw/switch";
 import { Text } from "@/components/tailwind/text";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useIsPresent,
+  type HTMLMotionProps,
+} from "motion/react";
 import {
   isTauriApp,
   isTauriDesktop,
@@ -115,6 +120,7 @@ import {
 import { DownloadExtrasSettings } from "@/components/settings/DownloadExtrasSettings";
 import AccountSettings from "@/components/settings/AccountSettings";
 import { CloudSaveSettings } from "@/components/settings/CloudSaveSettings";
+import "@/styles/workspaces.css";
 
 const AUTOSTART_MINIMIZED_KEY = "tauri_start_minimized";
 const MINIMIZE_ON_GAME_LAUNCH_KEY = "tauri_minimize_on_game_launch";
@@ -361,7 +367,7 @@ function AboutLinkRow({
       className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
     >
       <SettingsLabel title={title} />
-      <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
+      <span className="flex min-w-0 max-w-[60%] items-center gap-1.5 text-sm font-medium text-ps-accent">
         <span className="truncate">{value}</span>
         <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
       </span>
@@ -435,6 +441,21 @@ function localizeSearchEntry(
     keywords: [...entry.keywords, ...englishAliases],
   };
 }
+
+const SettingsPanel = forwardRef<HTMLDivElement, HTMLMotionProps<"div">>(
+  function SettingsPanel(props, ref) {
+    const isPresent = useIsPresent();
+
+    return (
+      <motion.div
+        {...props}
+        ref={ref}
+        inert={!isPresent}
+        aria-hidden={isPresent ? undefined : true}
+      />
+    );
+  },
+);
 
 export default function Settings() {
   const { t, locale } = useTranslation();
@@ -522,9 +543,9 @@ export default function Settings() {
   const [ignoreSearch, setIgnoreSearch] = useState("");
   // Deep-link support: `/settings?section=downloads` opens a specific section.
   const [searchParams] = useSearchParams();
-  // `null` shows the master list of settings areas; a value drills into it.
+  // The account opens first; `null` opens settings search and the area index.
   const [activeCategory, setActiveCategory] = useState<SettingsCategory | null>(
-    null,
+    "account",
   );
   useEffect(() => {
     const raw = searchParams.get("section");
@@ -543,7 +564,7 @@ export default function Settings() {
       (BUILT_IN_CATEGORIES.has(section) ||
         visibleCategorySections(section, { isTauri, isDesktopApp, isLinux })
           .length > 0);
-    setActiveCategory(available ? section : null);
+    setActiveCategory(available ? section : "account");
   }, [searchParams, isTauri, isDesktopApp, isLinux]);
   // Settings search: free-text query, the matched settings, and the target we
   // scroll/highlight to when a result is chosen.
@@ -628,6 +649,26 @@ export default function Settings() {
       return false;
     }
   });
+  const navigationRef = useRef<HTMLElement>(null);
+  // Below 768px the navigation is a horizontal strip: scroll the selected
+  // entry into view (horizontally only, never the page) when it changes.
+  useEffect(() => {
+    const nav = navigationRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    const current = nav.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!current) return;
+    const start = current.offsetLeft - nav.offsetLeft;
+    const end = start + current.offsetWidth;
+    if (start >= nav.scrollLeft && end <= nav.scrollLeft + nav.clientWidth)
+      return;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    nav.scrollTo?.({
+      left: Math.max(0, start - 16),
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [activeCategory]);
   const versionClickCount = useRef(0);
   const versionClickTimer = useRef<number | null>(null);
   const [editingRootId, setEditingRootId] = useState<string | null>(null);
@@ -1255,24 +1296,17 @@ export default function Settings() {
     searchResultCategories.includes(c),
   );
 
-  const renderCategoryRow = (id: SettingsCategory, index: number) => {
+  const renderCategoryRow = (id: SettingsCategory) => {
     const meta = CATEGORY_META[id];
     const Icon = meta.icon;
     return (
-      <motion.button
+      <button
         key={id}
         type="button"
         onClick={() => setActiveCategory(id)}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          delay: 0.05 + index * 0.04,
-          duration: 0.22,
-          ease: [0.23, 1, 0.32, 1],
-        }}
-        className="group flex w-full min-h-12 cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
+        className="settings-overview-link group"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ps-panel-soft text-ps-accent ring-1 ring-ps-line transition-colors group-hover:bg-ps-accent/15">
+        <span>
           <Icon className="size-4" />
         </span>
         <SettingsLabel
@@ -1280,7 +1314,7 @@ export default function Settings() {
           description={t(meta.description)}
         />
         <ChevronRightIcon className="size-4 shrink-0 text-ps-muted" />
-      </motion.button>
+      </button>
     );
   };
 
@@ -1311,1506 +1345,1604 @@ export default function Settings() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="flex min-h-full flex-col gap-6">
-        {activeCategory !== null && (
-          <BackButton onClick={() => setActiveCategory(null)} />
-        )}
-        <div className="space-y-2">
-          <Heading>{t("nav.settings")}</Heading>
-          <Text className="max-w-2xl">{t("settings.page.subtitle")}</Text>
+      <div className="ps-workspace flex min-h-full flex-col gap-6">
+        <div className="workspace-heading">
+          <div className="space-y-2">
+            <Heading>{t("nav.settings")}</Heading>
+            <Text className="max-w-2xl">{t("settings.page.subtitle")}</Text>
+          </div>
+          {activeCategory !== null && (
+            <BackButton onClick={() => setActiveCategory(null)} />
+          )}
         </div>
-        <Divider className="border-ps-line/80" />
-
-        <div className="w-full max-w-3xl">
-          <AnimatePresence mode="wait" initial={false}>
-            {activeCategory === null ? (
-              <motion.div
-                key="overview"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                className="space-y-6"
-              >
-                <SettingsGroup>
-                  <SettingsRow>
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="min-w-0 flex-1">
-                        <InputGroup>
-                          <MagnifyingGlassIcon data-slot="icon" />
-                          <Input
-                            type="search"
-                            value={searchQuery}
-                            onChange={(e: any) =>
-                              setSearchQuery(e.target.value)
-                            }
-                            onKeyDown={(e: any) => {
-                              if (e.key === "Escape") {
-                                setSearchQuery("");
-                              }
-                            }}
-                            placeholder={t("settings.search.placeholder")}
-                            aria-label={t("settings.search.ariaLabel")}
-                          />
-                        </InputGroup>
-                      </div>
-                      {isSearching && (
-                        <button
-                          type="button"
-                          onClick={() => setSearchQuery("")}
-                          className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
-                          aria-label={t("settings.search.clear")}
-                        >
-                          <XMarkIcon className="size-4" />
-                        </button>
-                      )}
-                    </div>
-                  </SettingsRow>
-                </SettingsGroup>
-
-                {isSearching ? (
-                  <>
-                    <SettingsGroup
-                      caption={t("settings.search.results")}
-                      description={
-                        searchResults.length > 0
-                          ? fillTemplate(
-                              t(
-                                searchResults.length === 1
-                                  ? "settings.search.resultCount.one"
-                                  : "settings.search.resultCount.other",
-                              ),
-                              {
-                                count: searchResults.length,
-                                query: searchQuery.trim(),
-                              },
-                            )
-                          : undefined
-                      }
-                    >
-                      {searchResults.length === 0 ? (
-                        <SettingsRow>
-                          <div className="flex items-center gap-2 text-sm text-ps-muted">
-                            <MagnifyingGlassIcon className="size-4 shrink-0" />
-                            {fillTemplate(t("settings.search.empty"), {
-                              query: searchQuery.trim(),
-                            })}
-                          </div>
-                        </SettingsRow>
-                      ) : (
-                        searchResults.map((result, i) => (
-                          <motion.button
-                            key={result.id}
-                            type="button"
-                            onClick={() => openSearchResult(result)}
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                              delay: 0.02 + i * 0.02,
-                              duration: 0.16,
-                              ease: [0.23, 1, 0.32, 1],
-                            }}
-                            className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-ps-text">
-                                {result.title}
-                              </p>
-                              {result.description && (
-                                <p className="mt-0.5 text-xs leading-5 text-ps-muted">
-                                  {result.description}
-                                </p>
-                              )}
-                              <p className="mt-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ps-accent">
-                                {t(CATEGORY_META[result.category].label)}
-                              </p>
-                            </div>
-                            <ChevronRightIcon className="size-4 shrink-0 text-ps-muted transition-transform group-hover:translate-x-0.5" />
-                          </motion.button>
-                        ))
-                      )}
-                    </SettingsGroup>
-
-                    {searchResultCategories.length > 0 && (
-                      <SettingsGroup caption={t("settings.search.areas")}>
-                        {orderedSearchCategories.map(renderCategoryRow)}
-                      </SettingsGroup>
-                    )}
-                  </>
-                ) : (
+        <div className="settings-workspace">
+          <nav
+            ref={navigationRef}
+            className="settings-navigation"
+            aria-label={t("nav.settings")}
+          >
+            <button
+              type="button"
+              aria-current={activeCategory === null ? "page" : undefined}
+              onClick={() => setActiveCategory(null)}
+            >
+              <MagnifyingGlassIcon />
+              {t("settings.search.ariaLabel")}
+            </button>
+            {navCategories.map((id) => {
+              const Icon = CATEGORY_META[id].icon;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-current={activeCategory === id ? "page" : undefined}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setActiveCategory(id);
+                  }}
+                >
+                  <Icon />
+                  {t(CATEGORY_META[id].label)}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="settings-content relative">
+            <AnimatePresence mode="popLayout" initial={false}>
+              {activeCategory === null ? (
+                <SettingsPanel
+                  key="overview"
+                  initial={{ opacity: 0.72, transform: "translateY(4px)" }}
+                  animate={{
+                    opacity: 1,
+                    transform: "translateY(0px)",
+                    pointerEvents: "auto",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    pointerEvents: "none",
+                    transition: {
+                      duration: 0.1,
+                      ease: [0.23, 1, 0.32, 1],
+                    },
+                  }}
+                  transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                  className="w-full space-y-6"
+                >
                   <SettingsGroup>
-                    {navCategories.map(renderCategoryRow)}
-                  </SettingsGroup>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key={activeCategory}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                className="space-y-6"
-              >
-                {activeCategory === "downloads" && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={FolderArrowDownIcon}
-                      title={t("settings.category.downloads.label")}
-                      description={t("settings.downloads.description")}
-                    />
-
-                    {isTauri && (
-                      <SettingsGroup
-                        id="setting-downloads-locations"
-                        className={rowHighlight("downloads-locations")}
-                        caption={t("settings.downloads.locations.caption")}
-                        description={t(
-                          "settings.downloads.locations.description",
-                        )}
-                      >
-                        {rootPaths.length === 0 && (
-                          <SettingsRow>
-                            <div className="flex items-center gap-2 text-sm text-ps-muted">
-                              <FolderIcon className="size-4 shrink-0" />
-                              {t("settings.downloads.locations.empty")}
-                            </div>
-                          </SettingsRow>
-                        )}
-
-                        {rootPaths.map((root) => {
-                          const displayLabel =
-                            root.label.trim() ||
-                            root.path.split(/[\\/]/).filter(Boolean).pop() ||
-                            t("settings.downloads.locations.unnamed");
-                          const isRenaming = editingRootId === root.id;
-                          return (
-                            <SettingsRow key={root.id}>
-                              <div className="min-w-0 flex-1">
-                                {isRenaming ? (
-                                  <Input
-                                    type="text"
-                                    value={editingLabel}
-                                    autoFocus
-                                    onChange={(e: any) =>
-                                      setEditingLabel(e.target.value)
-                                    }
-                                    onBlur={() => commitRenameRootPath(root.id)}
-                                    onKeyDown={(e: any) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        commitRenameRootPath(root.id);
-                                      } else if (e.key === "Escape") {
-                                        cancelRenameRootPath();
-                                      }
-                                    }}
-                                    placeholder={t(
-                                      "settings.downloads.locations.labelPlaceholder",
-                                    )}
-                                    className="[&_input]:h-9 [&_input]:py-1 [&_input]:text-sm [&_input]:rounded-xl"
-                                    aria-label={t(
-                                      "settings.downloads.locations.labelAria",
-                                    )}
-                                  />
-                                ) : (
-                                  <div className="flex min-w-0 items-center gap-1.5">
-                                    <span className="min-w-0 truncate text-sm font-medium text-ps-text">
-                                      {displayLabel}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => startRenameRootPath(root)}
-                                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text cursor-pointer"
-                                      aria-label={fillTemplate(
-                                        t(
-                                          "settings.downloads.locations.rename",
-                                        ),
-                                        { name: displayLabel },
-                                      )}
-                                    >
-                                      <PencilSquareIcon className="size-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                                <p
-                                  className="mt-0.5 truncate text-xs text-ps-muted"
-                                  title={root.path}
-                                >
-                                  {root.path}
-                                </p>
-                              </div>
-                              <div className="flex shrink-0 items-center gap-1">
-                                <Button
-                                  type="button"
-                                  color="zinc"
-                                  className="text-xs"
-                                  onClick={() => void handleOpenRootPath(root)}
-                                  title={t(
-                                    "settings.downloads.locations.openTitle",
-                                  )}
-                                >
-                                  <FolderOpenIcon className="size-3.5" />
-                                  {t("common.open")}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  color="zinc"
-                                  className="text-xs"
-                                  onClick={() => handleBrowseRootPath(root.id)}
-                                >
-                                  <FolderArrowDownIcon className="size-3.5" />
-                                  {t("settings.downloads.locations.choose")}
-                                </Button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveRootPath(root.id)}
-                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
-                                  aria-label={t(
-                                    "settings.downloads.locations.remove",
-                                  )}
-                                >
-                                  <XMarkIcon className="size-4" />
-                                </button>
-                              </div>
-                            </SettingsRow>
-                          );
-                        })}
-
-                        <button
-                          type="button"
-                          onClick={handleAddRootPath}
-                          className="flex min-h-12 w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-ps-accent transition-colors hover:bg-ps-panel-soft cursor-pointer"
-                        >
-                          <PlusIcon className="size-4" />
-                          {t("settings.downloads.locations.add")}
-                        </button>
-                      </SettingsGroup>
-                    )}
-
-                    <SettingsGroup
-                      id="setting-downloads-speed-limit"
-                      className={rowHighlight("downloads-speed-limit")}
-                      caption={t("settings.downloads.speed.caption")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.downloads.speedLimit.title")}
-                          description={t(
-                            "settings.downloads.speedLimit.description",
-                          )}
-                        />
-                        {speedLimitControl}
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    {isTauri && (
-                      <SettingsGroup
-                        caption={t("settings.downloads.after.caption")}
-                      >
-                        <PostInstallSettings />
-                        <SettingsRow
-                          id="setting-downloads-auto-extract"
-                          className={rowHighlight("downloads-auto-extract")}
-                        >
-                          <SettingsLabel
-                            title={t("settings.downloads.autoExtract.title")}
-                            description={t(
-                              "settings.downloads.autoExtract.description",
-                            )}
-                          />
-                          <Switch
-                            name="autoExtract"
-                            color="indigo"
-                            aria-label={t(
-                              "settings.downloads.autoExtract.ariaLabel",
-                            )}
-                            checked={autoExtract}
-                            onChange={(v: boolean) => setAutoExtract(v)}
-                          />
-                        </SettingsRow>
-                        <SettingsRow
-                          id="setting-downloads-auto-install"
-                          className={rowHighlight("downloads-auto-install")}
-                        >
-                          <SettingsLabel
-                            title={t("settings.downloads.autoInstall.title")}
-                            description={t(
-                              "settings.downloads.autoInstall.description",
-                            )}
-                          />
-                          <Switch
-                            name="autoInstall"
-                            color="indigo"
-                            aria-label={t(
-                              "settings.downloads.autoInstall.ariaLabel",
-                            )}
-                            checked={autoInstall}
-                            onChange={(v: boolean) => setAutoInstall(v)}
-                          />
-                        </SettingsRow>
-                        <SettingsRow
-                          id="setting-downloads-auto-delete-source"
-                          className={rowHighlight(
-                            "downloads-auto-delete-source",
-                          )}
-                        >
-                          <SettingsLabel
-                            title={t(
-                              "settings.downloads.autoDeleteSource.title",
-                            )}
-                            description={t(
-                              "settings.downloads.autoDeleteSource.description",
-                            )}
-                          />
-                          <Switch
-                            name="autoDeleteSource"
-                            color="indigo"
-                            aria-label={t(
-                              "settings.downloads.autoDeleteSource.ariaLabel",
-                            )}
-                            checked={autoDeleteSource}
-                            onChange={(v: boolean) => setAutoDeleteSource(v)}
-                          />
-                        </SettingsRow>
-                      </SettingsGroup>
-                    )}
-                  </>
-                )}
-
-                {activeCategory === "startup" && isTauri && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={ComputerDesktopIcon}
-                      title={t("settings.category.startup.label")}
-                      description={t("settings.startup.description")}
-                    />
-                    <SettingsGroup
-                      id="setting-startup-autostart"
-                      className={rowHighlight("startup-autostart")}
-                      caption={t("settings.startup.onLogin.caption")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.startup.autostart.title")}
-                          description={t(
-                            "settings.startup.autostart.description",
-                          )}
-                        />
-                        <Switch
-                          name="autostart"
-                          color="indigo"
-                          aria-label={t("settings.startup.autostart.ariaLabel")}
-                          checked={autostartEnabled ?? false}
-                          disabled={autostartEnabled === null}
-                          onChange={async (v: boolean) => {
-                            setAutostartEnabled(v);
-                            try {
-                              const { enable, disable } =
-                                await import("@tauri-apps/plugin-autostart");
-                              if (v) {
-                                await enable();
-                              } else {
-                                await disable();
-                                // Force start-minimized off when autostart is disabled
-                                setStartMinimized(false);
+                    <SettingsRow>
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <InputGroup>
+                            <MagnifyingGlassIcon data-slot="icon" />
+                            <Input
+                              type="search"
+                              value={searchQuery}
+                              onChange={(e: any) =>
+                                setSearchQuery(e.target.value)
                               }
-                            } catch (e) {
-                              console.error("Failed to update autostart:", e);
-                              setAutostartEnabled(!v); // Revert on failure
-                            }
-                          }}
-                        />
-                      </SettingsRow>
-                    </SettingsGroup>
+                              onKeyDown={(e: any) => {
+                                if (e.key === "Escape") {
+                                  setSearchQuery("");
+                                }
+                              }}
+                              placeholder={t("settings.search.placeholder")}
+                              aria-label={t("settings.search.ariaLabel")}
+                            />
+                          </InputGroup>
+                        </div>
+                        {isSearching && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery("")}
+                            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
+                            aria-label={t("settings.search.clear")}
+                          >
+                            <XMarkIcon className="size-4" />
+                          </button>
+                        )}
+                      </div>
+                    </SettingsRow>
+                  </SettingsGroup>
 
-                    <SettingsGroup
-                      id="setting-startup-start-minimized"
-                      className={rowHighlight("startup-start-minimized")}
-                      caption={t("settings.caption.window")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.startup.startMinimized.title")}
-                          description={t(
-                            "settings.startup.startMinimized.description",
-                          )}
-                        />
-                        <Switch
-                          name="startMinimized"
-                          color="indigo"
-                          aria-label={t(
-                            "settings.startup.startMinimized.ariaLabel",
-                          )}
-                          checked={startMinimized}
-                          disabled={!autostartEnabled}
-                          onChange={(v: boolean) => setStartMinimized(v)}
-                        />
-                      </SettingsRow>
-                    </SettingsGroup>
-                  </>
-                )}
-
-                {activeCategory === "games" && isTauri && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={GamepadIcon}
-                      title={t("settings.category.games.label")}
-                      description={t("settings.games.description")}
-                    />
-                    <SettingsGroup
-                      id="setting-games-minimize-on-launch"
-                      className={rowHighlight("games-minimize-on-launch")}
-                      caption={t("settings.games.whilePlaying.caption")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.games.minimizeOnLaunch.title")}
-                          description={t(
-                            "settings.games.minimizeOnLaunch.description",
-                          )}
-                        />
-                        <Switch
-                          name="minimizeOnGameLaunch"
-                          color="indigo"
-                          aria-label={t(
-                            "settings.games.minimizeOnLaunch.title",
-                          )}
-                          checked={minimizeOnGameLaunch}
-                          onChange={(v: boolean) => setMinimizeOnGameLaunch(v)}
-                        />
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-games-ignore-list"
-                      className={rowHighlight("games-ignore-list")}
-                      caption={t("settings.games.ignoreList.caption")}
-                      description={t("settings.games.ignoreList.description")}
-                    >
-                      {ignoreList.length === 0 && (
-                        <SettingsRow>
-                          <div className="flex items-center gap-2 text-sm text-ps-muted">
-                            <EyeSlashIcon className="size-4 shrink-0" />
-                            {t("settings.games.ignoreList.empty")}
-                          </div>
-                        </SettingsRow>
-                      )}
-                      {ignoreList.length > 0 && (
-                        <SettingsRow>
-                          <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <div className="min-w-0 flex-1">
-                              <InputGroup>
-                                <MagnifyingGlassIcon data-slot="icon" />
-                                <Input
-                                  type="search"
-                                  value={ignoreSearch}
-                                  onChange={(e: any) =>
-                                    setIgnoreSearch(e.target.value)
-                                  }
-                                  placeholder={t(
-                                    "settings.games.ignoreList.searchPlaceholder",
-                                  )}
-                                  aria-label={t(
-                                    "settings.games.ignoreList.searchAria",
-                                  )}
-                                />
-                              </InputGroup>
-                            </div>
-                            <span className="shrink-0 whitespace-nowrap text-xs text-ps-muted">
-                              {fillTemplate(
-                                t("settings.games.ignoreList.count"),
+                  {isSearching ? (
+                    <>
+                      <SettingsGroup
+                        caption={t("settings.search.results")}
+                        description={
+                          searchResults.length > 0
+                            ? fillTemplate(
+                                t(
+                                  searchResults.length === 1
+                                    ? "settings.search.resultCount.one"
+                                    : "settings.search.resultCount.other",
+                                ),
                                 {
-                                  shown: filteredIgnoreList.length,
-                                  total: ignoreList.length,
+                                  count: searchResults.length,
+                                  query: searchQuery.trim(),
                                 },
-                              )}
-                            </span>
-                          </div>
-                        </SettingsRow>
-                      )}
-                      {filteredIgnoreList.length === 0 &&
-                        ignoreList.length > 0 && (
+                              )
+                            : undefined
+                        }
+                      >
+                        {searchResults.length === 0 ? (
                           <SettingsRow>
                             <div className="flex items-center gap-2 text-sm text-ps-muted">
                               <MagnifyingGlassIcon className="size-4 shrink-0" />
-                              {fillTemplate(
-                                t("settings.games.ignoreList.noMatches"),
-                                {
-                                  query: ignoreSearch.trim(),
-                                },
-                              )}
+                              {fillTemplate(t("settings.search.empty"), {
+                                query: searchQuery.trim(),
+                              })}
                             </div>
                           </SettingsRow>
-                        )}
-                      {filteredIgnoreList.length > 0 && (
-                        <div className="max-h-80 divide-y divide-ps-line overflow-y-auto">
-                          {filteredIgnoreList.map((name) => (
-                            <SettingsRow key={name}>
-                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ps-text">
-                                {name}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveIgnore(name)}
-                                className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
-                                aria-label={fillTemplate(
-                                  t("settings.games.ignoreList.remove"),
-                                  { name },
-                                )}
-                              >
-                                <XMarkIcon className="size-4" />
-                              </button>
-                            </SettingsRow>
-                          ))}
-                        </div>
-                      )}
-                      <SettingsRow>
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <Input
-                            type="text"
-                            value={newIgnore}
-                            onChange={(e: any) => setNewIgnore(e.target.value)}
-                            onKeyDown={(e: any) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleAddIgnore();
-                              }
-                            }}
-                            placeholder={t(
-                              "settings.games.ignoreList.placeholder",
-                            )}
-                            className="min-w-0 flex-1"
-                            aria-label={t(
-                              "settings.games.ignoreList.inputAria",
-                            )}
-                          />
-                          <Button
-                            type="button"
-                            color="indigo"
-                            className="shrink-0 px-3"
-                            onClick={handleAddIgnore}
-                          >
-                            <PlusIcon className="size-4" />
-                            {t("common.add")}
-                          </Button>
-                        </div>
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-games-launch-logs"
-                      className={rowHighlight("games-launch-logs")}
-                      caption={t("settings.games.launchLogs.title")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.games.alwaysShowLaunchLogs.title")}
-                          description={t(
-                            "settings.games.alwaysShowLaunchLogs.description",
-                          )}
-                        />
-                        <Switch
-                          name="alwaysShowLaunchLogs"
-                          color="indigo"
-                          aria-label={t(
-                            "settings.games.alwaysShowLaunchLogs.title",
-                          )}
-                          checked={alwaysShowLaunchLogs}
-                          onChange={(v: boolean) => setAlwaysShowLaunchLogs(v)}
-                        />
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.games.launchLogs.title")}
-                          description={t(
-                            "settings.games.launchLogs.description",
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          color="indigo"
-                          className="shrink-0 px-3"
-                          onClick={async () => {
-                            try {
-                              await openLaunchLogWindow();
-                            } catch (e) {
-                              console.error("Failed to open launch log", e);
-                            }
-                          }}
-                        >
-                          {t("common.open")}
-                        </Button>
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    {isLinux && (
-                      <SettingsGroup
-                        id="setting-games-wine-prefix"
-                        className={rowHighlight("games-wine-prefix")}
-                        caption="Wine / Proton"
-                        description={t("settings.games.winePrefix.description")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t("settings.games.winePrefix.title")}
-                            description={t(
-                              "settings.games.winePrefix.titleDescription",
-                            )}
-                          />
-                          <Button
-                            outline
-                            onClick={() => void handleSelectWinePrefix()}
-                          >
-                            <FolderOpenIcon className="size-4" />
-                            {t("settings.games.winePrefix.choose")}
-                          </Button>
-                        </SettingsRow>
-                        {winePrefixBase && (
-                          <SettingsRow>
-                            <div className="flex min-w-0 flex-1 items-center gap-2">
-                              <span className="min-w-0 flex-1 truncate text-sm text-ps-muted">
-                                {winePrefixBase}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => void handleClearWinePrefix()}
-                                className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
-                                aria-label={t(
-                                  "settings.games.winePrefix.clear",
-                                )}
-                              >
-                                <XMarkIcon className="size-4" />
-                              </button>
-                            </div>
-                          </SettingsRow>
-                        )}
-                      </SettingsGroup>
-                    )}
-                  </>
-                )}
-
-                {activeCategory === "privacy" && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={ShieldCheckIcon}
-                      title={t("settings.category.privacy.label")}
-                      description={t("settings.privacy.description")}
-                    />
-                    <SettingsGroup>
-                      <AccountPrivacySettings />
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.privacy.analytics.title")}
-                          description={t(
-                            isTauri
-                              ? "settings.privacy.analytics.descriptionDesktop"
-                              : "settings.privacy.analytics.descriptionWeb",
-                          )}
-                        />
-                        <Switch
-                          name="analyticsConsent"
-                          color="indigo"
-                          aria-label={t("settings.privacy.analytics.ariaLabel")}
-                          checked={analyticsConsent}
-                          onChange={(v: boolean) => {
-                            setAnalyticsEnabled(v);
-                            setAnalyticsConsent(v);
-                          }}
-                        />
-                      </SettingsRow>
-                    </SettingsGroup>
-                  </>
-                )}
-
-                {activeCategory === "appearance" && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={SwatchIcon}
-                      title={t("appearance.title")}
-                      description={t("appearance.description")}
-                    />
-                    <SettingsGroup
-                      id="setting-appearance-language"
-                      className={rowHighlight("appearance-language")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("language.title")}
-                          description={t("language.description")}
-                        />
-                        <div className="w-44 shrink-0">
-                          <LanguagePicker />
-                        </div>
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-appearance-theme"
-                      className={rowHighlight("appearance-theme")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("appearance.theme")}
-                          description={t("appearance.themeDescription")}
-                        />
-                        <div className="w-40 shrink-0">
-                          <ThemeSelect />
-                        </div>
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-appearance-zoom"
-                      className={rowHighlight("appearance-zoom")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("appearance.zoom")}
-                          description={t("appearance.zoomDescription")}
-                        />
-                        <div className="w-44 shrink-0">
-                          <ZoomControl />
-                        </div>
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-appearance-streamer-mode"
-                      className={rowHighlight("appearance-streamer-mode")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.appearance.streamerMode.title")}
-                          description={t(
-                            "settings.appearance.streamerMode.description",
-                          )}
-                        />
-                        <div className="shrink-0">
-                          <StreamerModeToggle />
-                        </div>
-                      </SettingsRow>
-                    </SettingsGroup>
-
-                    {webkitSupported && renderingDiagnostics?.webkit && (
-                      <SettingsGroup
-                        id="setting-rendering-smooth-scroll"
-                        className={clsx(
-                          rowHighlight("rendering-smooth-scroll"),
-                          rowHighlight("rendering-hw-accel"),
-                        )}
-                        caption={t("settings.appearance.rendering.caption")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t("settings.appearance.smoothScroll.title")}
-                            description={t(
-                              "settings.appearance.smoothScroll.description",
-                            )}
-                          />
-                          <Switch
-                            name="webkitSmoothScroll"
-                            color="indigo"
-                            aria-label={t(
-                              "settings.appearance.smoothScroll.ariaLabel",
-                            )}
-                            checked={webkitSmoothScroll}
-                            onChange={(v: boolean) =>
-                              void handleSetWebkitSmoothScroll(v)
-                            }
-                          />
-                        </SettingsRow>
-                        <SettingsRow id="setting-rendering-hw-accel">
-                          <SettingsLabel
-                            title={t("settings.appearance.hwAccel.title")}
-                            description={t(
-                              "settings.appearance.hwAccel.description",
-                            )}
-                          />
-                          <div className="w-36 shrink-0">
-                            <Listbox
-                              name="webkitHwAccel"
-                              value={webkitHwAccel}
-                              onChange={(v) =>
-                                void handleSetWebkitHwAccel(String(v))
-                              }
+                        ) : (
+                          searchResults.map((result) => (
+                            <button
+                              key={result.id}
+                              type="button"
+                              onClick={() => openSearchResult(result)}
+                              className="group flex min-h-12 w-full cursor-pointer touch-manipulation items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ps-accent-cool active:bg-ps-panel-strong"
                             >
-                              <ListboxOption value="Never">
-                                <ListboxLabel>
-                                  {t("settings.appearance.hwAccel.never")}
-                                </ListboxLabel>
-                              </ListboxOption>
-                              <ListboxOption value="OnDemand">
-                                <ListboxLabel>
-                                  {t("settings.appearance.hwAccel.onDemand")}
-                                </ListboxLabel>
-                              </ListboxOption>
-                              <ListboxOption value="Always">
-                                <ListboxLabel>
-                                  {t("settings.appearance.hwAccel.always")}
-                                </ListboxLabel>
-                              </ListboxOption>
-                            </Listbox>
-                          </div>
-                        </SettingsRow>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium break-words text-ps-text">
+                                  {result.title}
+                                </p>
+                                {result.description && (
+                                  <p className="mt-0.5 text-xs leading-5 text-ps-muted">
+                                    {result.description}
+                                  </p>
+                                )}
+                                <p className="mt-0.5 text-[11px] font-medium text-ps-accent">
+                                  {t(CATEGORY_META[result.category].label)}
+                                </p>
+                              </div>
+                              <ChevronRightIcon className="size-4 shrink-0 text-ps-muted transition-transform group-hover:translate-x-0.5" />
+                            </button>
+                          ))
+                        )}
                       </SettingsGroup>
-                    )}
-                  </>
-                )}
 
-                {activeCategory === "sound" && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={SpeakerWaveIcon}
-                      title={t("settings.category.sound.label")}
-                      description={t("settings.sound.description")}
-                    />
-                    <SettingsGroup
-                      id="setting-sound-volume"
-                      className={rowHighlight("sound-volume")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.sound.volume.title")}
-                          description={t("settings.sound.volume.description")}
-                        />
-                        <div className="w-44 shrink-0">
-                          <VolumeControl />
-                        </div>
-                      </SettingsRow>
+                      {searchResultCategories.length > 0 && (
+                        <SettingsGroup caption={t("settings.search.areas")}>
+                          {orderedSearchCategories.map(renderCategoryRow)}
+                        </SettingsGroup>
+                      )}
+                    </>
+                  ) : (
+                    <SettingsGroup>
+                      {navCategories.map(renderCategoryRow)}
                     </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-sound-test"
-                      className={rowHighlight("sound-test")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.sound.test.title")}
-                          description={t("settings.sound.test.description")}
-                        />
-                        <Button
-                          color="zinc"
-                          onClick={() => void playSound("pop")}
-                          className="shrink-0"
-                        >
-                          <SpeakerWaveIcon
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          />
-                          {t("settings.sound.test.play")}
-                        </Button>
-                      </SettingsRow>
-                    </SettingsGroup>
-                  </>
-                )}
-
-                {activeCategory === "developer" &&
-                  (import.meta.env.DEV || devToolsUnlocked) && (
+                  )}
+                </SettingsPanel>
+              ) : (
+                <SettingsPanel
+                  key={activeCategory}
+                  initial={{ opacity: 0.72, transform: "translateY(4px)" }}
+                  animate={{
+                    opacity: 1,
+                    transform: "translateY(0px)",
+                    pointerEvents: "auto",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    pointerEvents: "none",
+                    transition: {
+                      duration: 0.1,
+                      ease: [0.23, 1, 0.32, 1],
+                    },
+                  }}
+                  transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                  className="w-full space-y-6"
+                >
+                  {activeCategory === "downloads" && (
                     <>
                       <SettingsSectionHeader
-                        icon={ExclamationTriangleIcon}
-                        title={t("settings.category.developer.label")}
-                        description={t(
-                          "settings.category.developer.description",
-                        )}
+                        icon={FolderArrowDownIcon}
+                        title={t("settings.category.downloads.label")}
+                        description={t("settings.downloads.description")}
                       />
-                      <SettingsGroup
-                        id="setting-developer-open-devtools"
-                        className={rowHighlight("developer-open-devtools")}
-                        caption={t("settings.caption.window")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t("settings.developer.devtools.title")}
-                            description={t(
-                              "settings.developer.devtools.description",
-                            )}
-                          />
-                          <Button
-                            type="button"
-                            color="indigo"
-                            className="shrink-0"
-                            onClick={() => void handleOpenDevTools()}
-                          >
-                            {t("settings.developer.devtools.button")}
-                          </Button>
-                        </SettingsRow>
-                      </SettingsGroup>
 
-                      {!isDesktopApp && (
+                      {isTauri && (
                         <SettingsGroup
-                          id="setting-developer-simulate-desktop"
-                          className={rowHighlight("developer-simulate-desktop")}
+                          id="setting-downloads-locations"
+                          className={rowHighlight("downloads-locations")}
+                          caption={t("settings.downloads.locations.caption")}
+                          description={t(
+                            "settings.downloads.locations.description",
+                          )}
                         >
-                          <SettingsRow>
-                            <SettingsLabel
-                              title={t(
-                                "settings.developer.simulateDesktop.title",
-                              )}
-                              description={t(
-                                "settings.developer.simulateDesktop.description",
-                              )}
-                            />
-                            <Switch
-                              name="simulateDesktop"
-                              color="indigo"
-                              aria-label={t(
-                                "settings.developer.simulateDesktop.ariaLabel",
-                              )}
-                              checked={isDebugTauriOverride()}
-                              onChange={(v: boolean) => {
-                                setDebugTauriOverride(v);
-                                window.location.reload();
-                              }}
-                            />
-                          </SettingsRow>
+                          {rootPaths.length === 0 && (
+                            <SettingsRow>
+                              <div className="flex items-center gap-2 text-sm text-ps-muted">
+                                <FolderIcon className="size-4 shrink-0" />
+                                {t("settings.downloads.locations.empty")}
+                              </div>
+                            </SettingsRow>
+                          )}
+
+                          {rootPaths.map((root) => {
+                            const displayLabel =
+                              root.label.trim() ||
+                              root.path.split(/[\\/]/).filter(Boolean).pop() ||
+                              t("settings.downloads.locations.unnamed");
+                            const isRenaming = editingRootId === root.id;
+                            return (
+                              <SettingsRow key={root.id}>
+                                <div className="min-w-0 flex-1">
+                                  {isRenaming ? (
+                                    <Input
+                                      type="text"
+                                      value={editingLabel}
+                                      autoFocus
+                                      onChange={(e: any) =>
+                                        setEditingLabel(e.target.value)
+                                      }
+                                      onBlur={() =>
+                                        commitRenameRootPath(root.id)
+                                      }
+                                      onKeyDown={(e: any) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          commitRenameRootPath(root.id);
+                                        } else if (e.key === "Escape") {
+                                          cancelRenameRootPath();
+                                        }
+                                      }}
+                                      placeholder={t(
+                                        "settings.downloads.locations.labelPlaceholder",
+                                      )}
+                                      className="[&_input]:h-9 [&_input]:py-1 [&_input]:text-sm [&_input]:rounded-md"
+                                      aria-label={t(
+                                        "settings.downloads.locations.labelAria",
+                                      )}
+                                    />
+                                  ) : (
+                                    <div className="flex min-w-0 items-center gap-1.5">
+                                      <span className="min-w-0 truncate text-sm font-medium text-ps-text">
+                                        {displayLabel}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          startRenameRootPath(root)
+                                        }
+                                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text cursor-pointer"
+                                        aria-label={fillTemplate(
+                                          t(
+                                            "settings.downloads.locations.rename",
+                                          ),
+                                          { name: displayLabel },
+                                        )}
+                                      >
+                                        <PencilSquareIcon className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <p
+                                    className="mt-0.5 truncate text-xs text-ps-muted"
+                                    title={root.path}
+                                  >
+                                    {root.path}
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    color="zinc"
+                                    className="text-xs"
+                                    onClick={() =>
+                                      void handleOpenRootPath(root)
+                                    }
+                                    title={t(
+                                      "settings.downloads.locations.openTitle",
+                                    )}
+                                  >
+                                    <FolderOpenIcon className="size-3.5" />
+                                    {t("common.open")}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    color="zinc"
+                                    className="text-xs"
+                                    onClick={() =>
+                                      handleBrowseRootPath(root.id)
+                                    }
+                                  >
+                                    <FolderArrowDownIcon className="size-3.5" />
+                                    {t("settings.downloads.locations.choose")}
+                                  </Button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRemoveRootPath(root.id)
+                                    }
+                                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger cursor-pointer"
+                                    aria-label={t(
+                                      "settings.downloads.locations.remove",
+                                    )}
+                                  >
+                                    <XMarkIcon className="size-4" />
+                                  </button>
+                                </div>
+                              </SettingsRow>
+                            );
+                          })}
+
+                          <button
+                            type="button"
+                            onClick={handleAddRootPath}
+                            className="flex min-h-12 w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-medium text-ps-accent transition-colors hover:bg-ps-panel-soft cursor-pointer"
+                          >
+                            <PlusIcon className="size-4" />
+                            {t("settings.downloads.locations.add")}
+                          </button>
                         </SettingsGroup>
                       )}
 
                       <SettingsGroup
-                        id="setting-developer-simulate-outage"
-                        className={rowHighlight("developer-simulate-outage")}
-                        caption={t("settings.developer.network.caption")}
+                        id="setting-downloads-speed-limit"
+                        className={rowHighlight("downloads-speed-limit")}
+                        caption={t("settings.downloads.speed.caption")}
                       >
                         <SettingsRow>
                           <SettingsLabel
-                            title={t("settings.developer.simulateOutage.title")}
+                            title={t("settings.downloads.speedLimit.title")}
                             description={t(
-                              "settings.developer.simulateOutage.description",
+                              "settings.downloads.speedLimit.description",
                             )}
                           />
-                          <Switch
-                            name="simulateOutage"
-                            color="indigo"
-                            aria-label={t(
-                              "settings.developer.simulateOutage.ariaLabel",
-                            )}
-                            checked={forceOffline}
-                            onChange={(v: boolean) => setForceOffline(v)}
-                          />
+                          {speedLimitControl}
                         </SettingsRow>
                       </SettingsGroup>
 
-                      <SettingsGroup
-                        id="setting-developer-toasts"
-                        className={rowHighlight("developer-toasts")}
-                        caption={t("settings.developer.toasts.caption")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t("settings.developer.toasts.title")}
-                            description={t(
-                              "settings.developer.toasts.description",
-                            )}
-                          />
-                        </SettingsRow>
-                        <SettingsRow>
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              color="zinc"
-                              onClick={() =>
-                                void showAlert({
-                                  title: t(
-                                    "settings.developer.toasts.infoToast",
-                                  ),
-                                  tone: "info",
-                                })
-                              }
-                            >
-                              {t("settings.developer.toasts.info")}
-                            </Button>
-                            <Button
-                              color="zinc"
-                              onClick={() =>
-                                void showAlert({
-                                  title: t(
-                                    "settings.developer.toasts.successToast",
-                                  ),
-                                  tone: "success",
-                                })
-                              }
-                            >
-                              {t("settings.developer.toasts.success")}
-                            </Button>
-                            <Button
-                              color="zinc"
-                              onClick={() =>
-                                void showAlert({
-                                  title: t(
-                                    "settings.developer.toasts.warningToast",
-                                  ),
-                                  tone: "warning",
-                                })
-                              }
-                            >
-                              {t("settings.developer.toasts.warning")}
-                            </Button>
-                            <Button
-                              color="zinc"
-                              onClick={() =>
-                                void showAlert({
-                                  title: t(
-                                    "settings.developer.toasts.dangerToast",
-                                  ),
-                                  tone: "danger",
-                                })
-                              }
-                            >
-                              {t("settings.developer.toasts.danger")}
-                            </Button>
-                          </div>
-                        </SettingsRow>
-                      </SettingsGroup>
-
-                      <SettingsGroup
-                        id="setting-developer-simulate-download"
-                        className={rowHighlight("developer-simulate-download")}
-                        caption={t("settings.category.downloads.label")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t(
-                              "settings.developer.simulateDownload.title",
-                            )}
-                            description={t(
-                              "settings.developer.simulateDownload.description",
-                            )}
-                          />
-                        </SettingsRow>
-                        <SettingsRow>
-                          <div className="flex flex-wrap gap-2">
-                            {SIMULATED_DOWNLOAD_KINDS.map(({ kind, label }) => (
-                              <Button
-                                key={kind}
-                                type="button"
-                                color="zinc"
-                                className="px-3"
-                                onClick={() => simulateDownload(kind)}
-                              >
-                                {t(label)}
-                              </Button>
-                            ))}
-                          </div>
-                        </SettingsRow>
-                      </SettingsGroup>
-
-                      <SettingsGroup
-                        id="setting-developer-build-info"
-                        className={rowHighlight("developer-build-info")}
-                        caption={t("settings.developer.buildInfo.caption")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel title={t("common.version")} />
-                          <span className="shrink-0 font-mono text-xs text-ps-text">
-                            {__APP_VERSION__}
-                          </span>
-                        </SettingsRow>
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t("settings.developer.buildInfo.channel")}
-                          />
-                          <span className="shrink-0 font-mono text-xs text-ps-muted">
-                            {__BUILD_CHANNEL__}
-                          </span>
-                        </SettingsRow>
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t(
-                              "settings.developer.buildInfo.environment",
-                            )}
-                          />
-                          <span className="shrink-0 font-mono text-xs text-ps-muted">
-                            {import.meta.env.MODE} ·{" "}
-                            {isTauri ? "desktop" : "web"}
-                          </span>
-                        </SettingsRow>
-                      </SettingsGroup>
-
-                      <SettingsGroup
-                        id="setting-developer-settings-dump"
-                        className={rowHighlight("developer-settings-dump")}
-                        caption={t("settings.developer.diagnostics.caption")}
-                      >
-                        <SettingsRow>
-                          <SettingsLabel
-                            title={t("settings.developer.settingsDump.title")}
-                            description={t(
-                              "settings.developer.settingsDump.description",
-                            )}
-                          />
-                          <Button
-                            type="button"
-                            color="indigo"
-                            className="shrink-0"
-                            onClick={() => void handleCopySettingsDump()}
+                      {isTauri && (
+                        <SettingsGroup
+                          caption={t("settings.downloads.after.caption")}
+                        >
+                          <PostInstallSettings />
+                          <SettingsRow
+                            id="setting-downloads-auto-extract"
+                            className={rowHighlight("downloads-auto-extract")}
                           >
-                            <ClipboardDocumentIcon className="size-4" />
-                            {t("common.copy")}
-                          </Button>
-                        </SettingsRow>
+                            <SettingsLabel
+                              title={t("settings.downloads.autoExtract.title")}
+                              description={t(
+                                "settings.downloads.autoExtract.description",
+                              )}
+                            />
+                            <Switch
+                              name="autoExtract"
+                              color="indigo"
+                              aria-label={t(
+                                "settings.downloads.autoExtract.ariaLabel",
+                              )}
+                              checked={autoExtract}
+                              onChange={(v: boolean) => setAutoExtract(v)}
+                            />
+                          </SettingsRow>
+                          <SettingsRow
+                            id="setting-downloads-auto-install"
+                            className={rowHighlight("downloads-auto-install")}
+                          >
+                            <SettingsLabel
+                              title={t("settings.downloads.autoInstall.title")}
+                              description={t(
+                                "settings.downloads.autoInstall.description",
+                              )}
+                            />
+                            <Switch
+                              name="autoInstall"
+                              color="indigo"
+                              aria-label={t(
+                                "settings.downloads.autoInstall.ariaLabel",
+                              )}
+                              checked={autoInstall}
+                              onChange={(v: boolean) => setAutoInstall(v)}
+                            />
+                          </SettingsRow>
+                          <SettingsRow
+                            id="setting-downloads-auto-delete-source"
+                            className={rowHighlight(
+                              "downloads-auto-delete-source",
+                            )}
+                          >
+                            <SettingsLabel
+                              title={t(
+                                "settings.downloads.autoDeleteSource.title",
+                              )}
+                              description={t(
+                                "settings.downloads.autoDeleteSource.description",
+                              )}
+                            />
+                            <Switch
+                              name="autoDeleteSource"
+                              color="indigo"
+                              aria-label={t(
+                                "settings.downloads.autoDeleteSource.ariaLabel",
+                              )}
+                              checked={autoDeleteSource}
+                              onChange={(v: boolean) => setAutoDeleteSource(v)}
+                            />
+                          </SettingsRow>
+                        </SettingsGroup>
+                      )}
+                    </>
+                  )}
+
+                  {activeCategory === "startup" && isTauri && (
+                    <>
+                      <SettingsSectionHeader
+                        icon={ComputerDesktopIcon}
+                        title={t("settings.category.startup.label")}
+                        description={t("settings.startup.description")}
+                      />
+                      <SettingsGroup
+                        id="setting-startup-autostart"
+                        className={rowHighlight("startup-autostart")}
+                        caption={t("settings.startup.onLogin.caption")}
+                      >
                         <SettingsRow>
                           <SettingsLabel
-                            title={t("settings.developer.verboseLogging.title")}
+                            title={t("settings.startup.autostart.title")}
                             description={t(
-                              "settings.developer.verboseLogging.description",
+                              "settings.startup.autostart.description",
                             )}
                           />
                           <Switch
-                            name="verboseDiagnostics"
+                            name="autostart"
                             color="indigo"
                             aria-label={t(
-                              "settings.developer.verboseLogging.title",
+                              "settings.startup.autostart.ariaLabel",
                             )}
-                            checked={verboseDiagnostics}
-                            onChange={(v: boolean) => setVerboseDiagnostics(v)}
+                            checked={autostartEnabled ?? false}
+                            disabled={autostartEnabled === null}
+                            onChange={async (v: boolean) => {
+                              setAutostartEnabled(v);
+                              try {
+                                const { enable, disable } =
+                                  await import("@tauri-apps/plugin-autostart");
+                                if (v) {
+                                  await enable();
+                                } else {
+                                  await disable();
+                                  // Force start-minimized off when autostart is disabled
+                                  setStartMinimized(false);
+                                }
+                              } catch (e) {
+                                console.error("Failed to update autostart:", e);
+                                setAutostartEnabled(!v); // Revert on failure
+                              }
+                            }}
+                          />
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      <SettingsGroup
+                        id="setting-startup-start-minimized"
+                        className={rowHighlight("startup-start-minimized")}
+                        caption={t("settings.caption.window")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.startup.startMinimized.title")}
+                            description={t(
+                              "settings.startup.startMinimized.description",
+                            )}
+                          />
+                          <Switch
+                            name="startMinimized"
+                            color="indigo"
+                            aria-label={t(
+                              "settings.startup.startMinimized.ariaLabel",
+                            )}
+                            checked={startMinimized}
+                            disabled={!autostartEnabled}
+                            onChange={(v: boolean) => setStartMinimized(v)}
                           />
                         </SettingsRow>
                       </SettingsGroup>
                     </>
                   )}
 
-                {activeCategory === "about" && (
-                  <>
-                    <SettingsSectionHeader
-                      icon={InformationCircleIcon}
-                      title={t("settings.category.about.label")}
-                      description={t("settings.about.description")}
-                    />
-                    <SettingsGroup
-                      id="setting-about-version"
-                      className={rowHighlight("about-version")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.about.version.title")}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleVersionClick}
-                          title={t("settings.about.version.tooltip")}
-                          className="inline-flex shrink-0 cursor-pointer items-center rounded-md bg-ps-panel-soft px-2 py-1 font-mono text-xs text-ps-text ring-1 ring-ps-line transition-colors hover:ring-ps-line-strong"
-                        >
-                          v{__APP_VERSION__}
-                        </button>
-                      </SettingsRow>
-                      <AboutLinkRow
-                        title={t("settings.about.authors")}
-                        value="PlayStash"
-                        href="https://github.com/PlayStash"
+                  {activeCategory === "games" && isTauri && (
+                    <>
+                      <SettingsSectionHeader
+                        icon={GamepadIcon}
+                        title={t("settings.category.games.label")}
+                        description={t("settings.games.description")}
                       />
-                      <div
-                        id="setting-about-license"
-                        className={rowHighlight("about-license")}
+                      <SettingsGroup
+                        id="setting-games-minimize-on-launch"
+                        className={rowHighlight("games-minimize-on-launch")}
+                        caption={t("settings.games.whilePlaying.caption")}
                       >
-                        <button
-                          type="button"
-                          onClick={() => void togglePlayStashLicense()}
-                          aria-expanded={licenseExpanded}
-                          className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
-                        >
-                          <SettingsLabel
-                            title={t("settings.about.license.title")}
-                          />
-                          <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
-                            <span className="truncate">CC BY-NC-SA 4.0</span>
-                            <ChevronRightIcon
-                              className={clsx(
-                                "size-3.5 shrink-0 text-ps-muted transition-transform",
-                                licenseExpanded && "rotate-90",
-                              )}
-                            />
-                          </span>
-                        </button>
-                        {licenseExpanded && playStashLicense && (
-                          <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-ps-line bg-ps-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-ps-muted">
-                            {playStashLicense}
-                          </pre>
-                        )}
-                      </div>
-                      <AboutLinkRow
-                        title={t("settings.about.metadataProviders")}
-                        value="IGDB"
-                        href="https://www.igdb.com"
-                      />
-                      <div
-                        id="setting-about-open-source-licenses"
-                        className={rowHighlight("about-open-source-licenses")}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => void openLicenses()}
-                          className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
-                        >
-                          <SettingsLabel
-                            title={t("settings.about.openSourceLicenses.title")}
-                          />
-                          <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-sm font-medium text-ps-accent">
-                            <span className="truncate">
-                              {licenseData
-                                ? fillTemplate(
-                                    t(
-                                      "settings.about.openSourceLicenses.count",
-                                    ),
-                                    { count: licenseData.packages.length },
-                                  )
-                                : t("settings.about.openSourceLicenses.view")}
-                            </span>
-                            <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
-                          </span>
-                        </button>
-                      </div>
-                    </SettingsGroup>
-
-                    <SettingsGroup
-                      id="setting-about-system"
-                      className={rowHighlight("about-system")}
-                      caption={t("settings.about.system.caption")}
-                    >
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.about.os.title")}
-                          description={t("settings.about.os.description")}
-                        />
-                        <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
-                          {osLabel}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.about.display.title")}
-                          description={t("settings.about.display.description")}
-                        />
-                        <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted wrap-break-word">
-                          {displayLabel}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.about.monitors.title")}
-                          description={t("settings.about.monitors.description")}
-                        />
-                        <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
-                          {monitorsLabel}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel
-                          title="GPU (WebGL)"
-                          description={t("settings.about.gpu.description")}
-                        />
-                        <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
-                          {gpuLabel}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel title="WebGPU" />
-                        <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
-                          {webgpuLabel}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel
-                          title={t("settings.about.cpuMemory.title")}
-                          description={t(
-                            "settings.about.cpuMemory.description",
-                          )}
-                        />
-                        <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted wrap-break-word">
-                          {cpuMemoryLabel}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel title={t("settings.about.platform")} />
-                        <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
-                          {systemInfo.platform}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel title={t("settings.about.language")} />
-                        <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
-                          {systemInfo.language}
-                        </span>
-                      </SettingsRow>
-                      <SettingsRow>
-                        <SettingsLabel title={t("settings.about.userAgent")} />
-                        <span className="min-w-0 max-w-[55%] break-all text-right font-mono text-xs text-ps-muted">
-                          {systemInfo.userAgent}
-                        </span>
-                      </SettingsRow>
-                      {webkitSupported && renderingDiagnostics?.webkit && (
                         <SettingsRow>
                           <SettingsLabel
-                            title="WebGL (WebKit)"
+                            title={t("settings.games.minimizeOnLaunch.title")}
                             description={t(
-                              "settings.about.webkitWebgl.description",
+                              "settings.games.minimizeOnLaunch.description",
                             )}
                           />
-                          <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
-                            {renderingDiagnostics.webkit.webgl_enabled
-                              ? t("common.enabled")
-                              : t("common.disabled")}
-                          </span>
+                          <Switch
+                            name="minimizeOnGameLaunch"
+                            color="indigo"
+                            aria-label={t(
+                              "settings.games.minimizeOnLaunch.title",
+                            )}
+                            checked={minimizeOnGameLaunch}
+                            onChange={(v: boolean) =>
+                              setMinimizeOnGameLaunch(v)
+                            }
+                          />
                         </SettingsRow>
-                      )}
-                    </SettingsGroup>
+                      </SettingsGroup>
 
-                    {isTauri && (
-                      <>
-                        <SettingsGroup
-                          id="setting-about-updates"
-                          className={rowHighlight("about-updates")}
-                          caption={t("settings.about.updates.caption")}
-                        >
-                          {availableVersion && !isInstallingUpdate && (
-                            <SettingsRow>
-                              <SettingsLabel
-                                title={t(
-                                  "settings.about.availableUpdate.title",
+                      <SettingsGroup
+                        id="setting-games-ignore-list"
+                        className={rowHighlight("games-ignore-list")}
+                        caption={t("settings.games.ignoreList.caption")}
+                        description={t("settings.games.ignoreList.description")}
+                      >
+                        {ignoreList.length === 0 && (
+                          <SettingsRow>
+                            <div className="flex items-center gap-2 text-sm text-ps-muted">
+                              <EyeSlashIcon className="size-4 shrink-0" />
+                              {t("settings.games.ignoreList.empty")}
+                            </div>
+                          </SettingsRow>
+                        )}
+                        {ignoreList.length > 0 && (
+                          <SettingsRow>
+                            <div className="flex min-w-0 flex-1 items-center gap-3">
+                              <div className="min-w-0 flex-1">
+                                <InputGroup>
+                                  <MagnifyingGlassIcon data-slot="icon" />
+                                  <Input
+                                    type="search"
+                                    value={ignoreSearch}
+                                    onChange={(e: any) =>
+                                      setIgnoreSearch(e.target.value)
+                                    }
+                                    placeholder={t(
+                                      "settings.games.ignoreList.searchPlaceholder",
+                                    )}
+                                    aria-label={t(
+                                      "settings.games.ignoreList.searchAria",
+                                    )}
+                                  />
+                                </InputGroup>
+                              </div>
+                              <span className="shrink-0 whitespace-nowrap text-xs text-ps-muted">
+                                {fillTemplate(
+                                  t("settings.games.ignoreList.count"),
+                                  {
+                                    shown: filteredIgnoreList.length,
+                                    total: ignoreList.length,
+                                  },
                                 )}
-                                description={t(
-                                  "settings.about.availableUpdate.description",
-                                )}
-                              />
-                              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-ps-accent/15 px-2 py-1 font-mono text-xs font-medium text-ps-accent-strong ring-1 ring-ps-accent/25">
-                                <SparklesIcon className="size-3.5" />v
-                                {availableVersion}
                               </span>
+                            </div>
+                          </SettingsRow>
+                        )}
+                        {filteredIgnoreList.length === 0 &&
+                          ignoreList.length > 0 && (
+                            <SettingsRow>
+                              <div className="flex items-center gap-2 text-sm text-ps-muted">
+                                <MagnifyingGlassIcon className="size-4 shrink-0" />
+                                {fillTemplate(
+                                  t("settings.games.ignoreList.noMatches"),
+                                  {
+                                    query: ignoreSearch.trim(),
+                                  },
+                                )}
+                              </div>
                             </SettingsRow>
                           )}
+                        {filteredIgnoreList.length > 0 && (
+                          <div className="max-h-80 divide-y divide-ps-line overflow-y-auto">
+                            {filteredIgnoreList.map((name) => (
+                              <SettingsRow key={name}>
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ps-text">
+                                  {name}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveIgnore(name)}
+                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger cursor-pointer"
+                                  aria-label={fillTemplate(
+                                    t("settings.games.ignoreList.remove"),
+                                    { name },
+                                  )}
+                                >
+                                  <XMarkIcon className="size-4" />
+                                </button>
+                              </SettingsRow>
+                            ))}
+                          </div>
+                        )}
+                        <SettingsRow>
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <Input
+                              type="text"
+                              value={newIgnore}
+                              onChange={(e: any) =>
+                                setNewIgnore(e.target.value)
+                              }
+                              onKeyDown={(e: any) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddIgnore();
+                                }
+                              }}
+                              placeholder={t(
+                                "settings.games.ignoreList.placeholder",
+                              )}
+                              className="min-w-0 flex-1"
+                              aria-label={t(
+                                "settings.games.ignoreList.inputAria",
+                              )}
+                            />
+                            <Button
+                              type="button"
+                              color="indigo"
+                              className="shrink-0 px-3"
+                              onClick={handleAddIgnore}
+                            >
+                              <PlusIcon className="size-4" />
+                              {t("common.add")}
+                            </Button>
+                          </div>
+                        </SettingsRow>
+                      </SettingsGroup>
 
+                      <SettingsGroup
+                        id="setting-games-launch-logs"
+                        className={rowHighlight("games-launch-logs")}
+                        caption={t("settings.games.launchLogs.title")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t(
+                              "settings.games.alwaysShowLaunchLogs.title",
+                            )}
+                            description={t(
+                              "settings.games.alwaysShowLaunchLogs.description",
+                            )}
+                          />
+                          <Switch
+                            name="alwaysShowLaunchLogs"
+                            color="indigo"
+                            aria-label={t(
+                              "settings.games.alwaysShowLaunchLogs.title",
+                            )}
+                            checked={alwaysShowLaunchLogs}
+                            onChange={(v: boolean) =>
+                              setAlwaysShowLaunchLogs(v)
+                            }
+                          />
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.games.launchLogs.title")}
+                            description={t(
+                              "settings.games.launchLogs.description",
+                            )}
+                          />
+                          <Button
+                            type="button"
+                            color="indigo"
+                            className="shrink-0 px-3"
+                            onClick={async () => {
+                              try {
+                                await openLaunchLogWindow();
+                              } catch (e) {
+                                console.error("Failed to open launch log", e);
+                              }
+                            }}
+                          >
+                            {t("common.open")}
+                          </Button>
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      {isLinux && (
+                        <SettingsGroup
+                          id="setting-games-wine-prefix"
+                          className={rowHighlight("games-wine-prefix")}
+                          caption="Wine / Proton"
+                          description={t(
+                            "settings.games.winePrefix.description",
+                          )}
+                        >
                           <SettingsRow>
                             <SettingsLabel
-                              title={t("settings.about.updateChannel.title")}
+                              title={t("settings.games.winePrefix.title")}
                               description={t(
-                                "settings.about.updateChannel.description",
+                                "settings.games.winePrefix.titleDescription",
+                              )}
+                            />
+                            <Button
+                              outline
+                              onClick={() => void handleSelectWinePrefix()}
+                            >
+                              <FolderOpenIcon className="size-4" />
+                              {t("settings.games.winePrefix.choose")}
+                            </Button>
+                          </SettingsRow>
+                          {winePrefixBase && (
+                            <SettingsRow>
+                              <div className="flex min-w-0 flex-1 items-center gap-2">
+                                <span className="min-w-0 flex-1 truncate text-sm text-ps-muted">
+                                  {winePrefixBase}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleClearWinePrefix()}
+                                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger cursor-pointer"
+                                  aria-label={t(
+                                    "settings.games.winePrefix.clear",
+                                  )}
+                                >
+                                  <XMarkIcon className="size-4" />
+                                </button>
+                              </div>
+                            </SettingsRow>
+                          )}
+                        </SettingsGroup>
+                      )}
+                    </>
+                  )}
+
+                  {activeCategory === "privacy" && (
+                    <>
+                      <SettingsSectionHeader
+                        icon={ShieldCheckIcon}
+                        title={t("settings.category.privacy.label")}
+                        description={t("settings.privacy.description")}
+                      />
+                      <SettingsGroup>
+                        <AccountPrivacySettings />
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.privacy.analytics.title")}
+                            description={t(
+                              isTauri
+                                ? "settings.privacy.analytics.descriptionDesktop"
+                                : "settings.privacy.analytics.descriptionWeb",
+                            )}
+                          />
+                          <Switch
+                            name="analyticsConsent"
+                            color="indigo"
+                            aria-label={t(
+                              "settings.privacy.analytics.ariaLabel",
+                            )}
+                            checked={analyticsConsent}
+                            onChange={(v: boolean) => {
+                              setAnalyticsEnabled(v);
+                              setAnalyticsConsent(v);
+                            }}
+                          />
+                        </SettingsRow>
+                      </SettingsGroup>
+                    </>
+                  )}
+
+                  {activeCategory === "appearance" && (
+                    <>
+                      <SettingsSectionHeader
+                        icon={SwatchIcon}
+                        title={t("appearance.title")}
+                        description={t("appearance.description")}
+                      />
+                      <SettingsGroup
+                        id="setting-appearance-language"
+                        className={rowHighlight("appearance-language")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("language.title")}
+                            description={t("language.description")}
+                          />
+                          <div className="w-44 shrink-0">
+                            <LanguagePicker />
+                          </div>
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      <SettingsGroup
+                        id="setting-appearance-theme"
+                        className={rowHighlight("appearance-theme")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("appearance.theme")}
+                            description={t("appearance.themeDescription")}
+                          />
+                          <div className="w-40 shrink-0">
+                            <ThemeSelect />
+                          </div>
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      <SettingsGroup
+                        id="setting-appearance-zoom"
+                        className={rowHighlight("appearance-zoom")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("appearance.zoom")}
+                            description={t("appearance.zoomDescription")}
+                          />
+                          <div className="w-44 shrink-0">
+                            <ZoomControl />
+                          </div>
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      <SettingsGroup
+                        id="setting-appearance-streamer-mode"
+                        className={rowHighlight("appearance-streamer-mode")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.appearance.streamerMode.title")}
+                            description={t(
+                              "settings.appearance.streamerMode.description",
+                            )}
+                          />
+                          <div className="shrink-0">
+                            <StreamerModeToggle />
+                          </div>
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      {webkitSupported && renderingDiagnostics?.webkit && (
+                        <SettingsGroup
+                          id="setting-rendering-smooth-scroll"
+                          className={clsx(
+                            rowHighlight("rendering-smooth-scroll"),
+                            rowHighlight("rendering-hw-accel"),
+                          )}
+                          caption={t("settings.appearance.rendering.caption")}
+                        >
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t(
+                                "settings.appearance.smoothScroll.title",
+                              )}
+                              description={t(
+                                "settings.appearance.smoothScroll.description",
+                              )}
+                            />
+                            <Switch
+                              name="webkitSmoothScroll"
+                              color="indigo"
+                              aria-label={t(
+                                "settings.appearance.smoothScroll.ariaLabel",
+                              )}
+                              checked={webkitSmoothScroll}
+                              onChange={(v: boolean) =>
+                                void handleSetWebkitSmoothScroll(v)
+                              }
+                            />
+                          </SettingsRow>
+                          <SettingsRow id="setting-rendering-hw-accel">
+                            <SettingsLabel
+                              title={t("settings.appearance.hwAccel.title")}
+                              description={t(
+                                "settings.appearance.hwAccel.description",
                               )}
                             />
                             <div className="w-36 shrink-0">
                               <Listbox
-                                name="updateChannel"
-                                value={updateChannel}
-                                onChange={setUpdateChannel}
+                                name="webkitHwAccel"
+                                value={webkitHwAccel}
+                                onChange={(v) =>
+                                  void handleSetWebkitHwAccel(String(v))
+                                }
                               >
-                                <ListboxOption value="stable">
+                                <ListboxOption value="Never">
                                   <ListboxLabel>
-                                    {t("settings.about.updateChannel.stable")}
+                                    {t("settings.appearance.hwAccel.never")}
                                   </ListboxLabel>
                                 </ListboxOption>
-                                {devToolsUnlocked && (
-                                  <>
-                                    <ListboxOption value="unstable">
-                                      <ListboxLabel>
-                                        {t(
-                                          "settings.about.updateChannel.unstable",
-                                        )}
-                                      </ListboxLabel>
-                                    </ListboxOption>
-                                  </>
-                                )}
+                                <ListboxOption value="OnDemand">
+                                  <ListboxLabel>
+                                    {t("settings.appearance.hwAccel.onDemand")}
+                                  </ListboxLabel>
+                                </ListboxOption>
+                                <ListboxOption value="Always">
+                                  <ListboxLabel>
+                                    {t("settings.appearance.hwAccel.always")}
+                                  </ListboxLabel>
+                                </ListboxOption>
                               </Listbox>
                             </div>
                           </SettingsRow>
-
-                          <SettingsRow>
-                            <SettingsLabel
-                              title={t("settings.about.autoUpdate.title")}
-                              description={
-                                updaterErrorText
-                                  ? updaterErrorText
-                                  : updaterStatusText ||
-                                    (updaterReady
-                                      ? updaterEnabled
-                                        ? t(
-                                            updateChannel === "unstable"
-                                              ? "settings.about.autoUpdate.enabledUnstable"
-                                              : "settings.about.autoUpdate.enabledStable",
-                                          )
-                                        : t(
-                                            "settings.about.autoUpdate.notConfigured",
-                                          )
-                                      : t("settings.about.autoUpdate.checking"))
-                              }
-                            />
-                            {updaterErrorText ? (
-                              <ExclamationTriangleIcon className="size-4 shrink-0 text-red-400" />
-                            ) : (
-                              <span
-                                className={clsx(
-                                  "size-2.5 shrink-0 rounded-full",
-                                  updaterEnabled
-                                    ? "bg-ps-success"
-                                    : "bg-ps-muted/60",
-                                )}
-                              />
-                            )}
-                          </SettingsRow>
                         </SettingsGroup>
+                      )}
+                    </>
+                  )}
 
+                  {activeCategory === "sound" && (
+                    <>
+                      <SettingsSectionHeader
+                        icon={SpeakerWaveIcon}
+                        title={t("settings.category.sound.label")}
+                        description={t("settings.sound.description")}
+                      />
+                      <SettingsGroup
+                        id="setting-sound-volume"
+                        className={rowHighlight("sound-volume")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.sound.volume.title")}
+                            description={t("settings.sound.volume.description")}
+                          />
+                          <div className="w-44 shrink-0">
+                            <VolumeControl />
+                          </div>
+                        </SettingsRow>
+                      </SettingsGroup>
+
+                      <SettingsGroup
+                        id="setting-sound-test"
+                        className={rowHighlight("sound-test")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.sound.test.title")}
+                            description={t("settings.sound.test.description")}
+                          />
+                          <Button
+                            color="zinc"
+                            onClick={() => void playSound("pop")}
+                            className="shrink-0"
+                          >
+                            <SpeakerWaveIcon
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                            {t("settings.sound.test.play")}
+                          </Button>
+                        </SettingsRow>
+                      </SettingsGroup>
+                    </>
+                  )}
+
+                  {activeCategory === "developer" &&
+                    (import.meta.env.DEV || devToolsUnlocked) && (
+                      <>
+                        <SettingsSectionHeader
+                          icon={ExclamationTriangleIcon}
+                          title={t("settings.category.developer.label")}
+                          description={t(
+                            "settings.category.developer.description",
+                          )}
+                        />
                         <SettingsGroup
-                          id="setting-about-check-updates"
-                          className={rowHighlight("about-updates")}
+                          id="setting-developer-open-devtools"
+                          className={rowHighlight("developer-open-devtools")}
+                          caption={t("settings.caption.window")}
                         >
                           <SettingsRow>
                             <SettingsLabel
-                              title={t("settings.about.checkUpdates.title")}
+                              title={t("settings.developer.devtools.title")}
                               description={t(
-                                "settings.about.checkUpdates.description",
+                                "settings.developer.devtools.description",
                               )}
                             />
                             <Button
                               type="button"
                               color="indigo"
                               className="shrink-0"
-                              disabled={
-                                !updaterReady ||
-                                isCheckingUpdates ||
-                                isInstallingUpdate
-                              }
-                              onClick={() =>
-                                void checkForUpdates({ manual: true })
-                              }
+                              onClick={() => void handleOpenDevTools()}
                             >
-                              <ArrowPathIcon
-                                className={
-                                  isCheckingUpdates
-                                    ? "size-4 animate-spin motion-reduce:animate-none"
-                                    : "size-4"
-                                }
-                              />
-                              {isCheckingUpdates
-                                ? t("settings.about.checkUpdates.checking")
-                                : isInstallingUpdate
-                                  ? t("settings.about.checkUpdates.updating")
-                                  : t("settings.about.checkUpdates.button")}
+                              {t("settings.developer.devtools.button")}
                             </Button>
+                          </SettingsRow>
+                        </SettingsGroup>
+
+                        {!isDesktopApp && (
+                          <SettingsGroup
+                            id="setting-developer-simulate-desktop"
+                            className={rowHighlight(
+                              "developer-simulate-desktop",
+                            )}
+                          >
+                            <SettingsRow>
+                              <SettingsLabel
+                                title={t(
+                                  "settings.developer.simulateDesktop.title",
+                                )}
+                                description={t(
+                                  "settings.developer.simulateDesktop.description",
+                                )}
+                              />
+                              <Switch
+                                name="simulateDesktop"
+                                color="indigo"
+                                aria-label={t(
+                                  "settings.developer.simulateDesktop.ariaLabel",
+                                )}
+                                checked={isDebugTauriOverride()}
+                                onChange={(v: boolean) => {
+                                  setDebugTauriOverride(v);
+                                  window.location.reload();
+                                }}
+                              />
+                            </SettingsRow>
+                          </SettingsGroup>
+                        )}
+
+                        <SettingsGroup
+                          id="setting-developer-simulate-outage"
+                          className={rowHighlight("developer-simulate-outage")}
+                          caption={t("settings.developer.network.caption")}
+                        >
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t(
+                                "settings.developer.simulateOutage.title",
+                              )}
+                              description={t(
+                                "settings.developer.simulateOutage.description",
+                              )}
+                            />
+                            <Switch
+                              name="simulateOutage"
+                              color="indigo"
+                              aria-label={t(
+                                "settings.developer.simulateOutage.ariaLabel",
+                              )}
+                              checked={forceOffline}
+                              onChange={(v: boolean) => setForceOffline(v)}
+                            />
+                          </SettingsRow>
+                        </SettingsGroup>
+
+                        <SettingsGroup
+                          id="setting-developer-toasts"
+                          className={rowHighlight("developer-toasts")}
+                          caption={t("settings.developer.toasts.caption")}
+                        >
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t("settings.developer.toasts.title")}
+                              description={t(
+                                "settings.developer.toasts.description",
+                              )}
+                            />
+                          </SettingsRow>
+                          <SettingsRow>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                color="zinc"
+                                onClick={() =>
+                                  void showAlert({
+                                    title: t(
+                                      "settings.developer.toasts.infoToast",
+                                    ),
+                                    tone: "info",
+                                  })
+                                }
+                              >
+                                {t("settings.developer.toasts.info")}
+                              </Button>
+                              <Button
+                                color="zinc"
+                                onClick={() =>
+                                  void showAlert({
+                                    title: t(
+                                      "settings.developer.toasts.successToast",
+                                    ),
+                                    tone: "success",
+                                  })
+                                }
+                              >
+                                {t("settings.developer.toasts.success")}
+                              </Button>
+                              <Button
+                                color="zinc"
+                                onClick={() =>
+                                  void showAlert({
+                                    title: t(
+                                      "settings.developer.toasts.warningToast",
+                                    ),
+                                    tone: "warning",
+                                  })
+                                }
+                              >
+                                {t("settings.developer.toasts.warning")}
+                              </Button>
+                              <Button
+                                color="zinc"
+                                onClick={() =>
+                                  void showAlert({
+                                    title: t(
+                                      "settings.developer.toasts.dangerToast",
+                                    ),
+                                    tone: "danger",
+                                  })
+                                }
+                              >
+                                {t("settings.developer.toasts.danger")}
+                              </Button>
+                            </div>
+                          </SettingsRow>
+                        </SettingsGroup>
+
+                        <SettingsGroup
+                          id="setting-developer-simulate-download"
+                          className={rowHighlight(
+                            "developer-simulate-download",
+                          )}
+                          caption={t("settings.category.downloads.label")}
+                        >
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t(
+                                "settings.developer.simulateDownload.title",
+                              )}
+                              description={t(
+                                "settings.developer.simulateDownload.description",
+                              )}
+                            />
+                          </SettingsRow>
+                          <SettingsRow>
+                            <div className="flex flex-wrap gap-2">
+                              {SIMULATED_DOWNLOAD_KINDS.map(
+                                ({ kind, label }) => (
+                                  <Button
+                                    key={kind}
+                                    type="button"
+                                    color="zinc"
+                                    className="px-3"
+                                    onClick={() => simulateDownload(kind)}
+                                  >
+                                    {t(label)}
+                                  </Button>
+                                ),
+                              )}
+                            </div>
+                          </SettingsRow>
+                        </SettingsGroup>
+
+                        <SettingsGroup
+                          id="setting-developer-build-info"
+                          className={rowHighlight("developer-build-info")}
+                          caption={t("settings.developer.buildInfo.caption")}
+                        >
+                          <SettingsRow>
+                            <SettingsLabel title={t("common.version")} />
+                            <span className="shrink-0 font-mono text-xs text-ps-text">
+                              {__APP_VERSION__}
+                            </span>
+                          </SettingsRow>
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t("settings.developer.buildInfo.channel")}
+                            />
+                            <span className="shrink-0 font-mono text-xs text-ps-muted">
+                              {__BUILD_CHANNEL__}
+                            </span>
+                          </SettingsRow>
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t(
+                                "settings.developer.buildInfo.environment",
+                              )}
+                            />
+                            <span className="shrink-0 font-mono text-xs text-ps-muted">
+                              {import.meta.env.MODE} ·{" "}
+                              {isTauri ? "desktop" : "web"}
+                            </span>
+                          </SettingsRow>
+                        </SettingsGroup>
+
+                        <SettingsGroup
+                          id="setting-developer-settings-dump"
+                          className={rowHighlight("developer-settings-dump")}
+                          caption={t("settings.developer.diagnostics.caption")}
+                        >
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t("settings.developer.settingsDump.title")}
+                              description={t(
+                                "settings.developer.settingsDump.description",
+                              )}
+                            />
+                            <Button
+                              type="button"
+                              color="indigo"
+                              className="shrink-0"
+                              onClick={() => void handleCopySettingsDump()}
+                            >
+                              <ClipboardDocumentIcon className="size-4" />
+                              {t("common.copy")}
+                            </Button>
+                          </SettingsRow>
+                          <SettingsRow>
+                            <SettingsLabel
+                              title={t(
+                                "settings.developer.verboseLogging.title",
+                              )}
+                              description={t(
+                                "settings.developer.verboseLogging.description",
+                              )}
+                            />
+                            <Switch
+                              name="verboseDiagnostics"
+                              color="indigo"
+                              aria-label={t(
+                                "settings.developer.verboseLogging.title",
+                              )}
+                              checked={verboseDiagnostics}
+                              onChange={(v: boolean) =>
+                                setVerboseDiagnostics(v)
+                              }
+                            />
                           </SettingsRow>
                         </SettingsGroup>
                       </>
                     )}
-                  </>
-                )}
 
-                {activeCategory !== null &&
-                  activeSections.length > 0 &&
-                  !isBuiltInCategoryVisible(activeCategory) && (
-                    <SettingsSectionHeader
-                      icon={CATEGORY_META[activeCategory].icon}
-                      title={t(CATEGORY_META[activeCategory].label)}
-                      description={t(CATEGORY_META[activeCategory].description)}
-                    />
+                  {activeCategory === "about" && (
+                    <>
+                      <SettingsSectionHeader
+                        icon={InformationCircleIcon}
+                        title={t("settings.category.about.label")}
+                        description={t("settings.about.description")}
+                      />
+                      <SettingsGroup
+                        id="setting-about-version"
+                        className={rowHighlight("about-version")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.about.version.title")}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleVersionClick}
+                            title={t("settings.about.version.tooltip")}
+                            className="inline-flex shrink-0 cursor-pointer items-center rounded-md bg-ps-panel-soft px-2 py-1 font-mono text-xs text-ps-text ring-1 ring-ps-line transition-colors hover:ring-ps-line-strong"
+                          >
+                            v{__APP_VERSION__}
+                          </button>
+                        </SettingsRow>
+                        <AboutLinkRow
+                          title={t("settings.about.authors")}
+                          value="PlayStash"
+                          href="https://github.com/PlayStash"
+                        />
+                        <div
+                          id="setting-about-license"
+                          className={rowHighlight("about-license")}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => void togglePlayStashLicense()}
+                            aria-expanded={licenseExpanded}
+                            className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
+                          >
+                            <SettingsLabel
+                              title={t("settings.about.license.title")}
+                            />
+                            <span className="flex min-w-0 max-w-[60%] items-center gap-1.5 text-sm font-medium text-ps-accent">
+                              <span className="truncate">CC BY-NC-SA 4.0</span>
+                              <ChevronRightIcon
+                                className={clsx(
+                                  "size-3.5 shrink-0 text-ps-muted transition-transform",
+                                  licenseExpanded && "rotate-90",
+                                )}
+                              />
+                            </span>
+                          </button>
+                          {licenseExpanded && playStashLicense && (
+                            <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap wrap-break-word border-t border-ps-line bg-ps-panel-soft/60 px-4 py-3 font-mono text-xs leading-5 text-ps-muted">
+                              {playStashLicense}
+                            </pre>
+                          )}
+                        </div>
+                        <AboutLinkRow
+                          title={t("settings.about.metadataProviders")}
+                          value="IGDB"
+                          href="https://www.igdb.com"
+                        />
+                        <div
+                          id="setting-about-open-source-licenses"
+                          className={rowHighlight("about-open-source-licenses")}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => void openLicenses()}
+                            className="group flex min-h-12 w-full cursor-pointer items-center justify-between gap-x-4 px-4 py-2.5 text-left transition-colors hover:bg-ps-panel-soft"
+                          >
+                            <SettingsLabel
+                              title={t(
+                                "settings.about.openSourceLicenses.title",
+                              )}
+                            />
+                            <span className="flex min-w-0 max-w-[60%] items-center gap-1.5 text-sm font-medium text-ps-accent">
+                              <span className="truncate">
+                                {licenseData
+                                  ? fillTemplate(
+                                      t(
+                                        "settings.about.openSourceLicenses.count",
+                                      ),
+                                      { count: licenseData.packages.length },
+                                    )
+                                  : t("settings.about.openSourceLicenses.view")}
+                              </span>
+                              <ChevronRightIcon className="size-3.5 shrink-0 text-ps-muted" />
+                            </span>
+                          </button>
+                        </div>
+                      </SettingsGroup>
+
+                      <SettingsGroup
+                        id="setting-about-system"
+                        className={rowHighlight("about-system")}
+                        caption={t("settings.about.system.caption")}
+                      >
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.about.os.title")}
+                            description={t("settings.about.os.description")}
+                          />
+                          <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
+                            {osLabel}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.about.display.title")}
+                            description={t(
+                              "settings.about.display.description",
+                            )}
+                          />
+                          <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted wrap-break-word">
+                            {displayLabel}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.about.monitors.title")}
+                            description={t(
+                              "settings.about.monitors.description",
+                            )}
+                          />
+                          <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
+                            {monitorsLabel}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title="GPU (WebGL)"
+                            description={t("settings.about.gpu.description")}
+                          />
+                          <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted">
+                            {gpuLabel}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel title="WebGPU" />
+                          <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
+                            {webgpuLabel}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.about.cpuMemory.title")}
+                            description={t(
+                              "settings.about.cpuMemory.description",
+                            )}
+                          />
+                          <span className="min-w-0 max-w-[55%] text-right font-mono text-xs text-ps-muted wrap-break-word">
+                            {cpuMemoryLabel}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel title={t("settings.about.platform")} />
+                          <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
+                            {systemInfo.platform}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel title={t("settings.about.language")} />
+                          <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
+                            {systemInfo.language}
+                          </span>
+                        </SettingsRow>
+                        <SettingsRow>
+                          <SettingsLabel
+                            title={t("settings.about.userAgent")}
+                          />
+                          <span className="min-w-0 max-w-[55%] break-all text-right font-mono text-xs text-ps-muted">
+                            {systemInfo.userAgent}
+                          </span>
+                        </SettingsRow>
+                        {webkitSupported && renderingDiagnostics?.webkit && (
+                          <SettingsRow>
+                            <SettingsLabel
+                              title="WebGL (WebKit)"
+                              description={t(
+                                "settings.about.webkitWebgl.description",
+                              )}
+                            />
+                            <span className="min-w-0 text-right font-mono text-xs text-ps-muted">
+                              {renderingDiagnostics.webkit.webgl_enabled
+                                ? t("common.enabled")
+                                : t("common.disabled")}
+                            </span>
+                          </SettingsRow>
+                        )}
+                      </SettingsGroup>
+
+                      {isTauri && (
+                        <>
+                          <SettingsGroup
+                            id="setting-about-updates"
+                            className={rowHighlight("about-updates")}
+                            caption={t("settings.about.updates.caption")}
+                          >
+                            {availableVersion && !isInstallingUpdate && (
+                              <SettingsRow>
+                                <SettingsLabel
+                                  title={t(
+                                    "settings.about.availableUpdate.title",
+                                  )}
+                                  description={t(
+                                    "settings.about.availableUpdate.description",
+                                  )}
+                                />
+                                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-ps-accent/15 px-2 py-1 font-mono text-xs font-medium text-ps-accent-strong ring-1 ring-ps-accent/25">
+                                  <SparklesIcon className="size-3.5" />v
+                                  {availableVersion}
+                                </span>
+                              </SettingsRow>
+                            )}
+
+                            <SettingsRow>
+                              <SettingsLabel
+                                title={t("settings.about.updateChannel.title")}
+                                description={t(
+                                  "settings.about.updateChannel.description",
+                                )}
+                              />
+                              <div className="w-36 shrink-0">
+                                <Listbox
+                                  name="updateChannel"
+                                  value={updateChannel}
+                                  onChange={setUpdateChannel}
+                                >
+                                  <ListboxOption value="stable">
+                                    <ListboxLabel>
+                                      {t("settings.about.updateChannel.stable")}
+                                    </ListboxLabel>
+                                  </ListboxOption>
+                                  {devToolsUnlocked && (
+                                    <>
+                                      <ListboxOption value="unstable">
+                                        <ListboxLabel>
+                                          {t(
+                                            "settings.about.updateChannel.unstable",
+                                          )}
+                                        </ListboxLabel>
+                                      </ListboxOption>
+                                    </>
+                                  )}
+                                </Listbox>
+                              </div>
+                            </SettingsRow>
+
+                            <SettingsRow>
+                              <SettingsLabel
+                                title={t("settings.about.autoUpdate.title")}
+                                description={
+                                  updaterErrorText
+                                    ? updaterErrorText
+                                    : updaterStatusText ||
+                                      (updaterReady
+                                        ? updaterEnabled
+                                          ? t(
+                                              updateChannel === "unstable"
+                                                ? "settings.about.autoUpdate.enabledUnstable"
+                                                : "settings.about.autoUpdate.enabledStable",
+                                            )
+                                          : t(
+                                              "settings.about.autoUpdate.notConfigured",
+                                            )
+                                        : t(
+                                            "settings.about.autoUpdate.checking",
+                                          ))
+                                }
+                              />
+                              {updaterErrorText ? (
+                                <ExclamationTriangleIcon className="size-4 shrink-0 text-ps-danger" />
+                              ) : (
+                                <span
+                                  className={clsx(
+                                    "size-2.5 shrink-0 rounded-full",
+                                    updaterEnabled
+                                      ? "bg-ps-success"
+                                      : "bg-ps-muted/60",
+                                  )}
+                                />
+                              )}
+                            </SettingsRow>
+                          </SettingsGroup>
+
+                          <SettingsGroup
+                            id="setting-about-check-updates"
+                            className={rowHighlight("about-updates")}
+                          >
+                            <SettingsRow>
+                              <SettingsLabel
+                                title={t("settings.about.checkUpdates.title")}
+                                description={t(
+                                  "settings.about.checkUpdates.description",
+                                )}
+                              />
+                              <Button
+                                type="button"
+                                color="indigo"
+                                className="shrink-0"
+                                disabled={
+                                  !updaterReady ||
+                                  isCheckingUpdates ||
+                                  isInstallingUpdate
+                                }
+                                onClick={() =>
+                                  void checkForUpdates({ manual: true })
+                                }
+                              >
+                                <ArrowPathIcon
+                                  className={
+                                    isCheckingUpdates
+                                      ? "size-4 animate-spin motion-reduce:animate-none"
+                                      : "size-4"
+                                  }
+                                />
+                                {isCheckingUpdates
+                                  ? t("settings.about.checkUpdates.checking")
+                                  : isInstallingUpdate
+                                    ? t("settings.about.checkUpdates.updating")
+                                    : t("settings.about.checkUpdates.button")}
+                              </Button>
+                            </SettingsRow>
+                          </SettingsGroup>
+                        </>
+                      )}
+                    </>
                   )}
-                {activeSections.map(({ id, component: Section }) => (
-                  <Section
-                    key={id}
-                    rowHighlight={rowHighlight}
-                    isTauri={isTauri}
-                    isDesktopApp={isDesktopApp}
-                    isLinux={isLinux}
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+                  {activeCategory !== null &&
+                    activeSections.length > 0 &&
+                    !isBuiltInCategoryVisible(activeCategory) && (
+                      <SettingsSectionHeader
+                        icon={CATEGORY_META[activeCategory].icon}
+                        title={t(CATEGORY_META[activeCategory].label)}
+                        description={t(
+                          CATEGORY_META[activeCategory].description,
+                        )}
+                      />
+                    )}
+                  {activeSections.map(({ id, component: Section }) => (
+                    <Section
+                      key={id}
+                      rowHighlight={rowHighlight}
+                      isTauri={isTauri}
+                      isDesktopApp={isDesktopApp}
+                      isLinux={isLinux}
+                    />
+                  ))}
+                </SettingsPanel>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -2828,7 +2960,7 @@ export default function Settings() {
             type="button"
             onClick={() => setLicensesOpen(false)}
             aria-label={t("settings.licenses.close")}
-            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text"
           >
             <XMarkIcon className="size-5" />
           </button>
@@ -2840,7 +2972,7 @@ export default function Settings() {
         </DialogDescription>
         <DialogBody className="flex-1 min-h-0 overflow-y-auto">
           {licenseData ? (
-            <div className="divide-y divide-ps-line overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong">
+            <div className="divide-y divide-ps-line overflow-hidden rounded-md border border-ps-line bg-ps-panel-strong">
               {licenseData.packages.map((pkg) => {
                 const key = `${pkg.name}@${pkg.version}`;
                 const expanded = expandedLicense === key;

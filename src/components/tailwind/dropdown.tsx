@@ -16,7 +16,11 @@ export function DropdownButton<T extends React.ElementType = typeof Button>({
   ...props
 }: { className?: string } & Omit<Headless.MenuButtonProps<T>, "className">) {
   return (
-    <Headless.MenuButton as={as} {...props} className={clsx(className, "cursor-pointer")} />
+    <Headless.MenuButton
+      as={as}
+      {...props}
+      className={clsx(className, "cursor-pointer")}
+    />
   );
 }
 
@@ -35,19 +39,21 @@ export function DropdownMenu({
         // Anchor positioning
         "[--anchor-gap:--spacing(2)] [--anchor-padding:--spacing(1)] data-[anchor~=end]:[--anchor-offset:6px] data-[anchor~=start]:[--anchor-offset:-6px] sm:data-[anchor~=end]:[--anchor-offset:4px] sm:data-[anchor~=start]:[--anchor-offset:-4px]",
         // Base styles
-        "isolate w-max rounded-[1.25rem] p-1.5",
+        "isolate w-max rounded-lg p-1.5",
         // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
         "outline outline-transparent focus:outline-hidden",
         // Handle scrolling when menu won't fit in viewport
-        "overflow-y-auto max-h-[min(24rem,70vh)]",
+        "overflow-y-auto overscroll-contain max-h-[min(24rem,70dvh)]",
         // Popover background
         "surface-panel",
         // Shadows
         "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
         // Define grid at the menu level if subgrid is supported
         "supports-[grid-template-columns:subgrid]:grid supports-[grid-template-columns:subgrid]:grid-cols-[auto_1fr_1.5rem_0.5rem_auto]",
-        // Transitions
-        "transition data-leave:duration-100 data-leave:ease-in data-closed:data-leave:opacity-0",
+        // Scale from the trigger, including when viewport constraints flip placement.
+        "origin-top data-[anchor~=top]:origin-bottom data-[anchor~=left]:origin-right data-[anchor~=right]:origin-left data-[anchor~=bottom]:data-[anchor~=start]:origin-top-left data-[anchor~=bottom]:data-[anchor~=end]:origin-top-right data-[anchor~=top]:data-[anchor~=start]:origin-bottom-left data-[anchor~=top]:data-[anchor~=end]:origin-bottom-right data-[anchor~=left]:data-[anchor~=start]:origin-top-right data-[anchor~=left]:data-[anchor~=end]:origin-bottom-right data-[anchor~=right]:data-[anchor~=start]:origin-top-left data-[anchor~=right]:data-[anchor~=end]:origin-bottom-left",
+        // Retargetable enter and exit states keep rapid toggles continuous.
+        "transition-[opacity,transform] duration-180 ease-(--ease-out) data-closed:[transform:scale(.98)] data-closed:opacity-0 data-leave:duration-120 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
       )}
     />
   );
@@ -69,13 +75,14 @@ export function DropdownItem({
   let classes = clsx(
     className,
     // Base styles
-    "group cursor-pointer rounded-xl px-3.5 py-2.5 focus:outline-hidden sm:px-3 sm:py-1.5",
-    // Smooth hover/focus transitions
-    "transition-colors duration-150",
+    "group cursor-pointer rounded-md px-3.5 py-2.5 focus:outline-hidden sm:px-3 sm:py-1.5",
+    // Highlight follows the pointer and arrow keys instantly, like a native
+    // menu; a fade here makes keyboard navigation feel laggy.
+    "transition-none",
     // Text styles
     "text-left text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
     // Focus
-    "data-focus:bg-ps-accent data-focus:text-white",
+    "data-focus:bg-ps-accent data-focus:text-ps-on-accent",
     // Disabled state
     "data-disabled:opacity-50",
     // Forced colors mode
@@ -84,7 +91,7 @@ export function DropdownItem({
     "col-span-full grid grid-cols-[auto_1fr_1.5rem_0.5rem_auto] items-center supports-[grid-template-columns:subgrid]:grid-cols-subgrid",
     // Icons
     "*:data-[slot=icon]:col-start-1 *:data-[slot=icon]:row-start-1 *:data-[slot=icon]:mr-2.5 *:data-[slot=icon]:-ml-0.5 *:data-[slot=icon]:size-5 sm:*:data-[slot=icon]:mr-2 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-ps-muted data-focus:*:data-[slot=icon]:text-white",
+    "*:data-[slot=icon]:text-ps-muted data-focus:*:data-[slot=icon]:text-ps-on-accent",
     // Avatar
     "*:data-[slot=avatar]:mr-2.5 *:data-[slot=avatar]:-ml-1 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:mr-2 sm:*:data-[slot=avatar]:size-5",
   );
@@ -195,7 +202,7 @@ export function DropdownDescription({
       {...props}
       className={clsx(
         className,
-        "col-span-2 col-start-2 row-start-2 text-sm/5 text-ps-muted group-data-focus:text-white sm:text-xs/5 forced-colors:group-data-focus:text-[HighlightText]",
+        "col-span-2 col-start-2 row-start-2 text-sm/5 text-ps-muted group-data-focus:text-ps-on-accent sm:text-xs/5 forced-colors:group-data-focus:text-[HighlightText]",
       )}
     />
   );
@@ -222,7 +229,7 @@ export function DropdownShortcut({
         <kbd
           key={index}
           className={clsx([
-            "min-w-[2ch] text-center font-sans text-ps-muted capitalize group-data-focus:text-white forced-colors:group-data-focus:text-[HighlightText]",
+            "min-w-[2ch] text-center font-sans text-ps-muted capitalize group-data-focus:text-ps-on-accent forced-colors:group-data-focus:text-[HighlightText]",
             // Make sure key names that are longer than one character (like "Tab") have extra space
             index > 0 && char.length > 1 && "pl-1",
           ])}

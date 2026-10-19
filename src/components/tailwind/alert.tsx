@@ -33,7 +33,7 @@ export function Alert({
       {!isToast && (
         <Headless.DialogBackdrop
           transition
-          className="fixed inset-0 flex w-screen justify-center overflow-y-auto bg-zinc-950/15 px-2 py-2 transition duration-150 ease-out focus:outline-0 data-closed:opacity-0 data-enter:ease-out data-leave:ease-in sm:px-6 sm:py-8 lg:px-8 lg:py-16 dark:bg-zinc-950/50"
+          className="fixed inset-0 flex w-screen justify-center overflow-y-auto bg-ps-bg/70 px-2 py-2 transition-opacity duration-220 ease-(--ease-out) focus:outline-0 data-closed:opacity-0 data-leave:duration-150 motion-reduce:duration-100 sm:px-6 sm:py-8 lg:px-8 lg:py-16"
         />
       )}
       {isToast ? (
@@ -41,23 +41,23 @@ export function Alert({
           transition
           className={clsx(
             className,
-            "fixed top-4 right-4 z-50 w-[220px] sm:w-auto rounded-md bg-white px-4 py-2 shadow-lg ring-1 ring-zinc-950/10 text-sm flex items-center gap-2 dark:bg-zinc-900 dark:ring-white/10",
-            "transition duration-150 ease-out data-closed:opacity-0 data-enter:ease-out data-leave:ease-in data-closed:translate-y-2 data-enter:translate-y-0",
+            "fixed top-[calc(1rem+env(safe-area-inset-top,0px))] right-[calc(1rem+env(safe-area-inset-right,0px))] z-50 flex w-[220px] items-center gap-2 rounded-2xl bg-ps-panel-strong px-4 py-2 text-sm text-ps-text shadow-(--shadow-shell) ring-1 ring-ps-line sm:w-auto",
+            "origin-top-right transition-[opacity,transform] duration-180 ease-(--ease-out) data-closed:[transform:translateY(-4px)_scale(.98)] data-closed:opacity-0 data-leave:duration-120 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
             "pointer-events-auto",
           )}
         >
           {children}
         </Headless.DialogPanel>
       ) : (
-        <div className="fixed inset-0 w-screen overflow-y-auto pt-6 sm:pt-0">
+        <div className="fixed inset-0 w-screen overflow-y-auto overscroll-contain pt-6 sm:pt-0">
           <div className="grid min-h-full grid-rows-[1fr_auto_1fr] justify-items-center p-8 sm:grid-rows-[1fr_auto_3fr] sm:p-4">
             <Headless.DialogPanel
               transition
               className={clsx(
                 className,
                 sizes[size],
-                "row-start-2 w-full rounded-2xl bg-white p-8 shadow-lg ring-1 ring-zinc-950/10 sm:rounded-2xl sm:p-6 dark:bg-zinc-900 dark:ring-white/10 forced-colors:outline",
-                "transition duration-150 ease-out will-change-transform data-closed:opacity-0 data-enter:ease-out data-closed:data-enter:scale-95 data-leave:ease-in",
+                "row-start-2 w-full rounded-lg bg-ps-shell p-8 text-ps-text shadow-(--shadow-shell) ring-1 ring-ps-line sm:p-6 forced-colors:outline",
+                "origin-center transition-[opacity,transform] duration-220 ease-(--ease-out) data-closed:[transform:translateY(6px)_scale(.98)] data-closed:opacity-0 data-leave:duration-150 motion-reduce:transform-none motion-reduce:duration-100 motion-reduce:data-closed:transform-none",
               )}
             >
               {children}
@@ -81,7 +81,7 @@ export function AlertTitle({
       {...props}
       className={clsx(
         className,
-        "text-center text-base/6 font-semibold text-balance text-zinc-950 sm:text-left sm:text-sm/6 sm:text-wrap dark:text-white",
+        "text-center text-base/6 font-semibold text-balance text-ps-text sm:text-left sm:text-sm/6 sm:text-wrap",
       )}
     />
   );

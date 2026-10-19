@@ -1,0 +1,864 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T15:31:54.396861Z",
+  "title": "Design System: PlayStash",
+  "extensions": {
+    "colorMeta": {
+      "dark-bg": {
+        "role": "neutral",
+        "displayName": "Dark Bg",
+        "canonical": "#0e1825",
+        "tonalRamp": [
+          "oklch(15% 0.0300 255.34)",
+          "oklch(26% 0.0300 255.34)",
+          "oklch(38% 0.0300 255.34)",
+          "oklch(49% 0.0300 255.34)",
+          "oklch(61% 0.0300 255.34)",
+          "oklch(72% 0.0300 255.34)",
+          "oklch(84% 0.0300 255.34)",
+          "oklch(95% 0.0300 255.34)"
+        ]
+      },
+      "dark-shell": {
+        "role": "neutral",
+        "displayName": "Dark Shell",
+        "canonical": "#0b121c",
+        "tonalRamp": [
+          "oklch(15% 0.0234 257.30)",
+          "oklch(26% 0.0234 257.30)",
+          "oklch(38% 0.0234 257.30)",
+          "oklch(49% 0.0234 257.30)",
+          "oklch(61% 0.0234 257.30)",
+          "oklch(72% 0.0234 257.30)",
+          "oklch(84% 0.0234 257.30)",
+          "oklch(95% 0.0234 257.30)"
+        ]
+      },
+      "dark-panel": {
+        "role": "neutral",
+        "displayName": "Dark Panel",
+        "canonical": "#152131",
+        "tonalRamp": [
+          "oklch(15% 0.0351 255.87)",
+          "oklch(26% 0.0351 255.87)",
+          "oklch(38% 0.0351 255.87)",
+          "oklch(49% 0.0351 255.87)",
+          "oklch(61% 0.0351 255.87)",
+          "oklch(72% 0.0351 255.87)",
+          "oklch(84% 0.0351 255.87)",
+          "oklch(95% 0.0351 255.87)"
+        ]
+      },
+      "dark-panel-strong": {
+        "role": "neutral",
+        "displayName": "Dark Panel Strong",
+        "canonical": "#1e2e40",
+        "tonalRamp": [
+          "oklch(15% 0.0393 252.05)",
+          "oklch(26% 0.0393 252.05)",
+          "oklch(38% 0.0393 252.05)",
+          "oklch(49% 0.0393 252.05)",
+          "oklch(61% 0.0393 252.05)",
+          "oklch(72% 0.0393 252.05)",
+          "oklch(84% 0.0393 252.05)",
+          "oklch(95% 0.0393 252.05)"
+        ]
+      },
+      "dark-panel-soft": {
+        "role": "neutral",
+        "displayName": "Dark Panel Soft",
+        "canonical": "#182739",
+        "tonalRamp": [
+          "oklch(15% 0.0395 253.62)",
+          "oklch(26% 0.0395 253.62)",
+          "oklch(38% 0.0395 253.62)",
+          "oklch(49% 0.0395 253.62)",
+          "oklch(61% 0.0395 253.62)",
+          "oklch(72% 0.0395 253.62)",
+          "oklch(84% 0.0395 253.62)",
+          "oklch(95% 0.0395 253.62)"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Dark Text",
+        "canonical": "#edf2f7",
+        "tonalRamp": [
+          "oklch(15% 0.0086 247.92)",
+          "oklch(26% 0.0086 247.92)",
+          "oklch(38% 0.0086 247.92)",
+          "oklch(49% 0.0086 247.92)",
+          "oklch(61% 0.0086 247.92)",
+          "oklch(72% 0.0086 247.92)",
+          "oklch(84% 0.0086 247.92)",
+          "oklch(95% 0.0086 247.92)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Dark Muted",
+        "canonical": "#a4b5c8",
+        "tonalRamp": [
+          "oklch(15% 0.0332 251.19)",
+          "oklch(26% 0.0332 251.19)",
+          "oklch(38% 0.0332 251.19)",
+          "oklch(49% 0.0332 251.19)",
+          "oklch(61% 0.0332 251.19)",
+          "oklch(72% 0.0332 251.19)",
+          "oklch(84% 0.0332 251.19)",
+          "oklch(95% 0.0332 251.19)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Dark Line",
+        "canonical": "#253344",
+        "tonalRamp": [
+          "oklch(15% 0.0359 253.67)",
+          "oklch(26% 0.0359 253.67)",
+          "oklch(38% 0.0359 253.67)",
+          "oklch(49% 0.0359 253.67)",
+          "oklch(61% 0.0359 253.67)",
+          "oklch(72% 0.0359 253.67)",
+          "oklch(84% 0.0359 253.67)",
+          "oklch(95% 0.0359 253.67)"
+        ]
+      },
+      "dark-line-strong": {
+        "role": "neutral",
+        "displayName": "Dark Line Strong",
+        "canonical": "#3c5067",
+        "tonalRamp": [
+          "oklch(15% 0.0459 252.36)",
+          "oklch(26% 0.0459 252.36)",
+          "oklch(38% 0.0459 252.36)",
+          "oklch(49% 0.0459 252.36)",
+          "oklch(61% 0.0459 252.36)",
+          "oklch(72% 0.0459 252.36)",
+          "oklch(84% 0.0459 252.36)",
+          "oklch(95% 0.0459 252.36)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "Dark Accent",
+        "canonical": "#a3d7fa",
+        "tonalRamp": [
+          "oklch(15% 0.0727 238.16)",
+          "oklch(26% 0.0727 238.16)",
+          "oklch(38% 0.0727 238.16)",
+          "oklch(49% 0.0727 238.16)",
+          "oklch(61% 0.0727 238.16)",
+          "oklch(72% 0.0727 238.16)",
+          "oklch(84% 0.0727 238.16)",
+          "oklch(95% 0.0727 238.16)"
+        ]
+      },
+      "dark-accent-strong": {
+        "role": "primary",
+        "displayName": "Dark Accent Strong",
+        "canonical": "#c6e8ff",
+        "tonalRamp": [
+          "oklch(15% 0.0476 237.65)",
+          "oklch(26% 0.0476 237.65)",
+          "oklch(38% 0.0476 237.65)",
+          "oklch(49% 0.0476 237.65)",
+          "oklch(61% 0.0476 237.65)",
+          "oklch(72% 0.0476 237.65)",
+          "oklch(84% 0.0476 237.65)",
+          "oklch(95% 0.0476 237.65)"
+        ]
+      },
+      "dark-accent-cool": {
+        "role": "primary",
+        "displayName": "Dark Accent Cool",
+        "canonical": "#a3d7fa",
+        "tonalRamp": [
+          "oklch(15% 0.0727 238.16)",
+          "oklch(26% 0.0727 238.16)",
+          "oklch(38% 0.0727 238.16)",
+          "oklch(49% 0.0727 238.16)",
+          "oklch(61% 0.0727 238.16)",
+          "oklch(72% 0.0727 238.16)",
+          "oklch(84% 0.0727 238.16)",
+          "oklch(95% 0.0727 238.16)"
+        ]
+      },
+      "dark-on-accent": {
+        "role": "neutral",
+        "displayName": "Dark On Accent",
+        "canonical": "#102238",
+        "tonalRamp": [
+          "oklch(15% 0.0485 254.41)",
+          "oklch(26% 0.0485 254.41)",
+          "oklch(38% 0.0485 254.41)",
+          "oklch(49% 0.0485 254.41)",
+          "oklch(61% 0.0485 254.41)",
+          "oklch(72% 0.0485 254.41)",
+          "oklch(84% 0.0485 254.41)",
+          "oklch(95% 0.0485 254.41)"
+        ]
+      },
+      "dark-accent-hover": {
+        "role": "primary",
+        "displayName": "Dark Accent Hover",
+        "canonical": "#bce4ff",
+        "tonalRamp": [
+          "oklch(15% 0.0559 237.78)",
+          "oklch(26% 0.0559 237.78)",
+          "oklch(38% 0.0559 237.78)",
+          "oklch(49% 0.0559 237.78)",
+          "oklch(61% 0.0559 237.78)",
+          "oklch(72% 0.0559 237.78)",
+          "oklch(84% 0.0559 237.78)",
+          "oklch(95% 0.0559 237.78)"
+        ]
+      },
+      "dark-accent-pressed": {
+        "role": "primary",
+        "displayName": "Dark Accent Pressed",
+        "canonical": "#86c6ef",
+        "tonalRamp": [
+          "oklch(15% 0.0875 237.46)",
+          "oklch(26% 0.0875 237.46)",
+          "oklch(38% 0.0875 237.46)",
+          "oklch(49% 0.0875 237.46)",
+          "oklch(61% 0.0875 237.46)",
+          "oklch(72% 0.0875 237.46)",
+          "oklch(84% 0.0875 237.46)",
+          "oklch(95% 0.0875 237.46)"
+        ]
+      },
+      "dark-accent-disabled": {
+        "role": "primary",
+        "displayName": "Dark Accent Disabled",
+        "canonical": "#5c7c94",
+        "tonalRamp": [
+          "oklch(15% 0.0522 241.21)",
+          "oklch(26% 0.0522 241.21)",
+          "oklch(38% 0.0522 241.21)",
+          "oklch(49% 0.0522 241.21)",
+          "oklch(61% 0.0522 241.21)",
+          "oklch(72% 0.0522 241.21)",
+          "oklch(84% 0.0522 241.21)",
+          "oklch(95% 0.0522 241.21)"
+        ]
+      },
+      "dark-blur": {
+        "role": "neutral",
+        "displayName": "Dark Blur",
+        "canonical": "rgba(8, 15, 24, 0.7)",
+        "tonalRamp": [
+          "oklch(15% 0.0221 254.64)",
+          "oklch(26% 0.0221 254.64)",
+          "oklch(38% 0.0221 254.64)",
+          "oklch(49% 0.0221 254.64)",
+          "oklch(61% 0.0221 254.64)",
+          "oklch(72% 0.0221 254.64)",
+          "oklch(84% 0.0221 254.64)",
+          "oklch(95% 0.0221 254.64)"
+        ]
+      },
+      "dark-success": {
+        "role": "neutral",
+        "displayName": "Dark Success",
+        "canonical": "#72d6ab",
+        "tonalRamp": [
+          "oklch(15% 0.1137 163.90)",
+          "oklch(26% 0.1137 163.90)",
+          "oklch(38% 0.1137 163.90)",
+          "oklch(49% 0.1137 163.90)",
+          "oklch(61% 0.1137 163.90)",
+          "oklch(72% 0.1137 163.90)",
+          "oklch(84% 0.1137 163.90)",
+          "oklch(95% 0.1137 163.90)"
+        ]
+      },
+      "dark-warning": {
+        "role": "neutral",
+        "displayName": "Dark Warning",
+        "canonical": "#efc678",
+        "tonalRamp": [
+          "oklch(15% 0.1073 82.49)",
+          "oklch(26% 0.1073 82.49)",
+          "oklch(38% 0.1073 82.49)",
+          "oklch(49% 0.1073 82.49)",
+          "oklch(61% 0.1073 82.49)",
+          "oklch(72% 0.1073 82.49)",
+          "oklch(84% 0.1073 82.49)",
+          "oklch(95% 0.1073 82.49)"
+        ]
+      },
+      "dark-danger": {
+        "role": "neutral",
+        "displayName": "Dark Danger",
+        "canonical": "#f58d91",
+        "tonalRamp": [
+          "oklch(15% 0.1263 18.06)",
+          "oklch(26% 0.1263 18.06)",
+          "oklch(38% 0.1263 18.06)",
+          "oklch(49% 0.1263 18.06)",
+          "oklch(61% 0.1263 18.06)",
+          "oklch(72% 0.1263 18.06)",
+          "oklch(84% 0.1263 18.06)",
+          "oklch(95% 0.1263 18.06)"
+        ]
+      },
+      "light-bg": {
+        "role": "neutral",
+        "displayName": "Light Bg",
+        "canonical": "#f1f4f8",
+        "tonalRamp": [
+          "oklch(15% 0.0062 255.48)",
+          "oklch(26% 0.0062 255.48)",
+          "oklch(38% 0.0062 255.48)",
+          "oklch(49% 0.0062 255.48)",
+          "oklch(61% 0.0062 255.48)",
+          "oklch(72% 0.0062 255.48)",
+          "oklch(84% 0.0062 255.48)",
+          "oklch(95% 0.0062 255.48)"
+        ]
+      },
+      "light-shell": {
+        "role": "neutral",
+        "displayName": "Light Shell",
+        "canonical": "#e5ebf2",
+        "tonalRamp": [
+          "oklch(15% 0.0115 252.09)",
+          "oklch(26% 0.0115 252.09)",
+          "oklch(38% 0.0115 252.09)",
+          "oklch(49% 0.0115 252.09)",
+          "oklch(61% 0.0115 252.09)",
+          "oklch(72% 0.0115 252.09)",
+          "oklch(84% 0.0115 252.09)",
+          "oklch(95% 0.0115 252.09)"
+        ]
+      },
+      "light-panel": {
+        "role": "neutral",
+        "displayName": "Light Panel",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "light-panel-strong": {
+        "role": "neutral",
+        "displayName": "Light Panel Strong",
+        "canonical": "#e3ebf4",
+        "tonalRamp": [
+          "oklch(15% 0.0149 251.16)",
+          "oklch(26% 0.0149 251.16)",
+          "oklch(38% 0.0149 251.16)",
+          "oklch(49% 0.0149 251.16)",
+          "oklch(61% 0.0149 251.16)",
+          "oklch(72% 0.0149 251.16)",
+          "oklch(84% 0.0149 251.16)",
+          "oklch(95% 0.0149 251.16)"
+        ]
+      },
+      "light-panel-soft": {
+        "role": "neutral",
+        "displayName": "Light Panel Soft",
+        "canonical": "#eaf0f6",
+        "tonalRamp": [
+          "oklch(15% 0.0103 247.93)",
+          "oklch(26% 0.0103 247.93)",
+          "oklch(38% 0.0103 247.93)",
+          "oklch(49% 0.0103 247.93)",
+          "oklch(61% 0.0103 247.93)",
+          "oklch(72% 0.0103 247.93)",
+          "oklch(84% 0.0103 247.93)",
+          "oklch(95% 0.0103 247.93)"
+        ]
+      },
+      "light-text": {
+        "role": "neutral",
+        "displayName": "Light Text",
+        "canonical": "#15283c",
+        "tonalRamp": [
+          "oklch(15% 0.0451 250.94)",
+          "oklch(26% 0.0451 250.94)",
+          "oklch(38% 0.0451 250.94)",
+          "oklch(49% 0.0451 250.94)",
+          "oklch(61% 0.0451 250.94)",
+          "oklch(72% 0.0451 250.94)",
+          "oklch(84% 0.0451 250.94)",
+          "oklch(95% 0.0451 250.94)"
+        ]
+      },
+      "light-muted": {
+        "role": "neutral",
+        "displayName": "Light Muted",
+        "canonical": "#50647b",
+        "tonalRamp": [
+          "oklch(15% 0.0442 252.23)",
+          "oklch(26% 0.0442 252.23)",
+          "oklch(38% 0.0442 252.23)",
+          "oklch(49% 0.0442 252.23)",
+          "oklch(61% 0.0442 252.23)",
+          "oklch(72% 0.0442 252.23)",
+          "oklch(84% 0.0442 252.23)",
+          "oklch(95% 0.0442 252.23)"
+        ]
+      },
+      "light-line": {
+        "role": "neutral",
+        "displayName": "Light Line",
+        "canonical": "#d3dde8",
+        "tonalRamp": [
+          "oklch(15% 0.0186 250.60)",
+          "oklch(26% 0.0186 250.60)",
+          "oklch(38% 0.0186 250.60)",
+          "oklch(49% 0.0186 250.60)",
+          "oklch(61% 0.0186 250.60)",
+          "oklch(72% 0.0186 250.60)",
+          "oklch(84% 0.0186 250.60)",
+          "oklch(95% 0.0186 250.60)"
+        ]
+      },
+      "light-line-strong": {
+        "role": "neutral",
+        "displayName": "Light Line Strong",
+        "canonical": "#b2c4d5",
+        "tonalRamp": [
+          "oklch(15% 0.0311 246.66)",
+          "oklch(26% 0.0311 246.66)",
+          "oklch(38% 0.0311 246.66)",
+          "oklch(49% 0.0311 246.66)",
+          "oklch(61% 0.0311 246.66)",
+          "oklch(72% 0.0311 246.66)",
+          "oklch(84% 0.0311 246.66)",
+          "oklch(95% 0.0311 246.66)"
+        ]
+      },
+      "light-accent": {
+        "role": "primary",
+        "displayName": "Light Accent",
+        "canonical": "#176da5",
+        "tonalRamp": [
+          "oklch(15% 0.1170 243.73)",
+          "oklch(26% 0.1170 243.73)",
+          "oklch(38% 0.1170 243.73)",
+          "oklch(49% 0.1170 243.73)",
+          "oklch(61% 0.1170 243.73)",
+          "oklch(72% 0.1170 243.73)",
+          "oklch(84% 0.1170 243.73)",
+          "oklch(95% 0.1170 243.73)"
+        ]
+      },
+      "light-accent-strong": {
+        "role": "primary",
+        "displayName": "Light Accent Strong",
+        "canonical": "#125783",
+        "tonalRamp": [
+          "oklch(15% 0.0971 242.88)",
+          "oklch(26% 0.0971 242.88)",
+          "oklch(38% 0.0971 242.88)",
+          "oklch(49% 0.0971 242.88)",
+          "oklch(61% 0.0971 242.88)",
+          "oklch(72% 0.0971 242.88)",
+          "oklch(84% 0.0971 242.88)",
+          "oklch(95% 0.0971 242.88)"
+        ]
+      },
+      "light-accent-cool": {
+        "role": "primary",
+        "displayName": "Light Accent Cool",
+        "canonical": "#176da5",
+        "tonalRamp": [
+          "oklch(15% 0.1170 243.73)",
+          "oklch(26% 0.1170 243.73)",
+          "oklch(38% 0.1170 243.73)",
+          "oklch(49% 0.1170 243.73)",
+          "oklch(61% 0.1170 243.73)",
+          "oklch(72% 0.1170 243.73)",
+          "oklch(84% 0.1170 243.73)",
+          "oklch(95% 0.1170 243.73)"
+        ]
+      },
+      "light-on-accent": {
+        "role": "neutral",
+        "displayName": "Light On Accent",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "light-accent-hover": {
+        "role": "primary",
+        "displayName": "Light Accent Hover",
+        "canonical": "#125783",
+        "tonalRamp": [
+          "oklch(15% 0.0971 242.88)",
+          "oklch(26% 0.0971 242.88)",
+          "oklch(38% 0.0971 242.88)",
+          "oklch(49% 0.0971 242.88)",
+          "oklch(61% 0.0971 242.88)",
+          "oklch(72% 0.0971 242.88)",
+          "oklch(84% 0.0971 242.88)",
+          "oklch(95% 0.0971 242.88)"
+        ]
+      },
+      "light-accent-pressed": {
+        "role": "primary",
+        "displayName": "Light Accent Pressed",
+        "canonical": "#0e466a",
+        "tonalRamp": [
+          "oklch(15% 0.0826 242.78)",
+          "oklch(26% 0.0826 242.78)",
+          "oklch(38% 0.0826 242.78)",
+          "oklch(49% 0.0826 242.78)",
+          "oklch(61% 0.0826 242.78)",
+          "oklch(72% 0.0826 242.78)",
+          "oklch(84% 0.0826 242.78)",
+          "oklch(95% 0.0826 242.78)"
+        ]
+      },
+      "light-accent-disabled": {
+        "role": "primary",
+        "displayName": "Light Accent Disabled",
+        "canonical": "#aac4d5",
+        "tonalRamp": [
+          "oklch(15% 0.0371 236.61)",
+          "oklch(26% 0.0371 236.61)",
+          "oklch(38% 0.0371 236.61)",
+          "oklch(49% 0.0371 236.61)",
+          "oklch(61% 0.0371 236.61)",
+          "oklch(72% 0.0371 236.61)",
+          "oklch(84% 0.0371 236.61)",
+          "oklch(95% 0.0371 236.61)"
+        ]
+      },
+      "light-blur": {
+        "role": "neutral",
+        "displayName": "Light Blur",
+        "canonical": "rgba(23, 39, 58, 0.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0418 253.46)",
+          "oklch(26% 0.0418 253.46)",
+          "oklch(38% 0.0418 253.46)",
+          "oklch(49% 0.0418 253.46)",
+          "oklch(61% 0.0418 253.46)",
+          "oklch(72% 0.0418 253.46)",
+          "oklch(84% 0.0418 253.46)",
+          "oklch(95% 0.0418 253.46)"
+        ]
+      },
+      "light-success": {
+        "role": "neutral",
+        "displayName": "Light Success",
+        "canonical": "#197a54",
+        "tonalRamp": [
+          "oklch(15% 0.1056 161.44)",
+          "oklch(26% 0.1056 161.44)",
+          "oklch(38% 0.1056 161.44)",
+          "oklch(49% 0.1056 161.44)",
+          "oklch(61% 0.1056 161.44)",
+          "oklch(72% 0.1056 161.44)",
+          "oklch(84% 0.1056 161.44)",
+          "oklch(95% 0.1056 161.44)"
+        ]
+      },
+      "light-warning": {
+        "role": "neutral",
+        "displayName": "Light Warning",
+        "canonical": "#966715",
+        "tonalRamp": [
+          "oklch(15% 0.1086 75.15)",
+          "oklch(26% 0.1086 75.15)",
+          "oklch(38% 0.1086 75.15)",
+          "oklch(49% 0.1086 75.15)",
+          "oklch(61% 0.1086 75.15)",
+          "oklch(72% 0.1086 75.15)",
+          "oklch(84% 0.1086 75.15)",
+          "oklch(95% 0.1086 75.15)"
+        ]
+      },
+      "light-danger": {
+        "role": "neutral",
+        "displayName": "Light Danger",
+        "canonical": "#b23d4c",
+        "tonalRamp": [
+          "oklch(15% 0.1516 16.51)",
+          "oklch(26% 0.1516 16.51)",
+          "oklch(38% 0.1516 16.51)",
+          "oklch(49% 0.1516 16.51)",
+          "oklch(61% 0.1516 16.51)",
+          "oklch(72% 0.1516 16.51)",
+          "oklch(84% 0.1516 16.51)",
+          "oklch(95% 0.1516 16.51)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "game-title": {
+        "displayName": "Game Title",
+        "purpose": "Artwork game title; 34px in the narrow container variant."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Shared desktop page heading; 24px/32px on small screens."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Settings section and dialog title scale."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Shared compact body copy from 640px."
+      },
+      "body-mobile": {
+        "displayName": "Body Mobile",
+        "purpose": "Shared body copy below 640px."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Shared control text below 640px."
+      },
+      "control-compact": {
+        "displayName": "Control Compact",
+        "purpose": "Shared control text from 640px."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Compact category, rail, and settings labels."
+      },
+      "metadata": {
+        "displayName": "Metadata",
+        "purpose": "Secondary metadata and library counts."
+      },
+      "field": {
+        "displayName": "Field",
+        "purpose": "Shared input text below 640px; 14px/24px from 640px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shell-dark",
+        "value": "0 16px 40px rgb(0 0 0 / 0.35)",
+        "purpose": "Dark floating menu/dialog shell; --shadow-shell."
+      },
+      {
+        "name": "shell-light",
+        "value": "0 12px 32px rgb(0 12 28 / 0.18)",
+        "purpose": "Light floating menu/dialog shell; --shadow-shell."
+      },
+      {
+        "name": "card",
+        "value": "0 0 transparent",
+        "purpose": "Flat resting cards; --shadow-card."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Shared motion easing and base control state feedback."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Existing alternate CSS easing token."
+      },
+      {
+        "name": "fast",
+        "value": "120ms",
+        "purpose": "Fast shared motion and workspace state feedback."
+      },
+      {
+        "name": "base",
+        "value": "180ms",
+        "purpose": "Shared UI motion preset; routes themselves update immediately."
+      },
+      {
+        "name": "slow",
+        "value": "220ms",
+        "purpose": "Shared toast and entrance preset."
+      },
+      {
+        "name": "control",
+        "value": "140ms",
+        "purpose": "Base color, background, border, and opacity changes."
+      },
+      {
+        "name": "drawer",
+        "value": "240ms / 180ms",
+        "purpose": "Navigation/library drawer entry and exit, preserving mounted content through closing."
+      },
+      {
+        "name": "artwork",
+        "value": "280ms",
+        "purpose": "Decode-ready opacity transition with stable title geometry."
+      },
+      {
+        "name": "filters",
+        "value": "240ms",
+        "purpose": "Finite panel expansion with responsive 20/24px flex-gap compensation."
+      },
+      {
+        "name": "loading-identity",
+        "value": "1100ms once / 160ms threshold",
+        "purpose": "Existing rendered logo settles during longer loads; static for reduced motion or hidden documents, never delays navigation."
+      },
+      {
+        "name": "reduced",
+        "value": "0.01ms",
+        "purpose": "Global CSS reduced-motion override; MotionConfig also honors user preference."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "workspace-mobile",
+        "value": "768px"
+      },
+      {
+        "name": "desktop-shell",
+        "value": "1024px"
+      },
+      {
+        "name": "wide-auth",
+        "value": "1440px"
+      },
+      {
+        "name": "game-narrow-container",
+        "value": "640px"
+      },
+      {
+        "name": "game-medium-container",
+        "value": "850px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The shared accent action with hover, press, focus, and disabled feedback.",
+      "html": "<button class=\"ds-btn-primary\">Download</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 13px;border-radius:6px;font-size:16px;line-height:24px;letter-spacing:-.01em;transition:background-color 150ms ease-out,border-color 150ms ease-out,color 150ms ease-out,transform 150ms ease-out;font-family:Inter,sans-serif;font-weight:500;cursor:pointer;position:relative;isolation:isolate;border:1px solid var(--color-ps-line,#253344);background:var(--color-ps-accent,#a3d7fa);color:var(--color-ps-on-accent,#102238);}.ds-btn-primary::after{content:\"\";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;}.ds-btn-primary:hover::after,.ds-btn-primary:active::after{background:rgb(255 255 255 / 10%);}.ds-btn-primary:active{transform:scale(.98);}.ds-btn-primary:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}.ds-btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}@media(min-width:640px){.ds-btn-primary{min-height:40px;padding:6px 12px;font-size:14px;}}@media(prefers-reduced-motion:reduce){.ds-btn-primary{transition:none;}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A strong-panel action with a visible border.",
+      "html": "<button class=\"ds-btn-secondary\">Filter</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 13px;border-radius:6px;font-size:16px;line-height:24px;letter-spacing:-.01em;transition:background-color 150ms ease-out,border-color 150ms ease-out,color 150ms ease-out,transform 150ms ease-out;font-family:Inter,sans-serif;font-weight:500;cursor:pointer;border:1px solid var(--color-ps-line,#253344);background:var(--color-ps-panel-strong,#1e2e40);color:var(--color-ps-text,#edf2f7);}.ds-btn-secondary:hover{border-color:var(--color-ps-line-strong,#3c5067);background:var(--color-ps-panel-soft,#182739);}.ds-btn-secondary:active{background:var(--color-ps-panel,#152131);transform:scale(.98);}.ds-btn-secondary:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}.ds-btn-secondary:disabled{opacity:.5;cursor:not-allowed;}@media(min-width:640px){.ds-btn-secondary{min-height:40px;padding:6px 12px;font-size:14px;}}@media(prefers-reduced-motion:reduce){.ds-btn-secondary{transition:none;}}"
+    },
+    {
+      "name": "Plain Button",
+      "kind": "button",
+      "refersTo": "button-plain",
+      "description": "A quiet utility action with the same control geometry.",
+      "html": "<button class=\"ds-btn-plain\">Manage categories</button>",
+      "css": ".ds-btn-plain{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 13px;border-radius:6px;font-size:16px;line-height:24px;letter-spacing:-.01em;transition:background-color 150ms ease-out,border-color 150ms ease-out,color 150ms ease-out,transform 150ms ease-out;font-family:Inter,sans-serif;font-weight:500;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--color-ps-text,#edf2f7);}.ds-btn-plain:hover,.ds-btn-plain:active{background:var(--color-ps-panel-soft,#182739);}.ds-btn-plain:active{transform:scale(.98);}.ds-btn-plain:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}.ds-btn-plain:disabled{opacity:.5;cursor:not-allowed;}@media(min-width:640px){.ds-btn-plain{min-height:40px;padding:6px 12px;font-size:14px;}}@media(prefers-reduced-motion:reduce){.ds-btn-plain{transition:none;}}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The shared labeled field with strong line, accent focus, and invalid/disabled states.",
+      "html": "<label class=\"ds-field\">Server<input class=\"ds-input\" placeholder=\"Server address\" type=\"url\"></label>",
+      "css": ".ds-field{display:grid;gap:12px;font:500 14px/24px Inter,sans-serif;color:var(--color-ps-text,#edf2f7);}.ds-input{width:100%;min-width:0;padding:9px 13px;border:1px solid var(--color-ps-line-strong,#3c5067);border-radius:6px;background:var(--color-ps-shell,#0b121c);color:var(--color-ps-text,#edf2f7);font:400 16px/24px Inter,sans-serif;caret-color:var(--color-ps-accent,#a3d7fa);}.ds-input::placeholder{color:var(--color-ps-muted,#a4b5c8);}.ds-input:focus{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:-2px;}.ds-input:disabled{opacity:.5;border-color:transparent;background:var(--color-ps-panel-soft,#182739);}.ds-input[aria-invalid=\"true\"]{border-color:#ef4444;}@media(min-width:640px){.ds-input{padding:6px 12px;font-size:14px;}}"
+    },
+    {
+      "name": "Global Navigation",
+      "kind": "nav",
+      "refersTo": "global-nav",
+      "description": "Muted links with a two-pixel active underline.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Primary\"><a href=\"#library\" aria-current=\"page\">Library</a><a href=\"#community\">Community</a><a href=\"#chat\">Chat</a></nav>",
+      "css": ".ds-nav{display:flex;gap:28px;min-height:72px;background:var(--color-ps-shell,#0b121c);border-bottom:1px solid var(--color-ps-line,#253344);}.ds-nav a{position:relative;display:flex;align-items:center;color:var(--color-ps-muted,#a4b5c8);text-decoration:none;font:600 14px/24px Inter,sans-serif;white-space:nowrap;transition:color 140ms cubic-bezier(.23,1,.32,1);}.ds-nav a:hover{color:var(--color-ps-text,#edf2f7);}.ds-nav a[aria-current=\"page\"]{color:var(--color-ps-accent,#a3d7fa);}.ds-nav a[aria-current=\"page\"]::after{content:\"\";position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--color-ps-accent,#a3d7fa);}.ds-nav a:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}.ds-nav a[aria-disabled=\"true\"]{opacity:.45;cursor:not-allowed;}"
+    },
+    {
+      "name": "Category Chip",
+      "kind": "chip",
+      "refersTo": "category-chip",
+      "description": "The compact category filter, with selection exposed as aria-pressed.",
+      "html": "<div class=\"ds-chips\"><button aria-pressed=\"true\">All games</button><button aria-pressed=\"false\">Favorites</button></div>",
+      "css": ".ds-chips{display:flex;flex-wrap:wrap;gap:6px;}.ds-chips button{padding:8px 12px;min-height:36px;border:0;border-radius:4px;background:transparent;color:var(--color-ps-muted,#a4b5c8);font:500 13px/20px Inter,sans-serif;cursor:pointer;transition:background-color 150ms ease-out,color 150ms ease-out;}.ds-chips button[aria-pressed=\"true\"]{background:var(--color-ps-panel-strong,#1e2e40);color:var(--color-ps-text,#edf2f7);}.ds-chips button:hover{background:var(--color-ps-panel,#152131);color:var(--color-ps-text,#edf2f7);}.ds-chips button:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}"
+    },
+    {
+      "name": "Game Cover Card",
+      "kind": "card",
+      "refersTo": "cover-card",
+      "description": "A 2:3 cover with its title below; the snippet uses the existing missing-art treatment.",
+      "html": "<article class=\"ds-cover-card\"><a class=\"ds-cover-link\" href=\"#game\" aria-label=\"Open game\"></a><div class=\"ds-cover-placeholder\" aria-hidden=\"true\">G</div><h3>Game title</h3><p>Secondary metadata</p></article>",
+      "css": ".ds-cover-card{position:relative;width:174px;min-width:0;font-family:Inter,sans-serif;color:var(--color-ps-text,#edf2f7);}.ds-cover-link{position:absolute;inset:0;z-index:1;border-radius:5px;}.ds-cover-link:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}.ds-cover-placeholder{display:flex;align-items:center;justify-content:center;aspect-ratio:2/3;width:100%;border-radius:5px;overflow:hidden;background:var(--color-ps-panel-strong,#1e2e40);color:var(--color-ps-muted,#a4b5c8);font-size:32px;letter-spacing:-.025em;}.ds-cover-card h3{margin:12px 0 5px;font-size:13px;line-height:1.4;font-weight:550;letter-spacing:-.015em;}.ds-cover-card p{margin:0;font-size:11px;line-height:1.4;color:var(--color-ps-muted,#a4b5c8);}.ds-cover-card:has(.ds-cover-link:hover) h3{color:var(--color-ps-accent-strong,#c6e8ff);}"
+    },
+    {
+      "name": "Library Row",
+      "kind": "nav",
+      "refersTo": "library-row",
+      "description": "A persistent, compact library item with an artwork placeholder and current selection.",
+      "html": "<a class=\"ds-library-row\" href=\"#game\" aria-current=\"page\"><span class=\"ds-library-initial\" aria-hidden=\"true\">G</span><span class=\"ds-library-title\">Game title</span></a>",
+      "css": ".ds-library-row{display:flex;align-items:center;gap:10px;min-height:46px;padding:5px 10px;border-radius:4px;color:var(--color-ps-muted,#a4b5c8);background:var(--color-ps-shell,#0b121c);font:500 12px/18px Inter,sans-serif;text-decoration:none;transition:background-color 150ms ease-out;}.ds-library-row:hover{background:var(--color-ps-panel,#152131);color:var(--color-ps-text,#edf2f7);}.ds-library-row[aria-current=\"page\"]{background:color-mix(in srgb,var(--color-ps-accent,#a3d7fa) 13%,var(--color-ps-shell,#0b121c));color:var(--color-ps-text,#edf2f7);}.ds-library-row:focus-visible{outline:2px solid var(--color-ps-accent-cool,#a3d7fa);outline-offset:3px;}.ds-library-initial{display:flex;align-items:center;justify-content:center;width:25px;height:35px;flex-shrink:0;border-radius:2px;background:var(--color-ps-panel-strong,#1e2e40);color:var(--color-ps-muted,#a4b5c8);font-size:11px;}.ds-library-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}"
+    },
+    {
+      "name": "Dialog Surface",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "The compact floating surface used by the existing accessible dialog primitive.",
+      "html": "<section class=\"ds-dialog\" aria-label=\"Dialog surface\"><h2>Dialog title</h2><p>Supporting information.</p></section>",
+      "css": ".ds-dialog{max-width:448px;padding:32px;border:1px solid var(--color-ps-line,#253344);border-radius:6px;background:var(--color-ps-shell,#0b121c);color:var(--color-ps-text,#edf2f7);box-shadow:var(--shadow-shell,0 16px 40px rgb(0 0 0 / .35));font-family:Inter,sans-serif;}.ds-dialog h2{margin:0;font-size:18px;line-height:28px;font-weight:600;letter-spacing:-.025em;}.ds-dialog p{margin:8px 0 0;font-size:14px;line-height:24px;color:var(--color-ps-muted,#a4b5c8);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Steam, neu gedacht",
+    "overview": "A personal game library with Steam’s familiar master-detail arrangement, made calmer and more legible. Midnight navy chrome, blue-grey work surfaces, ivory text, and ice-blue actions let game artwork carry the atmosphere. The selected direction is “Steam, neu gedacht”.\n\nThe same compact geometry serves light, dark, and custom themes. Inter, small corners, flat tonal steps, and clear control states keep discovery and everyday tasks coherent across web and desktop.",
+    "keyCharacteristics": [
+      "Artwork supplies expression; the interface supplies orientation.",
+      "Compact controls, modest corners, and tonal separation.",
+      "Immediate navigation with brief, purposeful state feedback.",
+      "Theme-aware chrome and readable artwork overlays."
+    ],
+    "rules": [
+      {
+        "name": "Semantic Chrome",
+        "body": "Use the existing --color-ps-* properties for interface surfaces, text, lines, and accents so inline custom-theme tokens continue to work.",
+        "section": "colors"
+      },
+      {
+        "name": "Artwork Legibility",
+        "body": "White artwork text and neutral dark scrims remain readable independently of the active interface theme; they are the deliberate media exception.",
+        "section": "colors"
+      },
+      {
+        "name": "Flat By Default",
+        "body": "Separate app regions with tone and one-pixel lines. Reserve the shell shadow for floating menus and dialogs.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reuse semantic theme tokens, Inter, existing controls, and the current PlayStash logo.",
+      "Do preserve visible focus, labels, selected states, localization, and existing web/desktop capability boundaries.",
+      "Do use real server artwork and honest missing-art placeholders.",
+      "Do keep navigation immediate and honor reduced-motion preferences."
+    ],
+    "donts": [
+      "Don’t restore the former purple/glass shell, oversized rounded cards, or Fredoka/Nunito typography.",
+      "Don’t use a Cinema discovery hero for the library overview; follow the selected surface contract.",
+      "Don’t bake dark palette literals into themeable application chrome.",
+      "Don’t ship proposal artwork, browser fixtures, or sample account/catalog data as product content."
+    ]
+  }
+}

@@ -42,6 +42,7 @@ import { GameVersion } from "@/api/models/GameVersion";
 import { useMappedTitle } from "@/utils/mappedTitle";
 import { useTranslation } from "@/i18n";
 import { fillTemplate } from "@/utils/downloadPipeline";
+import "@/styles/library.css";
 
 const GameCard = memo(function GameCard({
   game,
@@ -93,7 +94,8 @@ const GameCard = memo(function GameCard({
 
   useEffect(() => {
     setLocalGame(game);
-  }, [game]);
+    setBookmarked(initialBookmarked);
+  }, [game, initialBookmarked]);
 
   // A game only has an update when it is installed locally and the server's
   // current default version tag differs from the installed one.
@@ -325,43 +327,15 @@ const GameCard = memo(function GameCard({
 
   return (
     <>
-      {/* Outer wrapper owns the shadow + lift. Lift uses `transform` (not
-          Tailwind's `translate`): will-change + translateZ make it one
-          pre-rasterized composited layer, so Chromium moves a texture instead
-          of re-rasterizing edges. The shadow NEVER changes on hover — a
-          box-shadow swap forces a repaint at the hover instant, flashing the
-          1px bottom seam when the card sits on a fractional scroll position. */}
-      <div
-        className={clsx(
-          "group/card relative rounded-3xl shadow-(--shadow-card)",
-          "transform-gpu will-change-transform backface-hidden",
-          "transition-transform duration-200 ease-out hover:[transform:translateY(-4px)_translateZ(0)]",
-        )}
-      >
-        <Link
-          to={gameViewUrl}
-          className={clsx(
-            // No own layer here — rasterize into the wrapper's single composited
-            // layer so content + shadow move as one texture (a second layer
-            // misaligns 1px at the bottom during the transform move).
-            "relative flex flex-col overflow-hidden rounded-3xl bg-[linear-gradient(180deg,var(--color-ps-panel-strong)_0%,var(--color-ps-panel)_100%)]",
-            "cursor-pointer select-none",
-            "focus:outline-none focus:ring-2 focus:ring-ps-accent-cool",
-          )}
-        >
-          {/* Cover art container. NO overflow-hidden here: the oversized Media is
-            clipped by the inner absolute wrapper, while the bottom fade below
-            is free to bleed 1px into the footer — an overflow-hidden on this
-            box would clip that bleed and leave a 1px open line at the bottom
-            of the artwork in Chromium. */}
-          <div
-            className={clsx(
-              "relative flex aspect-3/4 w-full items-center justify-center",
-              coverId &&
-                "bg-[radial-gradient(circle_at_top,rgba(100,89,223,0.14),transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]",
-            )}
-          >
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+      <div className="ps-game-card group/card">
+        <div className="ps-game-card-body">
+          <Link
+            to={gameViewUrl}
+            aria-label={shownTitle || fallbackTitle}
+            className="ps-game-card-link"
+          />
+          <div className="ps-game-card-cover">
+            <div className="ps-game-card-art">
               {coverId ? (
                 <Media
                   media={
@@ -375,7 +349,8 @@ const GameCard = memo(function GameCard({
                     } as any
                   }
                   size={300}
-                  className="h-full w-full object-contain rounded-none"
+                  className="ps-game-card-media"
+                  fit="cover"
                   square
                   alt={localGame.title}
                   gameId={localGame.id}
@@ -384,7 +359,7 @@ const GameCard = memo(function GameCard({
                     <CoverPlaceholder
                       title={fallbackTitle}
                       size="large"
-                      className="h-full w-full"
+                      className="ps-game-card-placeholder h-full w-full"
                     />
                   }
                 />
@@ -392,16 +367,10 @@ const GameCard = memo(function GameCard({
                 <CoverPlaceholder
                   title={fallbackTitle}
                   size="large"
-                  className="h-full w-full"
+                  className="ps-game-card-placeholder h-full w-full"
                 />
               )}
             </div>
-
-            {/* Gradient fade at bottom for button contrast. Snapped on hover,
-              extended 1px below the cover bottom (`-bottom-px`) and NOT inside
-              the Media clip wrapper, so it bleeds 1px into the footer and the
-              bottom of the artwork never shows a 1px open line in Chromium. */}
-            <div className="pointer-events-none absolute inset-x-0 -bottom-px h-24 bg-[linear-gradient(transparent,var(--color-ps-panel)_90%)] opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!" />
 
             {/* Icon-only "Installed" / "Update available" indicator in the
               lower-right corner so server games that are already installed
@@ -422,10 +391,10 @@ const GameCard = memo(function GameCard({
                     : t("gameCard.installed")
                 }
                 className={clsx(
-                  "pointer-events-none absolute bottom-2 right-2 z-10 flex size-6 items-center justify-center rounded-full border backdrop-blur-sm transition-opacity duration-200 group-hover/card:opacity-0! group-focus-within/card:opacity-0!",
+                  "pointer-events-none absolute bottom-2 right-2 z-10 flex size-6 items-center justify-center rounded border bg-ps-panel transition-opacity duration-200 group-hover/card:opacity-0! group-focus-within/card:opacity-0!",
                   updateAvailable
-                    ? "border-amber-400/50 bg-amber-500/25 text-amber-300"
-                    : "border-emerald-400/40 bg-emerald-500/20 text-emerald-300",
+                    ? "border-ps-line-strong text-ps-warning"
+                    : "border-ps-line-strong text-ps-success",
                 )}
               >
                 {updateAvailable ? (
@@ -466,19 +435,25 @@ const GameCard = memo(function GameCard({
               aria-pressed={bookmarked}
               disabled={!currentUserId || bookmarkBusy}
               className={clsx(
-                "absolute top-2 right-2 flex size-11 cursor-pointer items-center justify-center rounded-lg border backdrop-blur-xl transition-all duration-200",
-                "opacity-0 translate-y-1 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
+                "ps-card-action ps-card-action-top absolute top-2 right-2 flex size-9 cursor-pointer items-center justify-center border",
+                "opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 bookmarked
                   ? "border-ps-warning/40 bg-ps-warning/15"
                   : "border-ps-line bg-ps-panel-soft/80 hover:border-ps-line-strong hover:bg-ps-panel",
-                "active:scale-95",
+                "active:scale-[0.98]",
               )}
             >
               {bookmarked ? (
-                <StarSolid className="h-5 w-5 text-ps-warning" />
+                <StarSolid
+                  className="h-5 w-5 text-ps-warning"
+                  aria-hidden="true"
+                />
               ) : (
-                <StarOutline className="h-5 w-5 text-ps-muted" />
+                <StarOutline
+                  className="h-5 w-5 text-ps-muted"
+                  aria-hidden="true"
+                />
               )}
             </button>
 
@@ -488,14 +463,14 @@ const GameCard = memo(function GameCard({
               onClick={handleOpenSettings}
               aria-label={t("nav.settings")}
               className={clsx(
-                "absolute top-2 left-2 flex size-11 cursor-pointer items-center justify-center rounded-lg border border-ps-line bg-ps-panel-soft/80 text-ps-muted backdrop-blur-xl transition-all duration-200",
-                "opacity-0 translate-y-1 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
+                "ps-card-action ps-card-action-top absolute top-2 left-2 flex size-9 cursor-pointer items-center justify-center border border-ps-line text-ps-muted",
+                "opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!",
                 "hover:border-ps-line-strong hover:bg-ps-panel hover:text-ps-text",
-                "active:scale-95",
+                "active:scale-[0.98]",
               )}
               title={t("nav.settings")}
             >
-              <Cog8ToothIcon className="h-5 w-5" />
+              <Cog8ToothIcon className="h-5 w-5" aria-hidden="true" />
             </button>
 
             {/* Centered primary action: Download / Play */}
@@ -505,15 +480,16 @@ const GameCard = memo(function GameCard({
                 aria-label={t("common.play")}
                 onClick={handlePlayGame}
                 className={clsx(
-                  "absolute bottom-3 left-1/2 -translate-x-1/2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-indigo-400/40 bg-indigo-500/90 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-200",
-                  "opacity-0 translate-y-2 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
-                  "hover:bg-indigo-400 active:scale-[0.97]",
+                  "ps-card-action ps-card-action-primary ps-card-action-bottom absolute bottom-3 left-1/2 flex min-h-9 cursor-pointer items-center justify-center gap-2 px-4 py-2 text-sm font-semibold",
+                  "opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!",
+                  "active:scale-[0.97]",
                 )}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 fill-current"
+                  className="h-4 w-4 shrink-0 fill-current"
+                  aria-hidden="true"
                 >
                   <path d="M8 17.175V6.825q0-.425.3-.713t.7-.287q.125 0 .263.037t.262.113l8.15 5.175q.225.15.338.375t.112.475t-.112.475t-.338.375l-8.15 5.175q-.125.075-.262.113T9 18.175q-.4 0-.7-.288t-.3-.712" />
                 </svg>
@@ -522,8 +498,8 @@ const GameCard = memo(function GameCard({
             ) : (
               <div
                 className={clsx(
-                  "absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center transition-all duration-200",
-                  "opacity-0 translate-y-2 group-hover/card:opacity-100! group-hover/card:translate-y-0! group-focus-within/card:opacity-100! group-focus-within/card:translate-y-0!",
+                  "ps-card-action ps-card-action-bottom absolute bottom-3 left-1/2 flex items-center",
+                  "opacity-0 group-hover/card:opacity-100! group-focus-within/card:opacity-100!",
                 )}
               >
                 {isTauri ? (
@@ -599,18 +575,22 @@ const GameCard = memo(function GameCard({
           </div>
 
           {/* Metadata footer */}
-          <div className="flex flex-col gap-0.5 px-3 pb-3 pt-2.5">
+          <div className="ps-game-card-footer">
+            {/* Two lines: long titles stay identifiable instead of collapsing
+              into a shared prefix ("The Legend of Zelda: …"). */}
             <h3
-              className="truncate text-sm font-semibold tracking-[-0.02em] text-ps-text"
+              className="line-clamp-2 text-sm font-semibold tracking-[-0.02em] text-ps-text"
               title={shownTitle}
             >
               {shownTitle}
             </h3>
             {sortMetric && (
-              <p className="truncate text-xs text-ps-muted">{sortMetric}</p>
+              <p className="truncate text-xs text-ps-muted tabular-nums">
+                {sortMetric}
+              </p>
             )}
           </div>
-        </Link>
+        </div>
       </div>
       {settingsOpen && (
         <GameSettings

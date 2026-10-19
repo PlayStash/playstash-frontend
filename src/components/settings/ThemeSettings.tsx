@@ -293,7 +293,7 @@ function CommunityThemes({
                 onClick={() => {
                   if (themes === null && !loading) void load();
                 }}
-                className="relative block w-full truncate rounded-2xl border border-ps-line bg-ps-panel-strong py-1.5 pr-8 pl-3 text-left text-sm/6 text-ps-text shadow-sm focus:outline-hidden data-focus:ring-2 data-focus:ring-ps-accent-cool"
+                className="relative block w-full truncate rounded-md border border-ps-line bg-ps-panel-strong py-1.5 pr-8 pl-3 text-left text-sm/6 text-ps-text shadow-sm focus:outline-hidden data-focus:ring-2 data-focus:ring-ps-accent-cool"
               >
                 {selected?.definition.displayName ??
                   (themes === null
@@ -306,7 +306,7 @@ function CommunityThemes({
               </Headless.ListboxButton>
               <Headless.ListboxOptions
                 anchor="bottom end"
-                className="surface-panel z-50 max-h-[min(28rem,70vh)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto rounded-[1.25rem] p-1.5 shadow-[var(--shadow-shell)] ring-1 ring-ps-line [--anchor-gap:--spacing(1)] focus:outline-hidden"
+                className="surface-panel z-50 max-h-[min(28rem,70vh)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-lg p-1.5 shadow-[var(--shadow-shell)] ring-1 ring-ps-line [--anchor-gap:--spacing(1)] focus:outline-hidden"
               >
                 {loading && (
                   <div className="px-3 py-2 text-sm text-ps-muted">
@@ -318,7 +318,7 @@ function CommunityThemes({
                     key={theme.url}
                     value={theme}
                     className={clsx(
-                      "group/option flex cursor-pointer flex-col gap-0.5 rounded-xl px-3 py-2 text-ps-text",
+                      "group/option flex cursor-pointer flex-col gap-0.5 rounded-md px-3 py-2 text-ps-text",
                       "data-focus:bg-ps-accent data-focus:text-ps-on-accent data-selected:ring-1 data-selected:ring-ps-accent",
                     )}
                   >

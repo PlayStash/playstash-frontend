@@ -6,11 +6,14 @@ import { Link } from "./link";
 const styles = {
   base: [
     // Base
-    "relative isolate inline-flex min-h-11 items-center justify-center gap-x-2 rounded-2xl border text-base/6 font-medium tracking-[-0.01em] sm:min-h-10",
+    "relative isolate inline-flex min-h-11 items-center justify-center gap-x-2 rounded-md border text-base/6 font-medium tracking-[-0.01em] sm:min-h-10",
     // Sizing
     "px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] sm:px-[calc(--spacing(3.25)-1px)] sm:py-[calc(--spacing(1.75)-1px)] sm:text-sm/6",
-    // Motion
-    "transition-[transform,translate,scale,background-color,border-color,box-shadow,color] duration-150 ease-out active:scale-[0.98]",
+    // Motion: press feedback lands on pointer-down (touch and mouse alike) and
+    // releases on the same 150ms curve; disabled controls never press.
+    "transition-[scale,background-color,border-color,color] duration-150 ease-(--ease-out) active:scale-[0.97] data-disabled:active:scale-100",
+    // Touch: no double-tap-zoom delay, no label selection or callout on long-press
+    "touch-manipulation select-none [-webkit-touch-callout:none]",
     // Focus
     "focus:not-data-focus:outline-hidden data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-ps-accent-cool",
     // Disabled
@@ -24,27 +27,27 @@ const styles = {
     // Dark mode: border is rendered on `after` so background is set to button background
     "dark:bg-(--btn-bg)",
     // Button background, implemented as foreground layer to stack on top of pseudo-border layer
-    "before:absolute before:inset-0 before:-z-10 before:rounded-[calc(1rem-1px)] before:bg-(--btn-bg)",
+    "before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:bg-(--btn-bg)",
     // Drop shadow, applied to the inset `before` layer so it blends with the border
-    "before:shadow-[var(--shadow-card)]",
+    "before:shadow-none",
     // Background color is moved to control and shadow is removed in dark mode so hide `before` pseudo
     "dark:before:hidden",
     // Dark mode: Subtle white outline is applied using a border
     "dark:border-ps-line",
     // Shim/overlay, inset to match button foreground and used for hover state + highlight shadow
-    "after:absolute after:inset-0 after:-z-10 after:rounded-[calc(1rem-1px)]",
+    "after:absolute after:inset-0 after:-z-10 after:rounded-[inherit] after:transition-[background-color] after:duration-150 after:ease-(--ease-out)",
     // Inner highlight shadow
-    "after:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+    "after:shadow-none",
     // White overlay on hover
     "data-active:after:bg-(--btn-hover-overlay) data-hover:after:bg-(--btn-hover-overlay)",
     // Dark mode: `after` layer expands to cover entire button
-    "dark:after:-inset-px dark:after:rounded-[calc(1rem+1px)]",
+    "dark:after:inset-0 dark:after:rounded-[inherit]",
     // Disabled
     "data-disabled:before:shadow-none data-disabled:after:shadow-none",
   ],
   outline: [
     // Base
-    "border-ps-line-strong bg-ps-panel-strong text-ps-text shadow-sm data-active:bg-ps-panel data-active:translate-y-px data-hover:border-ps-accent/50 data-hover:bg-ps-panel data-hover:shadow-md",
+    "border-ps-line bg-ps-panel-strong text-ps-text data-active:bg-ps-panel data-hover:border-ps-line-strong data-hover:bg-ps-panel-soft",
     // Icon
     "[--btn-icon:var(--color-ps-muted)] data-active:[--btn-icon:var(--color-ps-accent-cool)] data-hover:[--btn-icon:var(--color-ps-accent-cool)]",
   ],
@@ -56,9 +59,9 @@ const styles = {
   ],
   colors: {
     "dark/zinc": [
-      "text-white [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.14)]",
-      "dark:text-white dark:[--btn-bg:var(--color-ps-accent)] dark:[--btn-hover-overlay:rgb(255_255_255_/_0.1)]",
-      "[--btn-icon:var(--color-white)]/80 data-active:[--btn-icon:var(--color-white)] data-hover:[--btn-icon:var(--color-white)]",
+      "text-ps-on-accent [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.14)]",
+      "dark:text-ps-on-accent dark:[--btn-bg:var(--color-ps-accent)] dark:[--btn-hover-overlay:rgb(255_255_255_/_0.1)]",
+      "[--btn-icon:var(--color-ps-on-accent)]",
     ],
     light: [
       "text-ps-text [--btn-bg:var(--color-ps-panel-strong)] [--btn-border:var(--color-ps-line-strong)] [--btn-hover-overlay:rgb(255_255_255_/_0.08)] data-active:[--btn-border:var(--color-ps-accent-cool)] data-hover:[--btn-border:var(--color-ps-accent-cool)]",
@@ -87,7 +90,7 @@ const styles = {
     ],
     indigo: [
       "text-ps-on-accent [--btn-hover-overlay:rgb(255_255_255_/_0.14)] [--btn-bg:var(--color-ps-accent)] [--btn-border:var(--color-ps-accent-strong)]",
-      "[--btn-icon:var(--color-white)]/80 data-active:[--btn-icon:var(--color-white)] data-hover:[--btn-icon:var(--color-white)]",
+      "[--btn-icon:var(--color-ps-on-accent)]",
     ],
     cyan: [
       "text-cyan-950 [--btn-bg:var(--color-cyan-300)] [--btn-border:var(--color-cyan-400)]/80 [--btn-hover-overlay:var(--color-white)]/25",

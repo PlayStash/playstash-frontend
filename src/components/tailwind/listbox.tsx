@@ -30,17 +30,22 @@ export function Listbox<T>({
           "group relative block w-full",
           // Hide default focus styles
           "focus:outline-hidden",
-          // Focus ring — inherits the box radius so it always matches
+          // Focus ring â€” inherits the box radius so it always matches
           "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-transparent after:ring-inset data-focus:after:ring-2 data-focus:after:ring-ps-accent-cool",
           // Visible box: radius, border, background and shadow all live on the
           // SAME element so the border's corner radius always matches the box.
-          "rounded-2xl border border-ps-line bg-ps-panel-strong shadow-sm",
+          "rounded-md border border-ps-line bg-ps-shell",
           "py-[calc(--spacing(2.5)-1px)] sm:py-1.5",
           "min-h-11 sm:min-h-9",
           "pr-[calc(--spacing(7)-1px)] pl-[calc(--spacing(3.5)-1px)] sm:pl-[calc(--spacing(3)-1px)]",
-          "text-left text-base/6 text-ps-text placeholder:text-ps-muted sm:text-sm/6 forced-colors:text-[CanvasText]",
+          // 16px on touch devices so iOS never zooms; compact 14px with a mouse.
+          "text-left text-base/6 text-ps-text placeholder:text-ps-muted sm:pointer-fine:text-sm/6 forced-colors:text-[CanvasText]",
+          // Touch: respond on first tap, never select the value on long-press
+          "touch-manipulation select-none",
           // Invalid state
           "data-invalid:border-red-500 data-hover:data-invalid:border-red-500 dark:data-invalid:border-red-600 dark:data-hover:data-invalid:border-red-600",
+          // Hover: strengthen the line (Headless only reports real pointer hover)
+          "transition-[border-color] duration-150 ease-(--ease-out) data-hover:not-data-invalid:border-ps-line-strong",
           // Disabled state
           "data-disabled:opacity-50 data-disabled:bg-ps-panel-soft data-disabled:shadow-none",
         ])}
@@ -86,17 +91,19 @@ export function Listbox<T>({
           // Anchor positioning
           "[--anchor-offset:-1.625rem] [--anchor-padding:--spacing(4)] sm:[--anchor-offset:-1.375rem]",
           // Base styles
-          "isolate w-max min-w-[calc(var(--button-width)+1.75rem)] max-w-[calc(100vw-2rem)] scroll-py-1 rounded-[1.25rem] p-1.5 select-none",
+          "isolate w-max min-w-[calc(var(--button-width)+1.75rem)] max-w-[calc(100vw-2rem)] scroll-py-1 rounded-lg p-1.5 select-none",
           // Invisible border that is only visible in `forced-colors` mode for accessibility purposes
           "outline outline-transparent focus:outline-hidden",
           // Handle scrolling when menu won't fit in viewport
-          "overflow-y-scroll overscroll-contain",
+          "overflow-y-auto overscroll-contain",
           // Popover background
           "surface-panel",
           // Shadows
           "shadow-[var(--shadow-shell)] ring-1 ring-ps-line",
-          // Transitions
-          "transition-opacity duration-100 ease-in data-closed:data-leave:opacity-0 data-transition:pointer-events-none",
+          // Keep the selected option aligned with the control while fading both ways.
+          // Anchored to the selection, so it fades in place instead of scaling.
+          // Menu timing: 180ms in, 120ms out.
+          "transition-opacity duration-180 ease-(--ease-out) data-closed:opacity-0 data-leave:duration-120 motion-reduce:duration-100",
         )}
       >
         {options}
@@ -118,7 +125,7 @@ export function ListboxOption<T>({
     "cursor-pointer flex min-w-0 items-center",
     // Icons
     "*:data-[slot=icon]:size-5 *:data-[slot=icon]:shrink-0 sm:*:data-[slot=icon]:size-4",
-    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-text",
+    "*:data-[slot=icon]:text-ps-muted group-data-focus/option:*:data-[slot=icon]:text-ps-on-accent",
     "forced-colors:*:data-[slot=icon]:text-[CanvasText] forced-colors:group-data-focus/option:*:data-[slot=icon]:text-[Canvas]",
     // Avatars
     "*:data-[slot=avatar]:-mx-0.5 *:data-[slot=avatar]:size-6 sm:*:data-[slot=avatar]:size-5",
@@ -137,11 +144,11 @@ export function ListboxOption<T>({
           <div
             className={clsx(
               // Basic layout
-              "group/option grid cursor-pointer grid-cols-[--spacing(5)_1fr] items-baseline gap-x-2 rounded-xl py-2.5 pr-3.5 pl-2.5 sm:grid-cols-[--spacing(4)_1fr] sm:py-1.5 sm:pr-3 sm:pl-2",
+              "group/option grid cursor-pointer grid-cols-[--spacing(5)_1fr] items-baseline gap-x-2 rounded-md py-2.5 pr-3.5 pl-2.5 sm:grid-cols-[--spacing(4)_1fr] sm:py-1.5 sm:pr-3 sm:pl-2",
               // Typography
               "text-base/6 text-ps-text sm:text-sm/6 forced-colors:text-[CanvasText]",
               // Focus
-              "outline-hidden data-focus:bg-ps-accent data-focus:text-white transition-colors duration-150",
+              "outline-hidden transition-none data-focus:bg-ps-accent data-focus:text-ps-on-accent",
               // Forced colors mode
               "forced-color-adjust-none forced-colors:data-focus:bg-[Highlight] forced-colors:data-focus:text-[HighlightText]",
               // Disabled
@@ -196,7 +203,7 @@ export function ListboxDescription({
       {...props}
       className={clsx(
         className,
-        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-white before:w-2 before:min-w-0 before:shrink",
+        "flex flex-1 overflow-hidden text-ps-muted group-data-focus/option:text-ps-on-accent before:w-2 before:min-w-0 before:shrink",
       )}
     >
       <span className="flex-1 truncate">{children}</span>

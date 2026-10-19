@@ -51,7 +51,7 @@ const tones: Record<
  *   shared shell shadow, instead of a flat `bg-ps-panel` + generic `shadow-lg`.
  * - A left accent rail + tinted icon tile carry the semantic tone without
  *   relying on color alone (accessibility requirement).
- * - 16px surface radius and the project-wide easing curve / durations.
+ * - 10px toast radius and the project-wide easing curve / durations.
  * - Reduced-motion is handled globally via `MotionConfig reducedMotion="user"`.
  */
 export function Toast({
@@ -84,11 +84,14 @@ export function Toast({
       {...props}
       className={clsx(
         className,
-        "pointer-events-auto fixed right-4 z-50 flex w-[min(90vw,360px)] items-start gap-2.5 overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong py-3 pr-2 pl-4 shadow-(--shadow-shell)",
+        "pointer-events-auto fixed right-[calc(1rem+env(safe-area-inset-right,0px))] z-50 flex w-[min(90vw,360px)] items-start gap-2.5 overflow-hidden rounded-2xl border border-ps-line bg-ps-panel-strong py-3 pr-2 pl-4 shadow-(--shadow-shell)",
         // In the desktop app the custom window titlebar (36px) owns the top
         // right corner, so keep toasts below it instead of covering the
         // window controls.
-        isTauriApp() ? "top-13" : "top-4",
+        // On phones, stay clear of the notch / Dynamic Island.
+        isTauriApp()
+          ? "top-13"
+          : "top-[calc(1rem+env(safe-area-inset-top,0px))]",
       )}
     >
       {/* Accent rail: semantic tone signal (paired with the icon for a11y) */}
@@ -116,7 +119,7 @@ export function Toast({
         <button
           type="button"
           onClick={action.onClick}
-          className="h-9 shrink-0 rounded-xl px-2.5 text-xs font-semibold text-ps-accent-cool transition-colors hover:bg-ps-panel-soft focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
+          className="h-9 shrink-0 rounded-xl px-2.5 text-xs font-semibold text-ps-accent-cool transition-[background-color,scale] duration-150 ease-(--ease-out) hover:bg-ps-panel-soft active:scale-[0.97] active:bg-ps-panel-soft focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
         >
           {action.label}
         </button>
@@ -125,7 +128,7 @@ export function Toast({
         <button
           type="button"
           onClick={onDismiss}
-          className="flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-colors hover:bg-ps-panel-soft hover:text-ps-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
+          className="flex size-9 shrink-0 items-center justify-center rounded-xl text-ps-muted transition-[background-color,color,scale] duration-150 ease-(--ease-out) hover:bg-ps-panel-soft hover:text-ps-text active:scale-[0.97] active:bg-ps-panel-soft active:text-ps-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
         >
           <XMarkIcon className="size-4" />
           <span className="sr-only">{t("common.dismiss")}</span>

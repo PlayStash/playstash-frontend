@@ -2,20 +2,20 @@ import clsx from "clsx";
 
 export const coverPalettes = [
   {
-    bg: "linear-gradient(145deg, rgba(116,104,235,0.5), rgba(30,28,48,0.96))",
-    border: "rgba(142, 123, 237, 0.36)",
+    bg: "var(--color-ps-panel-strong)",
+    border: "var(--color-ps-line)",
   },
   {
-    bg: "linear-gradient(145deg, rgba(84,73,198,0.42), rgba(18,22,36,0.96))",
-    border: "rgba(84, 73, 198, 0.34)",
+    bg: "color-mix(in srgb, var(--color-ps-accent) 8%, var(--color-ps-panel))",
+    border: "var(--color-ps-line)",
   },
   {
-    bg: "linear-gradient(145deg, rgba(177,125,25,0.28), rgba(30,20,37,0.96))",
-    border: "rgba(177, 125, 25, 0.32)",
+    bg: "var(--color-ps-panel-soft)",
+    border: "var(--color-ps-line)",
   },
   {
-    bg: "linear-gradient(145deg, rgba(40,171,126,0.24), rgba(20,27,40,0.96))",
-    border: "rgba(40, 171, 126, 0.28)",
+    bg: "color-mix(in srgb, var(--color-ps-accent) 13%, var(--color-ps-shell))",
+    border: "var(--color-ps-line)",
   },
 ] as const;
 
@@ -28,7 +28,7 @@ export function hashedPalette(seed: string) {
   return coverPalettes[Math.abs(hash) % coverPalettes.length];
 }
 
-/** Colorful cover placeholder with game initials & pattern */
+/** A quiet, theme-aware fallback when the server has no game artwork. */
 export default function CoverPlaceholder({
   title,
   size = "normal",
@@ -76,7 +76,7 @@ export default function CoverPlaceholder({
     >
       <div
         className={clsx(
-          "font-black tracking-[0.18em] text-white/90",
+          "font-semibold tracking-[-0.025em] text-ps-text",
           sizeClasses[size].initials,
         )}
       >
@@ -84,7 +84,7 @@ export default function CoverPlaceholder({
       </div>
       <div
         className={clsx(
-          "line-clamp-2 max-w-[90%] font-medium uppercase tracking-[0.14em] text-white/65",
+          "line-clamp-2 max-w-[90%] font-medium text-ps-muted",
           sizeClasses[size].title,
         )}
       >

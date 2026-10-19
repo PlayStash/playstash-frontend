@@ -27,7 +27,7 @@ function reloadWindow() {
 }
 
 const controlButtonClassName =
-  "flex w-11 cursor-pointer items-center justify-center text-ps-muted transition-colors hover:bg-white/5 hover:text-ps-text focus:outline-none";
+  "flex w-11 cursor-pointer items-center justify-center text-ps-muted transition-colors hover:bg-ps-panel hover:text-ps-text focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ps-accent";
 
 export default function WindowTitlebar() {
   const { t } = useTranslation();
@@ -39,7 +39,7 @@ export default function WindowTitlebar() {
   return (
     <header
       data-tauri-drag-region
-      className="relative z-40 flex h-9 shrink-0 select-none items-stretch justify-end bg-ps-bg"
+      className="relative z-40 flex h-9 shrink-0 select-none items-stretch justify-end bg-ps-shell"
     >
       <div className="flex items-stretch">
         <button

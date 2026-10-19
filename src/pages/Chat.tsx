@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -28,6 +28,7 @@ import {
 } from "@/utils/communityNotifications";
 import { fetchGameTitle } from "@/utils/gameTitles";
 import { createUuid } from "@/utils/uuid";
+import "@/styles/workspaces.css";
 
 interface ChatUser {
   id: number;
@@ -110,6 +111,11 @@ export default function Chat() {
   const sendTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ownId = user?.id ?? 0;
+  // Messages received live (not from history) settle in; history is instant.
+  const liveIds = useRef(new Set<string>());
+  const messagesRef = useRef<HTMLElement>(null);
+  // Follow new messages only while the reader is at (or near) the bottom.
+  const stickToBottom = useRef(true);
 
   const clearTimers = () => {
     if (sendTimer.current) clearTimeout(sendTimer.current);
@@ -200,8 +206,10 @@ export default function Chat() {
   // ── Socket events ────────────────────────────────────────────────────────
   useEffect(() => {
     const accept = (message: ChatMessage) => {
-      if (message && messageInConversation(message, targetRef.current, ownId))
+      if (message && messageInConversation(message, targetRef.current, ownId)) {
+        liveIds.current.add(String(message.id));
         setMessages((previous) => mergeChatMessages(previous, [message]));
+      }
     };
     const offs = [
       on(
@@ -260,7 +268,12 @@ export default function Chat() {
     setWaiting(false);
     setMessages([]);
     setError("");
+    stickToBottom.current = true;
   }, [key]);
+  useLayoutEffect(() => {
+    const list = messagesRef.current;
+    if (list && stickToBottom.current) list.scrollTop = list.scrollHeight;
+  }, [messages]);
   useEffect(() => {
     setOpenConversation(target);
     return () => setOpenConversation(null);
@@ -381,8 +394,8 @@ export default function Chat() {
         );
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="ps-workspace chat-workspace">
+      <div className="workspace-heading">
         <div>
           <Heading>{t("chat.title")}</Heading>
           <p className="mt-2 max-w-2xl text-sm text-ps-muted">
@@ -394,7 +407,7 @@ export default function Chat() {
           <select
             aria-label={t("chat.presence")}
             value={presence}
-            className="mt-1 block min-h-11 rounded-lg bg-ps-panel px-3 text-ps-text"
+            className="workspace-select mt-1 block"
             onChange={(event) =>
               setPresence(
                 normalizePresence(event.target.value) as CommunityPresence,
@@ -411,7 +424,7 @@ export default function Chat() {
         </label>
       </div>
       <form
-        className="surface-panel flex flex-wrap items-end gap-3 rounded-2xl p-4"
+        className="chat-room-tools"
         onSubmit={(event) => {
           event.preventDefault();
           open();
@@ -422,7 +435,7 @@ export default function Chat() {
           <select
             aria-label={t("chat.conversation")}
             value={type}
-            className="mt-1 block min-h-11 rounded-lg bg-ps-panel-soft px-3 text-ps-text"
+            className="workspace-select mt-1 block"
             onChange={(event) =>
               setType(event.target.value as ConversationType)
             }
@@ -457,7 +470,7 @@ export default function Chat() {
             <select
               aria-label={t("chat.recipient")}
               value={recipient}
-              className="mt-1 block min-h-11 rounded-lg bg-ps-panel-soft px-3 text-ps-text"
+              className="workspace-select mt-1 block"
               onChange={(event) => setRecipient(event.target.value)}
             >
               <option value="">{t("chat.chooseUser")}</option>
@@ -478,10 +491,10 @@ export default function Chat() {
         </Button>
       </form>
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <span>
+        <span className="min-w-0 break-words">
           {currentLabel} · {status}
         </span>
-        <span className="text-ps-muted">
+        <span className="text-ps-muted tabular-nums">
           {t("chat.visibleUsers").replace(
             "{count}",
             String(
@@ -499,9 +512,9 @@ export default function Chat() {
         )}
       </div>
       <p className="text-xs text-ps-muted">{t("chat.info")}</p>
-      <div className="grid gap-4 md:grid-cols-[210px_minmax(0,1fr)]">
+      <div className="chat-body">
         <section
-          className="surface-panel space-y-2 rounded-2xl p-4"
+          className="chat-activity space-y-3"
           aria-label={t("chat.activity.title")}
         >
           <h2 className="text-base font-semibold text-ps-text">
@@ -525,21 +538,33 @@ export default function Chat() {
           )}
         </section>
         <section
-          className="surface-panel min-h-48 min-w-0 space-y-4 rounded-2xl p-4"
+          ref={messagesRef}
+          className="chat-messages"
           aria-label={t("chat.messagesLabel")}
           aria-live="polite"
+          onScroll={(event) => {
+            const list = event.currentTarget;
+            stickToBottom.current =
+              list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+          }}
         >
           {loading && <p role="status">{t("chat.loading")}</p>}
           {!loading && !messages.length && (
             <p className="text-ps-muted">{t("chat.empty")}</p>
           )}
           {messages.map((message) => (
-            <article key={message.id}>
-              <p className="text-xs text-ps-muted">
+            <article
+              key={message.id}
+              data-live={liveIds.current.has(String(message.id)) || undefined}
+            >
+              <p className="text-xs break-words text-ps-muted">
                 <span className="font-medium text-ps-text">
                   {message.username}
                 </span>{" "}
-                · {new Date(message.created_at).toLocaleString(locale)}
+                ·{" "}
+                <time dateTime={message.created_at}>
+                  {new Date(message.created_at).toLocaleString(locale)}
+                </time>
               </p>
               <p className="mt-1 whitespace-pre-wrap break-words text-sm">
                 {message.text}
@@ -549,7 +574,7 @@ export default function Chat() {
         </section>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm break-words text-ps-danger">
           {error}
         </p>
       )}
@@ -564,7 +589,7 @@ export default function Chat() {
         </p>
       )}
       <form
-        className="space-y-3"
+        className="chat-composer space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
           send();

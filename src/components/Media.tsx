@@ -3,6 +3,7 @@ import { useInView } from "@/hooks/useInView";
 import { GameMediaSlot } from "@/utils/mediaCache";
 import React, { useEffect, useState } from "react";
 import { Media as MediaType } from "../api";
+import { DecodedImage } from "./DecodedImage";
 
 interface Props {
   media?: MediaType;
@@ -74,7 +75,7 @@ export function Media({
         borderRadius: square ? 0 : "50%",
         overflow: "hidden",
         background:
-          "linear-gradient(110deg,#232230 8%,#2d2c3a 18%,#232230 33%)",
+          "linear-gradient(110deg,var(--color-ps-panel) 8%,var(--color-ps-panel-strong) 18%,var(--color-ps-panel) 33%)",
       }}
     >
       {/* Only animate while a fetch is actually in flight. Media that is still
@@ -90,7 +91,7 @@ export function Media({
             inset: 0,
             animation: "avatar-shimmer 1.2s linear infinite",
             background:
-              "linear-gradient(110deg,#232230 8%,#2d2c3a 18%,#232230 33%)",
+              "linear-gradient(110deg,var(--color-ps-panel) 8%,var(--color-ps-panel-strong) 18%,var(--color-ps-panel) 33%)",
             backgroundSize: "200% 100%",
           }}
         />
@@ -113,14 +114,13 @@ export function Media({
         </div>
       )}
       {blobUrl && !error && (
-        <img
+        <DecodedImage
           src={blobUrl}
           alt={alt}
           style={{
             width: "100%",
             height: "100%",
             objectFit: fit,
-            animation: "media-fade-in 0.2s var(--ease-out)",
           }}
           loading="lazy"
           decoding="async"

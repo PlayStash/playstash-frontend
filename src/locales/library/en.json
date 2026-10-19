@@ -50,6 +50,7 @@
   "libraryFilters.activeCount": "{count} active filters",
   "libraryFilters.active": "Filters active",
   "libraryFilters.noneActive": "No filters active",
+  "libraryFilters.removeItem": "Remove {name}",
   "libraryFilters.clearAll": "Clear All",
   "libraryFilters.selectedCount": "{count} selected",
   "libraryFilters.type": "Type",
@@ -113,5 +114,14 @@
   "gameCard.clientDownload": "Download via PlayStash Client",
   "gameCard.queued": "Added {title} to the download queue",
   "gameCard.noVersion.title": "No downloadable version found",
-  "gameCard.noVersion.description": "This game currently has no available version to download."
+  "gameCard.noVersion.description": "This game currently has no available version to download.",
+  "library.collection.title": "Your collection.",
+  "library.collection.controls": "Library controls",
+  "library.categories.manage": "Manage categories",
+  "library.rail.title": "My library",
+  "library.rail.search": "Find a game",
+  "library.rail.favorites": "Favorites",
+  "library.rail.alphabetical": "Games · Alphabetical",
+  "library.rail.loadMore": "Load more games",
+  "library.rail.showing": "{loaded} of {total} games"
 }

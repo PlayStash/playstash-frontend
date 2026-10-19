@@ -7,6 +7,7 @@ import { Button } from "@/components/tailwind/button";
 import { Input } from "@/components/tailwind/input";
 import { Textarea } from "@/components/tailwind/textarea";
 import { Heading } from "@/components/tailwind/heading";
+import "@/styles/workspaces.css";
 import { useTranslation, type TranslationKey } from "@/i18n";
 import { formatMessage } from "@/utils/formatMessage";
 
@@ -99,161 +100,179 @@ export default function Requests() {
     }
   };
   return (
-    <div className="space-y-6">
-      <div>
-        <Heading>{t("nav.requests")}</Heading>
-        <p className="mt-2 text-sm text-ps-muted">
-          {t("requests.description")}
-        </p>
+    <div className="ps-workspace space-y-6">
+      <div className="workspace-heading">
+        <div>
+          <Heading>{t("nav.requests")}</Heading>
+          <p className="mt-2 text-sm text-ps-muted">
+            {t("requests.description")}
+          </p>
+        </div>
       </div>
-      <form
-        className="surface-panel space-y-4 rounded-2xl p-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void mutate("", "POST", {
-            title: title.trim(),
-            note,
-            anonymous,
-          }).then((saved) => {
-            if (saved) {
-              setTitle("");
-              setNote("");
-              setMessage(t("requests.sent"));
-            }
-          });
-        }}
-      >
-        <label className="block text-sm text-ps-muted">
-          {t("requests.gameTitle")}
-          <Input
-            required
-            maxLength={256}
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            disabled={busy}
-          />
-        </label>
-        <label className="block text-sm text-ps-muted">
-          {t("requests.note")}
-          <Textarea
-            rows={3}
-            maxLength={4000}
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            disabled={busy}
-          />
-        </label>
-        <label className="flex items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            className="mt-0.5 size-5 accent-indigo-500"
-            checked={anonymous}
-            disabled={busy}
-            onChange={(event) => setAnonymous(event.target.checked)}
-          />
-          <span>
-            {t("requests.anonymous")}
-            <span className="block text-xs text-ps-muted">
-              {t("requests.anonymousHint")}
-            </span>
-          </span>
-        </label>
-        <Button color="indigo" type="submit" disabled={busy || !title.trim()}>
-          {t("requests.send")}
-        </Button>
-      </form>
-      {error && (
-        <p role="alert" className="text-sm text-red-400">
-          {error}
-        </p>
-      )}
-      {message && (
-        <p role="status" className="text-sm text-ps-muted">
-          {message}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-semibold">
-          {admin && !mine ? t("requests.adminQueue") : t("requests.mine")}{" "}
-          {data
-            ? formatMessage(t("requests.counts"), {
-                open: data.open_count,
-                unread: data.unread_count,
-              })
-            : ""}
-        </h2>
-        <div className="flex items-center gap-3">
-          {admin && (
-            <label className="flex items-center gap-2 text-sm">
+      <div className="requests-workspace">
+        <aside className="request-compose">
+          <form
+            className="space-y-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void mutate("", "POST", {
+                title: title.trim(),
+                note,
+                anonymous,
+              }).then((saved) => {
+                if (saved) {
+                  setTitle("");
+                  setNote("");
+                  setMessage(t("requests.sent"));
+                }
+              });
+            }}
+          >
+            <label className="block text-sm text-ps-muted">
+              {t("requests.gameTitle")}
+              <Input
+                required
+                maxLength={256}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block text-sm text-ps-muted">
+              {t("requests.note")}
+              <Textarea
+                rows={3}
+                maxLength={4000}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="flex items-start gap-3 text-sm">
               <input
                 type="checkbox"
-                checked={mine}
-                onChange={(event) => {
-                  setMine(event.target.checked);
-                  setPage(1);
-                }}
+                className="request-checkbox mt-0.5 size-4"
+                checked={anonymous}
+                disabled={busy}
+                onChange={(event) => setAnonymous(event.target.checked)}
               />
-              {t("requests.onlyMine")}
+              <span>
+                {t("requests.anonymous")}
+                <span className="block text-xs text-ps-muted">
+                  {t("requests.anonymousHint")}
+                </span>
+              </span>
             </label>
+            <Button
+              color="indigo"
+              type="submit"
+              disabled={busy || !title.trim()}
+            >
+              {t("requests.send")}
+            </Button>
+          </form>
+        </aside>
+        <section
+          className="requests-queue space-y-4"
+          aria-label={
+            admin && !mine ? t("requests.adminQueue") : t("requests.mine")
+          }
+        >
+          {error && (
+            <p role="alert" className="text-sm break-words text-ps-danger">
+              {error}
+            </p>
           )}
-          <Button outline disabled={loading} onClick={() => void load()}>
-            {t("common.refresh")}
-          </Button>
-        </div>
+          {message && (
+            <p role="status" className="text-sm text-ps-muted">
+              {message}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="min-w-0 font-semibold tabular-nums">
+              {admin && !mine ? t("requests.adminQueue") : t("requests.mine")}{" "}
+              {data
+                ? formatMessage(t("requests.counts"), {
+                    open: data.open_count,
+                    unread: data.unread_count,
+                  })
+                : ""}
+            </h2>
+            <div className="flex items-center gap-3">
+              {admin && (
+                <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="request-checkbox size-4"
+                    checked={mine}
+                    onChange={(event) => {
+                      setMine(event.target.checked);
+                      setPage(1);
+                    }}
+                  />
+                  {t("requests.onlyMine")}
+                </label>
+              )}
+              <Button outline disabled={loading} onClick={() => void load()}>
+                {t("common.refresh")}
+              </Button>
+            </div>
+          </div>
+          {loading && !data && <p role="status">{t("requests.loading")}</p>}
+          {data?.requests.map((request) => (
+            <RequestRow
+              key={request.id}
+              request={request}
+              locale={locale}
+              admin={admin}
+              busy={busy}
+              onUpdate={(status, gameId) =>
+                void mutate(`/${request.id}`, "PATCH", {
+                  status,
+                  ...(gameId ? { game_id: gameId } : {}),
+                })
+              }
+              onSeen={() => void mutate(`/${request.id}/seen`, "PUT")}
+              onCancel={() =>
+                void showAlert({
+                  title: t("requests.cancel.title"),
+                  description: request.title,
+                  affirmativeText: t("requests.cancel.confirm"),
+                  negativeText: t("requests.cancel.keep"),
+                }).then((confirmed) => {
+                  if (confirmed) void mutate(`/${request.id}`, "DELETE");
+                })
+              }
+            />
+          ))}
+          {!loading && !data?.requests.length && !error && (
+            <p className="border-y border-ps-line py-8 text-sm text-ps-muted">
+              {t("requests.empty")}
+            </p>
+          )}
+          {data && data.total > data.limit && (
+            <div className="flex items-center gap-3">
+              <Button
+                outline
+                disabled={page === 1 || loading}
+                onClick={() => setPage(page - 1)}
+              >
+                {t("common.previous")}
+              </Button>
+              <span className="text-sm tabular-nums">
+                {formatMessage(t("requests.page"), { page })}
+              </span>
+              <Button
+                outline
+                disabled={page * data.limit >= data.total || loading}
+                onClick={() => setPage(page + 1)}
+              >
+                {t("common.next")}
+              </Button>
+            </div>
+          )}
+        </section>
       </div>
-      {loading && !data && <p role="status">{t("requests.loading")}</p>}
-      {data?.requests.map((request) => (
-        <RequestRow
-          key={request.id}
-          request={request}
-          locale={locale}
-          admin={admin}
-          busy={busy}
-          onUpdate={(status, gameId) =>
-            void mutate(`/${request.id}`, "PATCH", {
-              status,
-              ...(gameId ? { game_id: gameId } : {}),
-            })
-          }
-          onSeen={() => void mutate(`/${request.id}/seen`, "PUT")}
-          onCancel={() =>
-            void showAlert({
-              title: t("requests.cancel.title"),
-              description: request.title,
-              affirmativeText: t("requests.cancel.confirm"),
-              negativeText: t("requests.cancel.keep"),
-            }).then((confirmed) => {
-              if (confirmed) void mutate(`/${request.id}`, "DELETE");
-            })
-          }
-        />
-      ))}
-      {!loading && !data?.requests.length && !error && (
-        <p className="surface-panel rounded-2xl p-5 text-ps-muted">
-          {t("requests.empty")}
-        </p>
-      )}
-      {data && data.total > data.limit && (
-        <div className="flex items-center gap-3">
-          <Button
-            outline
-            disabled={page === 1 || loading}
-            onClick={() => setPage(page - 1)}
-          >
-            {t("common.previous")}
-          </Button>
-          <span className="text-sm">
-            {formatMessage(t("requests.page"), { page })}
-          </span>
-          <Button
-            outline
-            disabled={page * data.limit >= data.total || loading}
-            onClick={() => setPage(page + 1)}
-          >
-            {t("common.next")}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
@@ -284,11 +303,13 @@ function RequestRow({
     setGameId(request.game_id ? String(request.game_id) : "");
   }, [request.status, request.game_id]);
   return (
-    <article className="surface-panel space-y-3 rounded-2xl p-5">
+    <article className="request-row space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold">{request.title}</h3>
-          <p className="text-xs text-ps-muted">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold [overflow-wrap:anywhere]">
+            {request.title}
+          </h3>
+          <p className="text-xs break-words text-ps-muted">
             {request.anonymous
               ? t("requests.anonymousRequester")
               : request.username || t("requests.yourRequest")}{" "}
@@ -298,7 +319,10 @@ function RequestRow({
             })}
           </p>
         </div>
-        <span className="rounded-lg bg-ps-panel-soft px-3 py-1 text-sm capitalize">
+        <span
+          className="request-status"
+          data-unread={request.unread || undefined}
+        >
           {STATUS_LABELS[request.status]
             ? t(STATUS_LABELS[request.status])
             : request.status}
@@ -306,13 +330,13 @@ function RequestRow({
         </span>
       </div>
       {request.note && (
-        <p className="whitespace-pre-wrap break-words text-sm">
+        <p className="max-w-[72ch] whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">
           {request.note}
         </p>
       )}
       {request.game_id && (
         <Link
-          className="text-sm text-ps-accent-strong underline"
+          className="inline-flex min-h-10 items-center rounded-sm text-sm text-ps-accent-strong underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool"
           to={`/library/${request.game_id}`}
         >
           {t("requests.openGame")}
@@ -323,7 +347,7 @@ function RequestRow({
           <label className="text-sm text-ps-muted">
             {t("requests.status")}
             <select
-              className="mt-1 block min-h-11 rounded-lg bg-ps-panel px-3 text-ps-text"
+              className="workspace-select mt-1 block"
               value={status}
               disabled={busy}
               onChange={(event) =>
@@ -369,18 +393,20 @@ function RequestRow({
           </Button>
         </div>
       )}
-      <div className="flex gap-2">
-        {request.mine && request.unread && (
-          <Button outline disabled={busy} onClick={onSeen}>
-            {t("requests.markRead")}
-          </Button>
-        )}
-        {request.mine && request.status === "open" && (
-          <Button outline disabled={busy} onClick={onCancel}>
-            {t("requests.cancel.confirm")}
-          </Button>
-        )}
-      </div>
+      {request.mine && (request.unread || request.status === "open") && (
+        <div className="flex flex-wrap gap-2">
+          {request.mine && request.unread && (
+            <Button outline disabled={busy} onClick={onSeen}>
+              {t("requests.markRead")}
+            </Button>
+          )}
+          {request.mine && request.status === "open" && (
+            <Button outline disabled={busy} onClick={onCancel}>
+              {t("requests.cancel.confirm")}
+            </Button>
+          )}
+        </div>
+      )}
     </article>
   );
 }

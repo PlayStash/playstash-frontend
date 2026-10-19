@@ -57,7 +57,7 @@ export function BigPictureShell({ children }: { children: ReactNode }) {
       data-big-picture="true"
       className="flex h-full flex-col bg-ps-bg text-ps-text"
     >
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-ps-line px-5 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-ps-line bg-ps-shell px-5 py-4">
         <Logo variant="sidebar" height="h-6" />
         <nav
           aria-label={t("bigPicture.navigation")}
@@ -90,7 +90,7 @@ export function BigPictureShell({ children }: { children: ReactNode }) {
       <div className="flex-1 overflow-auto p-4 sm:p-8" data-scroll-container="">
         {showInstalled ? <BigPictureInstalled /> : children}
       </div>
-      <footer className="flex flex-wrap justify-between gap-3 border-t border-ps-line px-5 py-3 text-sm text-ps-muted">
+      <footer className="flex flex-wrap justify-between gap-3 border-t border-ps-line bg-ps-shell px-5 py-3 text-sm text-ps-muted">
         <span>
           {connected
             ? t("bigPicture.controllerConnected")

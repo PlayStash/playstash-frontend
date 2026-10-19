@@ -18,6 +18,7 @@ import { getGameCoverMediaId } from "@/hooks/useGames";
 import { getRoleLabel } from "@/utils/roles";
 import { maskUser, useStreamerMode } from "@/utils/streamerMode";
 import { PlaystashUserRoleEnum } from "@/api";
+import "@/styles/workspaces.css";
 import clsx from "clsx";
 import {
   BookmarkIcon,
@@ -182,7 +183,7 @@ function getAvatarFallback(user: PlaystashUser | null | undefined) {
     .join("")
     .toUpperCase();
   return (
-    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,rgba(84,73,198,0.32),rgba(24,24,39,0.96))] text-sm font-bold uppercase tracking-[0.14em] text-white/90">
+    <div className="flex h-full w-full items-center justify-center bg-ps-panel-strong text-sm font-semibold text-ps-muted">
       {source || "PS"}
     </div>
   );
@@ -291,10 +292,7 @@ function GamePoster({
   const placeholderSize = width >= 120 ? "normal" : "small";
   return (
     <div
-      className={clsx(
-        "overflow-hidden rounded-2xl border border-ps-line/70 bg-ps-panel-soft shadow-sm",
-        className,
-      )}
+      className={clsx("community-poster", className)}
       style={{ width: `${width}px`, height: `${height}px` }}
     >
       {coverId ? (
@@ -304,7 +302,7 @@ function GamePoster({
           height={height}
           square
           alt={title}
-          className="h-full w-full rounded-2xl"
+          className="h-full w-full"
           gameId={game?.id}
           mediaSlot="cover"
           fallback={
@@ -341,9 +339,9 @@ function ProfileProgressCard({
   return (
     <Link
       to={game?.id ? `/library/${game.id}` : "/library"}
-      className="group relative block rounded-3xl focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
+      className="group relative block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ps-accent"
     >
-      <article className="surface-panel h-full rounded-3xl p-4 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)">
+      <article className="profile-progress h-full">
         <div className="flex gap-4">
           <GamePoster
             game={game || undefined}
@@ -393,7 +391,7 @@ function ProfileProgressCard({
               const gid = (progress.game as any)?.id ?? (game as any)?.id ?? 0;
               onDelete(progress.id, gid, title);
             }}
-            className="absolute bottom-3 right-3 rounded-xl p-2 text-ps-muted hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer"
+            className="absolute right-2 bottom-2 inline-flex size-11 cursor-pointer touch-manipulation sm:size-10 items-center justify-center rounded-md text-ps-muted transition-colors hover:bg-ps-danger/10 hover:text-ps-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ps-accent-cool active:bg-ps-danger/15"
             aria-label={formatMessage(t("userProfile.delete.label"), { title })}
             title={formatMessage(t("userProfile.delete.label"), { title })}
           >
@@ -569,7 +567,7 @@ export default function UserProfile() {
       <div className="flex min-h-full flex-col gap-6">
         <Heading>{t("nav.community")}</Heading>
         <Divider className="border-ps-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+        <div className="border-y border-ps-line py-8 text-sm text-ps-muted">
           {t("community.noServer")}
         </div>
       </div>
@@ -584,7 +582,7 @@ export default function UserProfile() {
           <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+        <div className="border-y border-ps-line py-8 text-sm text-ps-muted">
           {t("userProfile.invalidId")}
         </div>
       </div>
@@ -599,7 +597,10 @@ export default function UserProfile() {
           <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
-        <div className="surface-panel h-96 animate-pulse rounded-[1.75rem]" />
+        <div
+          aria-hidden="true"
+          className="h-64 animate-pulse border-y border-ps-line bg-ps-panel-soft motion-reduce:animate-none"
+        />
       </div>
     );
   }
@@ -612,7 +613,7 @@ export default function UserProfile() {
           <Heading>{t("nav.community")}</Heading>
         </div>
         <Divider className="border-ps-line/80" />
-        <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+        <div className="border-y border-ps-line py-8 text-sm text-ps-muted">
           {error || t("userProfile.notFound")}
         </div>
       </div>
@@ -620,10 +621,10 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-6 overflow-x-hidden">
+    <div className="ps-workspace flex min-h-full flex-col gap-6 overflow-x-hidden">
       <div className="flex flex-col gap-4">
         <BackButton />
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="workspace-heading">
           <div className="min-w-0">
             <Heading>{t("nav.community")}</Heading>
             <Text>{t("userProfile.description")}</Text>
@@ -637,40 +638,20 @@ export default function UserProfile() {
           )}
         </div>
       </div>
-      <Divider className="border-ps-line/80" />
-
-      <section className="surface-panel relative min-h-80 overflow-hidden rounded-4xl">
-        <div className="absolute inset-0">
-          {backdropUrl ? (
-            <>
-              <img
-                src={backdropUrl}
-                alt=""
-                className="h-full w-full scale-105 object-cover opacity-42"
-              />
-              <img
-                src={backdropUrl}
-                alt=""
-                className="absolute inset-[-8%] h-[116%] w-[116%] object-cover opacity-34 blur-3xl"
-              />
-            </>
-          ) : (
-            <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(132,123,237,0.3),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.18),transparent_45%),linear-gradient(135deg,rgba(84,73,198,0.18),transparent_60%)]" />
-          )}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,10,20,0.08),rgba(10,10,20,0.78))]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(132,123,237,0.18),transparent_42%)]" />
-        </div>
-
-        <div className="relative flex min-h-80 flex-col justify-end gap-6 p-6 sm:p-7 lg:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <section className="profile-header">
+        {backdropUrl && (
+          <img src={backdropUrl} alt="" className="profile-art" />
+        )}
+        <div className="profile-summary">
+          <div className="flex w-full flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 items-end gap-4">
               <UserAvatar
                 media={user.avatar}
-                size={110}
+                size={88}
                 alt={masked?.displayName ?? getDisplayName(user)}
                 fallback={getAvatarFallback(user)}
                 seed={user?.id != null ? String(user.id) : undefined}
-                className="border-4 border-white/20 bg-ps-panel-soft/50 shadow-lg backdrop-blur-xl"
+                className="bg-ps-panel-soft"
               />
               <div className="min-w-0 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -685,14 +666,17 @@ export default function UserProfile() {
                   )}
                 </div>
                 <div>
-                  <h2 className="truncate text-3xl font-bold tracking-[-0.04em] text-white">
+                  <h2
+                    className="truncate text-2xl font-semibold tracking-[-0.03em] text-ps-text"
+                    title={masked?.displayName ?? getDisplayName(user)}
+                  >
                     {masked?.displayName ?? getDisplayName(user)}
                   </h2>
-                  <p className="mt-1 text-base text-white/80">
+                  <p className="mt-1 truncate text-sm text-ps-muted">
                     @{masked?.handle ?? getUserHandle(user)}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-3 text-sm text-white/80">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ps-muted">
                   <span
                     title={formatFullDateTime(user.created_at) ?? undefined}
                   >
@@ -716,7 +700,7 @@ export default function UserProfile() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="profile-statistics">
               {[
                 {
                   icon: UserGroupIcon,
@@ -739,17 +723,14 @@ export default function UserProfile() {
                   value: stats.bookmarks,
                 },
               ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-[1.25rem] border border-white/12 bg-white/10 px-4 py-3 text-white backdrop-blur-xl"
-                >
-                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-white/70">
-                    <item.icon className="size-4" />
-                    {item.label}
+                <div key={item.label}>
+                  <div className="flex min-w-0 items-center gap-2 text-xs text-ps-muted">
+                    <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate" title={item.label}>
+                      {item.label}
+                    </span>
                   </div>
-                  <div className="mt-3 text-2xl font-semibold" data-numeric>
-                    {item.value}
-                  </div>
+                  <strong data-numeric>{item.value}</strong>
                 </div>
               ))}
             </div>
@@ -758,7 +739,7 @@ export default function UserProfile() {
       </section>
 
       <div className="space-y-6">
-        <section className="surface-panel rounded-[1.75rem] p-5 sm:p-6">
+        <section className="workspace-section">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <Subheading>{t("userProfile.recent.title")}</Subheading>
@@ -780,14 +761,14 @@ export default function UserProfile() {
                 />
               ))
             ) : (
-              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted">
+              <div className="col-span-full border-y border-ps-line py-6 text-sm text-ps-muted">
                 {t("userProfile.recent.empty")}
               </div>
             )}
           </div>
         </section>
 
-        <section className="surface-panel rounded-[1.75rem] p-5 sm:p-6">
+        <section className="workspace-section">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <Subheading>{t("userProfile.all.title")}</Subheading>
@@ -806,10 +787,14 @@ export default function UserProfile() {
           </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
             <div className="w-full">
-              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+              <label
+                htmlFor="profile-progress-search"
+                className="mb-2 block text-xs font-medium text-ps-muted"
+              >
                 {t("userProfile.searchGames")}
               </label>
               <Input
+                id="profile-progress-search"
                 name="progressSearch"
                 value={progressSearch}
                 onChange={(event: any) => setProgressSearch(event.target.value)}
@@ -819,7 +804,7 @@ export default function UserProfile() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+              <label className="mb-2 block text-xs font-medium text-ps-muted">
                 {t("userProfile.filterByState")}
               </label>
               <Listbox
@@ -835,7 +820,7 @@ export default function UserProfile() {
               </Listbox>
             </div>
             <div>
-              <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+              <label className="mb-2 block text-xs font-medium text-ps-muted">
                 {t("userProfile.sortBy")}
               </label>
               <Listbox
@@ -855,12 +840,8 @@ export default function UserProfile() {
           </div>
           <div className="mt-5 overflow-x-hidden md:max-h-168 md:overflow-y-auto grid gap-4 md:grid-cols-2">
             {allProgresses.length > 0 ? (
-              allProgresses.map((progress, i) => (
-                <div
-                  key={`all-${progress.id}`}
-                  className="animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none"
-                  style={{ animationDelay: `${Math.min(i * 0.04, 0.3)}s` }}
-                >
+              allProgresses.map((progress) => (
+                <div key={`all-${progress.id}`}>
                   <ProfileProgressCard
                     progress={progress}
                     onDelete={canEdit ? handleDeleteProgress : undefined}
@@ -868,14 +849,14 @@ export default function UserProfile() {
                 </div>
               ))
             ) : (
-              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted md:col-span-2">
+              <div className="border-y border-ps-line py-6 text-sm text-ps-muted md:col-span-2">
                 {t("userProfile.all.empty")}
               </div>
             )}
           </div>
         </section>
 
-        <section className="surface-panel rounded-[1.75rem] p-5 sm:p-6">
+        <section className="workspace-section">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <Subheading>{t("userProfile.bookmarks.title")}</Subheading>
@@ -887,7 +868,7 @@ export default function UserProfile() {
               })}
             </Badge>
           </div>
-          <div className="mt-5 flex gap-4 overflow-x-auto pb-2">
+          <div className="profile-bookmarks mt-5 flex gap-4 overflow-x-auto pb-2">
             {bookmarks.length > 0 ? (
               bookmarks.map((game) => {
                 const title =
@@ -896,16 +877,16 @@ export default function UserProfile() {
                   <Link
                     key={game.id}
                     to={`/library/${game.id}`}
-                    className="group block w-37.5 shrink-0 rounded-3xl focus:outline-none focus:ring-2 focus:ring-ps-accent-cool"
+                    className="group block w-37.5 shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ps-accent"
                   >
-                    <div className="surface-panel rounded-3xl p-3 transition-[transform,translate,scale,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-(--shadow-shell)">
+                    <div className="text-ps-text">
                       <GamePoster
                         game={game}
                         title={title}
                         width={126}
                         height={170}
                       />
-                      <div className="mt-3 line-clamp-2 text-sm font-medium text-ps-text">
+                      <div className="mt-3 line-clamp-2 text-sm font-medium break-words text-ps-text transition-colors group-hover:text-ps-accent-strong">
                         {title}
                       </div>
                     </div>
@@ -913,7 +894,7 @@ export default function UserProfile() {
                 );
               })
             ) : (
-              <div className="surface-panel-soft rounded-3xl p-6 text-sm text-ps-muted">
+              <div className="w-full border-y border-ps-line py-6 text-sm text-ps-muted">
                 {t("userProfile.bookmarks.empty")}
               </div>
             )}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-10-17",
+  "package": { "name": "zip", "version": "0.6.6" },
+  "pins": {
+    "source_archive_sha256": "74d6458fe597000d7565722c3ec8d4d291bc3349d6bbf7f47bd528a272b0f1e5",
+    "lockfile_sha256": "3ee22e76d18d3244afe4960090de3c8301753d743f4644e835f35d6406f9297f",
+    "patches": [
+      {
+        "path": "patches/root-manifest.json",
+        "sha256": "2ad45f1a9abdf4f93f8f369fcc10378c56c42088b86236b6e9e9cb12503b0276"
+      },
+      {
+        "path": "patches/cryoglyph-manifest.json",
+        "sha256": "fd26bf697d3a62a6eb8346b73fee48b83d1544244893a01e95a1165ba117f1df"
+      }
+    ],
+    "vendor_sources": [
+      {
+        "name": "cryoglyph",
+        "version": "0.1.0",
+        "archive_url": "https://static.crates.io/crates/cryoglyph/cryoglyph-0.1.0.crate",
+        "archive_sha256": "08bc795bdbccdbd461736fb163930a009da6597b226d6f6fce33e7a8eb6ec519"
+      }
+    ]
+  },
+  "advisories": [
+    {
+      "id": "RUSTSEC-2026-0367",
+      "reason": "The affected generic extraction APIs preserve privileged Unix mode bits. Ludusavi does not call ZipArchive::extract or ZipStreamReader::extract and does not restore ZIP permission metadata.",
+      "evidence": [
+        "src/scan/layout.rs:1822-1886: restore_file_from_zip opens a regular destination, reads an entry with by_name and copies its bytes with std::io::copy; only last_modified is applied.",
+        "src/scan/layout.rs:1252-1261: unix_permissions is a ZipWriter option used when creating backups, not when restoring them.",
+        "https://rustsec.org/advisories/RUSTSEC-2026-0367.html"
+      ]
+    },
+    {
+      "id": "RUSTSEC-2026-0368",
+      "reason": "The advisory concerns symbolic-link creation by generic ZIP extraction. The pinned Ludusavi source never calls either generic extraction API or creates links from archive metadata; restore copies entry bytes to a regular file.",
+      "evidence": [
+        "src/scan/layout.rs:921-931: registry ZIP entries are read with by_name and copied into memory.",
+        "src/scan/layout.rs:1702-1772,1822-1886: file restores use by_name and std::io::copy instead of generic extraction.",
+        "src/scan/layout.rs:2054-2106: backup validation uses by_name only to check entry presence.",
+        "https://rustsec.org/advisories/RUSTSEC-2026-0368.html"
+      ]
+    },
+    {
+      "id": "RUSTSEC-2026-0369",
+      "reason": "The affected generic extraction APIs apply Unix permissions through links. Ludusavi never calls those APIs, reads ZIP unix_mode metadata or applies ZIP permissions. Its destination readonly adjustment uses existing filesystem metadata, not archive attributes.",
+      "evidence": [
+        "src/scan/layout.rs:1822-1886: manual restore applies entry contents and timestamp only.",
+        "src/path.rs:926-951: unset_readonly reads existing destination permissions and adds owner write permission on Unix; no ZIP metadata is involved.",
+        "Reviewed the complete pinned src/**/*.rs tree: no generic extract calls, ZipStreamReader use or ZIP unix_mode reads; Cargo.lock has only Ludusavi as a consumer of zip 0.6.6.",
+        "https://rustsec.org/advisories/RUSTSEC-2026-0369.html"
+      ]
+    }
+  ]
+}

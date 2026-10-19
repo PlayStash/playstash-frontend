@@ -5,7 +5,6 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
-
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -13,29 +12,30 @@
   --font-display: Inter, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
   --font-sans--font-feature-settings: "cv11";
-
-  --color-ps-bg: #0b1017;
-  --color-ps-shell: #121925;
-  --color-ps-panel: #18202c;
-  --color-ps-panel-strong: #202b39;
-  --color-ps-panel-soft: rgba(24, 32, 44, 0.78);
-  --color-ps-text: #f3f7fe;
-  --color-ps-muted: #9aa8bd;
-  --color-ps-line: rgba(255, 255, 255, 0.08);
-  --color-ps-line-strong: rgba(126, 154, 255, 0.24);
-  --color-ps-accent: #6d7cff;
-  --color-ps-accent-strong: #8ea5ff;
-  --color-ps-accent-cool: #4dbdff;
-  --color-ps-success: #56d692;
-  --color-ps-warning: #f1c56c;
-  --color-ps-danger: #ef7373;
-  /* Theme tokens (set by themes; classic values below) */
-  --color-ps-on-accent: #ffffff;
-  --color-ps-accent-hover: color-mix(in srgb, #6d7cff 60%, transparent);
-  --color-ps-accent-pressed: color-mix(in srgb, #6d7cff 40%, transparent);
-  --color-ps-accent-disabled: color-mix(in srgb, #6d7cff 20%, transparent);
-  --color-ps-blur: rgba(0, 0, 0, 0.7);
-
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+  --color-ps-bg: #0e1825;
+  --color-ps-shell: #0b121c;
+  --color-ps-panel: #152131;
+  --color-ps-panel-strong: #1e2e40;
+  --color-ps-panel-soft: #182739;
+  --color-ps-text: #edf2f7;
+  --color-ps-muted: #a4b5c8;
+  --color-ps-line: #253344;
+  --color-ps-line-strong: #3c5067;
+  --color-ps-accent: #a3d7fa;
+  --color-ps-accent-strong: #c6e8ff;
+  --color-ps-accent-cool: #a3d7fa;
+  --color-ps-on-accent: #102238;
+  --color-ps-accent-hover: #bce4ff;
+  --color-ps-accent-pressed: #86c6ef;
+  --color-ps-accent-disabled: #5c7c94;
+  --color-ps-blur: rgba(8, 15, 24, 0.7);
+  --color-ps-success: #72d6ab;
+  --color-ps-warning: #efc678;
+  --color-ps-danger: #f58d91;
   --color-rose-50: #fcf4f4;
   --color-rose-100: #f9e7e7;
   --color-rose-200: #f4d4d4;
@@ -50,34 +50,31 @@
 }
 
 @keyframes shimmer {
-  0% {
+  from {
     transform: translateX(-100%);
   }
-  100% {
+  to {
     transform: translateX(100%);
   }
 }
-
 @keyframes avatar-shimmer {
-  0% {
+  from {
     background-position: 200% 0;
   }
-  100% {
+  to {
     background-position: -200% 0;
   }
 }
-
 @keyframes panel-in {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-3px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
 @keyframes media-fade-in {
   from {
     opacity: 0;
@@ -87,158 +84,91 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .motion-safe\:animate-pulse {
-    animation: none !important;
-  }
-  .motion-safe\:animate-spin {
-    animation: none !important;
-  }
-}
-
 @layer base {
   :root {
     color-scheme: light;
-    --color-ps-bg: #e2e1ef;
-    --color-ps-shell: rgba(245, 243, 250, 0.94);
-    --color-ps-panel: rgba(255, 255, 255, 0.92);
-    --color-ps-panel-strong: #ffffff;
-    --color-ps-panel-soft: rgba(230, 227, 244, 0.94);
-    --color-ps-text: #1c1e21;
-    --color-ps-muted: #4a4b5a;
-    --color-ps-line: rgba(28, 30, 33, 0.1);
-    --color-ps-line-strong: rgba(65, 58, 146, 0.2);
-    --color-ps-accent: #5449c6;
-    --color-ps-accent-strong: #413a92;
-    --color-ps-accent-cool: #7468eb;
-    --color-ps-success: #188f5c;
-    --color-ps-warning: #b17d19;
-    --color-ps-danger: #d24747;
+    --color-ps-bg: #f1f4f8;
+    --color-ps-shell: #e5ebf2;
+    --color-ps-panel: #ffffff;
+    --color-ps-panel-strong: #e3ebf4;
+    --color-ps-panel-soft: #eaf0f6;
+    --color-ps-text: #15283c;
+    --color-ps-muted: #50647b;
+    --color-ps-line: #d3dde8;
+    --color-ps-line-strong: #b2c4d5;
+    --color-ps-accent: #176da5;
+    --color-ps-accent-strong: #125783;
+    --color-ps-accent-cool: #176da5;
     --color-ps-on-accent: #ffffff;
-    --color-ps-accent-hover: color-mix(
-      in srgb,
-      var(--color-ps-accent) 60%,
-      transparent
-    );
-    --color-ps-accent-pressed: color-mix(
-      in srgb,
-      var(--color-ps-accent) 40%,
-      transparent
-    );
-    --color-ps-accent-disabled: color-mix(
-      in srgb,
-      var(--color-ps-accent) 20%,
-      transparent
-    );
-    --color-ps-blur: rgba(255, 255, 255, 0.7);
-    --shadow-shell:
-      0 18px 40px rgba(43, 38, 86, 0.14), 0 4px 12px rgba(43, 38, 86, 0.06);
-    --shadow-card:
-      0 12px 24px rgba(43, 38, 86, 0.12), 0 3px 8px rgba(43, 38, 86, 0.06);
+    --color-ps-accent-hover: #125783;
+    --color-ps-accent-pressed: #0e466a;
+    --color-ps-accent-disabled: #aac4d5;
+    --color-ps-blur: rgba(23, 39, 58, 0.6);
+    --color-ps-success: #197a54;
+    --color-ps-warning: #966715;
+    --color-ps-danger: #b23d4c;
+    --shadow-shell: 0 12px 32px rgb(0 12 28 / 0.18);
+    --shadow-card: 0 0 transparent;
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   }
-
   .dark {
     color-scheme: dark;
-    --color-ps-bg: #11101e;
-    --color-ps-shell: #161427;
-    --color-ps-panel: #1b1a27;
-    --color-ps-panel-strong: #232230;
-    --color-ps-panel-soft: rgba(35, 34, 48, 0.84);
-    --color-ps-text: #f5f6fa;
-    --color-ps-muted: #b2b4c7;
-    --color-ps-line: rgba(255, 255, 255, 0.08);
-    --color-ps-line-strong: rgba(100, 89, 223, 0.28);
-    --color-ps-accent: #6459df;
-    --color-ps-accent-strong: #847bed;
-    --color-ps-accent-cool: #8d84ff;
-    --color-ps-success: #56d692;
-    --color-ps-warning: #f1c56c;
-    --color-ps-danger: #ef7373;
-    --color-ps-blur: rgba(0, 0, 0, 0.7);
-    --shadow-shell:
-      0 22px 48px rgba(4, 4, 12, 0.36), 0 6px 14px rgba(4, 4, 12, 0.24);
-    --shadow-card:
-      0 14px 28px rgba(4, 4, 12, 0.28), 0 4px 10px rgba(4, 4, 12, 0.2);
+    --color-ps-bg: #0e1825;
+    --color-ps-shell: #0b121c;
+    --color-ps-panel: #152131;
+    --color-ps-panel-strong: #1e2e40;
+    --color-ps-panel-soft: #182739;
+    --color-ps-text: #edf2f7;
+    --color-ps-muted: #a4b5c8;
+    --color-ps-line: #253344;
+    --color-ps-line-strong: #3c5067;
+    --color-ps-accent: #a3d7fa;
+    --color-ps-accent-strong: #c6e8ff;
+    --color-ps-accent-cool: #a3d7fa;
+    --color-ps-on-accent: #102238;
+    --color-ps-accent-hover: #bce4ff;
+    --color-ps-accent-pressed: #86c6ef;
+    --color-ps-accent-disabled: #5c7c94;
+    --color-ps-blur: rgba(8, 15, 24, 0.7);
+    --color-ps-success: #72d6ab;
+    --color-ps-warning: #efc678;
+    --color-ps-danger: #f58d91;
+    --shadow-shell: 0 16px 40px rgb(0 0 0 / 0.35);
   }
-
-  html {
+  html,
+  body {
     height: 100%;
     overflow: hidden;
     background: var(--color-ps-bg);
     color: var(--color-ps-text);
+  }
+  html {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Feel installed, not embedded: no grey tap flash, no landscape font
+       inflation, no pull-to-refresh/rubber-band on the shell (inner scroll
+       areas own their own overscroll). */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior: none;
   }
-
   body {
-    height: 100%;
-    overflow: hidden;
-    background:
-      radial-gradient(
-        circle at top left,
-        rgba(84, 73, 198, 0.12) 0,
-        transparent 28%
-      ),
-      radial-gradient(
-        circle at top right,
-        rgba(116, 104, 235, 0.14) 0,
-        transparent 24%
-      ),
-      linear-gradient(
-        180deg,
-        var(--color-ps-bg) 0%,
-        color-mix(in srgb, var(--color-ps-bg) 88%, black) 100%
-      );
-    color: var(--color-ps-text);
+    overscroll-behavior: none;
   }
-
-  /* A selected theme tints the page glow with its own accent. */
-  html[data-ps-theme] body {
-    background:
-      radial-gradient(
-        circle at top left,
-        color-mix(in srgb, var(--color-ps-accent) 12%, transparent) 0,
-        transparent 28%
-      ),
-      radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--color-ps-accent) 14%, transparent) 0,
-        transparent 24%
-      ),
-      linear-gradient(
-        180deg,
-        var(--color-ps-bg) 0%,
-        color-mix(in srgb, var(--color-ps-bg) 88%, black) 100%
-      );
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.018) 1px,
-        transparent 1px
-      );
-    background-size: 72px 72px;
-    mask-image: radial-gradient(circle at center, black 18%, transparent 78%);
-  }
-
   #root {
     height: 100dvh;
     min-height: 100dvh;
     overflow: hidden;
     isolation: isolate;
+    /* viewport-fit=cover lets the shell paint edge to edge; keep content
+       clear of the notch, Dynamic Island and home indicator. 0 on desktop. */
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
-
   h1,
   h2,
   h3,
@@ -246,167 +176,309 @@
   h5,
   h6 {
     font-family: var(--font-display);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.025em;
     text-wrap: balance;
   }
-
   p,
   li,
   dd,
   blockquote {
     text-wrap: pretty;
   }
-
   [data-numeric],
   .counter,
   .price {
     font-variant-numeric: tabular-nums;
   }
-
-  .card {
-    @apply rounded-[1.5rem] p-8 mb-4;
-    background: linear-gradient(
-      180deg,
-      var(--color-ps-panel-strong) 0%,
-      var(--color-ps-panel) 100%
-    );
-    border: 1px solid var(--color-ps-line);
-    box-shadow: var(--shadow-card);
-  }
-
   a {
-    @apply font-medium;
+    font-weight: 500;
     color: var(--color-ps-accent-cool);
+    text-underline-offset: 0.2em;
   }
-
-  a:hover {
-    color: var(--color-ps-accent);
+  @media (hover: hover) and (pointer: fine) {
+    a:hover {
+      color: var(--color-ps-accent-strong);
+    }
   }
-
   button,
   a,
   input,
   select,
   textarea {
-    transition-property:
-      transform, color, background-color, border-color, box-shadow, opacity;
-    transition-duration: 180ms;
+    transition-property: color, background-color, border-color, opacity;
+    transition-duration: 140ms;
     transition-timing-function: var(--ease-out);
   }
-
+  /* Controls respond on the first tap (no double-tap-zoom wait) and a
+     long-press never selects their label or opens the link callout. Content
+     text elsewhere stays selectable. */
+  button,
+  a,
+  summary,
+  label,
+  [role="button"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+  button,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  input,
+  textarea {
+    caret-color: var(--color-ps-accent);
+  }
   :focus-visible {
     outline: 2px solid var(--color-ps-accent-cool);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
-
-  /* Gamepad-driven focus ring. Unlayered + important so it wins over any
-     component utility class (e.g. focus:outline-none, focus:outline-hidden)
-     — without it the ring silently disappears on cards and buttons. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
   .ps-gamepad-focus {
     outline: 2px solid var(--color-ps-accent) !important;
-    outline-offset: 2px !important;
+    outline-offset: 3px !important;
   }
-
   ::selection {
     background: color-mix(in srgb, var(--color-ps-accent) 30%, transparent);
     color: var(--color-ps-text);
   }
-
-  ::-webkit-scrollbar {
-    width: 11px;
-    height: 11px;
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ps-line-strong) transparent;
   }
-
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-
   ::-webkit-scrollbar-thumb {
-    background: color-mix(
-      in srgb,
-      var(--color-ps-accent) 26%,
-      var(--color-ps-line)
-    );
+    background: var(--color-ps-line-strong);
     border: 2px solid transparent;
-    border-radius: 999px;
+    border-radius: 6px;
     background-clip: padding-box;
   }
-
+  .card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-ps-panel);
+  }
   .surface-shell {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-ps-shell) 94%, white) 0%,
-      var(--color-ps-shell) 100%
-    );
-    border: 1px solid var(--color-ps-line);
-    box-shadow: var(--shadow-shell);
-    backdrop-filter: blur(20px);
+    background: var(--color-ps-shell);
   }
-
   .surface-panel {
-    background: linear-gradient(
-      180deg,
-      var(--color-ps-panel-strong) 0%,
-      var(--color-ps-panel) 100%
-    );
-    border: 1px solid var(--color-ps-line);
-    box-shadow: var(--shadow-card);
-    backdrop-filter: blur(18px);
+    background: var(--color-ps-panel);
   }
-
   .surface-panel-soft {
     background: var(--color-ps-panel-soft);
-    border: 1px solid var(--color-ps-line);
-    backdrop-filter: blur(18px);
   }
-
   .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 500;
     color: var(--color-ps-muted);
   }
-
-  .eyebrow::before {
-    content: "";
-    width: 2.25rem;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      var(--color-ps-accent-cool) 100%
-    );
-  }
-
   .data-chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.55rem 0.85rem;
-    border-radius: 999px;
-    border: 1px solid var(--color-ps-line);
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.25rem;
     background: var(--color-ps-panel-soft);
     color: var(--color-ps-muted);
-    font-size: 0.82rem;
-    line-height: 1;
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
-
   .data-chip strong {
     color: var(--color-ps-text);
-    font-weight: 700;
+    font-weight: 600;
   }
-
+  /* Reduced motion means fewer and gentler, not none: drop every moving
+     transition (transform, translate, scale, size, position) but keep the
+     authored opacity and colour fades that explain state changes. Keyframe
+     loops stop after a single, near-instant iteration. Motion components are
+     handled separately by MotionConfig reducedMotion="user". */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
+      transition-property:
+        opacity, color, background-color, border-color, outline-color,
+        text-decoration-color, fill, stroke !important;
       animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
       scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .app-header {
+    min-height: 4.5rem;
+    background: var(--color-ps-shell);
+    border-bottom: 1px solid var(--color-ps-line);
+    z-index: 35;
+  }
+  .app-topbar {
+    min-height: 4.5rem;
+    padding: 0 1.5rem;
+    gap: 2.5rem;
+  }
+  .app-brand {
+    display: flex;
+    align-items: center;
+    color: var(--color-ps-text);
+  }
+  .app-primary-navigation {
+    gap: 1.75rem;
+  }
+  .app-nav-link {
+    display: flex;
+    align-items: center;
+    position: relative;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--color-ps-muted);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .app-nav-link:hover {
+      color: var(--color-ps-text);
+    }
+    .app-profile-button:hover {
+      background: var(--color-ps-panel);
+    }
+    .app-icon-button:hover {
+      background: var(--color-ps-panel);
+      color: var(--color-ps-text);
+    }
+  }
+  .app-nav-link[aria-current="page"] {
+    color: var(--color-ps-accent);
+  }
+  .app-nav-link[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-ps-accent);
+  }
+  .app-nav-link[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .app-profile-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.6rem;
+    background: transparent;
+    border: 0;
+    border-radius: 0.375rem;
+    color: var(--color-ps-text);
+    font-size: 0.8125rem;
+    box-shadow: none;
+    transition-property: color, background-color, transform;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
+  }
+  .app-profile-button[data-open] {
+    background: var(--color-ps-panel);
+  }
+  .app-profile-button::before,
+  .app-profile-button::after {
+    display: none;
+  }
+  .app-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: 0.375rem;
+    color: var(--color-ps-muted);
+    transition-property: color, background-color, transform;
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-out);
+  }
+  /* Press feedback lands on pointer-down, for touch and mouse alike. */
+  .app-icon-button:active,
+  .app-profile-button:active {
+    transform: scale(0.97);
+  }
+  .app-icon-button:active {
+    background: var(--color-ps-panel);
+  }
+  .app-icon-button:disabled,
+  .app-icon-button[aria-disabled="true"] {
+    transform: none;
+  }
+  .app-library-column {
+    width: 264px;
+    background: var(--color-ps-shell);
+    border-right: 1px solid var(--color-ps-line);
+  }
+  .app-page-padding {
+    padding: 2rem 2rem 3rem;
+  }
+  .app-library-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-ps-muted);
+  }
+  .app-offline-indicator {
+    border-radius: 0.25rem;
+    padding: 0.3rem 0.5rem;
+    background: color-mix(
+      in srgb,
+      var(--color-ps-warning) 12%,
+      var(--color-ps-shell)
+    );
+    color: var(--color-ps-warning);
+    font-size: 0.75rem;
+  }
+  .app-skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -6rem;
+    z-index: 100;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    background: var(--color-ps-accent);
+    color: var(--color-ps-on-accent);
+  }
+  .app-skip-link:focus {
+    top: 0.75rem;
+  }
+  @media (max-width: 1023px) {
+    .app-header,
+    .app-topbar {
+      min-height: 3.75rem;
+    }
+    .app-topbar {
+      padding: 0 0.75rem;
+      gap: 0.75rem;
+    }
+    .app-page-padding {
+      padding: 1.25rem 1rem 2rem;
     }
   }
 }

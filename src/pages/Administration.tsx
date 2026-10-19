@@ -15,7 +15,6 @@ import {
   DescriptionList,
   DescriptionTerm,
 } from "@tw/description-list";
-import { Divider } from "@tw/divider";
 import { Heading } from "@tw/heading";
 import { Link } from "@tw/link";
 import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
@@ -51,6 +50,7 @@ import { FolderTagRules } from "@/components/admin/FolderTagRules";
 import { ServerDiagnostics } from "@/components/admin/ServerDiagnostics";
 import { getErrorMessage } from "@/utils/apiError";
 import { formatMessage } from "@/utils/formatMessage";
+import "@/styles/workspaces.css";
 
 const USER_SORT_LABELS: Record<UserSort, TranslationKey> = {
   username: "admin.sort.username",
@@ -128,11 +128,14 @@ export default function Administration() {
 
   try {
     return (
-      <div className="flex min-h-full flex-col gap-6">
-        <Heading>{t("nav.admin")}</Heading>
-        <Text className="mt-1 max-w-2xl">{t("admin.page.description")}</Text>
-        <Divider />
-        <div className="flex flex-col gap-6">
+      <div className="ps-workspace flex min-h-full flex-col gap-6">
+        <div className="workspace-heading">
+          <div className="space-y-2">
+            <Heading>{t("nav.admin")}</Heading>
+            <Text className="max-w-2xl">{t("admin.page.description")}</Text>
+          </div>
+        </div>
+        <div className="admin-sections flex flex-col">
           <Card title={t("admin.server.title")}>
             <DescriptionList>
               <DescriptionTerm>{t("admin.server.address")}</DescriptionTerm>
@@ -247,7 +250,7 @@ export default function Administration() {
               {reindexError && (
                 <p
                   role="alert"
-                  className="col-span-full rounded-md bg-red-500/10 p-3 text-sm text-red-500"
+                  className="col-span-full rounded-md bg-ps-danger/10 p-3 text-sm break-words text-ps-danger"
                 >
                   {reindexError}
                 </p>
@@ -265,11 +268,14 @@ export default function Administration() {
           </Card>
           <Card title={t("admin.users.title")}>
             {error && (
-              <div className="mb-4 rounded-md bg-red-500/10 p-3 text-sm text-red-500">
+              <div
+                role="alert"
+                className="mb-4 rounded-md bg-ps-danger/10 p-3 text-sm break-words text-ps-danger"
+              >
                 {error}
               </div>
             )}
-            <div className="flex items-center justify-between gap-6 mb-4">
+            <div className="admin-user-tools">
               <SwitchField>
                 <Switch
                   name="showDeleted"
@@ -279,7 +285,7 @@ export default function Administration() {
                 />
                 <Label>{t("admin.users.showDeleted")}</Label>
               </SwitchField>
-              <div className="ml-auto w-52">
+              <div className="ml-auto w-full sm:w-52">
                 <Listbox
                   name="userSort"
                   aria-label={t("admin.sort.label")}
@@ -354,7 +360,7 @@ export default function Administration() {
                     </TableCell>
                   </TableRow>
                 )}
-                {filteredUsers.map((u: PlaystashUser, i: number) => {
+                {filteredUsers.map((u: PlaystashUser) => {
                   const id = u.id;
                   const deleted = u.deleted_at;
                   const busy = opBusy[String(id)];
@@ -372,8 +378,7 @@ export default function Administration() {
                   return (
                     <TableRow
                       key={id}
-                      className={`${deleted ? "opacity-60 " : ""}animate-[panel-in_0.18s_ease-out] motion-reduce:animate-none`}
-                      style={{ animationDelay: `${Math.min(i * 0.03, 0.3)}s` }}
+                      className={deleted ? "opacity-60" : undefined}
                     >
                       <TableCell>
                         <div className="flex items-center gap-4">
@@ -388,9 +393,9 @@ export default function Administration() {
                               seed={String(u.id)}
                             />
                           </Link>
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              <span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
+                              <span className="min-w-0 [overflow-wrap:anywhere]">
                                 {displayName}{" "}
                                 {!streamerMode && (first_name || last_name) && (
                                   <span className="font-normal">
@@ -399,13 +404,13 @@ export default function Administration() {
                                 )}
                               </span>
                               {deleted && (
-                                <span className="rounded bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-400">
+                                <span className="shrink-0 rounded-sm bg-ps-danger/15 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-ps-danger">
                                   {t("admin.users.deleted")}
                                 </span>
                               )}
                             </div>
                             {displayEmail && (
-                              <div className="text-ps-muted">
+                              <div className="text-ps-muted [overflow-wrap:anywhere]">
                                 <a
                                   href={
                                     streamerMode ? undefined : `mailto:${email}`

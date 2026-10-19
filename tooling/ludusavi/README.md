@@ -27,13 +27,34 @@ client must adopt the same `Cargo.lock` (SHA-256
 `3ee22e76d18d3244afe4960090de3c8301753d743f4644e835f35d6406f9297f`) to keep
 both clients on an identical build; its own audit gate fails without it.
 
-cargo-audit 0.22.2 then reports zero vulnerabilities and zero unsoundness
-warnings. Eight maintenance advisories remain visible: instant
+cargo-audit 0.22.2 checks the full lockfile. Eight maintenance advisories remain visible: instant
 (RUSTSEC-2024-0384), number_prefix (2025-0119), paste (2024-0436),
 proc-macro-error (2024-0370), rustls-pemfile (2025-0134), rustybuzz (2026-0206),
 ttf-parser (2026-0192) and yaml-rust (2024-0320). Every build refreshes the
-advisory database and fails on vulnerabilities or unsoundness; future findings
-need another reviewed lockfile and provenance update.
+advisory database and fails on applicable vulnerabilities or unsoundness; future
+findings need another reviewed lockfile and provenance update.
+
+## Source-specific ZIP audit applicability
+
+The 2026-10-17 review in `audit-applicability.json` covers only
+RUSTSEC-2026-0367, RUSTSEC-2026-0368 and RUSTSEC-2026-0369 for the pinned
+Ludusavi source and zip 0.6.6 dependency. The generic `ZipArchive::extract` and
+`ZipStreamReader::extract` APIs have permission and symbolic-link findings.
+Ludusavi never calls those APIs or restores ZIP permission/link metadata.
+`restore_file_from_zip` (`src/scan/layout.rs:1822-1886`) uses `by_name`, opens a
+regular destination, copies entry bytes with `std::io::copy`, and applies only
+the modification timestamp. Registry entries are copied into memory; backup
+validation only checks entry presence. `unix_permissions` is used only by the
+backup writer. The destination readonly adjustment reads current filesystem
+permissions rather than ZIP metadata.
+
+The sidecar audit passes these three reviewed IDs to cargo-audit with `--ignore`.
+Every other vulnerability and unsoundness finding remains fatal. These are
+source applicability decisions, not a claim that zip 0.6.6 is fixed. The policy
+must exactly match the source archive SHA-256, lockfile SHA-256, complete patch
+list and hashes, and vendored source pins. Any change fails before downloading
+or building and requires a fresh review. The policy is not shared with the
+desktop app's separate native ZIP dependency or its security workflow.
 
 ## Building
 

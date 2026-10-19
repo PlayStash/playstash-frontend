@@ -260,25 +260,30 @@ export default function MultiSelectFilterDialog({
         {/* Selected items display */}
         {selectedItems.length > 0 && (
           <div className="mb-4">
-            <label className="block text-xs font-medium text-fg-muted mb-2">
+            <p className="mb-2 block text-xs font-medium text-ps-muted tabular-nums">
               {fillTemplate(t("libraryFilters.dialog.selected"), {
                 count: selectedItems.length,
               })}
-            </label>
+            </p>
             <div className="flex flex-wrap gap-2">
               {selectedItems.map((item) => (
                 <Badge
                   key={item.name}
                   color={badgeColor}
-                  className="cursor-pointer flex items-center gap-1"
+                  className="flex max-w-full min-w-0 items-center gap-1"
                 >
-                  {item.name}
+                  <span className="min-w-0 truncate" title={item.name}>
+                    {item.name}
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeItem(item)}
-                    className="hover:text-red-400"
+                    aria-label={fillTemplate(t("libraryFilters.removeItem"), {
+                      name: item.name,
+                    })}
+                    className="relative -my-0.5 -mr-1 inline-grid shrink-0 cursor-pointer place-items-center rounded-[3px] p-0.5 opacity-75 transition-[color,opacity] duration-150 after:absolute after:-inset-1.5 after:content-[''] hover:text-ps-danger hover:opacity-100 active:text-ps-danger pointer-coarse:after:-inset-2.5"
                   >
-                    <XMarkIcon className="h-3 w-3" />
+                    <XMarkIcon className="h-3 w-3" aria-hidden="true" />
                   </button>
                 </Badge>
               ))}
@@ -300,11 +305,15 @@ export default function MultiSelectFilterDialog({
 
         {/* Items list */}
         {loading && (
-          <div className="text-sm text-fg-muted">
+          <div role="status" className="text-sm text-ps-muted">
             {t("libraryFilters.dialog.loading")}
           </div>
         )}
-        {error && <div className="text-sm text-red-500">{error}</div>}
+        {error && (
+          <div role="alert" className="text-sm break-words text-ps-danger">
+            {error}
+          </div>
+        )}
         {!loading && !error && (
           <div className="border border-ps-line rounded-lg">
             {filteredItems.length === 0 ? (
@@ -317,18 +326,20 @@ export default function MultiSelectFilterDialog({
                   <button
                     key={item.id}
                     type="button"
+                    aria-pressed={isSelected(item)}
                     onClick={() => toggleItem(item)}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-ps-panel-soft transition-colors ${
+                    className={`flex min-h-11 w-full items-center px-4 py-2 text-left text-sm transition-colors select-none hover:bg-ps-panel-soft active:bg-ps-panel-strong sm:min-h-10 ${
                       isSelected(item)
                         ? `${colors.bg} ${colors.text}`
                         : "text-ps-text"
                     }`}
                   >
-                    <span className="flex items-center justify-between">
-                      {item.name}
+                    <span className="flex w-full min-w-0 items-center justify-between gap-3">
+                      <span className="min-w-0 break-words">{item.name}</span>
                       {isSelected(item) && (
                         <svg
-                          className={`h-4 w-4 ${colors.check}`}
+                          aria-hidden="true"
+                          className={`h-4 w-4 shrink-0 ${colors.check}`}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"

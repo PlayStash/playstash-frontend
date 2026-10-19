@@ -37,3 +37,10 @@ src-tauri/vendor/glib/Cargo.lock
 /build/
 /container-context/
 /verified-digests/
+
+# Local design proposals, decisions and browser-review evidence
+/.taste-skill/
+/.impeccable/mocks/
+/.impeccable/questions/
+/.impeccable/review/
+/.impeccable/build/

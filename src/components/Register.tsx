@@ -272,14 +272,16 @@ export function Register() {
   return (
     <form
       onSubmit={confirmedServer ? handleSubmit : handleContinue}
-      className="grid w-full max-w-sm grid-cols-1 gap-6"
+      className="grid w-full max-w-md grid-cols-1 gap-6"
     >
       <IncompatibleServerDialog
         open={incompatibleOpen}
         onClose={() => setIncompatibleOpen(false)}
       />
-      <Logo variant="brand" height="h-10 sm:h-14" gap="gap-3" />
-      <div className="space-y-3">
+      <div data-auth-brand>
+        <Logo variant="brand" height="h-8" gap="gap-3" />
+      </div>
+      <div className="space-y-2 border-b border-ps-line pb-6">
         <Heading>{t("register.title")}</Heading>
         <Text>{t("register.description")}</Text>
       </div>

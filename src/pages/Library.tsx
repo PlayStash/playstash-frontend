@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { BookmarkFilter, EarlyAccessFilter, useGames } from "@/hooks/useGames";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { Divider } from "@tw/divider";
 import { Heading } from "@tw/heading";
 import { Input } from "@tw/input";
 import { Listbox, ListboxLabel, ListboxOption } from "@tw/listbox";
@@ -16,8 +15,17 @@ import {
   useState,
   useCallback,
   useMemo,
+  useSyncExternalStore,
   type CSSProperties,
+  type PropsWithChildren,
 } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useIsPresent,
+  useReducedMotion,
+} from "motion/react";
+import { EASE_OUT } from "@/lib/motion";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import {
   TrashIcon,
@@ -39,6 +47,8 @@ import {
   getInstalledOpen,
   getLibraryRetain,
   isLibraryLoadAllowed,
+  LIBRARY_COVER_SIZE_KEY,
+  LIBRARY_PREFERENCES_EVENT,
   requestLibraryLoad,
   setCoverSize as persistCoverSize,
   setInstalledOpen,
@@ -73,8 +83,7 @@ import { useInstalledGames } from "@/hooks/useInstalledGames";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { SectionExpander } from "@/components/SectionExpander";
 import { RowCountControl } from "@/components/RowCountControl";
-import { motion } from "motion/react";
-import { DURATION_SLOW, EASE_OUT } from "@/lib/motion";
+import "@/styles/library.css";
 import {
   activeFilterCount as computeActiveFilterCount,
   buildInstalledGameMap,
@@ -210,6 +219,84 @@ function DiceIcon({ className }: { className?: string }) {
   );
 }
 
+/** A selected filter value with a remove control sized for touch. */
+function RemovableFilterChip({
+  label,
+  color,
+  onRemove,
+}: {
+  label: string;
+  color: "pink" | "blue" | "green" | "purple" | "orange";
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Badge
+      color={color}
+      className="flex max-w-full min-w-0 items-center gap-1 text-xs"
+    >
+      <span className="min-w-0 truncate" title={label}>
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={fillTemplate(t("libraryFilters.removeItem"), {
+          name: label,
+        })}
+        className="ps-library-chip-remove"
+      >
+        <XMarkIcon className="h-3 w-3" aria-hidden="true" />
+      </button>
+    </Badge>
+  );
+}
+
+/** Cards that take part in the one-time grid entrance (about one screen). */
+const GRID_INTRO_COUNT = 12;
+
+const compactLibraryQuery = "(max-width: 640px)";
+
+function subscribeCompactLibrary(onChange: () => void) {
+  const query = window.matchMedia?.(compactLibraryQuery);
+  if (!query) return () => {};
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+const getCompactLibrarySnapshot = () =>
+  window.matchMedia?.(compactLibraryQuery).matches ?? false;
+
+function LibraryFiltersPanel({ children }: PropsWithChildren) {
+  const isPresent = useIsPresent();
+  const reduceMotion = useReducedMotion();
+  const compact = useSyncExternalStore(
+    subscribeCompactLibrary,
+    getCompactLibrarySnapshot,
+    () => false,
+  );
+  const gap = compact ? 20 : 24;
+
+  return (
+    <motion.div
+      className="shrink-0 overflow-hidden"
+      inert={!isPresent}
+      aria-hidden={isPresent ? undefined : true}
+      // Absorb the responsive flex gap before removing this child.
+      initial={{ height: 0, opacity: 0, marginBottom: -gap }}
+      animate={{ height: "auto", opacity: 1, marginBottom: 0 }}
+      exit={{ height: 0, opacity: 0, marginBottom: -gap }}
+      transition={{
+        duration: reduceMotion ? 0 : 0.24,
+        ease: EASE_OUT,
+        opacity: { duration: reduceMotion ? 0.1 : 0.16 },
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function Library() {
   const { serverUrl, user, authFetch } = useAuth();
   const { t, locale } = useTranslation();
@@ -283,7 +370,12 @@ export default function Library() {
   const ageRatingLoadingRef = useRef(false);
   // Client-side only: hide server cards of installed games (desktop).
   const [hideInstalled, setHideInstalled] = useState(true);
-  const [coverSize, setCoverSizeState] = useState(getCoverSize);
+  const [coverSize, setCoverSizeState] = useState(() => {
+    try {
+      if (localStorage.getItem(LIBRARY_COVER_SIZE_KEY) === null) return 190;
+    } catch {}
+    return getCoverSize();
+  });
   // Auto-load off: server games load after the first search/filter/reload.
   const [loadAllowed, setLoadAllowed] = useState(isLibraryLoadAllowed);
   const [luckyBusy, setLuckyBusy] = useState(false);
@@ -296,6 +388,20 @@ export default function Library() {
   const allowLoad = useCallback(() => {
     requestLibraryLoad();
     setLoadAllowed(true);
+    window.dispatchEvent(new Event("playstash:library-load-requested"));
+  }, []);
+
+  useEffect(() => {
+    const syncLoading = () => setLoadAllowed(isLibraryLoadAllowed());
+    window.addEventListener("playstash:library-load-requested", syncLoading);
+    window.addEventListener(LIBRARY_PREFERENCES_EVENT, syncLoading);
+    return () => {
+      window.removeEventListener(
+        "playstash:library-load-requested",
+        syncLoading,
+      );
+      window.removeEventListener(LIBRARY_PREFERENCES_EVENT, syncLoading);
+    };
   }, []);
 
   // Dialog states
@@ -506,14 +612,15 @@ export default function Library() {
     } catch {}
   }, [sortBy, order]);
 
-  // Initialize from URL (first render)
+  // Reapply links from the persistent rail and browser history, including
+  // navigation between filters while this page stays mounted.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const params = new URL(window.location.href).searchParams;
+    const params = new URLSearchParams(location.search);
 
     const q = params.get("q");
-    if (q) setSearch(q);
+    setSearch(q || "");
 
     const sort = params.get("sort");
     if (sort && SORT_BY.some((o) => o.value === sort)) setSortBy(sort);
@@ -522,51 +629,51 @@ export default function Library() {
     if (ord === "ASC" || ord === "DESC") setOrder(ord);
 
     const bookmarked = params.get("bookmarked");
-    if (bookmarked && isBookmark(bookmarked)) {
-      setBookmarkFilter(bookmarked === "1" ? "mine" : bookmarked);
-    }
+    setBookmarkFilter(
+      bookmarked && isBookmark(bookmarked)
+        ? bookmarked === "1"
+          ? "mine"
+          : bookmarked
+        : "all",
+    );
 
     const types = getParamValues(params, "types").filter(isGameType);
-    if (types.length > 0) {
-      setSelectedGameTypes(
-        types
-          .map((t): FilterItem | null => {
-            const match = GAME_TYPES.find((gt) => gt.value === t);
-            return match ? { id: t, name: translate(match.label) } : null;
-          })
-          .filter((x): x is FilterItem => x !== null),
-      );
-    }
+    setSelectedGameTypes(
+      types
+        .map((t): FilterItem | null => {
+          const match = GAME_TYPES.find((gt) => gt.value === t);
+          return match ? { id: t, name: translate(match.label) } : null;
+        })
+        .filter((x): x is FilterItem => x !== null),
+    );
 
     const tags = getParamValues(params, "tags");
-    if (tags.length > 0) setSelectedTags(tags.map((t) => ({ id: t, name: t })));
+    setSelectedTags(tags.map((t) => ({ id: t, name: t })));
 
     const genres = getParamValues(params, "genres");
-    if (genres.length > 0)
-      setSelectedGenres(genres.map((g) => ({ id: g, name: g })));
+    setSelectedGenres(genres.map((g) => ({ id: g, name: g })));
 
     const developers = getParamValues(params, "developers");
-    if (developers.length > 0)
-      setSelectedDevelopers(developers.map((d) => ({ id: d, name: d })));
+    setSelectedDevelopers(developers.map((d) => ({ id: d, name: d })));
 
     const publishers = getParamValues(params, "publishers");
-    if (publishers.length > 0)
-      setSelectedPublishers(publishers.map((p) => ({ id: p, name: p })));
+    setSelectedPublishers(publishers.map((p) => ({ id: p, name: p })));
 
     const state = params.get("state");
-    if (state && isProgressState(state)) setSelectedGameState(state);
+    setSelectedGameState(state && isProgressState(state) ? state : "");
 
     const after = params.get("releasedAfter");
-    if (after) setReleaseDateFrom(after);
+    setReleaseDateFrom(after || "");
 
     const before = params.get("releasedBefore");
-    if (before) setReleaseDateTo(before);
+    setReleaseDateTo(before || "");
 
     const ea = params.get("earlyAccess");
-    if (ea && isEarlyAccess(ea)) setEarlyAccess(ea);
+    setEarlyAccess(ea && isEarlyAccess(ea) ? ea : "all");
 
     const rating = params.get("ageRating");
-    if (rating && isAgeRatingValue(rating)) setAgeRating(rating);
+    setAgeRating(rating && isAgeRatingValue(rating) ? rating : "all");
+    setLibraryFolder(params.get("folder") || "");
 
     // GameView pills open the Library with that single filter shown.
     if ((location.state as { openFilters?: boolean } | null)?.openFilters) {
@@ -574,7 +681,7 @@ export default function Library() {
     }
 
     urlInitializedRef.current = true;
-  }, [getParamValues, isBookmark, isEarlyAccess, isGameType, isProgressState]);
+  }, [location.search, location.key]);
 
   // Sync all filters into URL search params for shareable links (debounced)
   useEffect(() => {
@@ -640,16 +747,21 @@ export default function Library() {
       if (ageRating !== "all") params.set("ageRating", ageRating);
       else params.delete("ageRating");
 
+      if (libraryFolder.trim()) params.set("folder", libraryFolder.trim());
+      else params.delete("folder");
+
       // Only update URL if it actually changed to avoid rate-limiting errors
       const newUrl = url.toString();
       if (newUrl !== window.location.href) {
         window.history.replaceState({}, "", newUrl);
+        window.dispatchEvent(new Event("playstash:library-location-change"));
       }
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [
     ageRating,
+    libraryFolder,
     bookmarkFilter,
     earlyAccess,
     isGameType,
@@ -835,6 +947,27 @@ export default function Library() {
     el?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  // Settle the first page of covers once, right after the skeleton gives way.
+  // Results already present on mount (returning from a game), later pages and
+  // filter changes appear immediately.
+  const [gridIntro, setGridIntro] = useState(false);
+  const gridIntroPhase = useRef<"idle" | "pending" | "done">("idle");
+  useEffect(() => {
+    if (gridIntroPhase.current === "done") return;
+    if (visibleGames.length === 0) {
+      gridIntroPhase.current = "pending";
+      return;
+    }
+    const wasPending = gridIntroPhase.current === "pending";
+    gridIntroPhase.current = "done";
+    if (wasPending) setGridIntro(true);
+  }, [visibleGames.length]);
+  useEffect(() => {
+    if (!gridIntro) return;
+    const timer = window.setTimeout(() => setGridIntro(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [gridIntro]);
+
   const coverGridStyle = {
     "--ps-cover-size": `${coverSize}px`,
   } as CSSProperties;
@@ -842,29 +975,32 @@ export default function Library() {
   const libraryNotLoaded = !!serverUrl && !loadAllowed;
 
   return (
-    <div className="flex min-h-full flex-col gap-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <Heading className="flex items-center gap-3">
-              {t("nav.library")}{" "}
-              {count && <Badge className="ml-1">{count}</Badge>}
-            </Heading>
-            <BigPictureButton />
-            <Text className="max-w-2xl">{t("library.subtitle")}</Text>
-          </div>
+    <div className="ps-library flex min-h-full flex-col">
+      <div className="ps-library-heading">
+        <div>
+          <Heading className="flex flex-wrap items-center gap-3">
+            {t("library.collection.title")}
+            {loadAllowed && !!count && (
+              <Badge>{count.toLocaleString(locale)}</Badge>
+            )}
+          </Heading>
+          <Text>{t("library.subtitle")}</Text>
         </div>
-        <Divider className="border-ps-line/80" />
+        <BigPictureButton />
       </div>
 
-      <section className="surface-panel rounded-3xl p-5 sm:p-6">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto_auto] lg:items-end">
+      <section
+        className="ps-library-toolbar"
+        aria-label={t("library.collection.controls")}
+      >
+        <div className="ps-library-toolbar-grid">
           <div className="w-full lg:col-span-1">
             <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
               {t("common.search")}
             </label>
             <Input
               name="search"
+              aria-label={t("library.search.placeholder")}
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
               clearable
@@ -951,6 +1087,7 @@ export default function Library() {
                         })
                       : t("libraryFilters.show")
                 }
+                aria-expanded={showFilters}
                 onClick={() => setShowFilters((s) => !s)}
               >
                 <FunnelIcon className="h-4 w-4 sm:mr-1" />
@@ -961,7 +1098,7 @@ export default function Library() {
                 </span>
                 {activeFilterCount > 0 && (
                   <span
-                    className="ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-ps-accent px-1 text-[0.65rem] font-bold leading-none text-white"
+                    className="ps-library-filter-count ml-1 inline-flex h-[1.125rem] min-w-[1.25rem] items-center justify-center rounded-full bg-ps-accent px-1 text-[0.65rem] font-bold leading-none text-ps-on-accent"
                     aria-label={fillTemplate(t("libraryFilters.activeCount"), {
                       count: activeFilterCount,
                     })}
@@ -976,425 +1113,395 @@ export default function Library() {
           </div>
         </div>
       </section>
-      {showFilters && (
-        <div className="surface-panel mb-2 shrink-0 rounded-3xl animate-[panel-in_0.18s_ease-out]">
-          <div className="px-4 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-5">
-            {/* Header with Clear All Filters Button */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <FunnelIcon className="h-4 w-4 text-ps-muted" />
-                <span className="text-xs text-ps-muted">
-                  {hasActiveFilters
-                    ? t("libraryFilters.active")
-                    : t("libraryFilters.noneActive")}
-                </span>
-              </div>
-              {hasActiveFilters && (
-                <Button
-                  outline
-                  onClick={clearAllFilters}
-                  className={`${CONTROL_HEIGHT_CLASS} px-3 flex items-center gap-1`}
-                >
-                  <TrashIcon className="h-4 w-4" />
-                  {t("libraryFilters.clearAll")}
-                </Button>
-              )}
-            </div>
+      <AnimatePresence initial={false}>
+        {showFilters && (
+          <LibraryFiltersPanel key="library-filters">
+            <div className="ps-library-filters mb-2 shrink-0">
+              <div className="px-4 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-5">
+                {/* Header with Clear All Filters Button */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <FunnelIcon className="h-4 w-4 text-ps-muted" />
+                    <span className="text-xs text-ps-muted">
+                      {hasActiveFilters
+                        ? t("libraryFilters.active")
+                        : t("libraryFilters.noneActive")}
+                    </span>
+                  </div>
+                  {hasActiveFilters && (
+                    <Button
+                      outline
+                      onClick={clearAllFilters}
+                      className={`${CONTROL_HEIGHT_CLASS} px-3 flex items-center gap-1`}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                      {t("libraryFilters.clearAll")}
+                    </Button>
+                  )}
+                </div>
 
-            {/* Section 1: Multi-Select Filter Buttons */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {/* Types */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.type")}
-                </label>
-                <Button
-                  outline
-                  onClick={() => setGameTypesDialogOpen(true)}
-                  className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
-                >
-                  <span
-                    className={`truncate ${selectedGameTypes.length > 0 ? "text-ps-accent-cool" : ""}`}
+                {/* Section 1: Multi-Select Filter Buttons */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {/* Types */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.type")}
+                    </label>
+                    <Button
+                      outline
+                      onClick={() => setGameTypesDialogOpen(true)}
+                      className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
+                    >
+                      <span
+                        className={`truncate ${selectedGameTypes.length > 0 ? "text-ps-accent-cool" : ""}`}
+                      >
+                        {selectedGameTypes.length > 0
+                          ? fillTemplate(t("libraryFilters.selectedCount"), {
+                              count: selectedGameTypes.length,
+                            })
+                          : t("libraryFilters.allTypes")}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("common.tags")}
+                    </label>
+                    <Button
+                      outline
+                      onClick={() => setTagsDialogOpen(true)}
+                      className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
+                    >
+                      <span
+                        className={`truncate ${selectedTags.length > 0 ? "text-ps-accent-cool" : ""}`}
+                      >
+                        {selectedTags.length > 0
+                          ? fillTemplate(t("libraryFilters.selectedCount"), {
+                              count: selectedTags.length,
+                            })
+                          : t("libraryFilters.allTags")}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Genres */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("common.genres")}
+                    </label>
+                    <Button
+                      outline
+                      onClick={() => setGenresDialogOpen(true)}
+                      className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
+                    >
+                      <span
+                        className={`truncate ${selectedGenres.length > 0 ? "text-ps-accent-cool" : ""}`}
+                      >
+                        {selectedGenres.length > 0
+                          ? fillTemplate(t("libraryFilters.selectedCount"), {
+                              count: selectedGenres.length,
+                            })
+                          : t("libraryFilters.allGenres")}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Developers */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.developers")}
+                    </label>
+                    <Button
+                      outline
+                      onClick={() => setDevelopersDialogOpen(true)}
+                      className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
+                    >
+                      <span
+                        className={`truncate ${selectedDevelopers.length > 0 ? "text-ps-accent-cool" : ""}`}
+                      >
+                        {selectedDevelopers.length > 0
+                          ? fillTemplate(t("libraryFilters.selectedCount"), {
+                              count: selectedDevelopers.length,
+                            })
+                          : t("libraryFilters.allDevelopers")}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Publishers */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.publishers")}
+                    </label>
+                    <Button
+                      outline
+                      onClick={() => setPublishersDialogOpen(true)}
+                      className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
+                    >
+                      <span
+                        className={`truncate ${selectedPublishers.length > 0 ? "text-ps-accent-cool" : ""}`}
+                      >
+                        {selectedPublishers.length > 0
+                          ? fillTemplate(t("libraryFilters.selectedCount"), {
+                              count: selectedPublishers.length,
+                            })
+                          : t("libraryFilters.allPublishers")}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Section 2: Dropdown Controls & Date Pickers */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
+                  {/* Game State */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.state")}
+                    </label>
+                    <Listbox
+                      name="gameState"
+                      value={selectedGameState}
+                      onChange={(v: any) =>
+                        setSelectedGameState(v as ProgressStateEnum | "")
+                      }
+                      disabled={!user}
+                    >
+                      <ListboxOption value="">
+                        <ListboxLabel>{t("common.all")}</ListboxLabel>
+                      </ListboxOption>
+                      {GAME_STATES.map((state) => (
+                        <ListboxOption key={state.value} value={state.value}>
+                          <ListboxLabel>{t(state.label)}</ListboxLabel>
+                        </ListboxOption>
+                      ))}
+                    </Listbox>
+                  </div>
+
+                  {/* Release Date From */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.releasedAfter")}
+                    </label>
+                    <Input
+                      type="date"
+                      className={INPUT_CONTROL_HEIGHT_CLASS}
+                      value={releaseDateFrom}
+                      onChange={(e: any) => setReleaseDateFrom(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Release Date To */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.releasedBefore")}
+                    </label>
+                    <Input
+                      type="date"
+                      className={INPUT_CONTROL_HEIGHT_CLASS}
+                      value={releaseDateTo}
+                      onChange={(e: any) => setReleaseDateTo(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Early Access */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.earlyAccess")}
+                    </label>
+                    <Listbox
+                      name="earlyAccess"
+                      value={earlyAccess}
+                      onChange={(v: any) =>
+                        setEarlyAccess(v as EarlyAccessFilter)
+                      }
+                    >
+                      {EARLY_ACCESS_OPTIONS.map((opt) => (
+                        <ListboxOption key={opt.value} value={opt.value}>
+                          <ListboxLabel>{t(opt.label)}</ListboxLabel>
+                        </ListboxOption>
+                      ))}
+                    </Listbox>
+                  </div>
+
+                  {/* Bookmarks */}
+                  <div className="col-span-1">
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("libraryFilters.bookmarked")}
+                    </label>
+                    <Listbox
+                      name="bookmarkFilter"
+                      value={bookmarkFilter}
+                      onChange={(v: any) =>
+                        setBookmarkFilter(v as BookmarkFilter)
+                      }
+                      disabled={!user}
+                    >
+                      {BOOKMARK_OPTIONS.map((opt) => (
+                        <ListboxOption key={opt.value} value={opt.value}>
+                          <ListboxLabel>{t(opt.label)}</ListboxLabel>
+                        </ListboxOption>
+                      ))}
+                    </Listbox>
+                  </div>
+
+                  {/* Age Rating (options load on first open) */}
+                  <div
+                    className="col-span-1"
+                    onPointerDownCapture={() => void loadAgeRatings()}
+                    onKeyDownCapture={() => void loadAgeRatings()}
                   >
-                    {selectedGameTypes.length > 0
-                      ? fillTemplate(t("libraryFilters.selectedCount"), {
-                          count: selectedGameTypes.length,
-                        })
-                      : t("libraryFilters.allTypes")}
-                  </span>
-                </Button>
-              </div>
-
-              {/* Tags */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("common.tags")}
-                </label>
-                <Button
-                  outline
-                  onClick={() => setTagsDialogOpen(true)}
-                  className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
-                >
-                  <span
-                    className={`truncate ${selectedTags.length > 0 ? "text-ps-accent-cool" : ""}`}
-                  >
-                    {selectedTags.length > 0
-                      ? fillTemplate(t("libraryFilters.selectedCount"), {
-                          count: selectedTags.length,
-                        })
-                      : t("libraryFilters.allTags")}
-                  </span>
-                </Button>
-              </div>
-
-              {/* Genres */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("common.genres")}
-                </label>
-                <Button
-                  outline
-                  onClick={() => setGenresDialogOpen(true)}
-                  className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
-                >
-                  <span
-                    className={`truncate ${selectedGenres.length > 0 ? "text-ps-accent-cool" : ""}`}
-                  >
-                    {selectedGenres.length > 0
-                      ? fillTemplate(t("libraryFilters.selectedCount"), {
-                          count: selectedGenres.length,
-                        })
-                      : t("libraryFilters.allGenres")}
-                  </span>
-                </Button>
-              </div>
-
-              {/* Developers */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.developers")}
-                </label>
-                <Button
-                  outline
-                  onClick={() => setDevelopersDialogOpen(true)}
-                  className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
-                >
-                  <span
-                    className={`truncate ${selectedDevelopers.length > 0 ? "text-ps-accent-cool" : ""}`}
-                  >
-                    {selectedDevelopers.length > 0
-                      ? fillTemplate(t("libraryFilters.selectedCount"), {
-                          count: selectedDevelopers.length,
-                        })
-                      : t("libraryFilters.allDevelopers")}
-                  </span>
-                </Button>
-              </div>
-
-              {/* Publishers */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.publishers")}
-                </label>
-                <Button
-                  outline
-                  onClick={() => setPublishersDialogOpen(true)}
-                  className={`w-full justify-start ${CONTROL_HEIGHT_CLASS} px-3`}
-                >
-                  <span
-                    className={`truncate ${selectedPublishers.length > 0 ? "text-ps-accent-cool" : ""}`}
-                  >
-                    {selectedPublishers.length > 0
-                      ? fillTemplate(t("libraryFilters.selectedCount"), {
-                          count: selectedPublishers.length,
-                        })
-                      : t("libraryFilters.allPublishers")}
-                  </span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Section 2: Dropdown Controls & Date Pickers */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
-              {/* Game State */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.state")}
-                </label>
-                <Listbox
-                  name="gameState"
-                  value={selectedGameState}
-                  onChange={(v: any) =>
-                    setSelectedGameState(v as ProgressStateEnum | "")
-                  }
-                  disabled={!user}
-                >
-                  <ListboxOption value="">
-                    <ListboxLabel>{t("common.all")}</ListboxLabel>
-                  </ListboxOption>
-                  {GAME_STATES.map((state) => (
-                    <ListboxOption key={state.value} value={state.value}>
-                      <ListboxLabel>{t(state.label)}</ListboxLabel>
-                    </ListboxOption>
-                  ))}
-                </Listbox>
-              </div>
-
-              {/* Release Date From */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.releasedAfter")}
-                </label>
-                <Input
-                  type="date"
-                  className={INPUT_CONTROL_HEIGHT_CLASS}
-                  value={releaseDateFrom}
-                  onChange={(e: any) => setReleaseDateFrom(e.target.value)}
-                />
-              </div>
-
-              {/* Release Date To */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.releasedBefore")}
-                </label>
-                <Input
-                  type="date"
-                  className={INPUT_CONTROL_HEIGHT_CLASS}
-                  value={releaseDateTo}
-                  onChange={(e: any) => setReleaseDateTo(e.target.value)}
-                />
-              </div>
-
-              {/* Early Access */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.earlyAccess")}
-                </label>
-                <Listbox
-                  name="earlyAccess"
-                  value={earlyAccess}
-                  onChange={(v: any) => setEarlyAccess(v as EarlyAccessFilter)}
-                >
-                  {EARLY_ACCESS_OPTIONS.map((opt) => (
-                    <ListboxOption key={opt.value} value={opt.value}>
-                      <ListboxLabel>{t(opt.label)}</ListboxLabel>
-                    </ListboxOption>
-                  ))}
-                </Listbox>
-              </div>
-
-              {/* Bookmarks */}
-              <div className="col-span-1">
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("libraryFilters.bookmarked")}
-                </label>
-                <Listbox
-                  name="bookmarkFilter"
-                  value={bookmarkFilter}
-                  onChange={(v: any) => setBookmarkFilter(v as BookmarkFilter)}
-                  disabled={!user}
-                >
-                  {BOOKMARK_OPTIONS.map((opt) => (
-                    <ListboxOption key={opt.value} value={opt.value}>
-                      <ListboxLabel>{t(opt.label)}</ListboxLabel>
-                    </ListboxOption>
-                  ))}
-                </Listbox>
-              </div>
-
-              {/* Age Rating (options load on first open) */}
-              <div
-                className="col-span-1"
-                onPointerDownCapture={() => void loadAgeRatings()}
-                onKeyDownCapture={() => void loadAgeRatings()}
-              >
-                <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("library.ageRating")}
-                </label>
-                <Listbox
-                  name="ageRating"
-                  value={ageRating}
-                  onChange={(v: any) => setAgeRating(String(v))}
-                  disabled={!user}
-                >
-                  <ListboxOption value="all">
-                    <ListboxLabel>{t("library.ageRating.all")}</ListboxLabel>
-                  </ListboxOption>
-                  {ageRating !== "all" &&
-                    !(ageRatingOptions ?? []).some(
-                      (value) => ageRatingOptionValue(value) === ageRating,
-                    ) && (
-                      <ListboxOption value={ageRating}>
+                    <label className="mb-2 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("library.ageRating")}
+                    </label>
+                    <Listbox
+                      name="ageRating"
+                      value={ageRating}
+                      onChange={(v: any) => setAgeRating(String(v))}
+                      disabled={!user}
+                    >
+                      <ListboxOption value="all">
                         <ListboxLabel>
-                          {ageRating === "null"
-                            ? t("library.ageRating.na")
-                            : ageRating}
+                          {t("library.ageRating.all")}
                         </ListboxLabel>
                       </ListboxOption>
-                    )}
-                  {(ageRatingOptions ?? []).map((value) => (
-                    <ListboxOption
-                      key={ageRatingOptionValue(value)}
-                      value={ageRatingOptionValue(value)}
-                    >
-                      <ListboxLabel>
-                        {value === null ? t("library.ageRating.na") : value}
-                      </ListboxLabel>
-                    </ListboxOption>
-                  ))}
-                </Listbox>
-              </div>
-            </div>
-
-            {/* Display options (client-side, not counted as filters) */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-ps-line pt-4">
-              {isTauri && (
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-ps-text">
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-ps-accent"
-                    checked={hideInstalled}
-                    onChange={(e) => setHideInstalled(e.target.checked)}
-                  />
-                  {t("library.hideInstalled")}
-                </label>
-              )}
-              <label className="flex items-center gap-3 text-sm text-ps-text">
-                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
-                  {t("library.coverSize")}
-                </span>
-                <input
-                  type="range"
-                  min={COVER_SIZE_MIN}
-                  max={COVER_SIZE_MAX}
-                  value={coverSize}
-                  aria-label={t("library.coverSize")}
-                  className="w-40 accent-ps-accent"
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    setCoverSizeState(next);
-                    persistCoverSize(next);
-                  }}
-                />
-              </label>
-            </div>
-
-            {/* Selected Items Display */}
-            {(selectedGameTypes.length > 0 ||
-              selectedTags.length > 0 ||
-              selectedGenres.length > 0 ||
-              selectedDevelopers.length > 0 ||
-              selectedPublishers.length > 0) && (
-              <div className="mt-4 border-t border-ps-line pt-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedGameTypes.map((item) => (
-                    <Badge
-                      key={item.name}
-                      color="pink"
-                      className="text-xs flex items-center gap-1"
-                    >
-                      {gameTypeLabel(t, item)}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedGameTypes((prev) =>
-                            prev.filter((t) => t.name !== item.name),
-                          )
-                        }
-                        className="hover:text-red-400 ml-0.5"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedTags.map((tag) => (
-                    <Badge
-                      key={tag.name}
-                      color="blue"
-                      className="text-xs flex items-center gap-1"
-                    >
-                      {tag.name}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedTags((prev) =>
-                            prev.filter((t) => t.name !== tag.name),
-                          )
-                        }
-                        className="hover:text-red-400 ml-0.5"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedGenres.map((genre) => (
-                    <Badge
-                      key={genre.name}
-                      color="green"
-                      className="text-xs flex items-center gap-1"
-                    >
-                      {genre.name}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedGenres((prev) =>
-                            prev.filter((g) => g.name !== genre.name),
-                          )
-                        }
-                        className="hover:text-red-400 ml-0.5"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedDevelopers.map((dev) => (
-                    <Badge
-                      key={dev.name}
-                      color="purple"
-                      className="text-xs flex items-center gap-1"
-                    >
-                      {dev.name}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedDevelopers((prev) =>
-                            prev.filter((d) => d.name !== dev.name),
-                          )
-                        }
-                        className="hover:text-red-400 ml-0.5"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedPublishers.map((pub) => (
-                    <Badge
-                      key={pub.name}
-                      color="orange"
-                      className="text-xs flex items-center gap-1"
-                    >
-                      {pub.name}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedPublishers((prev) =>
-                            prev.filter((p) => p.name !== pub.name),
-                          )
-                        }
-                        className="hover:text-red-400 ml-0.5"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                      {ageRating !== "all" &&
+                        !(ageRatingOptions ?? []).some(
+                          (value) => ageRatingOptionValue(value) === ageRating,
+                        ) && (
+                          <ListboxOption value={ageRating}>
+                            <ListboxLabel>
+                              {ageRating === "null"
+                                ? t("library.ageRating.na")
+                                : ageRating}
+                            </ListboxLabel>
+                          </ListboxOption>
+                        )}
+                      {(ageRatingOptions ?? []).map((value) => (
+                        <ListboxOption
+                          key={ageRatingOptionValue(value)}
+                          value={ageRatingOptionValue(value)}
+                        >
+                          <ListboxLabel>
+                            {value === null ? t("library.ageRating.na") : value}
+                          </ListboxLabel>
+                        </ListboxOption>
+                      ))}
+                    </Listbox>
+                  </div>
                 </div>
+
+                {/* Display options (client-side, not counted as filters) */}
+                <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-ps-line pt-4">
+                  {isTauri && (
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-ps-text">
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-ps-accent"
+                        checked={hideInstalled}
+                        onChange={(e) => setHideInstalled(e.target.checked)}
+                      />
+                      {t("library.hideInstalled")}
+                    </label>
+                  )}
+                  <label className="flex items-center gap-3 text-sm text-ps-text">
+                    <span className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-ps-muted">
+                      {t("library.coverSize")}
+                    </span>
+                    <input
+                      type="range"
+                      min={COVER_SIZE_MIN}
+                      max={COVER_SIZE_MAX}
+                      value={coverSize}
+                      aria-label={t("library.coverSize")}
+                      className="w-40 accent-ps-accent"
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        setCoverSizeState(next);
+                        persistCoverSize(next);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {/* Selected Items Display */}
+                {(selectedGameTypes.length > 0 ||
+                  selectedTags.length > 0 ||
+                  selectedGenres.length > 0 ||
+                  selectedDevelopers.length > 0 ||
+                  selectedPublishers.length > 0) && (
+                  <div className="mt-4 border-t border-ps-line pt-4">
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedGameTypes.map((item) => (
+                        <RemovableFilterChip
+                          key={item.name}
+                          label={gameTypeLabel(t, item)}
+                          color="pink"
+                          onRemove={() =>
+                            setSelectedGameTypes((prev) =>
+                              prev.filter((x) => x.name !== item.name),
+                            )
+                          }
+                        />
+                      ))}
+                      {selectedTags.map((tag) => (
+                        <RemovableFilterChip
+                          key={tag.name}
+                          label={tag.name}
+                          color="blue"
+                          onRemove={() =>
+                            setSelectedTags((prev) =>
+                              prev.filter((x) => x.name !== tag.name),
+                            )
+                          }
+                        />
+                      ))}
+                      {selectedGenres.map((genre) => (
+                        <RemovableFilterChip
+                          key={genre.name}
+                          label={genre.name}
+                          color="green"
+                          onRemove={() =>
+                            setSelectedGenres((prev) =>
+                              prev.filter((x) => x.name !== genre.name),
+                            )
+                          }
+                        />
+                      ))}
+                      {selectedDevelopers.map((dev) => (
+                        <RemovableFilterChip
+                          key={dev.name}
+                          label={dev.name}
+                          color="purple"
+                          onRemove={() =>
+                            setSelectedDevelopers((prev) =>
+                              prev.filter((x) => x.name !== dev.name),
+                            )
+                          }
+                        />
+                      ))}
+                      {selectedPublishers.map((pub) => (
+                        <RemovableFilterChip
+                          key={pub.name}
+                          label={pub.name}
+                          color="orange"
+                          onRemove={() =>
+                            setSelectedPublishers((prev) =>
+                              prev.filter((x) => x.name !== pub.name),
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      )}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden text-center">
+            </div>
+          </LibraryFiltersPanel>
+        )}
+      </AnimatePresence>
+      <div className="ps-library-content flex-1">
         <LibraryCategories
           storageKey={`playstash_library_categories:${serverUrl}:${user?.id}`}
           tags={tagNames}
@@ -1408,12 +1515,15 @@ export default function Library() {
           }}
         />
         {!serverUrl && (
-          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+          <div className="surface-panel-soft rounded-lg p-8 text-sm text-ps-muted">
             {t("library.noServer")}
           </div>
         )}
         {serverUrl && error && (
-          <div className="mb-4 rounded-2xl bg-red-500/10 p-4 text-sm text-red-500">
+          <div
+            role="alert"
+            className="mb-4 rounded-md border border-ps-danger/30 bg-ps-danger/10 p-4 text-sm break-words text-ps-danger"
+          >
             {error}
           </div>
         )}
@@ -1422,7 +1532,7 @@ export default function Library() {
         {isTauri && (
           <SectionExpander
             title={fillTemplate(t("library.installed.section"), {
-              count: filteredInstalledGames.length,
+              count: filteredInstalledGames.length.toLocaleString(locale),
             })}
             defaultOpen={getInstalledOpen()}
             onOpenChange={setInstalledOpen}
@@ -1518,17 +1628,17 @@ export default function Library() {
               </div>
             </div>
             {filteredInstalledGames.length === 0 ? (
-              <div className="surface-panel-soft rounded-2xl p-4 text-sm text-ps-muted">
+              <div className="surface-panel-soft rounded-lg p-4 text-sm text-ps-muted">
                 {t("library.installed.empty")}
               </div>
             ) : (
-              <div className="overflow-x-auto overflow-y-hidden pb-3">
+              <div className="-mx-1.5 overflow-x-auto overflow-y-hidden px-1.5 pb-3 [overscroll-behavior-x:contain]">
                 <div
                   className="grid gap-5 py-2"
                   style={{
                     gridTemplateRows: `repeat(${Math.min(installedRows, filteredInstalledGames.length)}, auto)`,
                     gridAutoFlow: "column",
-                    gridAutoColumns: "160px",
+                    gridAutoColumns: "180px",
                   }}
                 >
                   {filteredInstalledGames.map((g) => (
@@ -1550,7 +1660,7 @@ export default function Library() {
         )}
 
         {libraryNotLoaded && (
-          <div className="surface-panel-soft mb-4 rounded-3xl p-8 text-sm text-ps-muted">
+          <div className="surface-panel-soft mb-4 rounded-lg p-8 text-sm text-ps-muted">
             <p>{t("library.notLoaded")}</p>
             <Button outline className="mt-3" onClick={reloadLibrary}>
               <ArrowPathIcon className="h-4 w-4" />
@@ -1561,7 +1671,7 @@ export default function Library() {
 
         {/* Server Games Section */}
         {isTauri && !isOnline ? (
-          <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted text-center">
+          <div className="surface-panel-soft rounded-lg p-8 text-sm text-ps-muted text-center">
             <p className="font-semibold text-ps-text mb-2">
               {t("library.offline.title")}
             </p>
@@ -1576,34 +1686,46 @@ export default function Library() {
               visible: Math.max(
                 0,
                 (count ?? 0) - (games.length - visibleGames.length),
-              ),
-              total: count ?? 0,
+              ).toLocaleString(locale),
+              total: (count ?? 0).toLocaleString(locale),
             })}
             defaultOpen={true}
           >
             {serverUrl && loading && games.length === 0 && (
-              <div className="grid gap-4 sm:gap-6 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-3/4 rounded-3xl bg-ps-panel-strong motion-safe:animate-pulse"
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
+              <>
+                <p role="status" className="sr-only">
+                  {t("common.loading")}
+                </p>
+                {/* Same grid and card rhythm as the real covers, so nothing
+                    shifts when the first page replaces it. */}
+                <div
+                  className="ps-library-grid grid min-w-0 py-2 pb-8 motion-safe:animate-pulse"
+                  style={coverGridStyle}
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: GRID_INTRO_COUNT }).map((_, i) => (
+                    <div key={i} className="ps-library-skeleton-card">
+                      <div className="ps-library-skeleton" />
+                      <div className="ps-library-skeleton-line" />
+                      <div className="ps-library-skeleton-line" />
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
             {serverUrl &&
               loadAllowed &&
               !loading &&
               games.length === 0 &&
               !error && (
-                <div className="surface-panel-soft rounded-3xl p-8 text-sm text-ps-muted">
+                <div className="surface-panel-soft rounded-lg p-8 text-sm text-ps-muted">
                   {t("library.empty")}
                   {(search.trim() || hasActiveFilters) && (
                     <div className="mt-2">
                       <TextLink
                         href="#"
-                        onClick={() => {
+                        onClick={(event: React.MouseEvent) => {
+                          event.preventDefault();
                           clearAllFilters();
                           setShowFilters(false);
                           setSearch("");
@@ -1616,10 +1738,11 @@ export default function Library() {
                 </div>
               )}
             <div
-              className="min-w-0 grid gap-5 grid-cols-[repeat(auto-fill,minmax(var(--ps-cover-size),1fr))] py-2 pb-8"
+              className="ps-library-grid min-w-0 grid py-2 pb-8"
               style={coverGridStyle}
+              data-intro={gridIntro ? "" : undefined}
             >
-              {visibleGames.map((g, i) => {
+              {visibleGames.map((g, index) => {
                 const installed = installedByGameId.get(g.id);
                 const cardGame = installed
                   ? {
@@ -1633,26 +1756,29 @@ export default function Library() {
                       _onUninstalled: refetchInstalledGames,
                     }
                   : g;
+                const intro = gridIntro && index < GRID_INTRO_COUNT;
                 return (
-                  <motion.div
+                  <div
                     key={g.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: Math.min(i * 0.03, 0.3),
-                      duration: DURATION_SLOW,
-                      ease: EASE_OUT,
-                    }}
                     className="min-w-0"
+                    data-intro-index={intro ? index : undefined}
+                    style={
+                      intro
+                        ? ({ "--ps-intro-index": index } as CSSProperties)
+                        : undefined
+                    }
                   >
                     <GameCard game={cardGame} sortBy={sortBy} />
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
             {hasMore && <div ref={sentinelRef} className="h-10 -mt-10" />}
             {loading && games.length > 0 && (
-              <div className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted">
+              <div
+                role="status"
+                className="flex items-center justify-center gap-2 p-4 text-xs text-ps-muted"
+              >
                 <svg
                   className="h-3.5 w-3.5 motion-safe:animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
@@ -1687,9 +1813,9 @@ export default function Library() {
           onClick={scrollToTop}
           aria-label={t("library.scrollTop")}
           title={t("library.scrollTop")}
-          className="fixed right-6 bottom-6 z-30 flex size-[50px] items-center justify-center rounded-full bg-ps-accent text-ps-on-accent shadow-[var(--shadow-card)] hover:bg-ps-accent-hover active:bg-ps-accent-pressed"
+          className="ps-library-scroll-top fixed right-6 bottom-6 z-30 flex size-[50px] items-center justify-center rounded-full bg-ps-accent text-ps-on-accent shadow-[var(--shadow-card)] hover:bg-ps-accent-hover active:bg-ps-accent-pressed"
         >
-          <ChevronUpIcon className="size-6" />
+          <ChevronUpIcon className="size-6" aria-hidden="true" />
         </button>
       )}
 

@@ -2,10 +2,20 @@
 
 ## 17.3.6
 
-Status: In development.
+Status: Unreleased.
 
 ### Changes
 
+- Smoothed artwork loading, cover actions, game detail tabs, library filters, settings, menus, dialogs and mobile drawers so titles and content no longer jump or disappear abruptly.
+- Added a brief PlayStash logo animation for longer page loads, with a still version for reduced motion. Quick navigation does not flash a loading screen or wait for the animation.
+- Redesigned the frontend with Steam-inspired top navigation, a persistent searchable library list, larger game artwork, and consistent layouts for downloads, community, settings and sign-in. Existing themes and light mode are supported.
+- Polished the redesign on touch screens: buttons, covers and chips respond when pressed, hover highlights no longer stick after a tap, controls are easier to hit, text fields no longer zoom the page on iPhone, and the app stays clear of the notch and home indicator.
+- Download, extraction and copy progress bars move smoothly between updates, show when a download is paused, and keep the current file name visible for long paths.
+- Clicking Play repeatedly no longer starts a game twice; the button shows that the launch is in progress. If a game's background image fails to load, the page falls back to the cover.
+- Long game titles, names, e-mail addresses and setting labels wrap or shorten instead of overflowing; large counts in the library use thousands separators.
+- The library shows placeholder covers in the final grid layout while loading, so the page no longer jumps when games appear. Game page tabs show a sliding indicator, and the settings navigation marks the selected section more clearly.
+- Chat follows new messages while you are at the bottom of the conversation, without moving the view while you read older messages.
+- With reduced motion enabled, fades and color changes remain while movement is switched off.
 - Cloud saves are on by default (Settings → Integrations → Cloud Saves), so a game's save is restored before it starts and backed up after it exits without enabling them first. A choice made earlier in the settings is kept; launches on servers without save files show no message.
 - Cloud saves of games installed inside the user folder (for example the default `DocumentsPlayStash` library) are stored relative to the installation, so they restore into the game on another PC or library folder instead of the same path below the user profile.
 - The Cloud Saves row on the game page updates by itself when a save folder appears (after a game session and when the window regains focus) instead of showing "not created yet" until the page is reloaded.
