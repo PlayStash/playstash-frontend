@@ -319,7 +319,6 @@ export default function Library() {
   const CONTROL_HEIGHT_CLASS = "min-h-11 sm:min-h-9";
   const INPUT_CONTROL_HEIGHT_CLASS = "[&_input]:min-h-11 sm:[&_input]:min-h-9";
 
-  const urlInitializedRef = useRef(false);
   const [search, setSearch] = useState("");
   const [libraryFolder, setLibraryFolder] = useState("");
   const deferredLibraryFolder = useDebouncedValue(libraryFolder.trim(), 300);
@@ -527,11 +526,15 @@ export default function Library() {
 
   // Searching, filtering or opening the filters loads the server games when
   // auto-load is off.
+  // The page switches loading on during render; the effect records the
+  // request for the session and tells the other listeners.
+  const wantsLoad = !!search.trim() || showFilters || hasActiveFilters;
+  if (!loadAllowed && wantsLoad) setLoadAllowed(true);
   useEffect(() => {
-    if (!loadAllowed && (search.trim() || showFilters || hasActiveFilters)) {
-      allowLoad();
-    }
-  }, [loadAllowed, search, showFilters, hasActiveFilters, allowLoad]);
+    if (!wantsLoad || isLibraryLoadAllowed()) return;
+    requestLibraryLoad();
+    window.dispatchEvent(new Event("playstash:library-load-requested"));
+  }, [wantsLoad]);
 
   const { count, games, loading, error, loadMore, hasMore, refetch } = useGames(
     {
@@ -613,9 +616,15 @@ export default function Library() {
   }, [sortBy, order]);
 
   // Reapply links from the persistent rail and browser history, including
-  // navigation between filters while this page stays mounted.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // navigation between filters while this page stays mounted. Applied during
+  // render whenever the location changes, so the filters are in place before
+  // the first fetch and before the URL sync below runs.
+  const locationKey = `${location.key}|${location.search}`;
+  const [appliedLocationKey, setAppliedLocationKey] = useState<string | null>(
+    null,
+  );
+  if (appliedLocationKey !== locationKey) {
+    setAppliedLocationKey(locationKey);
 
     const params = new URLSearchParams(location.search);
 
@@ -679,14 +688,11 @@ export default function Library() {
     if ((location.state as { openFilters?: boolean } | null)?.openFilters) {
       setShowFilters(true);
     }
-
-    urlInitializedRef.current = true;
-  }, [location.search, location.key]);
+  }
 
   // Sync all filters into URL search params for shareable links (debounced)
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!urlInitializedRef.current) return;
 
     const timeoutId = setTimeout(() => {
       const url = new URL(window.location.href);
@@ -764,7 +770,6 @@ export default function Library() {
     libraryFolder,
     bookmarkFilter,
     earlyAccess,
-    isGameType,
     order,
     releaseDateFrom,
     releaseDateTo,
@@ -775,7 +780,6 @@ export default function Library() {
     selectedGenres,
     selectedPublishers,
     selectedTags,
-    setParamValues,
     sortBy,
   ]);
 
@@ -880,7 +884,7 @@ export default function Library() {
       (g as any)._onUninstalled = refetchInstalledGames;
       return g;
     });
-  }, [installedGames]);
+  }, [installedGames, refetchInstalledGames]);
 
   // Map installed game id -> installation info so server games that are
   // already installed locally can be marked (e.g. a small "Installed" badge).

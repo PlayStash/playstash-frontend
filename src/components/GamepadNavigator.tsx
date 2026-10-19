@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   subscribeGamepadInput,
@@ -219,7 +219,9 @@ function fallbackDocumentOrder(
 export default function GamepadNavigator() {
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
-  navigateRef.current = navigate;
+  useLayoutEffect(() => {
+    navigateRef.current = navigate;
+  });
   const gamepadFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {

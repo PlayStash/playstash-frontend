@@ -6,7 +6,7 @@ import {
   XMarkIcon,
   QueueListIcon,
 } from "@heroicons/react/24/outline";
-import React, { useEffect, useState, useSyncExternalStore } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import { Link, useLocation } from "react-router";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useTranslation } from "@/i18n";
@@ -92,10 +92,14 @@ export function SidebarLayout({
     () => true,
   );
 
-  useEffect(() => {
+  // Navigating closes the mobile sidebar and library drawers.
+  const routeKey = `${location.pathname}${location.search}`;
+  const [shownRoute, setShownRoute] = useState(routeKey);
+  if (routeKey !== shownRoute) {
+    setShownRoute(routeKey);
     setShowSidebar(false);
     setShowLibrary(false);
-  }, [location.pathname, location.search]);
+  }
 
   return (
     <div className="app-shell flex h-full min-h-0 w-full flex-col bg-ps-bg text-ps-text">

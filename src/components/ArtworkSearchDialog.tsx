@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import clsx from "clsx";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/tailwind/button";
@@ -40,13 +40,17 @@ export function ArtworkSearchDialog({
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("");
+  const [wasOpen, setWasOpen] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    setProviders(loadArtworkProviders());
-    setSelected(0);
-    setStatus("");
-  }, [open]);
+  // Reload the saved providers each time the dialog opens.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setProviders(loadArtworkProviders());
+      setSelected(0);
+      setStatus("");
+    }
+  }
 
   const update = (next: ArtworkProvider[]) => {
     saveArtworkProviders(next);

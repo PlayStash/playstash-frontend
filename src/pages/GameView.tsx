@@ -113,7 +113,47 @@ export default function GameView() {
   const showMappedTitle = useShowMappedTitle();
   const { serverUrl, authFetch, user } = useAuth();
   const streamerMode = useStreamerMode();
-  const [game, setGame] = useState<PlaystashGame | null>(null);
+  const [loadedGame, setGame] = useState<PlaystashGame | null>(null);
+  const currentUserId = (user as any)?.id ?? (user as any)?.ID;
+  // A user without progress for this game gets a local placeholder
+  // ("unplayed"), so the progress controls have something to show. Created
+  // once per game and user, so its identity stays stable across game updates.
+  const [placeholderCreatedAt] = useState(() => new Date());
+  const loadedGameId = loadedGame?.id;
+  const placeholderProgress = useMemo(
+    () =>
+      loadedGameId && currentUserId
+        ? ({
+            id: -currentUserId, // temporary local id
+            created_at: placeholderCreatedAt,
+            updated_at: undefined,
+            deleted_at: undefined,
+            entity_version: 0,
+            user: { id: currentUserId } as any,
+            game: { id: loadedGameId } as any,
+            minutes_played: 0,
+            state: ProgressStateEnum.unplayed,
+            last_played_at: undefined,
+          } as any as Progress)
+        : null,
+    [loadedGameId, currentUserId, placeholderCreatedAt],
+  );
+  const game = useMemo(() => {
+    if (!loadedGame || !placeholderProgress) return loadedGame;
+    const progresses: Progress[] | undefined = (loadedGame as any).progresses;
+    const exists =
+      Array.isArray(progresses) &&
+      progresses.some(
+        (p) =>
+          (p.user as any)?.id === currentUserId ||
+          (p.user as any)?.ID === currentUserId,
+      );
+    if (exists) return loadedGame;
+    return {
+      ...loadedGame,
+      progresses: [...(progresses || []), placeholderProgress],
+    } as PlaystashGame;
+  }, [loadedGame, placeholderProgress, currentUserId]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
@@ -124,7 +164,6 @@ export default function GameView() {
     keyof typeof ProgressStateEnum | null
   >(null);
   const [progressUpdating, setProgressUpdating] = useState(false);
-  const insertedPlaceholderRef = useRef(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [pendingDownloadAction, setPendingDownloadAction] = useState<
@@ -323,8 +362,6 @@ export default function GameView() {
         .filter((g: any) => typeof g === "string" && g.trim())
     : [];
 
-  const currentUserId = (user as any)?.id ?? (user as any)?.ID;
-
   // Derive current user's progress among progresses
   const userProgress: Progress | null = useMemo(() => {
     if (!game || !Array.isArray((game as any).progresses) || !currentUserId)
@@ -336,44 +373,11 @@ export default function GameView() {
     );
   }, [game, currentUserId]);
 
-  // Inject placeholder progress if none exists for the current user
-  useEffect(() => {
-    if (!game || !currentUserId || insertedPlaceholderRef.current) return;
-    const progresses: Progress[] | undefined = (game as any).progresses;
-    const exists =
-      Array.isArray(progresses) &&
-      progresses.some(
-        (p) =>
-          (p.user as any)?.id === currentUserId ||
-          (p.user as any)?.ID === currentUserId,
-      );
-    if (!exists) {
-      const placeholder: Progress = {
-        id: -currentUserId, // temporary local id
-        created_at: new Date(),
-        updated_at: undefined,
-        deleted_at: undefined,
-        entity_version: 0,
-        user: { id: currentUserId } as any,
-        game: { id: game.id } as any,
-        minutes_played: 0,
-        state: ProgressStateEnum.unplayed,
-        last_played_at: undefined,
-      } as any;
-      setGame((prev) =>
-        prev
-          ? {
-              ...prev,
-              progresses: [...((prev as any).progresses || []), placeholder],
-            }
-          : prev,
-      );
-      if (!progressState) setProgressState("unplayed");
-      insertedPlaceholderRef.current = true;
-    }
-  }, [game, currentUserId, progressState]);
-
-  useEffect(() => {
+  // Follow the progress state of the loaded progress (adjusted during render
+  // when it changes; local changes in between are kept).
+  const [syncedProgress, setSyncedProgress] = useState<Progress | null>(null);
+  if (userProgress !== syncedProgress) {
+    setSyncedProgress(userProgress);
     if (userProgress?.state) {
       // Map to key form matching ProgressStateEnum keys
       const val = Object.entries(ProgressStateEnum).find(
@@ -381,18 +385,24 @@ export default function GameView() {
       )?.[0] as keyof typeof ProgressStateEnum | undefined;
       if (val) setProgressState(val);
     }
-  }, [userProgress]);
+  }
 
-  // Bookmark detection
-  useEffect(() => {
-    if (!game || !currentUserId) return;
-    const arr =
-      (game as any).bookmarked_users || (game as any).bookmarkedUsers || [];
-    setBookmarked(
-      Array.isArray(arr) &&
-        arr.some((u: any) => (u?.id ?? u?.ID) === currentUserId),
-    );
-  }, [game, currentUserId]);
+  // Bookmark detection: re-read whenever the game or user changes.
+  const [bookmarkSource, setBookmarkSource] = useState<{
+    game: PlaystashGame | null;
+    userId: unknown;
+  }>({ game: null, userId: undefined });
+  if (bookmarkSource.game !== game || bookmarkSource.userId !== currentUserId) {
+    setBookmarkSource({ game, userId: currentUserId });
+    if (game && currentUserId) {
+      const arr =
+        (game as any).bookmarked_users || (game as any).bookmarkedUsers || [];
+      setBookmarked(
+        Array.isArray(arr) &&
+          arr.some((u: any) => (u?.id ?? u?.ID) === currentUserId),
+      );
+    }
+  }
 
   const toggleBookmark = useCallback(async () => {
     if (!serverUrl || !game || !currentUserId || bookmarkBusy) return;

@@ -79,10 +79,14 @@ export function LibraryRail({
   const [browserSearch, setBrowserSearch] = useState(location.search);
   const deferredSearch = useDebouncedValue(search.trim(), 250);
 
-  useEffect(() => {
+  // Each navigation re-reads the library filters and the load permission.
+  const routeKey = `${location.pathname}${location.search}`;
+  const [syncedRoute, setSyncedRoute] = useState(routeKey);
+  if (routeKey !== syncedRoute) {
+    setSyncedRoute(routeKey);
     if (location.pathname === "/library") setBrowserSearch(location.search);
     setLoadAllowed(isLibraryLoadAllowed());
-  }, [location.search, location.pathname]);
+  }
 
   useEffect(() => {
     const syncLoad = () => setLoadAllowed(isLibraryLoadAllowed());

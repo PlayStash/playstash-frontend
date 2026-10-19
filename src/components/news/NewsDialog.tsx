@@ -44,18 +44,20 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
     if (open) markNewsAsRead();
   }, [open, markNewsAsRead]);
 
-  useEffect(() => {
-    if (!showEditor) {
-      setDraftContent(serverNews?.content ?? "");
-    }
-  }, [serverNews?.content, showEditor]);
+  // Outside the editor the draft follows the published server news.
+  const publishedServerNews = serverNews?.content ?? "";
+  if (!showEditor && draftContent !== publishedServerNews) {
+    setDraftContent(publishedServerNews);
+  }
 
-  useEffect(() => {
-    if (tab !== "server" && isEditingServerNews) {
+  // Leaving the server tab ends an unsaved edit.
+  const showPlayStashTab = () => {
+    setTab("playstash");
+    if (isEditingServerNews) {
       setIsEditingServerNews(false);
       setSaveError(null);
     }
-  }, [tab, isEditingServerNews]);
+  };
 
   const handleStartEditing = () => {
     setDraftContent(serverNews?.content ?? "");
@@ -116,7 +118,7 @@ export function NewsDialog({ open = true, onClose }: NewsDialogProps) {
           <button
             type="button"
             aria-pressed={tab === "playstash"}
-            onClick={() => setTab("playstash")}
+            onClick={showPlayStashTab}
             className={
               "-mb-px min-h-11 px-3 py-2 border-b-2 transition-colors sm:min-h-0 " +
               (tab === "playstash"

@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -10,17 +8,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { isTauriApp } from "@/utils/tauri";
-
-interface IgnoreListContextValue {
-  ignoreList: string[];
-  initialized: boolean;
-  loading: boolean;
-  error: string | null;
-  setIgnoreList: (names: string[]) => Promise<void>;
-  refresh: () => Promise<void>;
-}
-
-const IgnoreListContext = createContext<IgnoreListContextValue | null>(null);
+import { IgnoreListContext } from "@/context/IgnoreListContext";
 
 interface IgnoreListState {
   ignored: string[];
@@ -79,7 +67,8 @@ export function IgnoreListProvider({ children }: { children: ReactNode }) {
   // connection state changes so the first online session seeds the list.
   useEffect(() => {
     if (!isTauriApp()) return;
-    refresh();
+    // oxlint-disable-next-line react/set-state-in-effect -- refresh() is async: all of its setState calls run after the awaited IPC import, never synchronously in this effect.
+    void refresh();
   }, [refresh]);
 
   const setIgnoreList = useCallback(async (names: string[]) => {
@@ -105,12 +94,4 @@ export function IgnoreListProvider({ children }: { children: ReactNode }) {
       {children}
     </IgnoreListContext.Provider>
   );
-}
-
-export function useIgnoreList() {
-  const ctx = useContext(IgnoreListContext);
-  if (!ctx) {
-    throw new Error("useIgnoreList must be used within IgnoreListProvider");
-  }
-  return ctx;
 }

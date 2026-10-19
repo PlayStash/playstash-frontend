@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -6,7 +6,7 @@ import { useDownloads } from "@/context/DownloadContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { RootPathSelectDialog } from "@/components/RootPathSelectDialog";
 import { VersionSelectDialog } from "@/components/VersionSelectDialog";
-import { confirmPipeline } from "./PipelineDialogs";
+import { confirmPipeline } from "./pipelineDialogStore";
 import {
   registerDownloadFlowHost,
   type DownloadFlowHost as FlowHost,
@@ -68,17 +68,19 @@ export function DownloadFlowHost() {
     showAlert,
     navigate,
   });
-  latest.current = {
-    serverUrl,
-    auth,
-    authFetch,
-    isOnline,
-    downloads,
-    startDownload,
-    deleteDownloadCard,
-    showAlert,
-    navigate,
-  };
+  useLayoutEffect(() => {
+    latest.current = {
+      serverUrl,
+      auth,
+      authFetch,
+      isOnline,
+      downloads,
+      startDownload,
+      deleteDownloadCard,
+      showAlert,
+      navigate,
+    };
+  });
 
   useEffect(() => {
     const host: FlowHost = {

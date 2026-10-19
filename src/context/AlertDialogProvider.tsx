@@ -1,11 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import {
   CheckIcon,
@@ -20,50 +13,16 @@ import {
   AlertActions,
 } from "@tw/alert";
 import { Button } from "@tw/button";
-import { Toast, type ToastTone } from "@tw/toast";
+import { Toast } from "@tw/toast";
 import { isTauriApp } from "@/utils/tauri";
 import { translate, useTranslation } from "@/i18n";
 import { fillTemplate } from "@/utils/downloadPipeline";
-
-// Shape of a queued alert request
-export interface AlertDialogRequest {
-  id: number;
-  title: string;
-  description?: string;
-  /** Optional raw process/console output rendered in a terminal-style block. */
-  log?: string;
-  affirmativeText?: string;
-  negativeText?: string;
-  tone?: ToastTone;
-  /** Toast action; title-only toasts default to "Copy" (WPF "Copy Message"). */
-  action?: { label: string; onClick: () => void };
-  resolve: (value: boolean) => void;
-}
-
-interface AlertDialogContextValue {
-  showAlert: (options: {
-    title: string;
-    description?: string;
-    log?: string;
-    affirmativeText?: string;
-    negativeText?: string;
-    tone?: ToastTone;
-    action?: { label: string; onClick: () => void };
-  }) => Promise<boolean>;
-}
-
-const AlertDialogContext = createContext<AlertDialogContextValue | undefined>(
-  undefined,
-);
-
-export const useAlertDialog = () => {
-  const ctx = useContext(AlertDialogContext);
-  if (!ctx)
-    throw new Error(
-      "useAlertDialog must be used within an AlertDialogProvider",
-    );
-  return ctx;
-};
+import {
+  AlertDialogContext,
+  useAlertDialog,
+  type AlertDialogContextValue,
+  type AlertDialogRequest,
+} from "@/context/AlertDialogContext";
 
 /**
  * Terminal-style block that shows raw process output with a copy button.
@@ -127,27 +86,15 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const queueRef = useRef<AlertDialogRequest[]>([]);
   const idRef = useRef(0);
-  const [, forceRerender] = useState({});
+  /** The alert on screen; rendered from state, mirrored for synchronous checks. */
+  const [active, setActive] = useState<AlertDialogRequest | null>(null);
   const activeRef = useRef<AlertDialogRequest | null>(null);
-  const autoCloseTimerRef = useRef<number | null>(null);
 
   const dequeue = useCallback(() => {
     if (activeRef.current) return; // already showing one
     const next = queueRef.current.shift() || null;
     activeRef.current = next;
-    forceRerender({});
-
-    // Auto-close after 4 seconds for toast notifications only
-    if (next && !next.description && !next.negativeText) {
-      if (autoCloseTimerRef.current) {
-        window.clearTimeout(autoCloseTimerRef.current);
-      }
-      autoCloseTimerRef.current = window.setTimeout(() => {
-        if (activeRef.current?.id === next.id) {
-          handleClose(true);
-        }
-      }, 4000);
-    }
+    setActive(next);
   }, []);
 
   const handleClose = useCallback(
@@ -155,17 +102,21 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
       if (activeRef.current) {
         activeRef.current.resolve(result);
         activeRef.current = null;
-        if (autoCloseTimerRef.current) {
-          window.clearTimeout(autoCloseTimerRef.current);
-          autoCloseTimerRef.current = null;
-        }
-        forceRerender({});
+        setActive(null);
         // small timeout ensures state commit before pulling next
         setTimeout(() => dequeue(), 0);
       }
     },
     [dequeue],
   );
+
+  // Auto-close after 4 seconds for toast notifications only. The cleanup
+  // cancels the timer as soon as this alert is closed or replaced.
+  useEffect(() => {
+    if (!active || active.description || active.negativeText) return;
+    const timer = window.setTimeout(() => handleClose(true), 4000);
+    return () => window.clearTimeout(timer);
+  }, [active, handleClose]);
 
   const showAlert = useCallback<AlertDialogContextValue["showAlert"]>(
     ({
@@ -197,8 +148,6 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const value: AlertDialogContextValue = { showAlert };
-
-  const active = activeRef.current;
 
   // Use modal variant for confirmation dialogs (with description/negativeText), toast for simple notifications
   const isConfirmationDialog =
@@ -266,17 +215,12 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-// Optional convenience imperative API attached to window for non-hook usage (e.g., outside React tree)
-declare global {
-  interface Window {
-    showAlertDialog?: AlertDialogContextValue["showAlert"];
-  }
-}
-
+/** Exposes `showAlert` as `window.showAlertDialog` for non-hook callers. */
 export const GlobalAlertDialogBridge: React.FC = () => {
   const { showAlert } = useAlertDialog();
-  // Assign once per render (idempotent)
-  window.showAlertDialog = showAlert;
+  useEffect(() => {
+    window.showAlertDialog = showAlert;
+  }, [showAlert]);
 
   // Surface game launch failures captured in the Tauri backend (a game that
   // exits immediately with console output, e.g. a missing prerequisite). The

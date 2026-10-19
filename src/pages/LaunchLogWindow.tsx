@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   LINES_EVENT,
   STATE_EVENT,
@@ -35,7 +42,9 @@ export function LaunchLogWindow() {
   const [history, setHistory] = useState<string | null>(null);
 
   const bufferRef = useRef({ lines, nextSeq });
-  bufferRef.current = { lines, nextSeq };
+  useLayoutEffect(() => {
+    bufferRef.current = { lines, nextSeq };
+  }, [lines, nextSeq]);
   const logIdRef = useRef<number | null>(null);
   const preRef = useRef<HTMLPreElement | null>(null);
 

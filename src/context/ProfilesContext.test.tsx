@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -61,12 +62,18 @@ type Harness = {
 };
 
 async function renderProviders() {
-  const { AuthProvider, useAuth } = await import("@/context/AuthContext");
+  const { useAuth } = await import("@/context/AuthContext");
+  const { AuthProvider } = await import("@/context/AuthProvider");
   const { useProfiles } = await import("@/context/ProfilesContext");
   const harness = {} as Harness;
   function Probe() {
-    harness.auth = useAuth();
-    harness.profiles = useProfiles();
+    const auth = useAuth();
+    const profiles = useProfiles();
+    // Publish the latest values after each commit for the assertions.
+    useEffect(() => {
+      harness.auth = auth;
+      harness.profiles = profiles;
+    });
     return null;
   }
   render(

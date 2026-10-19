@@ -87,20 +87,27 @@ export function LegacyImportPrompt() {
   return <LegacyImportDialog open={open} onClose={() => setOpen(false)} />;
 }
 
+function legacyInstallsPending(): boolean {
+  try {
+    return localStorage.getItem(LEGACY_INSTALLS_PENDING_KEY) === "1";
+  } catch {
+    return false; // storage unavailable
+  }
+}
+
 /** After an import: offer the legacy installations once the user is logged in. */
 export function LegacyInstallsPrompt() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [checkedUser, setCheckedUser] = useState<typeof user | undefined>(
+    undefined,
+  );
 
-  useEffect(() => {
-    if (!isTauriApp() || !user) return;
-    try {
-      if (localStorage.getItem(LEGACY_INSTALLS_PENDING_KEY) === "1")
-        setOpen(true);
-    } catch {
-      /* storage unavailable */
-    }
-  }, [user]);
+  // Checked whenever the signed-in user changes (a login after the import).
+  if (user !== checkedUser) {
+    setCheckedUser(user);
+    if (isTauriApp() && user && legacyInstallsPending()) setOpen(true);
+  }
 
   return (
     <LegacyInstallsDialog

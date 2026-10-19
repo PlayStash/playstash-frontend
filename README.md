@@ -39,7 +39,7 @@ The project was migrated from a basic Vite template; most custom styling now rel
 
 The UI has been reconnected to the original authentication and user management logic:
 
-- `AuthProvider` (`src/context/AuthContext.tsx`) handles login, token refresh, persistence, and exposes `authFetch` for authorized requests.
+- `AuthProvider` (`src/context/AuthProvider.tsx`) handles login, token refresh, persistence, and exposes `authFetch` for authorized requests.
 - `Login` component now performs real login against a PlayStash backend and redirects to `/library` on success.
 - Route guards in `src/main.tsx` prevent unauthenticated access to dashboard pages and redirect authenticated users away from the login screen.
 - Admin Users page (`src/pages/Administration.tsx`) fetches real users and supports activation toggling, role changes, deletion and recovery through `useAdminUsers` (`src/hooks/useAdminUsers.ts`).

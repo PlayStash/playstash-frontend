@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
@@ -106,15 +112,18 @@ export function useCloudSaveSync(): void {
     showAlert,
     t,
   });
-  state.current = {
-    enabled: Boolean(settings?.enabled),
-    isOnline,
-    serverUrl,
-    userId,
-    getAccessToken,
-    showAlert,
-    t,
-  };
+  // Synced after every render, before any effect or event handler reads it.
+  useLayoutEffect(() => {
+    state.current = {
+      enabled: Boolean(settings?.enabled),
+      isOnline,
+      serverUrl,
+      userId,
+      getAccessToken,
+      showAlert,
+      t,
+    };
+  });
   const deduper = useRef(createBackupDeduper());
 
   useEffect(() => {

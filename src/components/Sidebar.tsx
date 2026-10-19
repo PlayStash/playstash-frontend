@@ -39,7 +39,7 @@ import {
   SidebarSpacer,
   Sidebar as TailwindSidebar,
 } from "@tw/sidebar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { PlaystashUserRoleEnum } from "../api";
 import { useNews } from "../hooks/useNews";
@@ -63,11 +63,12 @@ export function Sidebar() {
   const userAvatarSeed = user?.id != null ? String(user.id) : undefined;
   const { hasNewNews } = useNews();
   const [badgeVisible, setBadgeVisible] = useState(hasNewNews);
-  useEffect(() => {
-    if (hasNewNews) {
-      setBadgeVisible(true);
-    }
-  }, [hasNewNews]);
+  // New news shows the badge again (closing the dialog hides it).
+  const [seenNewNews, setSeenNewNews] = useState(hasNewNews);
+  if (hasNewNews !== seenNewNews) {
+    setSeenNewNews(hasNewNews);
+    if (hasNewNews) setBadgeVisible(true);
+  }
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();

@@ -364,7 +364,8 @@ export default function Community() {
   const [userSearch, setUserSearch] = useState("");
 
   const currentUserId = (loggedIn as any)?.id ?? (loggedIn as any)?.ID ?? null;
-  const recentCutoff = useMemo(() => Date.now() - TWO_WEEKS_MS, []);
+  // Fixed for the page's lifetime; reading the clock during render is impure.
+  const [recentCutoff] = useState(() => Date.now() - TWO_WEEKS_MS);
 
   // Restore scroll position when returning from a user profile.
   useScrollRestoration("community_scroll_position", users.length > 0);
@@ -384,14 +385,21 @@ export default function Community() {
     [serverUrl, authFetch],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-
+  // Losing the server clears the list (adjusted during render rather than
+  // in the fetch effect).
+  const [listServerUrl, setListServerUrl] = useState(serverUrl);
+  if (listServerUrl !== serverUrl) {
+    setListServerUrl(serverUrl);
     if (!serverUrl) {
       setUsers([]);
       setDetailsById({});
-      return;
     }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!serverUrl) return;
 
     (async () => {
       setLoading(true);
@@ -456,10 +464,8 @@ export default function Community() {
       .map((entry) => entry.id)
       .filter((userId) => !detailsById[userId]);
 
-    if (!missingIds.length) {
-      setDetailsDone(true);
-      return;
-    }
+    // Every detail is known: `allDetailsKnown` below opens the gate.
+    if (!missingIds.length) return;
 
     (async () => {
       const results = await Promise.allSettled(
@@ -483,6 +489,9 @@ export default function Community() {
       cancelled = true;
     };
   }, [users, detailsById, fetchUserDetail]);
+
+  const allDetailsKnown =
+    users.length > 0 && users.every((entry) => detailsById[entry.id]);
 
   const members = useMemo(
     () =>
@@ -587,7 +596,7 @@ export default function Community() {
         </div>
       )}
 
-      {loading || !detailsDone ? (
+      {loading || !(detailsDone || allDetailsKnown) ? (
         <div className="community-members">
           {Array.from({ length: 6 }).map((_, index) => (
             <div

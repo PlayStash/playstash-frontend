@@ -1,5 +1,5 @@
 import { createUuid } from "@/utils/uuid";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "./tailwind/button";
 import { Input } from "./tailwind/input";
 import {
@@ -30,21 +30,22 @@ export function LibraryCategories({
   const [name, setName] = useState("");
   const [error, setError] = useState(false);
   const [editing, setEditing] = useState(false);
-  useEffect(() => {
+  const [loadedKey, setLoadedKey] = useState(storageKey);
+  if (storageKey !== loadedKey) {
+    setLoadedKey(storageKey);
     setCategories(readLibraryCategories(storageKey));
     setSelected("");
-  }, [storageKey]);
-  useEffect(() => {
-    const category = categories.find((item) => item.id === selected);
-    if (
-      category &&
-      (category.folder !== folder ||
-        [...category.tags].sort().join("\u0000") !==
-          [...tags].sort().join("\u0000"))
-    ) {
-      setSelected("");
-    }
-  }, [categories, selected, folder, tags]);
+  }
+  // Changing the filters by hand leaves the selected category.
+  const selectedCategory = categories.find((item) => item.id === selected);
+  if (
+    selectedCategory &&
+    (selectedCategory.folder !== folder ||
+      [...selectedCategory.tags].sort().join("\u0000") !==
+        [...tags].sort().join("\u0000"))
+  ) {
+    setSelected("");
+  }
   const save = (next: LibraryCategory[]) => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(next));

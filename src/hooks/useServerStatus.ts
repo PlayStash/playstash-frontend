@@ -23,17 +23,20 @@ interface UseServerStatusResult {
 export function useServerStatus(): UseServerStatusResult {
   const { serverUrl } = useAuth();
   const [info, setInfo] = useState<ServerInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  // The last finished request; `loading` and `error` are derived from it, so
+  // the effect never sets state synchronously.
+  const [settled, setSettled] = useState<{
+    key: string;
+    error: string | null;
+  } | null>(null);
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
+  const requestKey = serverUrl ? `${nonce}:${serverUrl}` : null;
 
   useEffect(() => {
-    if (!serverUrl) return;
+    if (!serverUrl || !requestKey) return;
     const base = serverUrl.replace(/\/+$/, "");
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     (async () => {
       try {
         const res = await serverFetch(`${base}/api/status`, {
@@ -47,17 +50,27 @@ export function useServerStatus(): UseServerStatusResult {
             }),
           );
         const data = await res.json();
-        if (!cancelled) setInfo(data);
+        if (cancelled) return;
+        setInfo(data);
+        setSettled({ key: requestKey, error: null });
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled)
+          setSettled({
+            key: requestKey,
+            error: e instanceof Error ? e.message : String(e),
+          });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [serverUrl, nonce]);
+  }, [serverUrl, requestKey]);
 
-  return { info, loading, error, refresh };
+  const current = settled?.key === requestKey ? settled : null;
+  return {
+    info,
+    loading: requestKey !== null && !current,
+    error: current?.error ?? null,
+    refresh,
+  };
 }

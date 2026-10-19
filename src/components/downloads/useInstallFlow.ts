@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useDownloads, type ActiveDownload } from "@/context/DownloadContext";
 import type { GameMetadata } from "@/api/models/GameMetadata";
 import {
@@ -24,11 +24,13 @@ export function useInstallFlow(download: ActiveDownload) {
     null,
   );
 
-  useEffect(() => {
-    if (download.installationStatus === "completed") {
-      setInstallState(null);
-    }
-  }, [download.installationStatus]);
+  const [seenStatus, setSeenStatus] = useState(download.installationStatus);
+
+  // Close the flow once the installation completes.
+  if (download.installationStatus !== seenStatus) {
+    setSeenStatus(download.installationStatus);
+    if (download.installationStatus === "completed") setInstallState(null);
+  }
 
   const closeInstallView = useCallback(() => setInstallState(null), []);
 

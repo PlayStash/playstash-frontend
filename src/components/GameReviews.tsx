@@ -22,6 +22,21 @@ interface Reviews {
   page: number;
   limit: number;
 }
+async function fetchReviews(
+  authFetch: (input: string, init?: RequestInit) => Promise<Response>,
+  serverUrl: string,
+  gameId: number,
+  page: number,
+): Promise<Reviews> {
+  const response = await authFetch(
+    `${serverUrl}/api/games/${gameId}/reviews?page=${page}&limit=10`,
+  );
+  if (!response.ok)
+    throw new Error(
+      await getErrorMessage(response, translate("reviews.loadFailed")),
+    );
+  return response.json();
+}
 export function GameReviews({ gameId }: { gameId: number }) {
   const { authFetch, serverUrl, user } = useAuth();
   const { showAlert } = useAlertDialog();
@@ -35,35 +50,61 @@ export function GameReviews({ gameId }: { gameId: number }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const load = useCallback(
-    async (initialize = false) => {
-      setLoading(true);
-      try {
-        const response = await authFetch(
-          `${serverUrl}/api/games/${gameId}/reviews?page=${page}&limit=10`,
-        );
-        if (!response.ok)
-          throw new Error(
-            await getErrorMessage(response, translate("reviews.loadFailed")),
-          );
-        const next: Reviews = await response.json();
-        setData(next);
-        if (initialize) {
-          setRating(next.my_review?.rating || 5);
-          setComment(next.my_review?.comment || "");
-        }
-        setError("");
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [authFetch, serverUrl, gameId, page],
-  );
+  // A new game, page or session shows the spinner until its reviews arrive.
+  const [request, setRequest] = useState({
+    authFetch,
+    serverUrl,
+    gameId,
+    page,
+  });
+  if (
+    request.authFetch !== authFetch ||
+    request.serverUrl !== serverUrl ||
+    request.gameId !== gameId ||
+    request.page !== page
+  ) {
+    setRequest({ authFetch, serverUrl, gameId, page });
+    setLoading(true);
+  }
+  // Only uses state setters, so it is stable and safe as an effect dependency.
+  const showReviews = useCallback((next: Reviews, initialize: boolean) => {
+    setData(next);
+    if (initialize) {
+      setRating(next.my_review?.rating || 5);
+      setComment(next.my_review?.comment || "");
+    }
+    setError("");
+  }, []);
+  const load = async (initialize = false) => {
+    setLoading(true);
+    try {
+      showReviews(
+        await fetchReviews(authFetch, serverUrl, gameId, page),
+        initialize,
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    void load(true);
-  }, [load]);
+    let cancelled = false;
+    fetchReviews(authFetch, serverUrl, gameId, page)
+      .then((next) => {
+        if (!cancelled) showReviews(next, true);
+      })
+      .catch((cause) => {
+        if (!cancelled)
+          setError(cause instanceof Error ? cause.message : String(cause));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authFetch, serverUrl, gameId, page, showReviews]);
   const save = async (remove = false) => {
     if (
       remove &&

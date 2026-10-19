@@ -543,16 +543,13 @@ export function GameSettings({
     },
     [
       authFetch,
-      emitGameDeleted,
-      emitGameUpdated,
+      onClose,
       onGameUpdated,
       refetchGame,
       serverUrl,
       showAlert,
       t,
       workingGame.id,
-      workingGame.metadata?.title,
-      workingGame.title,
       workingGame.versions,
     ],
   );

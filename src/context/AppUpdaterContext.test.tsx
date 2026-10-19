@@ -2,7 +2,8 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AppUpdaterProvider, useAppUpdater } from "./AppUpdaterContext";
+import { AppUpdaterProvider } from "./AppUpdaterProvider";
+import { useAppUpdater } from "./AppUpdaterContext";
 
 const mocks = vi.hoisted(() => ({
   invoke: vi.fn(),

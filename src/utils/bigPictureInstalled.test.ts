@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseIgnoreFile } from "@/components/settings/GamesLaunchSettings";
+import { parseIgnoreFile } from "@/components/settings/ignoreFile";
 import {
   bigPictureGames,
   displayTitle,

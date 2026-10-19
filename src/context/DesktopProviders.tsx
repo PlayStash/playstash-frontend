@@ -3,7 +3,7 @@ import {
   BigPictureStartupEffect,
   GameSessionProvider,
 } from "@/context/GameSessionProvider";
-import { CommunityProvider } from "@/context/CommunityContext";
+import { CommunityProvider } from "@/context/CommunityProvider";
 import { DiscordPresenceEffect } from "@/hooks/useDiscordPresence";
 import { SteamShortcutSyncEffect } from "@/hooks/useSteamShortcutSync";
 import { DownloadFlowHost } from "@/components/downloads/DownloadFlowHost";

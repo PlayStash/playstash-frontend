@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "@/i18n";
+import { useEffect, useState } from "react";
+import {
+  translate,
+  useTranslation,
+  type Locale,
+  type TranslationKey,
+} from "@/i18n";
 import { formatMessage } from "@/utils/formatMessage";
 import { formatUptime } from "@/utils/adminExtras";
 import { useAuth } from "@/context/AuthContext";
@@ -17,47 +22,69 @@ interface HealthState {
   protocol: string;
 }
 
+/** `GET /api/status` (authenticated): status, uptime and health protocol. */
+async function fetchHealth(
+  serverUrl: string,
+  authFetch: (input: string, init?: RequestInit) => Promise<Response>,
+  locale: Locale,
+): Promise<HealthState> {
+  const tr = (key: TranslationKey) => translate(key, locale);
+  try {
+    const response = await authFetch(`${serverUrl}/api/status`);
+    if (!response.ok)
+      throw new Error(
+        await getErrorMessage(response, tr("admin.diagnostics.statusFailed")),
+      );
+    const status = await response.json();
+    return {
+      summary: formatMessage(tr("admin.health.summary"), {
+        status: String(status?.status ?? "?"),
+        uptime: formatUptime(status?.uptime) ?? tr("admin.health.unavailable"),
+      }),
+      protocol:
+        status?.protocol !== undefined && status?.protocol !== null
+          ? JSON.stringify(status.protocol, null, 2)
+          : tr("admin.health.noProtocol"),
+    };
+  } catch (cause) {
+    return {
+      summary: cause instanceof Error ? cause.message : String(cause),
+      protocol: tr("admin.health.noProtocol"),
+    };
+  }
+}
+
 export function ServerDiagnostics() {
   const { serverUrl, authFetch } = useAuth();
   const { showAlert } = useAlertDialog();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [health, setHealth] = useState<HealthState | null>(null);
   const [healthBusy, setHealthBusy] = useState(false);
 
-  /** `GET /api/status` (authenticated): status, uptime and health protocol. */
-  const loadHealth = useCallback(async () => {
+  const loadHealth = async () => {
     if (!serverUrl) return;
     setHealthBusy(true);
     try {
-      const response = await authFetch(`${serverUrl}/api/status`);
-      if (!response.ok)
-        throw new Error(
-          await getErrorMessage(response, t("admin.diagnostics.statusFailed")),
-        );
-      const status = await response.json();
-      setHealth({
-        summary: formatMessage(t("admin.health.summary"), {
-          status: String(status?.status ?? "?"),
-          uptime: formatUptime(status?.uptime) ?? t("admin.health.unavailable"),
-        }),
-        protocol:
-          status?.protocol !== undefined && status?.protocol !== null
-            ? JSON.stringify(status.protocol, null, 2)
-            : t("admin.health.noProtocol"),
-      });
-    } catch (cause) {
-      setHealth({
-        summary: cause instanceof Error ? cause.message : String(cause),
-        protocol: t("admin.health.noProtocol"),
-      });
+      setHealth(await fetchHealth(serverUrl, authFetch, locale));
     } finally {
       setHealthBusy(false);
     }
-  }, [serverUrl, authFetch, t]);
+  };
 
+  // Initial (and server/session/language change) load; the result is only
+  // stored from the async callback.
   useEffect(() => {
-    void loadHealth();
-  }, [loadHealth]);
+    if (!serverUrl) return;
+    let active = true;
+    void fetchHealth(serverUrl, authFetch, locale).then((next) => {
+      if (active) setHealth(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, [serverUrl, authFetch, locale]);
+  // Until the first status arrives the refresh button stays disabled.
+  const healthPending = healthBusy || (!!serverUrl && health === null);
   const [logs, setLogs] = useState<LogRecord[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -130,7 +157,7 @@ export function ServerDiagnostics() {
           </p>
           <Button
             outline
-            disabled={healthBusy}
+            disabled={healthPending}
             onClick={() => void loadHealth()}
           >
             {t("admin.health.refresh")}

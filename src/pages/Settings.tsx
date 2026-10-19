@@ -541,7 +541,19 @@ export default function Settings() {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory | null>(
     "account",
   );
-  useEffect(() => {
+  // Open the category named by `?section=` whenever the URL (or the platform
+  // flags) change; applied during render instead of in an effect.
+  const urlCategorySource = { searchParams, isTauri, isDesktopApp, isLinux };
+  const [appliedUrlCategorySource, setAppliedUrlCategorySource] = useState<
+    typeof urlCategorySource | null
+  >(null);
+  if (
+    appliedUrlCategorySource?.searchParams !== searchParams ||
+    appliedUrlCategorySource.isTauri !== isTauri ||
+    appliedUrlCategorySource.isDesktopApp !== isDesktopApp ||
+    appliedUrlCategorySource.isLinux !== isLinux
+  ) {
+    setAppliedUrlCategorySource(urlCategorySource);
     const raw = searchParams.get("section");
     // Map legacy section names to the reorganized categories so old
     // deep links (e.g. `?section=desktop`) keep working.
@@ -559,7 +571,7 @@ export default function Settings() {
         visibleCategorySections(section, { isTauri, isDesktopApp, isLinux })
           .length > 0);
     setActiveCategory(available ? section : "account");
-  }, [searchParams, isTauri, isDesktopApp, isLinux]);
+  }
   // Settings search: free-text query, the matched settings, and the target we
   // scroll/highlight to when a result is chosen.
   const [searchQuery, setSearchQuery] = useState("");
@@ -728,7 +740,7 @@ export default function Settings() {
     return () => {
       cancelled = true;
     };
-  }, [isTauri]);
+  }, [isTauri, isLinux]);
 
   // Sync startMinimized to Rust backend config file
   useEffect(() => {

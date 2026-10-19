@@ -1,7 +1,7 @@
 import { isDebugTauriOverride, setDebugTauriOverride } from "@/utils/tauri";
 import { ComputerDesktopIcon } from "@heroicons/react/16/solid";
 import { Switch, SwitchField, SwitchGroup } from "@tw/switch";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "@/i18n";
 
 export default function TauriDebugSwitch({
@@ -10,11 +10,7 @@ export default function TauriDebugSwitch({
   className?: string;
 }) {
   const { t } = useTranslation();
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    setChecked(isDebugTauriOverride());
-  }, []);
+  const [checked, setChecked] = useState(isDebugTauriOverride);
 
   const handleChange = useCallback((next: boolean) => {
     setChecked(next);

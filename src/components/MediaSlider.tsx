@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -150,11 +151,14 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
   const [index, setIndex] = useState(0);
   // Persisted media volume (default 0 = muted, like the WPF client).
   const [volume, setVolumeState] = useState(getMediaVolume);
+  // Latest volume for event handlers and timers.
   const volumeRef = useRef(volume);
-  volumeRef.current = volume;
+  useLayoutEffect(() => {
+    volumeRef.current = volume;
+  }, [volume]);
   // The embed URL uses the volume at mount, so changing it never reloads
   // the player (later changes go through postMessage).
-  const initialVolumeRef = useRef(volume);
+  const [initialVolume] = useState(volume);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const list = resolved;
   const current = list[index];
@@ -175,7 +179,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
         // (see src-tauri/src/youtube.rs) so it has a valid HTTP origin. In
         // dev/web we keep the direct embed, which works fine.
         if (ytEmbedBase) {
-          const initial = initialVolumeRef.current;
+          const initial = initialVolume;
           const params = new URLSearchParams({
             v: ytId,
             mute: initial > 0 ? "0" : "1",
@@ -187,7 +191,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
         const params = new URLSearchParams({
           rel: "0",
           playsinline: "1",
-          mute: initialVolumeRef.current > 0 ? "0" : "1",
+          mute: initialVolume > 0 ? "0" : "1",
           fs: "0",
           enablejsapi: "1",
           origin: window.location.origin,
@@ -228,6 +232,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
 
   const changeVolume = useCallback(
     (value: number) => {
+      volumeRef.current = value;
       setVolumeState(value);
       setMediaVolume(value);
       applyVolume(value);
@@ -381,6 +386,7 @@ export const MediaSlider: React.FC<MediaSliderProps> = ({
               const element = event.currentTarget;
               const next = element.muted ? 0 : element.volume;
               if (Math.abs(next - volumeRef.current) > 0.001) {
+                volumeRef.current = next;
                 setVolumeState(next);
                 setMediaVolume(next);
               }

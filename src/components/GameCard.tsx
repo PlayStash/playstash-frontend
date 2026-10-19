@@ -35,7 +35,7 @@ import {
   DropdownMenu,
 } from "@tw/dropdown";
 import clsx from "clsx";
-import { memo, useCallback, useMemo, useState, useEffect } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { GameVersion } from "@/api/models/GameVersion";
 import { useMappedTitle } from "@/utils/mappedTitle";
@@ -91,10 +91,16 @@ const GameCard = memo(function GameCard({
 
   const coverId = getGameCoverMediaId(localGame) as number | string | null;
 
-  useEffect(() => {
+  // A new game object (or user) from the parent replaces the local copies.
+  const [syncedFrom, setSyncedFrom] = useState({ game, initialBookmarked });
+  if (
+    syncedFrom.game !== game ||
+    syncedFrom.initialBookmarked !== initialBookmarked
+  ) {
+    setSyncedFrom({ game, initialBookmarked });
     setLocalGame(game);
     setBookmarked(initialBookmarked);
-  }, [game, initialBookmarked]);
+  }
 
   // A game only has an update when it is installed locally and the server's
   // current default version tag differs from the installed one.

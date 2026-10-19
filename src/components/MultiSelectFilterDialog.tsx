@@ -170,50 +170,59 @@ export default function MultiSelectFilterDialog({
   const { serverUrl, authFetch } = useAuth();
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [allItems, setAllItems] = useState<FilterItem[]>([]);
+  const [fetchedItems, setFetchedItems] = useState<FilterItem[]>([]);
+  const allItems = staticItems ?? fetchedItems;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Get color classes based on badgeColor
   const colors = colorClasses[badgeColor];
 
-  // Fetch all items from the endpoint (only if endpoint is provided)
-  const fetchItems = useCallback(async () => {
-    if (!serverUrl || !endpoint) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const base = serverUrl.replace(/\/+$/, "");
-      const params = new URLSearchParams();
-      params.set("limit", "-1");
-      const url = `${base}${endpoint}?${params.toString()}`;
-      const res = await authFetch(url, { method: "GET" });
-      if (!res.ok)
-        throw new Error(
-          fillTemplate(translate("libraryFilters.dialog.fetchFailed"), {
-            title,
-            status: res.status,
-          }),
-        );
-      const json: PaginatedResponse<FilterItem> = await res.json();
-      setAllItems(json.data || []);
-    } catch (e: any) {
-      setError(e.message || String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [serverUrl, authFetch, endpoint, title]);
+  const canFetch = !staticItems && !!serverUrl && !!endpoint;
+  const [wasOpen, setWasOpen] = useState(false);
 
-  useEffect(() => {
+  // Each opening starts with an empty search and (for endpoints) a fresh fetch.
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
-      if (staticItems) {
-        setAllItems(staticItems);
-      } else {
-        fetchItems();
-      }
       setSearchQuery("");
+      if (canFetch) {
+        setLoading(true);
+        setError(null);
+      }
     }
-  }, [open, fetchItems, staticItems]);
+  }
+
+  // Fetch all items from the endpoint (only if endpoint is provided)
+  useEffect(() => {
+    if (!open || staticItems || !serverUrl || !endpoint) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const base = serverUrl.replace(/\/+$/, "");
+        const params = new URLSearchParams();
+        params.set("limit", "-1");
+        const url = `${base}${endpoint}?${params.toString()}`;
+        const res = await authFetch(url, { method: "GET" });
+        if (!res.ok)
+          throw new Error(
+            fillTemplate(translate("libraryFilters.dialog.fetchFailed"), {
+              title,
+              status: res.status,
+            }),
+          );
+        const json: PaginatedResponse<FilterItem> = await res.json();
+        if (!cancelled) setFetchedItems(json.data || []);
+      } catch (e: any) {
+        if (!cancelled) setError(e.message || String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, staticItems, serverUrl, authFetch, endpoint, title]);
 
   // Filter items by search query
   const filteredItems = useMemo(() => {

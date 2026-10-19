@@ -1,13 +1,18 @@
 import {
   ReactNode,
-  createContext,
   useCallback,
-  useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { useAuth } from "./AuthContext";
+import {
+  DownloadContext,
+  type ActiveDownload,
+  type DownloadContextValue,
+  type SimulatedDownloadKind,
+} from "./DownloadContext";
 import { useGameMetrics, useFlushGameMetrics } from "@/hooks/useGameMetrics";
 import { useOnlineStatus } from "./OfflineContext";
 import { useServerStatus } from "@/hooks/useServerStatus";
@@ -55,11 +60,11 @@ import {
 } from "@/utils/passwordOrder";
 import { createDesktopShortcut } from "@/utils/desktopShortcut";
 import { ROOT_PATHS_CHANGE_EVENT } from "@/utils/rootPaths";
+import { PipelineDialogHost } from "@/components/downloads/PipelineDialogs";
 import {
-  PipelineDialogHost,
   confirmPipeline,
   promptPipelinePassword,
-} from "@/components/downloads/PipelineDialogs";
+} from "@/components/downloads/pipelineDialogStore";
 import {
   fillTemplate,
   installSourceDirectory,
@@ -69,61 +74,6 @@ import {
   resumePositionAfterError,
   type InstalledEntry,
 } from "@/utils/downloadPipeline";
-
-type InstallationStatus =
-  "idle" | "copying" | "launching" | "running" | "completed" | "error";
-
-export interface ActiveDownload {
-  gameId: number;
-  versionId: number;
-  /** Metadata title first; also names the install folder, so it is stable. */
-  gameTitle: string;
-  /** The game's own (file) title, shown when mapped titles are turned off. */
-  fileTitle?: string;
-  gameMetadata?: GameMetadata;
-  gameType?: PlaystashGameTypeEnum;
-  versionName?: string;
-  filename: string;
-  downloadDirectory?: string;
-  extractionDirectory?: string;
-  installationDirectory?: string;
-  versionDirectory?: string;
-  downloadRootPath?: string;
-  downloadedFilePath?: string;
-  received: number;
-  total: number | null;
-  progress: number | null;
-  abortController: AbortController;
-  startedAt: number;
-  speedBps?: number;
-  status: "downloading" | "paused" | "completed" | "error" | "aborted";
-  error?: string;
-  cachedMetadata?: Record<string, any> | null;
-  extractionStatus?:
-    "idle" | "extracting" | "completed" | "error" | "needs-password";
-  extractionProgress?: number | null;
-  extractionCurrentFile?: string;
-  extractionError?: string;
-  extractionPasswordRequired?: boolean;
-  installationStatus?: InstallationStatus;
-  installationProgress?: number | null;
-  installationCurrentFile?: string;
-  installationError?: string;
-  installationExitCode?: number | null;
-  sourceFilesDeleted?: boolean;
-  fileWriter?: { close(): Promise<void>; abort(): Promise<void> };
-  /** Extract and install this card automatically (CLI `--autoinstall`). */
-  autoInstall?: boolean;
-  /** Mount root of the ISO used instead of the extraction folder. */
-  isoMountPath?: string;
-  /** Informational extraction state, e.g. "ISO mounted at E:\". */
-  extractionNotice?: string;
-  /** The last error was 401/403: resume once a fresh token arrives. */
-  awaitingAuth?: boolean;
-}
-
-export type SimulatedDownloadKind =
-  "downloading" | "paused" | "error" | "aborted" | "completed" | "installing";
 
 /**
  * Extraction state as reported by the Rust backend. Extraction runs on a
@@ -168,59 +118,6 @@ interface BackgroundStatesPayload {
     error?: string | null;
   } | null;
 }
-
-interface DownloadContextValue {
-  downloads: Record<number, ActiveDownload>;
-  startDownload: (params: {
-    gameId: number;
-    versionId: number;
-    versionName?: string;
-    gameTitle: string;
-    fileTitle?: string;
-    gameMetadata?: GameMetadata;
-    gameType?: PlaystashGameTypeEnum;
-    filename: string;
-    downloadRootPath?: string;
-    /** Extract and install automatically, regardless of the global toggles. */
-    autoInstall?: boolean;
-  }) => void;
-  cancelDownload: (gameId: number) => void;
-  /** Cancels every running download (used on app exit / logout). */
-  cancelAllDownloads: () => void;
-  /**
-   * Asks before installing over an existing installation of this game in the
-   * same version folder. Resolves to false when the user cancelled.
-   */
-  confirmInstallOverwrite: (gameId: number) => Promise<boolean>;
-  /** Persists a game type the user forced in the install flow. */
-  persistForcedGameType: (
-    gameId: number,
-    gameType: PlaystashGameTypeEnum,
-  ) => Promise<void>;
-  pauseDownload: (gameId: number) => void;
-  resumeDownload: (gameId: number) => void;
-  deleteDownloadCard: (gameId: number) => Promise<void>;
-  retryDownload: (gameId: number) => void;
-  openDownloadFolder: (gameId: number) => Promise<void>;
-  extractArchive: (gameId: number, password?: string) => Promise<void>;
-  listInstallExecutables: (gameId: number) => Promise<string[]>;
-  copyInstallationFiles: (gameId: number) => Promise<void>;
-  launchInstallationExecutable: (
-    gameId: number,
-    installerRelativePath: string,
-  ) => Promise<void>;
-  resetInstallationState: (gameId: number) => void;
-  speedLimitKB: number;
-  setSpeedLimitKB: (v: number) => void;
-  /** Dev-only: inject a fake download card to preview UI states */
-  simulateDownload: (kind: SimulatedDownloadKind) => void;
-  formatBytes: (bytes: number) => string;
-  formatSpeed: (bps?: number) => string;
-  formatKBps: (bps?: number) => string;
-  formatLimit: (kbPerSec: number) => string;
-}
-
-const DownloadContext = createContext<DownloadContextValue | null>(null);
 
 const DEFAULT_PLAYSTASH_CONFIG: PlayStashConfig = {
   downloadfinished: false,
@@ -269,6 +166,21 @@ async function readIsoMountPath(versionDirectory?: string): Promise<string> {
   }
 }
 
+const SPEED_WINDOW_MS = 5000;
+const UI_THROTTLE_MS = 500;
+const SAMPLE_INTERVAL_MS = 250;
+const DEBUG_DOWNLOAD_LOGS = false;
+
+function dlog(...args: any[]) {
+  if (DEBUG_DOWNLOAD_LOGS) console.log(...args);
+}
+
+/** Drops speed samples older than the speed window. */
+function trimSamples(samples: { t: number; bytes: number }[], now: number) {
+  while (samples.length && now - samples[0].t > SPEED_WINDOW_MS)
+    samples.shift();
+}
+
 /** Portable install failure: the old client's hint plus the cause. */
 function portableInstallError(detail: string) {
   const hint = translate("pipeline.install.portableFailed");
@@ -284,7 +196,8 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   const [downloads, setDownloads] = useState<Record<number, ActiveDownload>>(
     {},
   );
-  const [autoResumeIds, setAutoResumeIds] = useState<number[]>([]);
+  /** Bumped when startup recovery queued downloads in pendingAutoResumeRef. */
+  const [autoResumeRequest, setAutoResumeRequest] = useState(0);
   const downloadGameIdsKey = Object.keys(downloads)
     .map(Number)
     .filter((gameId) => Number.isFinite(gameId) && gameId > 0)
@@ -323,25 +236,13 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
    * (multi-megabyte) cover and background art of every active download.
    */
   const cachedMediaIdsRef = useRef<Set<number>>(new Set());
-  const SPEED_WINDOW_MS = 5000;
-  const UI_THROTTLE_MS = 500;
-  const SAMPLE_INTERVAL_MS = 250;
-  const DEBUG_DOWNLOAD_LOGS = false;
-  const dlog = (...args: any[]) => {
-    if (DEBUG_DOWNLOAD_LOGS) console.log(...args);
-  };
-  const trimSamples = (
-    samples: { t: number; bytes: number }[],
-    now: number,
-  ) => {
-    while (samples.length && now - samples[0].t > SPEED_WINDOW_MS)
-      samples.shift();
-  };
 
   // Keep the latest downloads reachable from long-lived callbacks (event
   // listeners, startup recovery) without re-creating them on every update.
   const downloadsRef = useRef<Record<number, ActiveDownload>>({});
-  downloadsRef.current = downloads;
+  useLayoutEffect(() => {
+    downloadsRef.current = downloads;
+  }, [downloads]);
 
   // ── Pipeline extras ─────────────────────────────────────────────────────
   // Auto-install portable games defaults to on for fresh installations only.
@@ -350,18 +251,18 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     return null;
   });
   const serverUrlRef = useRef(serverUrl);
-  serverUrlRef.current = serverUrl;
+  useLayoutEffect(() => {
+    serverUrlRef.current = serverUrl;
+  }, [serverUrl]);
   /** Mount roots of ISOs, set synchronously so installs started right after see them. */
   const isoMountRef = useRef<Record<number, string>>({});
   /** Set after render: resumes a failed download from its partial file. */
   const resumeAfterErrorRef = useRef<((gameId: number) => void) | null>(null);
-  const autoRetryRef = useRef<DownloadAutoRetry | null>(null);
-  if (!autoRetryRef.current) {
-    autoRetryRef.current = new DownloadAutoRetry((gameId) =>
-      resumeAfterErrorRef.current?.(gameId),
-    );
-  }
-  const autoRetry = autoRetryRef.current;
+  const [autoRetry] = useState(
+    // oxlint-disable-next-line react/refs -- false positive: the callback reads the ref only when a retry timer fires, never during render.
+    () =>
+      new DownloadAutoRetry((gameId) => resumeAfterErrorRef.current?.(gameId)),
+  );
 
   /** Shows a pipeline OS notification with the cached cover as image. */
   const notifyPipeline = useCallback(
@@ -880,6 +781,44 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     [serverInfo, serverUrl],
   );
 
+  const lastUpdateRef = useRef<Record<number, number>>({});
+  const lastConfigWriteRef = useRef<Record<number, number>>({});
+  const tauriUnlistenRef = useRef<Record<number, () => void>>({});
+  const tauriExtractUnlistenRef = useRef<Record<number, () => void>>({});
+  const tauriInstallCopyUnlistenRef = useRef<Record<number, () => void>>({});
+  const tauriInstallerUnlistenRef = useRef<Record<number, () => void>>({});
+  /** Set after render: notification + auto-retry after a download error. */
+  const handleDownloadErrorRef = useRef<
+    ((gameId: number, message: string) => void) | null
+  >(null);
+  const extractArchiveRef = useRef<
+    ((gameId: number, password?: string) => Promise<void>) | null
+  >(null);
+  const copyInstallationFilesRef = useRef<
+    ((gameId: number) => Promise<void>) | null
+  >(null);
+  const listInstallExecutablesRef = useRef<
+    ((gameId: number) => Promise<string[]>) | null
+  >(null);
+  const launchInstallationExecutableRef = useRef<
+    ((gameId: number, installerRelativePath: string) => Promise<void>) | null
+  >(null);
+  const pendingAutoResumeRef = useRef<ActiveDownload[]>([]);
+  /** Games whose finished extraction was already handled in this page session. */
+  const extractionCompletionHandledRef = useRef<Set<number>>(new Set());
+  /** Games whose extraction was started (and is awaited) from this page. */
+  const extractionAttemptActiveRef = useRef<Set<number>>(new Set());
+  /** Set after render: the "already installed" confirmation. */
+  const confirmInstallOverwriteRef = useRef<
+    ((gameId: number) => Promise<boolean>) | null
+  >(null);
+  /** Games whose finished installation was already handled in this page session. */
+  const installationCompletionHandledRef = useRef<Set<number>>(new Set());
+  /** Set after render so the startup recovery can re-attach to extractions. */
+  const reconcileBackgroundStatesRef = useRef<
+    ((recovered: Record<number, ActiveDownload>) => Promise<void>) | null
+  >(null);
+
   const cancelDownload = useCallback(
     (gameId: number) => {
       clearSimulatedTimer(gameId);
@@ -925,44 +864,6 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       if (d.status === "downloading") cancelDownload(d.gameId);
     }
   }, [autoRetry, cancelDownload]);
-
-  const lastUpdateRef = useRef<Record<number, number>>({});
-  const lastConfigWriteRef = useRef<Record<number, number>>({});
-  const tauriUnlistenRef = useRef<Record<number, () => void>>({});
-  const tauriExtractUnlistenRef = useRef<Record<number, () => void>>({});
-  const tauriInstallCopyUnlistenRef = useRef<Record<number, () => void>>({});
-  const tauriInstallerUnlistenRef = useRef<Record<number, () => void>>({});
-  /** Set after render: notification + auto-retry after a download error. */
-  const handleDownloadErrorRef = useRef<
-    ((gameId: number, message: string) => void) | null
-  >(null);
-  const extractArchiveRef = useRef<
-    ((gameId: number, password?: string) => Promise<void>) | null
-  >(null);
-  const copyInstallationFilesRef = useRef<
-    ((gameId: number) => Promise<void>) | null
-  >(null);
-  const listInstallExecutablesRef = useRef<
-    ((gameId: number) => Promise<string[]>) | null
-  >(null);
-  const launchInstallationExecutableRef = useRef<
-    ((gameId: number, installerRelativePath: string) => Promise<void>) | null
-  >(null);
-  const pendingAutoResumeRef = useRef<ActiveDownload[]>([]);
-  /** Games whose finished extraction was already handled in this page session. */
-  const extractionCompletionHandledRef = useRef<Set<number>>(new Set());
-  /** Games whose extraction was started (and is awaited) from this page. */
-  const extractionAttemptActiveRef = useRef<Set<number>>(new Set());
-  /** Set after render: the "already installed" confirmation. */
-  const confirmInstallOverwriteRef = useRef<
-    ((gameId: number) => Promise<boolean>) | null
-  >(null);
-  /** Games whose finished installation was already handled in this page session. */
-  const installationCompletionHandledRef = useRef<Set<number>>(new Set());
-  /** Set after render so the startup recovery can re-attach to extractions. */
-  const reconcileBackgroundStatesRef = useRef<
-    ((recovered: Record<number, ActiveDownload>) => Promise<void>) | null
-  >(null);
 
   const startDownload = useCallback(
     async ({
@@ -1561,17 +1462,16 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     [
       serverUrl,
       authFetch,
-      auth,
       getAccessToken,
       downloads,
       updateDownload,
       writeGameMetadata,
       writeVersionConfig,
       speedLimitKB,
-      trimSamples,
-      computeSpeedBps,
       autoRetry,
       notifyPipeline,
+      cacheInstalledGameData,
+      reportGameEvent,
     ],
   );
 
@@ -1802,7 +1702,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   );
 
   const startDownloadRef = useRef(startDownload);
-  startDownloadRef.current = startDownload;
+  useLayoutEffect(() => {
+    startDownloadRef.current = startDownload;
+  }, [startDownload]);
 
   /** Resumes a failed download from the bytes that are on disk. */
   const resumeAfterError = useCallback(
@@ -1843,7 +1745,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     },
     [autoRetry, updateDownload],
   );
-  resumeAfterErrorRef.current = (gameId) => void resumeAfterError(gameId);
+  useLayoutEffect(() => {
+    resumeAfterErrorRef.current = (gameId) => void resumeAfterError(gameId);
+  }, [resumeAfterError]);
 
   /** First error of a download: notify; then schedule the automatic resume. */
   const handleDownloadError = useCallback(
@@ -1862,7 +1766,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     },
     [autoRetry, notifyPipeline, updateDownload],
   );
-  handleDownloadErrorRef.current = handleDownloadError;
+  useLayoutEffect(() => {
+    handleDownloadErrorRef.current = handleDownloadError;
+  }, [handleDownloadError]);
 
   // Downloads that failed with 401/403 resume once a fresh token arrives.
   useEffect(() => {
@@ -2302,7 +2208,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       writeVersionConfig,
     ],
   );
-  extractArchiveRef.current = extractArchive;
+  useLayoutEffect(() => {
+    extractArchiveRef.current = extractArchive;
+  }, [extractArchive]);
 
   const resetInstallationState = useCallback(
     (gameId: number) => {
@@ -2330,7 +2238,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     },
     [downloads, sourceDirectoryFor],
   );
-  listInstallExecutablesRef.current = listInstallExecutables;
+  useLayoutEffect(() => {
+    listInstallExecutablesRef.current = listInstallExecutables;
+  }, [listInstallExecutables]);
 
   // Deletes the download + extraction folders after a successful install.
   //
@@ -2543,6 +2453,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       autoDeleteSourceFiles,
       cacheInstalledGameData,
       createShortcutAfterInstall,
+      reportGameEvent,
       updateDownload,
       writeVersionConfig,
     ],
@@ -2702,7 +2613,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       writeVersionConfig,
     ],
   );
-  copyInstallationFilesRef.current = copyInstallationFiles;
+  useLayoutEffect(() => {
+    copyInstallationFilesRef.current = copyInstallationFiles;
+  }, [copyInstallationFiles]);
 
   const launchInstallationExecutable = useCallback(
     async (
@@ -2859,7 +2772,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       writeVersionConfig,
     ],
   );
-  launchInstallationExecutableRef.current = launchInstallationExecutable;
+  useLayoutEffect(() => {
+    launchInstallationExecutableRef.current = launchInstallationExecutable;
+  }, [launchInstallationExecutable]);
 
   const confirmInstallOverwrite = useCallback(async (gameId: number) => {
     const d = downloadsRef.current[gameId];
@@ -2891,7 +2806,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       tone: "danger",
     });
   }, []);
-  confirmInstallOverwriteRef.current = confirmInstallOverwrite;
+  useLayoutEffect(() => {
+    confirmInstallOverwriteRef.current = confirmInstallOverwrite;
+  }, [confirmInstallOverwrite]);
 
   const persistForcedGameType = useCallback(
     async (gameId: number, gameType: PlaystashGameTypeEnum) => {
@@ -3078,7 +2995,9 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       writeVersionConfig,
     ],
   );
-  reconcileBackgroundStatesRef.current = reconcileBackgroundStates;
+  useLayoutEffect(() => {
+    reconcileBackgroundStatesRef.current = reconcileBackgroundStates;
+  }, [reconcileBackgroundStates]);
 
   const setSpeedLimitKB = useCallback((v: number) => {
     const val = Math.max(0, v || 0);
@@ -3278,7 +3197,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
         if (toResume.length) {
           pendingAutoResumeRef.current = toResume;
-          setAutoResumeIds(toResume.map((dl) => dl.gameId));
+          setAutoResumeRequest((request) => request + 1);
         }
 
         // Load cached game data so recovered cards have full metadata (cover, etc.)
@@ -3332,13 +3251,13 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     if (
       !isTauriApp() ||
       !serverUrl ||
-      !autoResumeIds.length ||
+      !autoResumeRequest ||
       !auth?.access_token
     )
       return;
     const pending = pendingAutoResumeRef.current;
+    if (!pending.length) return;
     pendingAutoResumeRef.current = [];
-    setAutoResumeIds([]);
     for (const d of pending) {
       void startDownload({
         gameId: d.gameId,
@@ -3353,7 +3272,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
         downloadRootPath: d.downloadRootPath,
       });
     }
-  }, [serverUrl, autoResumeIds, startDownload, auth?.access_token]);
+  }, [serverUrl, autoResumeRequest, startDownload, auth?.access_token]);
 
   // Cleanup orphaned offline caches on startup
   useEffect(() => {
@@ -3478,11 +3397,4 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       <PipelineDialogHost />
     </DownloadContext.Provider>
   );
-}
-
-export function useDownloads() {
-  const ctx = useContext(DownloadContext);
-  if (!ctx)
-    throw new Error("useDownloads must be used within DownloadProvider");
-  return ctx;
 }

@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import { useDownloads } from "@/context/DownloadContext";
-import { useTranslation, type TranslationKey } from "@/i18n";
+import { translate, useTranslation, type TranslationKey } from "@/i18n";
 import { useJumpList } from "@/hooks/useJumpList";
 import { isTauriApp } from "@/utils/tauri";
 import { getRootPaths } from "@/utils/rootPaths";
@@ -22,7 +28,7 @@ import { launchInstalledGame } from "@/utils/launchInstalledGame";
 import { uninstallInstalledGame } from "@/utils/uninstallInstalledGame";
 
 /** Native labels (tray, jump list, notices) in the current language. */
-export function trayLabels(t: (key: TranslationKey) => string) {
+function trayLabels(t: (key: TranslationKey) => string) {
   return {
     library: t("desktop.tray.library"),
     downloads: t("desktop.tray.downloads"),
@@ -85,16 +91,18 @@ export function DesktopCommandProvider({ children }: { children: ReactNode }) {
     downloads,
     t,
   });
-  latest.current = {
-    navigate,
-    user,
-    serverUrl,
-    authFetch,
-    isOnline,
-    showAlert,
-    downloads,
-    t,
-  };
+  useLayoutEffect(() => {
+    latest.current = {
+      navigate,
+      user,
+      serverUrl,
+      authFetch,
+      isOnline,
+      showAlert,
+      downloads,
+      t,
+    };
+  });
 
   const signedIn = !bootstrapping && !!user;
   useJumpList(desktop && signedIn, location.pathname);
@@ -290,8 +298,10 @@ export function DesktopCommandProvider({ children }: { children: ReactNode }) {
   // Native labels follow the interface language.
   useEffect(() => {
     if (!desktop) return;
-    void invokeSafe("set_tray_labels", { labels: trayLabels(t) });
     // `t` is recreated on every render; the locale is what matters.
+    void invokeSafe("set_tray_labels", {
+      labels: trayLabels((key) => translate(key, locale)),
+    });
   }, [desktop, locale]);
 
   return <>{children}</>;

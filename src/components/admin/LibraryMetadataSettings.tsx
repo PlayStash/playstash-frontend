@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { LaunchProfileDto, PlaystashGame } from "@/api";
 import { useAuth } from "@/context/AuthContext";
 import { emitGameUpdated } from "@/utils/gameUpdates";
@@ -10,6 +10,12 @@ import { Button } from "../tailwind/button";
 import { Input } from "../tailwind/input";
 import { Textarea } from "../tailwind/textarea";
 
+function copyProfiles(game: PlaystashGame): LaunchProfileDto[] {
+  return (
+    game.metadata?.launch_profiles?.map((profile) => ({ ...profile })) || []
+  );
+}
+
 export function LibraryMetadataSettings({
   game,
   onGameUpdated,
@@ -19,21 +25,33 @@ export function LibraryMetadataSettings({
 }) {
   const { serverUrl, authFetch } = useAuth();
   const { t } = useTranslation();
-  const [password, setPassword] = useState("");
-  const [minimum, setMinimum] = useState("");
-  const [recommended, setRecommended] = useState("");
-  const [profiles, setProfiles] = useState<LaunchProfileDto[]>([]);
+  const [password, setPassword] = useState(
+    () => game.metadata?.archive_password || "",
+  );
+  const [minimum, setMinimum] = useState(
+    () => game.metadata?.system_requirements_minimum || "",
+  );
+  const [recommended, setRecommended] = useState(
+    () => game.metadata?.system_requirements_recommended || "",
+  );
+  const [profiles, setProfiles] = useState<LaunchProfileDto[]>(() =>
+    copyProfiles(game),
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  useEffect(() => {
+  // Re-sync the draft while rendering when the game or its metadata changes.
+  const [synced, setSynced] = useState({
+    id: game.id,
+    metadata: game.metadata,
+  });
+  if (synced.id !== game.id || synced.metadata !== game.metadata) {
+    setSynced({ id: game.id, metadata: game.metadata });
     setPassword(game.metadata?.archive_password || "");
     setMinimum(game.metadata?.system_requirements_minimum || "");
     setRecommended(game.metadata?.system_requirements_recommended || "");
-    setProfiles(
-      game.metadata?.launch_profiles?.map((profile) => ({ ...profile })) || [],
-    );
-  }, [game.id, game.metadata]);
+    setProfiles(copyProfiles(game));
+  }
   const save = async () => {
     const invalid = validateLaunchProfiles(profiles);
     if (invalid) {

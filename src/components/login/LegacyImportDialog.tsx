@@ -36,13 +36,21 @@ export function LegacyImportDialog({
   const [scan, setScan] = useState<LegacyScan | null>(null);
   const [report, setReport] = useState<LegacyImportReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [wasOpen, setWasOpen] = useState(open);
+
+  // Every opening starts a fresh scan.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setPhase("scanning");
+      setReport(null);
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setPhase("scanning");
-    setReport(null);
-    setError(null);
     scanLegacyData()
       .then((result) => {
         if (cancelled) return;

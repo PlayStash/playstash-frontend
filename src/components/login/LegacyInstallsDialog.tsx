@@ -39,13 +39,21 @@ export function LegacyInstallsDialog({
   const [installations, setInstallations] = useState<LegacyInstallation[]>([]);
   const [result, setResult] = useState<AdoptionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [wasOpen, setWasOpen] = useState(open);
+
+  // Every opening starts a fresh scan.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setPhase("scanning");
+      setResult(null);
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setPhase("scanning");
-    setResult(null);
-    setError(null);
     scanLegacyInstallations()
       .then((found) => {
         if (cancelled) return;

@@ -24,7 +24,14 @@ import {
   libraryRefreshLimit,
   loadedPageCount,
 } from "@/utils/libraryAutoRefresh";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 interface PaginatedData<T> {
   data: T[];
@@ -179,15 +186,19 @@ export function useGames({
   // it in place; other filters start over at the first page.
   const shownKeyRef = useRef<string | null>(cached ? cacheKey : null);
   const countRef = useRef(count);
-  countRef.current = count;
   const cacheKeyRef = useRef(cacheKey);
-  cacheKeyRef.current = cacheKey;
   const gamesRef = useRef<PlaystashGame[]>(games);
-  gamesRef.current = games;
   // Time of the last successful fetch, for the background refresh.
   const lastFetchAtRef = useRef(0);
   const loadingRef = useRef(false);
-  loadingRef.current = loading;
+  // Mirror the latest render into the refs before any effect or event
+  // handler (fetch, loadMore) reads them.
+  useLayoutEffect(() => {
+    countRef.current = count;
+    cacheKeyRef.current = cacheKey;
+    gamesRef.current = games;
+    loadingRef.current = loading;
+  }, [count, cacheKey, games, loading]);
 
   // Serialize arrays to stable strings to use as dependencies (prevent re-fetching when array reference changes but contents are same)
   const gameTypesKey = useMemo(
@@ -207,20 +218,26 @@ export function useGames({
     () => JSON.stringify(publishers.slice().sort()),
     [publishers],
   );
-
-  // Store current array values in refs so callback doesn't depend on array references
-  const gameTypesRef = useRef(gameTypes);
-  const tagsRef = useRef(tags);
-  const genresRef = useRef(genres);
-  const developersRef = useRef(developers);
-  const publishersRef = useRef(publishers);
-
-  // Update refs synchronously when arrays change (before any effects run)
-  gameTypesRef.current = gameTypes;
-  tagsRef.current = tags;
-  genresRef.current = genres;
-  developersRef.current = developers;
-  publishersRef.current = publishers;
+  // The array filters as read back from their keys: parsed once per key, so
+  // they only change when the contents do. They stay sorted, which keeps the
+  // query identical for the same filters in a different order.
+  const sortedGameTypes = useMemo(
+    () => JSON.parse(gameTypesKey) as PlaystashGameTypeEnum[],
+    [gameTypesKey],
+  );
+  const sortedTags = useMemo(() => JSON.parse(tagsKey) as string[], [tagsKey]);
+  const sortedGenres = useMemo(
+    () => JSON.parse(genresKey) as string[],
+    [genresKey],
+  );
+  const sortedDevelopers = useMemo(
+    () => JSON.parse(developersKey) as string[],
+    [developersKey],
+  );
+  const sortedPublishers = useMemo(
+    () => JSON.parse(publishersKey) as string[],
+    [publishersKey],
+  );
 
   /** Query for one page of `pageLimit` games with the current filters. */
   const buildQuery = useCallback(
@@ -233,11 +250,11 @@ export function useGames({
         limit: pageLimit,
         bookmarkFilter,
         userId,
-        gameTypes: gameTypesRef.current,
-        tags: tagsRef.current,
-        genres: genresRef.current,
-        developers: developersRef.current,
-        publishers: publishersRef.current,
+        gameTypes: sortedGameTypes,
+        tags: sortedTags,
+        genres: sortedGenres,
+        developers: sortedDevelopers,
+        publishers: sortedPublishers,
         gameState,
         releaseDateFrom,
         releaseDateTo,
@@ -249,19 +266,19 @@ export function useGames({
       params.set("page", String(page));
       return params;
     },
-    // The array filters are read from refs; their serialized keys are the
-    // dependencies.
+    // The sorted arrays are memoized per serialized key, so a new array with
+    // the same contents does not re-create the query.
     [
       search,
       sortBy,
       order,
       bookmarkFilter,
       user,
-      gameTypesKey,
-      tagsKey,
-      genresKey,
-      developersKey,
-      publishersKey,
+      sortedGameTypes,
+      sortedTags,
+      sortedGenres,
+      sortedDevelopers,
+      sortedPublishers,
       gameState,
       releaseDateFrom,
       releaseDateTo,

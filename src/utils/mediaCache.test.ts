@@ -91,6 +91,75 @@ describe("media cache", () => {
     expect(await (await second).text()).toBe("shared");
   });
 
+  it("keeps a shared request alive when only one caller aborts", async () => {
+    let release: ((blob: Blob) => void) | undefined;
+    let requestSignal: AbortSignal | undefined;
+    const fetchBlob = vi.fn(
+      (signal: AbortSignal) =>
+        new Promise<Blob>((resolve) => {
+          requestSignal = signal;
+          release = resolve;
+        }),
+    );
+    const firstCaller = new AbortController();
+
+    const first = resolveMediaBlob({
+      serverUrl: SERVER_A,
+      mediaId: 9,
+      fetchBlob,
+      signal: firstCaller.signal,
+    });
+    await vi.waitFor(() => expect(fetchBlob).toHaveBeenCalledTimes(1));
+    const second = resolveMediaBlob({
+      serverUrl: SERVER_A,
+      mediaId: 9,
+      fetchBlob,
+      signal: new AbortController().signal,
+    });
+    // Let the second caller get past the cache lookup and join the request.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    firstCaller.abort();
+    await expect(first).rejects.toMatchObject({ name: "AbortError" });
+    expect(requestSignal?.aborted).toBe(false);
+
+    release?.(new Blob(["shared"]));
+    expect(await (await second).text()).toBe("shared");
+    expect(fetchBlob).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts a shared request once every caller has aborted", async () => {
+    let requestSignal: AbortSignal | undefined;
+    const fetchBlob = vi.fn(
+      (signal: AbortSignal) =>
+        new Promise<Blob>((_resolve, reject) => {
+          requestSignal = signal;
+          signal.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+    const callers = [new AbortController(), new AbortController()];
+    const waits = callers.map((caller) =>
+      resolveMediaBlob({
+        serverUrl: SERVER_A,
+        mediaId: 10,
+        fetchBlob,
+        signal: caller.signal,
+      }),
+    );
+    await vi.waitFor(() => expect(fetchBlob).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    callers[0]!.abort();
+    expect(requestSignal?.aborted).toBe(false);
+    callers[1]!.abort();
+    expect(requestSignal?.aborted).toBe(true);
+    for (const wait of waits) {
+      await expect(wait).rejects.toMatchObject({ name: "AbortError" });
+    }
+  });
+
   it("replaces a game's old image when its media ID changes", async () => {
     const owner = { gameId: 99, slot: "cover" } as const;
     await resolveMediaBlob({

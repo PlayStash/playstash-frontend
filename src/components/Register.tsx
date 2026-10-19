@@ -6,7 +6,7 @@ import { Field, Label } from "@tw/fieldset";
 import { Heading } from "@tw/heading";
 import { Input } from "@tw/input";
 import { Strong, Text, TextLink } from "@tw/text";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AUTH_SERVER_STORAGE_KEY,
   DEFAULT_SERVER_URL,
@@ -139,112 +139,109 @@ export function Register() {
     return true;
   };
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!canSubmit() || submitting) return;
-      const chosenServer = confirmedServer;
-      if (!chosenServer) {
-        setMsg(t("register.missingServer"));
+  // Plain handler: `canSubmit` reads the current form on every render.
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit() || submitting) return;
+    const chosenServer = confirmedServer;
+    if (!chosenServer) {
+      setMsg(t("register.missingServer"));
+      return;
+    }
+    setSubmitting(true);
+    setMsg(null);
+    setSuccess(false);
+    try {
+      let base = chosenServer.replace(/\/+$/, "");
+      if (!/^https?:\/\//i.test(base)) base = `https://${base}`;
+      const normalizeOptional = (v?: string) =>
+        typeof v === "string" && v.trim() ? v.trim() : null;
+      const payload: any = {
+        username: (form.username || "").trim(),
+        email: normalizeOptional(form.email),
+        first_name: normalizeOptional(form.first_name),
+        last_name: normalizeOptional(form.last_name),
+        birth_date: normalizeOptional(form.birth_date),
+        password: form.password || "",
+      };
+      // The server being registered with is the one being configured: its
+      // additional request headers (desktop) apply from here on.
+      if (isTauriApp()) await setServerContext(base);
+      // Version gate before creating an account on an incompatible server.
+      if (await isServerOutdated(base)) {
+        setIncompatibleOpen(true);
         return;
       }
-      setSubmitting(true);
-      setMsg(null);
-      setSuccess(false);
-      try {
-        let base = chosenServer.replace(/\/+$/, "");
-        if (!/^https?:\/\//i.test(base)) base = `https://${base}`;
-        const normalizeOptional = (v?: string) =>
-          typeof v === "string" && v.trim() ? v.trim() : null;
-        const payload: any = {
-          username: (form.username || "").trim(),
-          email: normalizeOptional(form.email),
-          first_name: normalizeOptional(form.first_name),
-          last_name: normalizeOptional(form.last_name),
-          birth_date: normalizeOptional(form.birth_date),
-          password: form.password || "",
-        };
-        // The server being registered with is the one being configured: its
-        // additional request headers (desktop) apply from here on.
-        if (isTauriApp()) await setServerContext(base);
-        // Version gate before creating an account on an incompatible server.
-        if (await isServerOutdated(base)) {
-          setIncompatibleOpen(true);
-          return;
-        }
-        const res = await serverFetch(
-          `${base}/api/auth/basic/register`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
+      const res = await serverFetch(
+        `${base}/api/auth/basic/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
-          base,
+          body: JSON.stringify(payload),
+        },
+        base,
+      );
+      if (!res.ok && res.status !== 406) {
+        const txt = await res.text();
+        throw new Error(
+          fillTemplate(t("register.failed"), {
+            status: res.status,
+            details: txt || res.statusText,
+          }),
         );
-        if (!res.ok && res.status !== 406) {
-          const txt = await res.text();
-          throw new Error(
-            fillTemplate(t("register.failed"), {
-              status: res.status,
-              details: txt || res.statusText,
-            }),
-          );
-        }
-        const created = (await res.json().catch(() => ({}))) as {
-          activated?: boolean;
-        };
-        setSuccess(true);
-        setMsg(t("register.success"));
-        // Like the WPF client: sign in right away (desktop: as a new
-        // profile). An account that still needs an admin's approval waits on
-        // the pending screen, which retries the login every 5 seconds.
-        const login = () =>
-          loginBasic({
-            server: base,
-            username: payload.username,
-            password: payload.password,
-          });
-        const waitForActivation = () => {
-          setPendingPoll(() => async () => {
-            try {
-              await login();
-              setPendingPoll(null);
-              navigate("/library", { replace: true });
-              return "activated" as const;
-            } catch (pollError) {
-              if (isPendingActivationError(pollError))
-                return "pending" as const;
-              setPendingPoll(null);
-              setMsg(
-                pollError instanceof Error
-                  ? pollError.message
-                  : String(pollError),
-              );
-              return "failed" as const;
-            }
-          });
-        };
-        if (res.status === 406 || created.activated !== true) {
-          waitForActivation();
-          return;
-        }
-        try {
-          await login();
-          navigate("/library", { replace: true });
-        } catch (loginError) {
-          if (isPendingActivationError(loginError)) waitForActivation();
-        }
-      } catch (err: any) {
-        setMsg(err?.message || t("register.error"));
-      } finally {
-        setSubmitting(false);
       }
-    },
-    [form, confirmedServer, submitting, canSubmit, loginBasic, navigate, t],
-  );
+      const created = (await res.json().catch(() => ({}))) as {
+        activated?: boolean;
+      };
+      setSuccess(true);
+      setMsg(t("register.success"));
+      // Like the WPF client: sign in right away (desktop: as a new
+      // profile). An account that still needs an admin's approval waits on
+      // the pending screen, which retries the login every 5 seconds.
+      const login = () =>
+        loginBasic({
+          server: base,
+          username: payload.username,
+          password: payload.password,
+        });
+      const waitForActivation = () => {
+        setPendingPoll(() => async () => {
+          try {
+            await login();
+            setPendingPoll(null);
+            navigate("/library", { replace: true });
+            return "activated" as const;
+          } catch (pollError) {
+            if (isPendingActivationError(pollError)) return "pending" as const;
+            setPendingPoll(null);
+            setMsg(
+              pollError instanceof Error
+                ? pollError.message
+                : String(pollError),
+            );
+            return "failed" as const;
+          }
+        });
+      };
+      if (res.status === 406 || created.activated !== true) {
+        waitForActivation();
+        return;
+      }
+      try {
+        await login();
+        navigate("/library", { replace: true });
+      } catch (loginError) {
+        if (isPendingActivationError(loginError)) waitForActivation();
+      }
+    } catch (err: any) {
+      setMsg(err?.message || t("register.error"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const isInvalid = (field: string) => {
     if (reqError || reqLoading || !confirmedServer) return false;

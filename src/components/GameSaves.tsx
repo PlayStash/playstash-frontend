@@ -1,9 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import clsx from "clsx";
 import type { PlaystashUser, SavefileDto } from "@/api";
 import { useAuth } from "@/context/AuthContext";
 import { useAlertDialog } from "@/context/AlertDialogContext";
-import { useTranslation } from "@/i18n";
+import { useTranslation, type TranslationKey } from "@/i18n";
 import { getErrorMessage } from "@/utils/apiError";
 import { formatBytes } from "@/utils/downloadFormat";
 import { isTauriApp } from "@/utils/tauri";
@@ -34,6 +41,20 @@ function formatCreated(value: unknown): string {
       });
 }
 
+/** The save versions stored for one user and game. */
+async function fetchVersions(
+  authFetch: (input: string, init?: RequestInit) => Promise<Response>,
+  base: string,
+  t: (key: TranslationKey) => string,
+): Promise<SavefileDto[]> {
+  const response = await authFetch(`${base}/versions`);
+  if (!response.ok)
+    throw new Error(
+      await getErrorMessage(response, t("cloudSaves.versions.loadFailed")),
+    );
+  return (await response.json()) as SavefileDto[];
+}
+
 /**
  * Cloud save versions of a game (WPF "Cloud Save Versions"): admins pick any
  * user, everyone else sees their own archives. Works on web and desktop.
@@ -50,7 +71,9 @@ export function GameSaves({
   const { t } = useTranslation();
   // `t` changes identity every render; effects read the latest one.
   const tRef = useRef(t);
-  tRef.current = t;
+  useLayoutEffect(() => {
+    tRef.current = t;
+  });
   const desktop = isTauriApp();
   const currentUserId = Number(user?.id ?? 0);
   const isAdmin = Number(user?.role) >= ADMIN_ROLE;
@@ -70,22 +93,37 @@ export function GameSaves({
     ? `${apiBase}/api/savefiles/user/${selectedUserId}/game/${gameId}`
     : "";
 
-  // Users: every user for admins, only the signed-in user otherwise.
-  useEffect(() => {
+  // Users: every user for admins, only the signed-in user otherwise. A new
+  // session (or server) selects the signed-in user again.
+  const username = user?.username ?? "";
+  const [usersFor, setUsersFor] = useState<{
+    apiBase: string;
+    authFetch: typeof authFetch;
+    currentUserId: number;
+    isAdmin: boolean;
+    username: string;
+  } | null>(null);
+  if (
+    !usersFor ||
+    usersFor.apiBase !== apiBase ||
+    usersFor.authFetch !== authFetch ||
+    usersFor.currentUserId !== currentUserId ||
+    usersFor.isAdmin !== isAdmin ||
+    usersFor.username !== username
+  ) {
+    setUsersFor({ apiBase, authFetch, currentUserId, isAdmin, username });
     if (!currentUserId) {
       setUsers([]);
       setSelectedUserId(0);
-      return;
+    } else {
+      setSelectedUserId(currentUserId);
+      if (!isAdmin) setUsers([{ id: currentUserId, username }]);
     }
-    const self: UserOption = {
-      id: currentUserId,
-      username: user?.username ?? "",
-    };
-    setSelectedUserId(currentUserId);
-    if (!isAdmin) {
-      setUsers([self]);
-      return;
-    }
+  }
+
+  useEffect(() => {
+    if (!currentUserId || !isAdmin) return;
+    const self: UserOption = { id: currentUserId, username };
     let cancelled = false;
     void (async () => {
       try {
@@ -116,9 +154,36 @@ export function GameSaves({
     return () => {
       cancelled = true;
     };
-  }, [apiBase, authFetch, currentUserId, isAdmin, user?.username]);
+  }, [apiBase, authFetch, currentUserId, isAdmin, username]);
 
-  const load = useCallback(async () => {
+  // The versions list follows the selected user; no user means no list.
+  const [versionsFor, setVersionsFor] = useState<{
+    base: string;
+    authFetch: typeof authFetch;
+  } | null>(null);
+  if (
+    !versionsFor ||
+    versionsFor.base !== base ||
+    versionsFor.authFetch !== authFetch
+  ) {
+    setVersionsFor({ base, authFetch });
+    if (base) {
+      setLoading(true);
+    } else {
+      setVersions([]);
+      setLoading(false);
+    }
+  }
+  // Only uses state setters, so it is stable and safe as an effect dependency.
+  const showVersions = useCallback((list: SavefileDto[]) => {
+    setVersions(Array.isArray(list) ? list : []);
+    setSelected((current) =>
+      list.some((version) => version.filename === current) ? current : null,
+    );
+    setError("");
+  }, []);
+
+  const load = async () => {
     if (!base) {
       setVersions([]);
       setLoading(false);
@@ -126,30 +191,32 @@ export function GameSaves({
     }
     setLoading(true);
     try {
-      const response = await authFetch(`${base}/versions`);
-      if (!response.ok)
-        throw new Error(
-          await getErrorMessage(
-            response,
-            tRef.current("cloudSaves.versions.loadFailed"),
-          ),
-        );
-      const list = (await response.json()) as SavefileDto[];
-      setVersions(Array.isArray(list) ? list : []);
-      setSelected((current) =>
-        list.some((version) => version.filename === current) ? current : null,
-      );
-      setError("");
+      showVersions(await fetchVersions(authFetch, base, tRef.current));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setLoading(false);
     }
-  }, [base, authFetch]);
+  };
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!base) return;
+    let cancelled = false;
+    fetchVersions(authFetch, base, tRef.current)
+      .then((list) => {
+        if (!cancelled) showVersions(list);
+      })
+      .catch((cause) => {
+        if (!cancelled)
+          setError(cause instanceof Error ? cause.message : String(cause));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [base, authFetch, showVersions]);
 
   // Installation ids of this game on this device ("this device" marker).
   useEffect(() => {

@@ -42,11 +42,17 @@ export function ClientSettingsDialog({
   const [nativeRequests, setNativeRequests] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+
+  // Clear the last error whenever the dialog opens again.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setError(null);
+  }
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setError(null);
     void initRequestHeaders().then(() => {
       if (cancelled) return;
       setRows(getAdditionalRequestHeaderList());

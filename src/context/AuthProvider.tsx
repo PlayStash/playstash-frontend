@@ -1,12 +1,4 @@
-import {
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { PlaystashUser } from "../api";
 import { AuthTokens } from "../types/AuthTokens";
 import {
@@ -45,37 +37,22 @@ import {
 } from "@/utils/profiles";
 import { runProfileSwitchEffects } from "@/utils/profileSession";
 import { applyPendingConnection } from "@/utils/connectionFile";
-import { ProfilesProvider } from "@/context/ProfilesContext";
+import { ProfilesProvider } from "@/context/ProfilesProvider";
+import {
+  AuthContext,
+  AuthRequestError,
+  CredentialsRequiredError,
+  SERVER_CHANGED_EVENT,
+  isPendingActivationError,
+  type AuthContextValue,
+  type LoginArgs,
+  type LoginWithTokensOptions,
+  type LogoutResult,
+} from "@/context/AuthContext";
 import { translate } from "@/i18n";
 import { fillTemplate } from "@/utils/downloadPipeline";
 
 const AUTH_CACHED_USER_KEY = "app_cached_user";
-/** Dispatched when the active server changes (OfflineContext re-targets its poller). */
-export const SERVER_CHANGED_EVENT = "playstash:server-changed";
-
-/** An HTTP error from an authentication endpoint, with its status code. */
-export class AuthRequestError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-    this.name = "AuthRequestError";
-  }
-}
-
-/** A stored profile has no usable session: the password must be entered. */
-export class CredentialsRequiredError extends Error {
-  constructor(message = translate("auth.error.signInAgain")) {
-    super(message);
-    this.name = "CredentialsRequiredError";
-  }
-}
-
-/** HTTP 406: the account exists but an admin has not activated it yet. */
-export function isPendingActivationError(error: unknown): boolean {
-  return error instanceof AuthRequestError && error.status === 406;
-}
 
 function cachedUserKey(profileId: string | null): string {
   return profileId
@@ -83,64 +60,89 @@ function cachedUserKey(profileId: string | null): string {
     : AUTH_CACHED_USER_KEY;
 }
 
-interface LoginArgs {
-  server: string;
-  username: string;
-  password: string;
-  /** Desktop: the profile this login belongs to (created when missing). */
-  profileId?: string;
+async function loginBasicRequest(
+  server: string,
+  username: string,
+  password: string,
+): Promise<AuthTokens> {
+  const res = await serverFetch(
+    `${server}/api/auth/basic/login`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: "Basic " + btoa(`${username}:${password}`),
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
+    },
+    server,
+  );
+  if (!res.ok)
+    throw new AuthRequestError(
+      fillTemplate(translate("auth.error.loginFailed"), {
+        status: res.status,
+        details: (await res.text()) || res.statusText,
+      }),
+      res.status,
+    );
+  return res.json();
 }
 
-interface LoginWithTokensOptions {
-  /** Desktop: the profile this login belongs to (created when missing). */
-  profileId?: string;
+async function refreshWithToken(
+  server: string,
+  refreshToken: string,
+): Promise<AuthTokens> {
+  const res = await serverFetch(
+    `${server}/api/auth/refresh`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + refreshToken,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: "",
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
+    },
+    server,
+  );
+  if (!res.ok)
+    throw new AuthRequestError(
+      fillTemplate(translate("auth.error.refreshFailed"), {
+        status: res.status,
+        details: (await res.text()) || res.statusText,
+      }),
+      res.status,
+    );
+  return res.json();
 }
 
-export interface LogoutResult {
-  /** The server could not revoke the session; the local logout still happened. */
-  revokeError?: string;
+/** Bearer request to the selected server, with the additional headers. */
+function fetchWithToken(
+  server: string,
+  input: string,
+  token: string | undefined,
+  init?: RequestInit,
+): Promise<Response> {
+  const url = authenticatedRequestUrl(input, server);
+  const headers = new Headers(init?.headers);
+  if (token && !headers.has("Authorization"))
+    headers.set("Authorization", `Bearer ${token}`);
+  headers.set("Accept", "*/*");
+  return serverFetch(url, { ...init, headers, redirect: "error" }, server);
 }
 
-interface AuthContextValue {
-  serverUrl: string;
-  auth: AuthTokens | null;
-  user: PlaystashUser | null;
-  error: string | null;
-  loading: boolean;
-  bootstrapping: boolean;
-  /** True when the app started in offline mode (cached credentials used) */
-  offlineBootstrap: boolean;
-  /** Desktop: the active login profile (null on the web build or when logged out). */
-  currentProfileId: string | null;
-  loginBasic: (
-    args: LoginArgs,
-  ) => Promise<{ auth: AuthTokens; user: PlaystashUser }>;
-  /** Directly initialize auth state from already obtained tokens (e.g. SSO redirect). */
-  loginWithTokens: (
-    server: string,
-    tokens: AuthTokens,
-    options?: LoginWithTokensOptions,
-  ) => Promise<{ auth: AuthTokens; user: PlaystashUser }>;
-  /**
-   * Desktop: logs into a stored profile with its saved session. Throws
-   * `CredentialsRequiredError` when the password must be entered.
-   */
-  loginStoredSession: (
-    profileId: string,
-  ) => Promise<{ auth: AuthTokens; user: PlaystashUser }>;
-  /** "Logout from this Device": revokes the session on the server, then logs out locally. */
-  logout: () => Promise<LogoutResult>;
-  /** "Logout from all Devices": revokes every session of the account. */
-  logoutAllDevices: () => Promise<LogoutResult>;
-  /** "Change Profile": local logout that keeps the server session (desktop). */
-  logoutLocal: () => Promise<void>;
-  authFetch: (input: string, init?: RequestInit) => Promise<Response>;
-  /** Returns a fresh, valid access token (refreshing if needed), or null. */
-  getAccessToken: () => Promise<string | null>;
-  refreshCurrentUser: () => Promise<PlaystashUser | null>;
+/** Caches the user for the offline bootstrap (Tauri only). */
+function writeCachedUser(profileId: string | null, me: PlaystashUser) {
+  if (!isTauriApp()) return;
+  try {
+    localStorage.setItem(cachedUserKey(profileId), serializeCachedUser(me));
+  } catch {
+    /* ignore */
+  }
 }
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Updates the stored profile after a successful login (desktop). */
 async function recordProfileLogin(
@@ -235,19 +237,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function writeCachedUser(me: PlaystashUser) {
-    // Always cache user for offline bootstrap (Tauri only)
-    if (!isTauriApp()) return;
-    try {
-      localStorage.setItem(
-        cachedUserKey(profileIdRef.current),
-        serializeCachedUser(me),
-      );
-    } catch {
-      /* ignore */
-    }
-  }
-
   function readCachedUser(): PlaystashUser | null {
     const raw = localStorage.getItem(cachedUserKey(profileIdRef.current));
     if (!raw) return null;
@@ -257,92 +246,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(cachedUserKey(profileIdRef.current));
       return null;
     }
-  }
-
-  async function loginBasicRequest(
-    username: string,
-    password: string,
-  ): Promise<AuthTokens> {
-    const res = await serverFetch(
-      `${serverRef.current}/api/auth/basic/login`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: "Basic " + btoa(`${username}:${password}`),
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(10_000),
-        redirect: "error",
-      },
-      serverRef.current,
-    );
-    if (!res.ok)
-      throw new AuthRequestError(
-        fillTemplate(translate("auth.error.loginFailed"), {
-          status: res.status,
-          details: (await res.text()) || res.statusText,
-        }),
-        res.status,
-      );
-    return res.json();
-  }
-  async function refreshWithToken(refreshToken: string): Promise<AuthTokens> {
-    const res = await serverFetch(
-      `${serverRef.current}/api/auth/refresh`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + refreshToken,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: "",
-        signal: AbortSignal.timeout(10_000),
-        redirect: "error",
-      },
-      serverRef.current,
-    );
-    if (!res.ok)
-      throw new AuthRequestError(
-        fillTemplate(translate("auth.error.refreshFailed"), {
-          status: res.status,
-          details: (await res.text()) || res.statusText,
-        }),
-        res.status,
-      );
-    return res.json();
-  }
-  async function fetchCurrentUser(): Promise<PlaystashUser> {
-    const res = await authFetch(`${serverRef.current}/api/users/me`);
-    if (!res.ok)
-      throw new AuthRequestError(
-        fillTemplate(translate("auth.error.currentUserFailed"), {
-          status: res.status,
-          details: (await res.text()) || res.statusText,
-        }),
-        res.status,
-      );
-    const me: PlaystashUser = await res.json();
-    writeCachedUser(me);
-    return me;
-  }
-
-  /** Bearer request to the selected server, with the additional headers. */
-  function fetchWithToken(
-    input: string,
-    token: string | undefined,
-    init?: RequestInit,
-  ): Promise<Response> {
-    const url = authenticatedRequestUrl(input, serverRef.current);
-    const headers = new Headers(init?.headers);
-    if (token && !headers.has("Authorization"))
-      headers.set("Authorization", `Bearer ${token}`);
-    headers.set("Accept", "*/*");
-    return serverFetch(
-      url,
-      { ...init, headers, redirect: "error" },
-      serverRef.current,
-    );
   }
 
   const isTokenNearExpiry = useCallback(() => {
@@ -366,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await initTokenStorage();
       const refreshToken = authRef.current?.refresh_token || getRefreshToken();
       if (!refreshToken) throw new Error("Missing refresh token");
-      const data = await refreshWithToken(refreshToken);
+      const data = await refreshWithToken(serverRef.current, refreshToken);
       if (!data?.access_token)
         throw new Error("Refresh response missing access_token");
       const merged: AuthTokens = { ...(authRef.current || {}), ...data };
@@ -504,6 +407,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authenticatedRequestUrl(input, serverRef.current);
       await ensureFreshToken();
       let res = await fetchWithToken(
+        serverRef.current,
         input,
         authRef.current?.access_token,
         init,
@@ -514,7 +418,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           await performRefresh();
           const token = authRef.current?.access_token;
-          res = await fetchWithToken(input, token, init);
+          res = await fetchWithToken(serverRef.current, input, token, init);
         } catch (e) {
           // Refresh failed while handling the 401. Only force a logout for a
           // genuine auth error — a transient network problem should not
@@ -533,6 +437,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [ensureFreshToken, performRefresh, handleSessionExpired],
   );
+
+  const fetchCurrentUser = useCallback(async (): Promise<PlaystashUser> => {
+    const res = await authFetch(`${serverRef.current}/api/users/me`);
+    if (!res.ok)
+      throw new AuthRequestError(
+        fillTemplate(translate("auth.error.currentUserFailed"), {
+          status: res.status,
+          details: (await res.text()) || res.statusText,
+        }),
+        res.status,
+      );
+    const me: PlaystashUser = await res.json();
+    writeCachedUser(profileIdRef.current, me);
+    return me;
+  }, [authFetch]);
 
   /** Returns a fresh, valid access token (refreshing if needed), or null. */
   const getAccessToken = useCallback(async () => {
@@ -566,7 +485,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function enterOfflineMode(refreshToken: string | null): boolean {
     const cachedUser = readCachedUser();
     if (!cachedUser) return false;
-    writeCachedUser(cachedUser);
+    writeCachedUser(profileIdRef.current, cachedUser);
     console.log(
       "[auth] entering OFFLINE MODE with cached user:",
       cachedUser.username,
@@ -617,7 +536,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         if (!server || !username || !password)
           throw new Error(translate("auth.error.fieldsRequired"));
-        const authData = await loginBasicRequest(username, password);
+        const authData = await loginBasicRequest(
+          serverRef.current,
+          username,
+          password,
+        );
         authRef.current = authData;
         setAuth(authData);
         if (authData.refresh_token)
@@ -643,7 +566,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setBootstrapping(false);
       }
     },
-    [],
+    [fetchCurrentUser],
   );
 
   const loginWithTokens = useCallback(
@@ -685,129 +608,138 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setBootstrapping(false);
       }
     },
-    [],
+    [fetchCurrentUser],
   );
 
-  const loginStoredSession = useCallback(async (profileId: string) => {
-    const profile = getProfile(profileId);
-    if (!profile) throw new Error(translate("auth.error.profileNotFound"));
-    setError(null);
-    setLoading(true);
-    clearSessionState();
-    selectSession(normalizeServerUrl(profile.serverUrl), profileId);
-    try {
-      await initTokenStorage();
-      const storedRefresh = getRefreshToken();
-      if (!storedRefresh) throw new CredentialsRequiredError();
+  const loginStoredSession = useCallback(
+    async (profileId: string) => {
+      const profile = getProfile(profileId);
+      if (!profile) throw new Error(translate("auth.error.profileNotFound"));
+      setError(null);
+      setLoading(true);
+      clearSessionState();
+      selectSession(normalizeServerUrl(profile.serverUrl), profileId);
       try {
-        await performRefresh();
-      } catch (e) {
-        if (isPendingActivationError(e)) throw e;
-        if (isAuthError(e)) {
-          await removeRefreshToken();
-          throw new CredentialsRequiredError(
-            translate("auth.error.sessionExpired"),
-          );
+        await initTokenStorage();
+        const storedRefresh = getRefreshToken();
+        if (!storedRefresh) throw new CredentialsRequiredError();
+        try {
+          await performRefresh();
+        } catch (e) {
+          if (isPendingActivationError(e)) throw e;
+          if (isAuthError(e)) {
+            await removeRefreshToken();
+            throw new CredentialsRequiredError(
+              translate("auth.error.sessionExpired"),
+            );
+          }
+          // Server unreachable: like the WPF client, open the profile offline
+          // when it was set up before.
+          if (isTauriApp() && enterOfflineMode(storedRefresh)) {
+            const cached = readCachedUser();
+            return { auth: authRef.current!, user: cached! };
+          }
+          throw e;
         }
-        // Server unreachable: like the WPF client, open the profile offline
-        // when it was set up before.
-        if (isTauriApp() && enterOfflineMode(storedRefresh)) {
-          const cached = readCachedUser();
-          return { auth: authRef.current!, user: cached! };
+        const me = await fetchCurrentUser();
+        setUser(me);
+        await afterLogin(me, { sso: profile.sso, username: profile.username });
+        return { auth: authRef.current!, user: me };
+      } catch (e) {
+        if (
+          !(e instanceof CredentialsRequiredError) &&
+          !isPendingActivationError(e)
+        )
+          setError(e instanceof Error ? e.message : String(e));
+        if (!offlineModeRef.current) {
+          authRef.current = null;
+          setAuth(null);
         }
         throw e;
+      } finally {
+        setLoading(false);
+        bootstrapInProgressRef.current = false;
+        setBootstrapping(false);
       }
-      const me = await fetchCurrentUser();
-      setUser(me);
-      await afterLogin(me, { sso: profile.sso, username: profile.username });
-      return { auth: authRef.current!, user: me };
-    } catch (e) {
-      if (
-        !(e instanceof CredentialsRequiredError) &&
-        !isPendingActivationError(e)
-      )
-        setError(e instanceof Error ? e.message : String(e));
-      if (!offlineModeRef.current) {
-        authRef.current = null;
-        setAuth(null);
-      }
-      throw e;
-    } finally {
-      setLoading(false);
-      bootstrapInProgressRef.current = false;
-      setBootstrapping(false);
-    }
-  }, []);
+    },
+    [performRefresh, fetchCurrentUser],
+  );
 
   /** Restores the selected session at startup (refresh, else offline mode). */
-  async function restoreSession(storedRefresh: string) {
-    offlineModeRef.current = false;
+  const restoreSession = useCallback(
+    async (storedRefresh: string) => {
+      offlineModeRef.current = false;
 
-    // Safety: force offline bootstrap if network calls hang > 15s
-    const safetyTimer = isTauriApp()
-      ? setTimeout(() => {
-          console.log("[bootstrap] SAFETY TIMER FIRED — forcing offline");
-          enterOfflineMode(storedRefresh);
-          bootstrapInProgressRef.current = false;
-          setBootstrapping(false);
-        }, 15_000)
-      : null;
+      // Safety: force offline bootstrap if network calls hang > 15s
+      const safetyTimer = isTauriApp()
+        ? setTimeout(() => {
+            console.log("[bootstrap] SAFETY TIMER FIRED — forcing offline");
+            enterOfflineMode(storedRefresh);
+            bootstrapInProgressRef.current = false;
+            setBootstrapping(false);
+          }, 15_000)
+        : null;
 
-    try {
-      console.log("[bootstrap] trying performRefresh...");
-      // Route the bootstrap refresh through the single-flight performRefresh
-      // so any concurrent refresh (e.g. downloads resuming at launch hitting
-      // a 401 while auth is still null) shares the SAME in-flight call. The
-      // backend rotates the refresh token on every successful refresh, so
-      // two refreshes using the same old token race: the loser gets
-      // "Invalid or expired refresh token" and is mistaken for a genuine
-      // auth failure, logging the user out on reload. performRefresh also
-      // persists the rotated token and updates the expiry.
-      await performRefresh();
-      console.log("[bootstrap] refresh succeeded, fetching user...");
-      const me = await fetchCurrentUser();
-      setUser(me);
-      const profile = getProfile(profileIdRef.current);
-      if (profile)
-        await afterLogin(me, { sso: profile.sso, username: profile.username });
-    } catch (e) {
-      console.log(
-        "[bootstrap] refresh/fetch failed:",
-        e instanceof Error ? e.message : String(e),
-      );
-      // In Tauri mode: if refresh fails (likely network error), try offline bootstrap
-      if (isTauriApp() && !isAuthError(e)) {
-        if (!enterOfflineMode(storedRefresh)) {
-          // No cached user yet — keep refresh token so next online launch auto-logs in.
+      try {
+        console.log("[bootstrap] trying performRefresh...");
+        // Route the bootstrap refresh through the single-flight performRefresh
+        // so any concurrent refresh (e.g. downloads resuming at launch hitting
+        // a 401 while auth is still null) shares the SAME in-flight call. The
+        // backend rotates the refresh token on every successful refresh, so
+        // two refreshes using the same old token race: the loser gets
+        // "Invalid or expired refresh token" and is mistaken for a genuine
+        // auth failure, logging the user out on reload. performRefresh also
+        // persists the rotated token and updates the expiry.
+        await performRefresh();
+        console.log("[bootstrap] refresh succeeded, fetching user...");
+        const me = await fetchCurrentUser();
+        setUser(me);
+        const profile = getProfile(profileIdRef.current);
+        if (profile)
+          await afterLogin(me, {
+            sso: profile.sso,
+            username: profile.username,
+          });
+      } catch (e) {
+        console.log(
+          "[bootstrap] refresh/fetch failed:",
+          e instanceof Error ? e.message : String(e),
+        );
+        // In Tauri mode: if refresh fails (likely network error), try offline bootstrap
+        if (isTauriApp() && !isAuthError(e)) {
+          if (!enterOfflineMode(storedRefresh)) {
+            // No cached user yet — keep refresh token so next online launch auto-logs in.
+            console.log(
+              "[bootstrap] no cached user, clearing auth (login page expected)",
+            );
+            authRef.current = null;
+            setAuth(null);
+          }
+        } else if (isAuthError(e)) {
+          // The stored refresh token was rejected by the backend — the session
+          // is genuinely invalid, so clear it and send the user to login.
           console.log(
-            "[bootstrap] no cached user, clearing auth (login page expected)",
+            "[bootstrap] refresh rejected (auth error), clearing session",
+          );
+          await removeRefreshToken();
+          authRef.current = null;
+          setAuth(null);
+        } else {
+          // Transient network error (server unreachable, timeout, offline).
+          // Keep the refresh token so the session can be restored on the next
+          // successful load, but land on the login screen for now.
+          console.log(
+            "[bootstrap] transient network error, keeping refresh token",
           );
           authRef.current = null;
           setAuth(null);
         }
-      } else if (isAuthError(e)) {
-        // The stored refresh token was rejected by the backend — the session
-        // is genuinely invalid, so clear it and send the user to login.
-        console.log(
-          "[bootstrap] refresh rejected (auth error), clearing session",
-        );
-        await removeRefreshToken();
-        authRef.current = null;
-        setAuth(null);
-      } else {
-        // Transient network error (server unreachable, timeout, offline).
-        // Keep the refresh token so the session can be restored on the next
-        // successful load, but land on the login screen for now.
-        console.log(
-          "[bootstrap] transient network error, keeping refresh token",
-        );
-        authRef.current = null;
-        setAuth(null);
+      } finally {
+        if (safetyTimer) clearTimeout(safetyTimer);
       }
-    } finally {
-      if (safetyTimer) clearTimeout(safetyTimer);
-    }
-  }
+    },
+    [performRefresh, fetchCurrentUser],
+  );
 
   /**
    * Desktop: moves the pre-profile single session into a profile once, so
@@ -920,6 +852,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
         try {
           const tokens = await loginBasicRequest(
+            serverRef.current,
             devAutologin.username,
             devAutologin.password,
           );
@@ -968,7 +901,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setBootstrapping(false);
       }
     })();
-  }, []);
+  }, [fetchCurrentUser, restoreSession]);
 
   // When coming back online after offline mode, re-authenticate
   useEffect(() => {
@@ -997,7 +930,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return unregister;
-  }, [onReconnect, performRefresh]);
+  }, [onReconnect, performRefresh, fetchCurrentUser]);
 
   /**
    * Clears the local session. `forget` also deletes the stored token and the
@@ -1042,14 +975,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         if (!server) throw new Error(translate("auth.error.notConnected"));
         if (!accessToken) throw new Error(translate("auth.error.offline"));
-        const response = await fetchWithToken(`${server}${path}`, accessToken, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body:
-            path === "/api/auth/revoke"
-              ? JSON.stringify({ refresh_token: refreshToken })
-              : "{}",
-        });
+        const response = await fetchWithToken(
+          server,
+          `${server}${path}`,
+          accessToken,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body:
+              path === "/api/auth/revoke"
+                ? JSON.stringify({ refresh_token: refreshToken })
+                : "{}",
+          },
+        );
         if (!response.ok) {
           const text = await response.text().catch(() => "");
           throw new Error(
@@ -1094,7 +1032,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return null;
     }
-  }, []);
+  }, [fetchCurrentUser]);
 
   const value: AuthContextValue = {
     serverUrl,
@@ -1120,10 +1058,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       <ProfilesProvider>{children}</ProfilesProvider>
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
 }

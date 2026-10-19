@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { PlaystashGame } from "@/api";
 import { useAuth } from "@/context/AuthContext";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -24,10 +24,25 @@ export function GameAccessSettings({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  useEffect(() => {
+  // Re-sync the draft while rendering when the game's access settings change.
+  const [synced, setSynced] = useState({
+    id: game.id,
+    restricted: game.access_restricted,
+    allowed: game.allowed_user_ids,
+  });
+  if (
+    synced.id !== game.id ||
+    synced.restricted !== game.access_restricted ||
+    synced.allowed !== game.allowed_user_ids
+  ) {
+    setSynced({
+      id: game.id,
+      restricted: game.access_restricted,
+      allowed: game.allowed_user_ids,
+    });
     setRestricted(!!game.access_restricted);
     setAllowed(game.allowed_user_ids || []);
-  }, [game.id, game.access_restricted, game.allowed_user_ids]);
+  }
   const save = async () => {
     setBusy(true);
     setError("");

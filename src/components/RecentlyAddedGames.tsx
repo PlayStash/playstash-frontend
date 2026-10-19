@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { useGames } from "@/hooks/useGames";
 import { SectionExpander } from "./SectionExpander";
 import GameCard from "./GameCard";
@@ -9,9 +9,9 @@ import { fillTemplate } from "@/utils/downloadPipeline";
 /** Games added in the last week, narrowed by the library search text. */
 export function RecentlyAddedGames({ search = "" }: { search?: string }) {
   const { t, locale } = useTranslation();
-  const addedSince = useMemo(
-    () => new Date(Date.now() - 7 * 86400000).toISOString(),
-    [],
+  // Fixed when the section mounts, so the query key stays stable.
+  const [addedSince] = useState(() =>
+    new Date(Date.now() - 7 * 86400000).toISOString(),
   );
   const { games, count, loading, error, loadMore, hasMore, refetch } = useGames(
     {

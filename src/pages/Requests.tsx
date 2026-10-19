@@ -298,10 +298,19 @@ function RequestRow({
   const [gameId, setGameId] = useState(
     request.game_id ? String(request.game_id) : "",
   );
-  useEffect(() => {
+  // Reset the edit fields when the request itself changes (during render).
+  const [syncedRequest, setSyncedRequest] = useState({
+    status: request.status,
+    gameId: request.game_id,
+  });
+  if (
+    syncedRequest.status !== request.status ||
+    syncedRequest.gameId !== request.game_id
+  ) {
+    setSyncedRequest({ status: request.status, gameId: request.game_id });
     setStatus(request.status);
     setGameId(request.game_id ? String(request.game_id) : "");
-  }, [request.status, request.game_id]);
+  }
   return (
     <article className="request-row space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">

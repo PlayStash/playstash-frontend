@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import {
   ChevronDownIcon,
@@ -40,9 +40,12 @@ export function Navbar() {
   const streamerMode = useStreamerMode();
   const { hasNewNews } = useNews();
   const [badgeVisible, setBadgeVisible] = useState(hasNewNews);
-  useEffect(() => {
+  // New news shows the badge again (closing the dialog hides it).
+  const [seenNewNews, setSeenNewNews] = useState(hasNewNews);
+  if (hasNewNews !== seenNewNews) {
+    setSeenNewNews(hasNewNews);
     if (hasNewNews) setBadgeVisible(true);
-  }, [hasNewNews]);
+  }
   const [showNews, setShowNews] = useState(false);
   const [newsMounted, setNewsMounted] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);

@@ -13,6 +13,15 @@ function hashText(text: string): Promise<string> {
     });
 }
 
+/** Builds the news result, flagging it new when its hash changed. */
+async function checkNews(key: string, newsText: string): Promise<NewsResult> {
+  if (!newsText.trim()) return { content: newsText, error: null, isNew: false };
+  const newHash = await hashText(newsText);
+  const storedHash = localStorage.getItem(key);
+  const isNew = storedHash ? storedHash !== newHash : false;
+  return { content: newsText, error: null, isNew };
+}
+
 /** Server news re-check interval while logged in. */
 export const NEWS_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -27,64 +36,45 @@ export function useNews() {
   const [playStashNews, setPlayStashNews] = useState<NewsResult | null>(null);
   const [serverNews, setServerNews] = useState<NewsResult | null>(null);
 
-  const checkNews = useCallback(
-    async (
-      key: string,
-      newsText: string,
-      setNews: (nr: NewsResult) => void,
-    ) => {
-      if (!newsText.trim()) {
-        setNews({ content: newsText, error: null, isNew: false });
-        return;
-      }
-      const newHash = await hashText(newsText);
-      const storedHash = localStorage.getItem(key);
-      const isNew = storedHash ? storedHash !== newHash : false;
-      setNews({ content: newsText, error: null, isNew });
-    },
-    [],
-  );
-
-  const fetchPlayStashNews = useCallback(async () => {
+  const loadPlayStashNews = useCallback(async (): Promise<NewsResult> => {
     try {
-      await checkNews("hash_playstash_news", releaseNotes, setPlayStashNews);
+      return await checkNews("hash_playstash_news", releaseNotes);
     } catch (error: any) {
-      setPlayStashNews({
+      return {
         content: "",
         error: error.message || translate("news.error.playstash"),
         isNew: false,
-      });
+      };
     }
-  }, [checkNews]);
+  }, []);
 
-  const fetchServerNews = useCallback(async () => {
+  const loadServerNews = useCallback(async (): Promise<NewsResult> => {
     if (!serverUrl) {
-      setServerNews({
+      return {
         content: translate("news.noServer"),
         error: null,
         isNew: false,
-      });
-      return;
+      };
     }
     try {
       const base = serverUrl.replace(/\/$/, "");
       const res = await authFetch(base + "/api/config/news?_=" + Date.now());
       if (!res.ok) throw new Error(res.status + " " + res.statusText);
       const text = await res.text();
-      await checkNews("hash_server_news", text, setServerNews);
+      return await checkNews("hash_server_news", text);
     } catch (error: any) {
-      setServerNews({
+      return {
         content: "",
         error: error.message || translate("news.error.server"),
         isNew: false,
-      });
+      };
     }
-  }, [authFetch, serverUrl, checkNews]);
+  }, [authFetch, serverUrl]);
 
   const fetchAllNews = useCallback(() => {
-    fetchPlayStashNews();
-    fetchServerNews();
-  }, [fetchPlayStashNews, fetchServerNews]);
+    void loadPlayStashNews().then(setPlayStashNews);
+    void loadServerNews().then(setServerNews);
+  }, [loadPlayStashNews, loadServerNews]);
 
   const updateServerNews = useCallback(
     async (content: string) => {
@@ -113,8 +103,17 @@ export function useNews() {
   );
 
   useEffect(() => {
-    fetchAllNews();
-  }, [fetchAllNews]);
+    let cancelled = false;
+    void loadPlayStashNews().then((news) => {
+      if (!cancelled) setPlayStashNews(news);
+    });
+    void loadServerNews().then((news) => {
+      if (!cancelled) setServerNews(news);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadPlayStashNews, loadServerNews]);
 
   // Re-check the server news every hour while logged in (WPF), so the
   // unread badge appears without a restart.
@@ -122,11 +121,11 @@ export function useNews() {
   useEffect(() => {
     if (!loggedIn) return;
     const id = window.setInterval(
-      () => void fetchServerNews(),
+      () => void loadServerNews().then(setServerNews),
       NEWS_CHECK_INTERVAL_MS,
     );
     return () => window.clearInterval(id);
-  }, [loggedIn, fetchServerNews]);
+  }, [loggedIn, loadServerNews]);
 
   const hasNewNews =
     (playStashNews?.isNew ?? false) || (serverNews?.isNew ?? false);

@@ -9,7 +9,7 @@ import {
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Chat from "./Chat";
-import { CommunityProvider } from "@/context/CommunityContext";
+import { CommunityProvider } from "@/context/CommunityProvider";
 import { createSocketMock, type SocketMock } from "@/test/communitySocketMock";
 import { clearGameTitleCache } from "@/utils/gameTitles";
 

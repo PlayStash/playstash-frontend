@@ -10,8 +10,6 @@ export function DecodedImage({
   ...props
 }: ImgHTMLAttributes<HTMLImageElement>) {
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const sourceRef = useRef(src);
-  sourceRef.current = src;
   const decodeRequest = useRef(0);
   const [readySource, setReadySource] = useState<string | undefined>();
 
@@ -28,7 +26,8 @@ export function DecodedImage({
     if (
       request === decodeRequest.current &&
       imageRef.current === image &&
-      source === sourceRef.current &&
+      // Still the rendered source (src may have changed while decoding).
+      source === image.getAttribute("src") &&
       image.naturalWidth > 0
     ) {
       setReadySource(source ?? undefined);

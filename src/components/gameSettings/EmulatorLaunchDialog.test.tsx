@@ -14,10 +14,8 @@ vi.mock("@tauri-apps/api/path", () => ({
 }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ open: mocks.open }));
 
-import {
-  buildEmulatorParameters,
-  EmulatorLaunchDialog,
-} from "./EmulatorLaunchDialog";
+import { EmulatorLaunchDialog } from "./EmulatorLaunchDialog";
+import { buildEmulatorParameters } from "./emulatorParameters";
 
 const installationDirectory = "/lib/Game/Installation";
 const versionDirectory = "/lib/Game";

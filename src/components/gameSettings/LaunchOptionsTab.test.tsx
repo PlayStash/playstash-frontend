@@ -32,12 +32,12 @@ vi.mock("@/context/UmuContext", () => ({
 }));
 vi.mock("@/utils/tauri", () => ({ isTauriApp: () => true }));
 
+import { LaunchOptionsTab } from "./LaunchOptionsTab";
 import {
   joinInstallPath,
-  LaunchOptionsTab,
   mergeExecutableList,
   relativePathForCopy,
-} from "./LaunchOptionsTab";
+} from "./launchPaths";
 
 vi.setConfig({ testTimeout: 30_000 });
 // Headless UI measures anchored popovers.

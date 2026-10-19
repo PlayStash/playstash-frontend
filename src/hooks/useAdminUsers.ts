@@ -46,44 +46,64 @@ export function useAdminUsers(): UseAdminUsersResult {
     setOpBusy((m) => ({ ...m, [String(id)]: busy }));
   const safeBase = serverUrl?.replace(/\/+$/, "");
 
+  /** Loads the user list; throws a translated message on failure. */
+  const loadUsers = useCallback(async (): Promise<PlaystashUser[]> => {
+    const res = await authFetch(`${safeBase}/api/users`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok)
+      throw new Error(
+        formatMessage(translate("admin.users.fetchFailed"), {
+          status: res.status,
+          message: (await res.text()) || res.statusText,
+        }),
+      );
+    const list = await res.json();
+    return Array.isArray(list) ? list.map((entry) => normalizeUser(entry)) : [];
+  }, [safeBase, authFetch]);
+
   const fetchUsers = useCallback(
     async (force = false) => {
       if (!auth || !safeBase) return;
       if (fetchedRef.current && !force) return;
-      let cancelled = false;
       setLoading(true);
       setError(null);
       try {
-        const res = await authFetch(`${safeBase}/api/users`, {
-          headers: { Accept: "application/json" },
-        });
-        if (!res.ok)
-          throw new Error(
-            formatMessage(translate("admin.users.fetchFailed"), {
-              status: res.status,
-              message: (await res.text()) || res.statusText,
-            }),
-          );
-        const list = await res.json();
-        if (cancelled) return;
-        setUsers(
-          Array.isArray(list) ? list.map((entry) => normalizeUser(entry)) : [],
-        );
+        setUsers(await loadUsers());
         fetchedRef.current = true;
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+        setError(e instanceof Error ? e.message : String(e));
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
-      return () => {
-        cancelled = true;
-      };
     },
-    [auth, safeBase, authFetch],
+    [auth, safeBase, loadUsers],
   );
+
+  // Initial load. Until it settles the list counts as loading, so no state is
+  // set synchronously inside the effect.
+  const canFetch = !!auth && !!safeBase;
+  const [initialSettled, setInitialSettled] = useState(false);
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (!canFetch || fetchedRef.current) return;
+    let cancelled = false;
+    loadUsers()
+      .then((list) => {
+        if (cancelled) return;
+        setUsers(list);
+        setError(null);
+        fetchedRef.current = true;
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setInitialSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canFetch, loadUsers]);
   const refresh = (force = true) => {
     if (force) fetchedRef.current = false;
     fetchUsers(force);
@@ -295,7 +315,7 @@ export function useAdminUsers(): UseAdminUsersResult {
 
   return {
     users,
-    loading,
+    loading: loading || (canFetch && !initialSettled),
     error,
     refresh,
     opBusy,

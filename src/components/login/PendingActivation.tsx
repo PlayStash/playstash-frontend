@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { Button } from "@tw/button";
 import { Heading } from "@tw/heading";
 import { Text } from "@tw/text";
@@ -23,8 +23,8 @@ export function PendingActivation({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
-  const pollRef = useRef(poll);
-  pollRef.current = poll;
+  // Always runs the latest `poll` without restarting the timer.
+  const pollLatest = useEffectEvent(() => poll());
 
   useEffect(() => {
     let cancelled = false;
@@ -32,9 +32,9 @@ export function PendingActivation({
     const schedule = () => {
       timer = setTimeout(async () => {
         if (cancelled) return;
-        const result = await pollRef
-          .current()
-          .catch(() => "failed" as ActivationPollResult);
+        const result = await pollLatest().catch(
+          () => "failed" as ActivationPollResult,
+        );
         if (!cancelled && result === "pending") schedule();
       }, ACTIVATION_POLL_MS);
     };

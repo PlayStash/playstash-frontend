@@ -1,34 +1,7 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { UmuSetupOverlay, type UmuPhase } from "@/components/UmuSetupOverlay";
 import { isTauriApp } from "@/utils/tauri";
-
-export interface UmuStatusInfo {
-  installed: boolean;
-  version: string | null;
-  path: string | null;
-  supportedPlatform: boolean;
-}
-
-interface UmuContextValue {
-  /** Reports whether umu-launcher is installed (or null when unavailable). */
-  checkUmuStatus: () => Promise<UmuStatusInfo | null>;
-  /** Installs umu-launcher, streaming progress into the overlay. */
-  installUmu: (gameTitle?: string) => Promise<boolean>;
-}
-
-const UmuContext = createContext<UmuContextValue | null>(null);
-
-export const useUmu = () => {
-  const ctx = useContext(UmuContext);
-  if (!ctx) throw new Error("useUmu must be used within an UmuProvider");
-  return ctx;
-};
+import { UmuContext, type UmuStatusInfo } from "@/context/UmuContext";
 
 const MAX_OVERLAY_LINES = 20;
 

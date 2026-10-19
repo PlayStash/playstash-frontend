@@ -10,7 +10,7 @@ import { Input } from "@/components/tailwind/input";
 import { Text } from "@/components/tailwind/text";
 import { useAuth } from "@/context/AuthContext";
 import { useRegistrationRequirements } from "@/hooks/useRegistrationRequirements";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "@/i18n";
 import { formatMessage } from "@/utils/formatMessage";
 import { PlaystashUser } from "../../api";
@@ -77,59 +77,56 @@ export function RegisterUserModal({ onClose, onRegistered }: Props) {
     return touched[field] && (typeof val !== "string" || !val.trim());
   };
 
-  const handleSubmit = useCallback(
-    async (e?: React.FormEvent) => {
-      e?.preventDefault();
-      if (!canSubmit() || submitting) return;
-      if (!serverUrl) {
-        setMsg(t("admin.register.missingServer"));
-        return;
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!canSubmit() || submitting) return;
+    if (!serverUrl) {
+      setMsg(t("admin.register.missingServer"));
+      return;
+    }
+    setSubmitting(true);
+    setMsg(null);
+    setSuccess(false);
+    try {
+      const base = serverUrl.replace(/\/+$/, "");
+      const normalizeOptional = (v?: string) =>
+        typeof v === "string" && v.trim() ? v.trim() : null;
+      const payload: any = {
+        username: (form.username || "").trim(),
+        email: normalizeOptional(form.email),
+        first_name: normalizeOptional(form.first_name),
+        last_name: normalizeOptional(form.last_name),
+        birth_date: normalizeOptional(form.birth_date),
+        password: form.password || "",
+      };
+      const res = await authFetch(`${base}/api/auth/basic/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(
+          formatMessage(t("admin.register.failed"), {
+            status: res.status,
+            message: txt || res.statusText,
+          }),
+        );
       }
-      setSubmitting(true);
-      setMsg(null);
-      setSuccess(false);
-      try {
-        const base = serverUrl.replace(/\/+$/, "");
-        const normalizeOptional = (v?: string) =>
-          typeof v === "string" && v.trim() ? v.trim() : null;
-        const payload: any = {
-          username: (form.username || "").trim(),
-          email: normalizeOptional(form.email),
-          first_name: normalizeOptional(form.first_name),
-          last_name: normalizeOptional(form.last_name),
-          birth_date: normalizeOptional(form.birth_date),
-          password: form.password || "",
-        };
-        const res = await authFetch(`${base}/api/auth/basic/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(
-            formatMessage(t("admin.register.failed"), {
-              status: res.status,
-              message: txt || res.statusText,
-            }),
-          );
-        }
-        const createdUser: PlaystashUser = await res.json();
-        onRegistered(createdUser);
-        setSuccess(true);
-        setMsg(t("admin.register.success"));
-        setTimeout(() => onClose(), 800);
-      } catch (e: any) {
-        setMsg(e?.message || t("admin.register.error"));
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [form, serverUrl, submitting, authFetch, onRegistered, onClose, t],
-  );
+      const createdUser: PlaystashUser = await res.json();
+      onRegistered(createdUser);
+      setSuccess(true);
+      setMsg(t("admin.register.success"));
+      setTimeout(() => onClose(), 800);
+    } catch (e: any) {
+      setMsg(e?.message || t("admin.register.error"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Dialog open onClose={onClose} size="lg" className="">

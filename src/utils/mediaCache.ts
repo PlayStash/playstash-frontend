@@ -72,11 +72,17 @@ interface MediaCacheSchema extends DBSchema {
 export interface ResolveMediaBlobOptions {
   serverUrl: string;
   mediaId: number | string;
-  fetchBlob: () => Promise<Blob>;
+  /**
+   * Fetches the media. The signal belongs to the shared request, not to any
+   * single caller: it only aborts once every caller waiting on it has aborted.
+   */
+  fetchBlob: (signal: AbortSignal) => Promise<Blob>;
   loadFallbackBlob?: () => Promise<Blob | null>;
   owner?: GameMediaOwner;
   forceRefresh?: boolean;
   now?: number;
+  /** Aborts this caller's wait (and the request, if no one else needs it). */
+  signal?: AbortSignal;
 }
 
 export interface ResolveApiMediaBlobOptions {
@@ -92,7 +98,57 @@ export interface ResolveApiMediaBlobOptions {
 let databasePromise: Promise<IDBPDatabase<MediaCacheSchema> | null> | null =
   null;
 let maintenanceStarted = false;
-const inFlightRequests = new Map<string, Promise<Blob>>();
+interface InFlightRequest {
+  promise: Promise<Blob>;
+  controller: AbortController;
+  /** Callers still waiting; the request is aborted when this drops to 0. */
+  waiters: number;
+}
+
+const inFlightRequests = new Map<string, InFlightRequest>();
+
+function createAbortError(): DOMException {
+  return new DOMException("The operation was aborted.", "AbortError");
+}
+
+/**
+ * Waits for a shared request on behalf of one caller. Aborting `signal` only
+ * rejects this caller's wait; the underlying request keeps going for the
+ * others and is aborted only after every waiter has given up.
+ */
+function joinInFlightRequest(
+  mediaKey: string,
+  entry: InFlightRequest,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  if (signal?.aborted) return Promise.reject(createAbortError());
+  entry.waiters += 1;
+  if (!signal) return entry.promise;
+
+  return new Promise<Blob>((resolve, reject) => {
+    const onAbort = () => {
+      entry.waiters -= 1;
+      if (entry.waiters === 0) {
+        if (inFlightRequests.get(mediaKey) === entry) {
+          inFlightRequests.delete(mediaKey);
+        }
+        entry.controller.abort();
+      }
+      reject(createAbortError());
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    entry.promise.then(
+      (blob) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(blob);
+      },
+      (error: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
 const maintainedTauriNamespaces = new Set<string>();
 
 export function normalizeServerUrl(serverUrl: string): string {
@@ -307,6 +363,7 @@ export async function resolveMediaBlob({
   owner,
   forceRefresh = false,
   now = Date.now(),
+  signal,
 }: ResolveMediaBlobOptions): Promise<Blob> {
   const numericMediaId = Number(mediaId);
   if (!Number.isFinite(numericMediaId) || numericMediaId <= 0) {
@@ -340,14 +397,20 @@ export async function resolveMediaBlob({
     }
   }
 
-  const existingRequest = inFlightRequests.get(mediaKey);
-  if (existingRequest) return existingRequest;
+  if (signal?.aborted) throw createAbortError();
 
+  const existingRequest = inFlightRequests.get(mediaKey);
+  if (existingRequest) {
+    return joinInFlightRequest(mediaKey, existingRequest, signal);
+  }
+
+  const controller = new AbortController();
   const request = (async () => {
     let blob: Blob;
     try {
-      blob = await fetchBlob();
+      blob = await fetchBlob(controller.signal);
     } catch (networkError) {
+      if (controller.signal.aborted) throw networkError;
       const fallback = await loadFallbackBlob?.();
       if (!fallback) throw networkError;
       blob = fallback;
@@ -365,11 +428,14 @@ export async function resolveMediaBlob({
 
     return blob;
   })().finally(() => {
-    inFlightRequests.delete(mediaKey);
+    if (inFlightRequests.get(mediaKey) === entry) {
+      inFlightRequests.delete(mediaKey);
+    }
   });
 
-  inFlightRequests.set(mediaKey, request);
-  return request;
+  const entry: InFlightRequest = { promise: request, controller, waiters: 0 };
+  inFlightRequests.set(mediaKey, entry);
+  return joinInFlightRequest(mediaKey, entry, signal);
 }
 
 export async function resolveApiMediaBlob({
@@ -402,9 +468,10 @@ export async function resolveApiMediaBlob({
     mediaId: numericMediaId,
     owner,
     forceRefresh,
-    fetchBlob: async () => {
+    signal,
+    fetchBlob: async (requestSignal) => {
       const response = await authFetch(`${base}/api/media/${numericMediaId}`, {
-        signal,
+        signal: requestSignal,
       });
       if (!response.ok) {
         throw new Error(`Media fetch failed (${response.status})`);

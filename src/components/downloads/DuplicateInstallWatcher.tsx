@@ -7,7 +7,7 @@ import {
   rootSetKey,
   scanDuplicateInstallations,
 } from "@/utils/duplicateInstallations";
-import { confirmPipeline } from "./PipelineDialogs";
+import { confirmPipeline } from "./pipelineDialogStore";
 
 /**
  * Shows "Duplicate game installation detected" after a download location was

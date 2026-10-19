@@ -17,16 +17,14 @@ export function useInView<T extends HTMLElement>(
   initial = false,
 ) {
   const ref = useRef<T | null>(null);
-  const [inView, setInView] = useState(initial);
+  // Without IntersectionObserver there is nothing to wait for: start in view.
+  const [inView, setInView] = useState(
+    () => initial || typeof IntersectionObserver === "undefined",
+  );
 
   useEffect(() => {
     const element = ref.current;
-    if (!element) return;
-
-    if (typeof IntersectionObserver === "undefined") {
-      setInView(true);
-      return;
-    }
+    if (!element || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       (entries) => {

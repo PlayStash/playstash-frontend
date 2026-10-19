@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   applyTemporaryClassicMode,
-  getActiveTheme,
   selectClassicMode,
   subscribeTheme,
 } from "@/themes/themeManager";
@@ -37,30 +36,22 @@ export function applyTheme(mode: ThemeMode, persist = true): void {
   else applyTemporaryClassicMode(mode);
 }
 
+function subscribeDarkMode(onChange: () => void): () => void {
+  window.addEventListener("darkMode", onChange);
+  const unsubscribe = subscribeTheme(onChange);
+  return () => {
+    window.removeEventListener("darkMode", onChange);
+    unsubscribe();
+  };
+}
+
+/** Whether the dark palette is active (the `dark` class on `<html>`). */
+function readIsDark(): boolean {
+  return typeof document !== "undefined"
+    ? document.documentElement.classList.contains("dark")
+    : false;
+}
+
 export function useIsDark(): boolean {
-  const [isDark, setIsDark] = useState<boolean>(() =>
-    typeof document !== "undefined"
-      ? document.documentElement.classList.contains("dark")
-      : false,
-  );
-
-  useEffect(() => {
-    const sync = () => setIsDark(getActiveTheme().isDark);
-    const onThemeChange = (event: Event) => {
-      const detail = (event as CustomEvent).detail as
-        { darkMode?: boolean } | undefined;
-      if (typeof detail?.darkMode === "boolean") {
-        setIsDark(detail.darkMode);
-      }
-    };
-    setIsDark(document.documentElement.classList.contains("dark"));
-    window.addEventListener("darkMode", onThemeChange);
-    const unsubscribe = subscribeTheme(sync);
-    return () => {
-      window.removeEventListener("darkMode", onThemeChange);
-      unsubscribe();
-    };
-  }, []);
-
-  return isDark;
+  return useSyncExternalStore(subscribeDarkMode, readIsDark, () => false);
 }

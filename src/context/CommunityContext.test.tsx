@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CommunityProvider, useCommunity } from "./CommunityContext";
+import { useEffect } from "react";
+import { CommunityProvider } from "./CommunityProvider";
+import { useCommunity } from "./CommunityContext";
 import { createSocketMock, type SocketMock } from "@/test/communitySocketMock";
 
 const mocks = vi.hoisted(() => ({
@@ -58,11 +60,15 @@ let socket: SocketMock;
 let community: ReturnType<typeof useCommunity>;
 
 function Probe() {
-  community = useCommunity();
+  const value = useCommunity();
+  // Publish the latest value after each commit for the assertions.
+  useEffect(() => {
+    community = value;
+  });
   return (
     <div>
-      <span data-testid="status">{community.status}</span>
-      <span data-testid="presence">{community.presence}</span>
+      <span data-testid="status">{value.status}</span>
+      <span data-testid="presence">{value.presence}</span>
     </div>
   );
 }

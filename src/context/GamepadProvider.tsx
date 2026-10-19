@@ -1,24 +1,11 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import GamepadNavigator from "@/components/GamepadNavigator";
 import {
   startGamepadInput,
   stopGamepadInput,
   subscribeGamepadConnection,
 } from "@/utils/gamepad";
-
-interface GamepadContextValue {
-  /** Whether at least one gamepad is currently connected. */
-  connected: boolean;
-}
-
-const GamepadContext = createContext<GamepadContextValue | null>(null);
+import { GamepadContext } from "@/context/GamepadContext";
 
 /**
  * Polls the Web Gamepad API for the app's lifetime and mounts the global
@@ -44,12 +31,4 @@ export function GamepadProvider({ children }: { children: ReactNode }) {
       {children}
     </GamepadContext.Provider>
   );
-}
-
-export function useGamepad(): GamepadContextValue {
-  const context = useContext(GamepadContext);
-  if (!context) {
-    throw new Error("useGamepad must be used within a GamepadProvider");
-  }
-  return context;
 }

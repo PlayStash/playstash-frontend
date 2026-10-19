@@ -64,7 +64,8 @@ function definitionOption(
 export function useThemeOptions() {
   const { t } = useTranslation();
   const [installed, setInstalled] = useState<InstalledTheme[]>([]);
-  const [loading, setLoading] = useState(false);
+  // The list loads on mount, so it starts out loading.
+  const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -76,10 +77,21 @@ export function useThemeOptions() {
   }, []);
 
   useEffect(() => {
-    void reload();
+    let cancelled = false;
+    listInstalledThemes()
+      .then((themes) => {
+        if (!cancelled) setInstalled(themes);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     const onChange = () => void reload();
     window.addEventListener(THEME_LIST_CHANGED_EVENT, onChange);
-    return () => window.removeEventListener(THEME_LIST_CHANGED_EVENT, onChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(THEME_LIST_CHANGED_EVENT, onChange);
+    };
   }, [reload]);
 
   const pseudo: ThemeOption[] = [

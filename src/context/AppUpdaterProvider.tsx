@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAlertDialog } from "@/context/AlertDialogContext";
 import UpdatePromptDialog, {
   type UpdatePromptInfo,
@@ -30,6 +23,10 @@ import type {
 } from "@/utils/updater";
 import { translate, type TranslationKey } from "@/i18n";
 import { fillTemplate } from "@/utils/downloadPipeline";
+import {
+  AppUpdaterContext,
+  type CheckForUpdatesOptions,
+} from "@/context/AppUpdaterContext";
 
 /** Translates at call time and fills `{placeholders}`. */
 function tr(
@@ -81,27 +78,6 @@ type PendingUpdate = {
   currentVersion: string;
   channel: UpdateChannel;
 };
-
-interface CheckForUpdatesOptions {
-  manual?: boolean;
-}
-
-interface AppUpdaterContextValue {
-  updateChannel: UpdateChannel;
-  updaterEnabled: boolean;
-  updaterReady: boolean;
-  isChecking: boolean;
-  isInstalling: boolean;
-  availableVersion: string | null;
-  errorText: string | null;
-  statusText: string | null;
-  setUpdateChannel: (channel: UpdateChannel) => void;
-  checkForUpdates: (options?: CheckForUpdatesOptions) => Promise<void>;
-}
-
-const AppUpdaterContext = createContext<AppUpdaterContextValue | undefined>(
-  undefined,
-);
 
 async function fetchGithubRelease(
   channel: UpdateChannel,
@@ -162,10 +138,20 @@ export function AppUpdaterProvider({
   const autoCheckedRef = useRef(false);
   const snoozeRef = useRef<UpdateSnooze | null>(null);
 
-  const setUpdateChannel = useCallback((channel: UpdateChannel) => {
-    setUpdateChannelState(channel);
-    writeUpdateChannel(channel);
-  }, []);
+  const setUpdateChannel = useCallback(
+    (channel: UpdateChannel) => {
+      writeUpdateChannel(channel);
+      if (channel === updateChannel) return;
+      setUpdateChannelState(channel);
+      // A new channel starts over: forget the previous channel's result and
+      // let the startup check run again.
+      autoCheckedRef.current = false;
+      setAvailableVersion(null);
+      setErrorText(null);
+      setStatusText(null);
+    },
+    [updateChannel],
+  );
 
   /** Shows the update proposal and resolves with the user's answer. */
   const askToUpdate = useCallback(
@@ -551,13 +537,6 @@ export function AppUpdaterProvider({
     ],
   );
 
-  useEffect(() => {
-    autoCheckedRef.current = false;
-    setAvailableVersion(null);
-    setErrorText(null);
-    setStatusText(null);
-  }, [updateChannel]);
-
   // Check shortly after startup (and after switching the channel).
   useEffect(() => {
     if (!updaterReady || !updaterEnabled || autoCheckedRef.current) {
@@ -602,14 +581,4 @@ export function AppUpdaterProvider({
       <UpdatePromptDialog prompt={prompt} onAnswer={answerPrompt} />
     </AppUpdaterContext.Provider>
   );
-}
-
-export function useAppUpdater() {
-  const context = useContext(AppUpdaterContext);
-
-  if (!context) {
-    throw new Error("useAppUpdater must be used within an AppUpdaterProvider");
-  }
-
-  return context;
 }

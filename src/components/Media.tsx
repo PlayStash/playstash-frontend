@@ -35,7 +35,8 @@ export function Media({
   mediaSlot,
 }: Props) {
   const imageId = media?.id;
-  const [stalled, setStalled] = useState(false);
+  // Load state the stall timer last fired for; any change resets `stalled`.
+  const [stalledFor, setStalledFor] = useState<string | null>(null);
   // Only start fetching the blob when the image is near the viewport, so a
   // long/infinite list doesn't fire a burst of requests for off-screen covers.
   const { ref: viewRef, inView } = useInView<HTMLDivElement>();
@@ -50,14 +51,21 @@ export function Media({
     inView,
   );
 
+  const loadKey = JSON.stringify([
+    imageId ?? null,
+    loading,
+    blobUrl ?? null,
+    error ? String(error) : null,
+  ]);
+  const stalled = stalledFor === loadKey;
+
   useEffect(() => {
-    setStalled(false);
     if (!loading || blobUrl || error) return;
     const stallTimer = window.setTimeout(() => {
-      setStalled(true);
+      setStalledFor(loadKey);
     }, 1200);
     return () => window.clearTimeout(stallTimer);
-  }, [imageId, loading, blobUrl, error]);
+  }, [loadKey, loading, blobUrl, error]);
 
   const dimW = (width ?? size) + "px";
   const dimH = (height ?? size) + "px";

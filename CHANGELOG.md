@@ -16,6 +16,12 @@ Status: Unreleased.
 - The library shows placeholder covers in the final grid layout while loading, so the page no longer jumps when games appear. Game page tabs show a sliding indicator, and the settings navigation marks the selected section more clearly.
 - Chat follows new messages while you are at the bottom of the conversation, without moving the view while you read older messages.
 - With reduced motion enabled, fades and color changes remain while movement is switched off.
+- Administration → Server Diagnostics no longer requests the server status over and over while the page is open; it checks on opening, on server or language change, and when you click Refresh.
+- If part of the Administration page fails to render, an error message is shown inside the page instead of the full-screen crash screen.
+- Dropping files after closing the game or user editor in the desktop app no longer reaches the closed dialog.
+- The game page shows the "Unplayed" progress state for games you have not played yet, also after switching between games.
+- Covers, reviews, cloud saves, disk usage, server status, installed games and the user list ignore answers to requests that were replaced by a newer one, so switching quickly no longer shows data of the previous game or folder.
+- Covers and artwork shown in two places at once (for example in the library list and the grid) no longer stop loading when one of them closes, and no longer spin forever after switching back to a cover that failed to load.
 - Cloud saves are on by default (Settings → Integrations → Cloud Saves), so a game's save is restored before it starts and backed up after it exits without enabling them first. A choice made earlier in the settings is kept; launches on servers without save files show no message.
 - Cloud saves of games installed inside the user folder (for example the default `DocumentsPlayStash` library) are stored relative to the installation, so they restore into the game on another PC or library folder instead of the same path below the user profile.
 - The Cloud Saves row on the game page updates by itself when a save folder appears (after a game session and when the window regains focus) instead of showing "not created yet" until the page is reloaded.

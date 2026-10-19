@@ -49,7 +49,10 @@ vi.mock("@/utils/authConfig", async (original) => ({
 }));
 
 import { Login } from "./Login";
-import { AuthRequestError } from "@/context/AuthContext";
+import {
+  AuthRequestError,
+  CredentialsRequiredError,
+} from "@/context/AuthContext";
 
 function renderLogin() {
   return render(
@@ -218,5 +221,69 @@ describe("pending activation", { timeout: 30_000 }, () => {
     expect(mocks.loginBasic).toHaveBeenCalledTimes(3);
     vi.useRealTimers();
     expect(await screen.findByText("Library page")).toBeTruthy();
+  });
+});
+
+describe("server status check", { timeout: 30_000 }, () => {
+  it("stops loading when the server changes to an invalid one mid-check", async () => {
+    mocks.tauri = true;
+    // The sign-in form's status check for the first server never answers;
+    // the version probe before it (and any other request) does.
+    let gamesStatusCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string, init?: RequestInit) => {
+        if (String(input).startsWith("https://games.example")) {
+          gamesStatusCalls += 1;
+          if (gamesStatusCalls > 1) {
+            return new Promise<Response>((_resolve, reject) => {
+              init?.signal?.addEventListener("abort", () =>
+                reject(new DOMException("aborted", "AbortError")),
+              );
+            });
+          }
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              version: "17.0.0",
+              available_authentication_methods: ["basic"],
+            }),
+          ),
+        );
+      }),
+    );
+    mocks.loginStoredSession.mockRejectedValue(new CredentialsRequiredError());
+    const profile = (id: string, username: string, serverUrl: string) => ({
+      id,
+      serverUrl,
+      username,
+      sso: false,
+      createdAt: 1,
+      lastUsedAt: 1,
+    });
+    mocks.profiles = {
+      enabled: true,
+      loaded: true,
+      profiles: [
+        profile("p1", "alice", "https://games.example"),
+        profile("p2", "bob", "ftp://broken.example"),
+      ],
+      rememberMe: false,
+      setRememberMe: vi.fn(),
+    };
+    renderLogin();
+
+    fireEvent.click(await screen.findByRole("button", { name: /^alice/ }));
+    expect(await screen.findByText("Connecting to server...")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to profiles" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^bob/ }));
+    expect(
+      await screen.findByDisplayValue("ftp://broken.example"),
+    ).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.queryByText("Connecting to server...")).toBeNull(),
+    );
   });
 });

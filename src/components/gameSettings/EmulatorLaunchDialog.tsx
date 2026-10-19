@@ -15,6 +15,7 @@ import {
   type GameConfig,
 } from "@/utils/gameConfig";
 import { tauriInvoke } from "@/utils/tauriInvoke";
+import { buildEmulatorParameters, ROM_PLACEHOLDER } from "./emulatorParameters";
 
 interface PathInside {
   relative: string;
@@ -30,16 +31,6 @@ interface Props {
   config: GameConfig;
   /** Called with the written config after a save or a reset. */
   onSaved: (config: GameConfig) => void;
-}
-
-const ROM_PLACEHOLDER = "$ROM";
-
-/** Emulator arguments with `$ROM` replaced by the quoted absolute ROM path. */
-export function buildEmulatorParameters(
-  argumentsTemplate: string,
-  romPath: string,
-): string {
-  return argumentsTemplate.split(ROM_PLACEHOLDER).join(`"${romPath}"`);
 }
 
 function joinPath(base: string, relative: string): string {

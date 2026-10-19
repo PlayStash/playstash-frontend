@@ -69,13 +69,26 @@ export function RootPathSelectDialog({
   const { t, locale } = useTranslation();
   const freeSpace = useFreeSpace(open, rootPaths);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [syncedWith, setSyncedWith] = useState<{
+    open: boolean;
+    preselectId: string | null | undefined;
+    rootPaths: RootPathEntry[];
+  } | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const initial =
-      rootPaths.find((root) => root.id === preselectId) ?? rootPaths[0];
-    setSelectedId(initial?.id ?? null);
-  }, [open, preselectId, rootPaths]);
+  // (Re)select the preselected root whenever the dialog opens or its inputs change.
+  if (
+    !syncedWith ||
+    syncedWith.open !== open ||
+    syncedWith.preselectId !== preselectId ||
+    syncedWith.rootPaths !== rootPaths
+  ) {
+    setSyncedWith({ open, preselectId, rootPaths });
+    if (open) {
+      const initial =
+        rootPaths.find((root) => root.id === preselectId) ?? rootPaths[0];
+      setSelectedId(initial?.id ?? null);
+    }
+  }
 
   if (!open) return null;
 

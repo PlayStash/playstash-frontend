@@ -28,6 +28,11 @@ import {
 import { isTauriApp } from "@/utils/tauri";
 import { EmulatorLaunchDialog } from "./EmulatorLaunchDialog";
 import type { SettingsInstalledGame } from "./types";
+import {
+  joinInstallPath,
+  mergeExecutableList,
+  relativePathForCopy,
+} from "./launchPaths";
 import { tauriInvoke } from "@/utils/tauriInvoke";
 import { fillTemplate } from "@/utils/downloadPipeline";
 
@@ -45,31 +50,8 @@ interface LaunchExecutableScan {
 /** How often a re-opened executable list may trigger another scan. */
 const RESCAN_THROTTLE_MS = 1500;
 
-/** Path relative to the installation, with the platform's separators. */
-export function relativePathForCopy(
-  relative: string,
-  windows: boolean,
-): string {
-  const normalized = relative.replace(/[\\/]+/g, "/").replace(/^\/+/, "");
-  return windows ? normalized.replace(/\//g, "\\") : normalized;
-}
-
-/** Absolute path of an executable inside the installation. */
-export function joinInstallPath(root: string, relative: string): string {
-  const separator = root.includes("\\") && !root.includes("/") ? "\\" : "/";
-  const parts = relative.split(/[\\/]+/).filter(Boolean);
-  return [root.replace(/[\\/]+$/, ""), ...parts].join(separator);
-}
-
-/** Keeps the selected executable in a freshly scanned list. */
-export function mergeExecutableList(
-  scanned: string[],
-  selected: string,
-): string[] {
-  return selected && !scanned.includes(selected)
-    ? [selected, ...scanned]
-    : scanned;
-}
+/** Stable fallback so callbacks depending on the profiles keep their identity. */
+const NO_LAUNCH_PROFILES: LaunchProfileDto[] = [];
 
 function isWindowsHost() {
   return (
@@ -91,7 +73,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
   const gameTitle =
     game.metadata?.title || game.title || installedGame.gameTitle || "Game";
   const launchProfiles: LaunchProfileDto[] =
-    game.metadata?.launch_profiles ?? [];
+    game.metadata?.launch_profiles ?? NO_LAUNCH_PROFILES;
 
   const [launchExecutables, setLaunchExecutables] = useState<string[]>([]);
   const [launchScanTruncated, setLaunchScanTruncated] = useState(false);
@@ -109,9 +91,9 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
   const [protonBuilds, setProtonBuilds] = useState<
     { name: string; path: string; source: string }[]
   >([]);
-  const [resolvedPrefixPath, setResolvedPrefixPath] = useState<string | null>(
-    null,
-  );
+  const [resolvedPrefix, setResolvedPrefixPath] = useState<string | null>(null);
+  const canResolvePrefix = isTauriApp() && !!installedGame.versionDirectory;
+  const resolvedPrefixPath = canResolvePrefix ? resolvedPrefix : null;
   const [loadingLaunchOptions, setLoadingLaunchOptions] = useState(false);
   const launchOptionsLoadedRef = useRef(false);
   const savedExeRef = useRef<string | null>(null);
@@ -215,10 +197,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
   // Show where this game's Wine/Proton prefix actually lives (Linux/umu), so
   // the per-game override field does not have to guess a path.
   useEffect(() => {
-    if (!isTauriApp() || !installedGame.versionDirectory) {
-      setResolvedPrefixPath(null);
-      return;
-    }
+    if (!canResolvePrefix) return;
     let cancelled = false;
     (async () => {
       try {
@@ -240,6 +219,7 @@ export function LaunchOptionsTab({ installedGame, game }: Props) {
       cancelled = true;
     };
   }, [
+    canResolvePrefix,
     installedGame.versionDirectory,
     installedGame.gameId,
     umuGameId,

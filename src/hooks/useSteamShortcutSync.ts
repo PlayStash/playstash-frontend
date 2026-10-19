@@ -1,4 +1,4 @@
-import { createElement, useEffect, useRef } from "react";
+import { createElement, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloads } from "@/context/DownloadContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -127,7 +127,9 @@ export function useSteamShortcutSync(): void {
   const { downloads } = useDownloads();
   const lastSynced = useRef<string | null>(null);
   const contextRef = useRef({ serverUrl, authFetch, isOnline });
-  contextRef.current = { serverUrl, authFetch, isOnline };
+  useLayoutEffect(() => {
+    contextRef.current = { serverUrl, authFetch, isOnline };
+  }, [serverUrl, authFetch, isOnline]);
 
   // Rescan when downloads/extractions/installations change state.
   const downloadSignature = Object.values(downloads)

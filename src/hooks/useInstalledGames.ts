@@ -125,16 +125,19 @@ export function useInstalledGames() {
     [serverUrl, authFetch, isOnline],
   );
 
-  // Fetch the current user's last-played timestamps and merge them into the
-  // installed-games list (used for recency sorting in the library carousel).
-  const loadLastPlayed = useCallback(async () => {
-    if (!isOnline || !serverUrl || !currentUserId) return;
+  // Fetch the current user's last-played timestamps (used for recency
+  // sorting in the library carousel). Resolves to null when unavailable.
+  const fetchLastPlayed = useCallback(async (): Promise<Map<
+    number,
+    number
+  > | null> => {
+    if (!isOnline || !serverUrl || !currentUserId) return null;
     try {
       const base = serverUrl.replace(/\/+$/, "");
       const res = await authFetch(
         `${base}/api/progresses?filter[user.id]=${currentUserId}&sort[last_played_at]=desc&limit=10000`,
       );
-      if (!res.ok) return;
+      if (!res.ok) return null;
       const json = await res.json();
       const items: any[] = Array.isArray(json?.data)
         ? json.data
@@ -151,6 +154,17 @@ export function useInstalledGames() {
           lastPlayed.set(gid, Math.max(lastPlayed.get(gid) ?? 0, ts));
         }
       }
+      return lastPlayed;
+    } catch {
+      // Best-effort; last-played enrichment is non-critical.
+      return null;
+    }
+  }, [serverUrl, authFetch, isOnline, currentUserId]);
+
+  // Merge last-played timestamps into the installed-games list.
+  const applyLastPlayed = useCallback(
+    (lastPlayed: Map<number, number> | null) => {
+      if (!lastPlayed) return;
       setInstalledGames((prev) =>
         prev.map((g) => ({
           ...g,
@@ -162,68 +176,67 @@ export function useInstalledGames() {
           ),
         })),
       );
-    } catch {
-      // Best-effort; last-played enrichment is non-critical.
-    }
-  }, [serverUrl, authFetch, isOnline, currentUserId]);
+    },
+    [],
+  );
 
-  const fetchInstalledGames = useCallback(async () => {
-    if (!isTauriApp()) return;
-
+  // Reads the installed games from every download location (no state).
+  const scanInstalledGames = useCallback(async (): Promise<
+    InstalledGameInfo[]
+  > => {
     const rootPaths = getRootPaths();
-    if (!rootPaths.length) {
-      setInstalledGames([]);
-      return;
+    if (!rootPaths.length) return [];
+    const { invoke } = await import("@tauri-apps/api/core");
+    const allResults: InstalledGameInfo[] = [];
+    const seen = new Set<string>(); // deduplicate by gameId+versionDirectory combo
+
+    for (const root of rootPaths) {
+      const rawResults = await invoke<any[]>("list_installed_games", {
+        selectedRoot: root.path,
+      }).catch(() => [] as any[]);
+
+      for (const r of rawResults) {
+        const info = normalizeInstalledGame(r);
+        const key = `${info.gameId}:${info.versionDirectory}`;
+        if (info.gameId > 0 && !seen.has(key)) {
+          seen.add(key);
+          allResults.push(info);
+        }
+      }
     }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const allResults: InstalledGameInfo[] = [];
-      const seen = new Set<string>(); // deduplicate by gameId+versionDirectory combo
-
-      for (const root of rootPaths) {
-        const rawResults = await invoke<any[]>("list_installed_games", {
-          selectedRoot: root.path,
-        }).catch(() => [] as any[]);
-
-        for (const r of rawResults) {
-          const info = normalizeInstalledGame(r);
-          const key = `${info.gameId}:${info.versionDirectory}`;
-          if (info.gameId > 0 && !seen.has(key)) {
-            seen.add(key);
-            allResults.push(info);
+    // Load cached metadata from offline-cache for games missing it.
+    // list_installed_games reads from {root}/.cache/games/ but
+    // cache_game_data writes to {app_data}/offline-cache/games/ —
+    // two different paths. load_cached_game bridges the gap.
+    if (isTauriApp()) {
+      for (const game of allResults) {
+        if (game.gameId <= 0) continue;
+        if (game.cachedMetadata) continue;
+        try {
+          const cached = await invoke<string | null>("load_cached_game", {
+            gameId: game.gameId,
+          });
+          if (cached) {
+            game.cachedMetadata = JSON.parse(cached);
           }
+        } catch {
+          /* ignore */
         }
       }
+    }
+    return allResults;
+  }, []);
 
-      // Load cached metadata from offline-cache for games missing it.
-      // list_installed_games reads from {root}/.cache/games/ but
-      // cache_game_data writes to {app_data}/offline-cache/games/ —
-      // two different paths. load_cached_game bridges the gap.
-      if (isTauriApp()) {
-        for (const game of allResults) {
-          if (game.gameId <= 0) continue;
-          if (game.cachedMetadata) continue;
-          try {
-            const cached = await invoke<string | null>("load_cached_game", {
-              gameId: game.gameId,
-            });
-            if (cached) {
-              game.cachedMetadata = JSON.parse(cached);
-            }
-          } catch {
-            /* ignore */
-          }
-        }
-      }
-
+  // Shows a scan result and starts the online enrichment for it.
+  const applyScan = useCallback(
+    (allResults: InstalledGameInfo[]) => {
       setInstalledGames(allResults);
+      setError(null);
 
       // While online, enrich installed games with the last-played timestamp
       // from the server so the installed carousel can sort by recency.
-      void loadLastPlayed();
+      void fetchLastPlayed().then(applyLastPlayed);
 
       // Refresh server metadata while online so changed media IDs replace stale
       // cache bindings. Run these strictly one at a time: each call transfers a
@@ -239,17 +252,51 @@ export function useInstalledGames() {
           )
           .catch(() => undefined);
       }
+    },
+    [ensureGameCache, isOnline, fetchLastPlayed, applyLastPlayed],
+  );
+
+  const failScan = useCallback((err: any) => {
+    setError(err?.message ?? String(err));
+    setInstalledGames([]);
+  }, []);
+
+  const fetchInstalledGames = useCallback(async () => {
+    if (!isTauriApp()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      applyScan(await scanInstalledGames());
     } catch (err: any) {
-      setError(err?.message ?? String(err));
-      setInstalledGames([]);
+      failScan(err);
     } finally {
       setLoading(false);
     }
-  }, [ensureGameCache, isOnline, loadLastPlayed]);
+  }, [scanInstalledGames, applyScan, failScan]);
 
+  // (Re)scan whenever the enrichment inputs change. The list counts as
+  // loading until the first scan has settled, so the effect never sets state
+  // synchronously.
+  const [initialScanDone, setInitialScanDone] = useState(false);
   useEffect(() => {
-    fetchInstalledGames();
-  }, [fetchInstalledGames]);
+    if (!isTauriApp()) return;
+    let cancelled = false;
+    scanInstalledGames()
+      .then(
+        (results) => {
+          if (!cancelled) applyScan(results);
+        },
+        (err) => {
+          if (!cancelled) failScan(err);
+        },
+      )
+      .finally(() => {
+        if (!cancelled) setInitialScanDone(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scanInstalledGames, applyScan, failScan]);
 
   // Installs/uninstalls done outside this hook (e.g. from a desktop command).
   useEffect(() => {
@@ -260,8 +307,15 @@ export function useInstalledGames() {
   }, [fetchInstalledGames]);
 
   useEffect(() => {
-    if (isOnline && currentUserId) void loadLastPlayed();
-  }, [isOnline, currentUserId, loadLastPlayed]);
+    if (!isOnline || !currentUserId) return;
+    let cancelled = false;
+    void fetchLastPlayed().then((lastPlayed) => {
+      if (!cancelled) applyLastPlayed(lastPlayed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOnline, currentUserId, fetchLastPlayed, applyLastPlayed]);
 
   useEffect(
     () =>
@@ -285,5 +339,10 @@ export function useInstalledGames() {
     [ensureGameCache, isOnline],
   );
 
-  return { installedGames, loading, error, refetch: fetchInstalledGames };
+  return {
+    installedGames,
+    loading: loading || (isTauriApp() && !initialScanDone),
+    error,
+    refetch: fetchInstalledGames,
+  };
 }

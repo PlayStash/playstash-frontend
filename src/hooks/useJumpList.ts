@@ -118,12 +118,16 @@ const RESCAN_INTERVAL_MS = 60_000;
  */
 export function useJumpList(enabled: boolean, refreshKey?: unknown): void {
   const { installedGames, refetch } = useInstalledGames();
-  const lastScanRef = useRef(Date.now());
+  // Time of the last scan; the mount counts as one (useInstalledGames loads
+  // on mount). Set by the first effect run, as reading the clock during
+  // render is impure.
+  const lastScanRef = useRef<number | null>(null);
   const wasEnabledRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled || !isTauriApp()) return;
     const now = Date.now();
+    lastScanRef.current ??= now;
+    if (!enabled || !isTauriApp()) return;
     if (now - lastScanRef.current < RESCAN_INTERVAL_MS) return;
     lastScanRef.current = now;
     void refetch();

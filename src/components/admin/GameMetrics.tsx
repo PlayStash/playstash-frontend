@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { GameClientEventDto, GameMetricsSummaryDto } from "@/api";
 import { useAuth } from "@/context/AuthContext";
-import { useTranslation, type TranslationKey } from "@/i18n";
+import { translate, useTranslation, type TranslationKey } from "@/i18n";
 import { Button } from "../tailwind/button";
 const EVENT_TYPE_LABELS: Record<string, TranslationKey> = {
   downloaded: "admin.metrics.type.downloaded",
@@ -9,41 +9,90 @@ const EVENT_TYPE_LABELS: Record<string, TranslationKey> = {
   uninstalled: "admin.metrics.type.uninstalled",
   played: "admin.metrics.type.played",
 };
+interface MetricsPage {
+  summary: GameMetricsSummaryDto;
+  events: GameClientEventDto[];
+}
+async function fetchMetricsPage(
+  authFetch: (input: string, init?: RequestInit) => Promise<Response>,
+  serverUrl: string,
+  gameId: number,
+  failedMessage: string,
+  beforeId?: number,
+): Promise<MetricsPage> {
+  const before = beforeId !== undefined ? `&before_id=${beforeId}` : "";
+  const responses = await Promise.all([
+    authFetch(`${serverUrl}/api/game/${gameId}/metrics`),
+    authFetch(`${serverUrl}/api/game/${gameId}/events?limit=25${before}`),
+  ]);
+  if (responses.some((response) => !response.ok))
+    throw new Error(failedMessage);
+  const [summary, events] = await Promise.all(
+    responses.map((response) => response.json()),
+  );
+  return { summary, events };
+}
 export function GameMetrics({ gameId }: { gameId: number }) {
   const { serverUrl, authFetch } = useAuth();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [summary, setSummary] = useState<GameMetricsSummaryDto | null>(null);
   const [events, setEvents] = useState<GameClientEventDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // A new automatic load starts: flag it while rendering, not in the effect.
+  const [request, setRequest] = useState({ gameId, serverUrl, authFetch });
+  if (
+    request.gameId !== gameId ||
+    request.serverUrl !== serverUrl ||
+    request.authFetch !== authFetch
+  ) {
+    setRequest({ gameId, serverUrl, authFetch });
+    setLoading(true);
+    setError("");
+  }
+  useEffect(() => {
+    let active = true;
+    fetchMetricsPage(
+      authFetch,
+      serverUrl,
+      gameId,
+      translate("admin.metrics.loadFailed", locale),
+    )
+      .then((page) => {
+        if (!active) return;
+        setSummary(page.summary);
+        setEvents(page.events);
+      })
+      .catch((cause) => {
+        if (active)
+          setError(cause instanceof Error ? cause.message : String(cause));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [gameId, serverUrl, authFetch, locale]);
   const load = async (more = false) => {
     setLoading(true);
     setError("");
     try {
-      const before =
-        more && events.length
-          ? `&before_id=${events[events.length - 1].id}`
-          : "";
-      const responses = await Promise.all([
-        authFetch(`${serverUrl}/api/game/${gameId}/metrics`),
-        authFetch(`${serverUrl}/api/game/${gameId}/events?limit=25${before}`),
-      ]);
-      if (responses.some((response) => !response.ok))
-        throw new Error(t("admin.metrics.loadFailed"));
-      const [nextSummary, nextEvents] = await Promise.all(
-        responses.map((response) => response.json()),
+      const page = await fetchMetricsPage(
+        authFetch,
+        serverUrl,
+        gameId,
+        t("admin.metrics.loadFailed"),
+        more && events.length ? events[events.length - 1].id : undefined,
       );
-      setSummary(nextSummary);
-      setEvents(more ? [...events, ...nextEvents] : nextEvents);
+      setSummary(page.summary);
+      setEvents(more ? [...events, ...page.events] : page.events);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    void load();
-  }, [gameId, serverUrl]);
   return (
     <section className="space-y-4">
       <p className="text-xs text-ps-muted">{t("admin.metrics.description")}</p>

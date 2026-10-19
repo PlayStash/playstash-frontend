@@ -27,7 +27,7 @@ vi.mock("@/context/DownloadContext", () => ({
 vi.mock("@/context/AlertDialogContext", () => ({
   useAlertDialog: () => ({ showAlert: mocks.showAlert }),
 }));
-vi.mock("@/components/downloads/PipelineDialogs", () => ({
+vi.mock("@/components/downloads/pipelineDialogStore", () => ({
   confirmPipeline: mocks.confirmPipeline,
 }));
 vi.mock("@/components/downloads/DownloadCard", () => ({

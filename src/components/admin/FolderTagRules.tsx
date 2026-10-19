@@ -3,54 +3,13 @@ import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/apiError";
 import { formatMessage } from "@/utils/formatMessage";
 import { translate, useTranslation } from "@/i18n";
+import {
+  normalizeFolderTagRules,
+  type DraftRule,
+  type RuleResult,
+} from "./FolderTagRules.utils";
 import { Button } from "../tailwind/button";
 import { Input } from "../tailwind/input";
-interface Rule {
-  folder_prefix: string;
-  tags: string[];
-  enabled?: boolean;
-}
-interface RuleResult {
-  rules: Rule[];
-  applied_games: number;
-  failed_games: number;
-}
-interface DraftRule {
-  folder: string;
-  tags: string;
-  enabled: boolean;
-}
-export function normalizeFolderTagRules(drafts: DraftRule[]): Rule[] {
-  return drafts.map((draft, index) => {
-    const folder = draft.folder.trim().replace(/\\/g, "/").replace(/\/+$/, "");
-    const tags = [
-      ...new Set(
-        draft.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
-      ),
-    ];
-    if (
-      !folder ||
-      folder.startsWith("/") ||
-      folder.includes(":") ||
-      folder.split("/").some((part) => !part || part === ".." || part === ".")
-    )
-      throw new Error(
-        formatMessage(translate("admin.folderTags.error.folder"), {
-          index: index + 1,
-        }),
-      );
-    if (!tags.length || tags.length > 20 || tags.some((tag) => tag.length > 64))
-      throw new Error(
-        formatMessage(translate("admin.folderTags.error.tags"), {
-          index: index + 1,
-        }),
-      );
-    return { folder_prefix: folder, tags, enabled: draft.enabled };
-  });
-}
 export function FolderTagRules() {
   const { serverUrl, authFetch } = useAuth();
   const { t } = useTranslation();
@@ -61,10 +20,20 @@ export function FolderTagRules() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  useEffect(() => {
-    let active = true;
+  // Reset the loading flags while rendering whenever a new load starts
+  // (server, session or reload request changed) instead of inside the effect.
+  const [request, setRequest] = useState({ serverUrl, authFetch, reload });
+  if (
+    request.serverUrl !== serverUrl ||
+    request.authFetch !== authFetch ||
+    request.reload !== reload
+  ) {
+    setRequest({ serverUrl, authFetch, reload });
     setLoading(true);
     setLoaded(false);
+  }
+  useEffect(() => {
+    let active = true;
     void authFetch(`${serverUrl}/api/config/folder-tag-rules`)
       .then(async (response) => {
         if (!response.ok)

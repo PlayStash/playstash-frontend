@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CircleStackIcon,
   FolderOpenIcon,
@@ -37,6 +37,26 @@ async function browserCacheBytes(): Promise<number> {
   }
 }
 
+/** Current image and offline cache sizes in bytes. */
+async function cacheSizes(
+  isTauri: boolean,
+): Promise<{ imageBytes: number; offlineBytes: number }> {
+  let native = { imageBytes: 0, offlineBytes: 0 };
+  if (isTauri) {
+    try {
+      native = await invoke<{ imageBytes: number; offlineBytes: number }>(
+        "storage_cache_sizes",
+      );
+    } catch {
+      // simulated desktop mode
+    }
+  }
+  return {
+    imageBytes: (await browserCacheBytes()) + native.imageBytes,
+    offlineBytes: native.offlineBytes,
+  };
+}
+
 /** Storage category: cache sizes and clearing (Data tab of the WPF app). */
 export function StorageSettings({
   rowHighlight,
@@ -48,24 +68,23 @@ export function StorageSettings({
   const [imageBytes, setImageBytes] = useState<number | null>(null);
   const [offlineBytes, setOfflineBytes] = useState<number | null>(null);
 
-  const refreshSizes = useCallback(async () => {
-    let native = { imageBytes: 0, offlineBytes: 0 };
-    if (isTauri) {
-      try {
-        native = await invoke<{ imageBytes: number; offlineBytes: number }>(
-          "storage_cache_sizes",
-        );
-      } catch {
-        // simulated desktop mode
-      }
-    }
-    setImageBytes((await browserCacheBytes()) + native.imageBytes);
-    setOfflineBytes(native.offlineBytes);
-  }, [isTauri]);
+  const refreshSizes = async () => {
+    const sizes = await cacheSizes(isTauri);
+    setImageBytes(sizes.imageBytes);
+    setOfflineBytes(sizes.offlineBytes);
+  };
 
   useEffect(() => {
-    void refreshSizes();
-  }, [refreshSizes]);
+    let cancelled = false;
+    void cacheSizes(isTauri).then((sizes) => {
+      if (cancelled) return;
+      setImageBytes(sizes.imageBytes);
+      setOfflineBytes(sizes.offlineBytes);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isTauri]);
 
   const clearImages = async () => {
     try {

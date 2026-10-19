@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { useEffect } from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -32,11 +33,15 @@ let fetchMock: ReturnType<typeof vi.fn>;
 let accessToken = "";
 
 async function renderSettings() {
-  const { AuthProvider, useAuth } = await import("@/context/AuthContext");
+  const { AuthProvider } = await import("@/context/AuthProvider");
+  const { useAuth } = await import("@/context/AuthContext");
   const { default: AccountSettings } = await import("./AccountSettings");
   const state: { auth?: ReturnType<typeof useAuth> } = {};
   function Probe() {
-    state.auth = useAuth();
+    const auth = useAuth();
+    useEffect(() => {
+      state.auth = auth;
+    });
     return null;
   }
   render(

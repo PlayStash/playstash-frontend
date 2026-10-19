@@ -1,74 +1,57 @@
 import {
-  createContext,
-  useContext,
   useState,
   useRef,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   type ReactNode,
 } from "react";
 import { isTauriApp } from "@/utils/tauri";
 import { serverFetch } from "@/utils/serverFetch"; // sends the additional request headers
+import { OfflineCtx, type OfflineContextValue } from "@/context/OfflineContext";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+const FORCE_OFFLINE_KEY = "playstash_force_offline";
 
-interface OfflineContextValue {
-  /** Whether the server is currently reachable */
-  isOnline: boolean;
-  /** Whether a status check is in-flight */
-  isChecking: boolean;
-  /** Timestamp (ms) of last successful status check */
-  lastOnlineAt: number | null;
-  /** Force an immediate status check */
-  checkNow: () => void;
-  /** Registered callbacks invoked when transitioning offline → online */
-  onReconnect: (cb: () => void) => () => void;
-  /** Dev-only: simulate a network outage (forces offline state on/off) */
-  forceOffline: boolean;
-  setForceOffline: (enabled: boolean) => void;
+function readForceOffline(): boolean {
+  try {
+    return localStorage.getItem(FORCE_OFFLINE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
-
-const OfflineCtx = createContext<OfflineContextValue>({
-  isOnline: true,
-  isChecking: false,
-  lastOnlineAt: null,
-  checkNow: () => {},
-  onReconnect: () => () => {},
-  forceOffline: false,
-  setForceOffline: () => {},
-});
 
 // ── Provider ─────────────────────────────────────────────────────────────────
 
 export function OfflineProvider({ children }: { children: ReactNode }) {
   const isTauri = isTauriApp();
-  const [isOnline, setIsOnline] = useState(true);
+  const [forceOffline, setForceOfflineState] = useState(readForceOffline);
+  // The outage simulation starts offline when it was left on.
+  const [isOnline, setIsOnline] = useState(() => !forceOffline);
   const [isChecking, setIsChecking] = useState(false);
   const [lastOnlineAt, setLastOnlineAt] = useState<number | null>(null);
-  const [serverUrl, setServerUrl] = useState<string | null>(null);
-  const [forceOffline, setForceOfflineState] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("playstash_force_offline") === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Read server URL from localStorage (same key as AuthContext)
+  const [serverUrl, setServerUrl] = useState<string | null>(() =>
+    isTauri ? localStorage.getItem("app_server_url") || null : null,
+  );
 
   const setForceOffline = useCallback((enabled: boolean) => {
     try {
       if (enabled) {
-        localStorage.setItem("playstash_force_offline", "1");
+        localStorage.setItem(FORCE_OFFLINE_KEY, "1");
       } else {
-        localStorage.removeItem("playstash_force_offline");
+        localStorage.removeItem(FORCE_OFFLINE_KEY);
       }
     } catch {
       // localStorage unavailable
     }
     setForceOfflineState(enabled);
-    // When restoring connectivity in web mode there is no poller to
-    // re-check, so optimistically assume we are back online.
-    if (!enabled && !isTauriApp()) {
+    if (enabled) {
+      // Force offline state while the outage simulation is active
+      setIsOnline(false);
+    } else if (!isTauriApp()) {
+      // When restoring connectivity in web mode there is no poller to
+      // re-check, so optimistically assume we are back online.
       setIsOnline(true);
     }
   }, []);
@@ -76,24 +59,16 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const reconnectCallbacksRef = useRef<Set<() => void>>(new Set());
   const wasOfflineRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isOnlineRef = useRef(true);
+  const isOnlineRef = useRef(isOnline);
 
   // Keep ref in sync with state so polling closure always sees latest
-  isOnlineRef.current = isOnline;
+  useLayoutEffect(() => {
+    isOnlineRef.current = isOnline;
+  }, [isOnline]);
 
-  // Force offline state while the outage simulation is active
-  useEffect(() => {
-    if (forceOffline) {
-      setIsOnline(false);
-    }
-  }, [forceOffline]);
-
-  // Read server URL from localStorage (same key as AuthContext)
+  // Follow profile switches to another server (AuthContext SERVER_CHANGED_EVENT).
   useEffect(() => {
     if (!isTauri) return;
-    const stored = localStorage.getItem("app_server_url");
-    if (stored) setServerUrl(stored);
-    // Follow profile switches to another server (AuthContext SERVER_CHANGED_EVENT).
     const onServerChanged = (event: Event) => {
       const next = (event as CustomEvent<{ serverUrl?: string }>).detail
         ?.serverUrl;
@@ -222,10 +197,4 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   );
 
   return <OfflineCtx.Provider value={value}>{children}</OfflineCtx.Provider>;
-}
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
-
-export function useOnlineStatus() {
-  return useContext(OfflineCtx);
 }

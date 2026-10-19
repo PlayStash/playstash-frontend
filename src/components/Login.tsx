@@ -188,20 +188,37 @@ export function Login() {
     };
   }, []);
 
-  useEffect(() => {
+  // A newly confirmed server drops the old status and starts a status check.
+  const [statusFor, setStatusFor] = useState<{
+    confirmedServer: string | null;
+    desktop: boolean;
+  } | null>(null);
+  if (
+    !statusFor ||
+    statusFor.confirmedServer !== confirmedServer ||
+    statusFor.desktop !== desktop
+  ) {
+    setStatusFor({ confirmedServer, desktop });
+    // No check runs for an empty or invalid server, and the aborted previous
+    // check skips its own cleanup, so the loading flag must be cleared here.
     if (!confirmedServer) {
       setServerStatus(null);
       setStatusError(false);
-      return;
-    }
-    const normalized = normalizeServerUrl(confirmedServer);
-    if (!normalized) {
+      setStatusLoading(false);
+    } else if (!normalizeServerUrl(confirmedServer)) {
       setServerStatus(null);
-      return;
+      setStatusLoading(false);
+    } else {
+      setStatusLoading(true);
+      setStatusError(false);
     }
+  }
 
-    setStatusLoading(true);
-    setStatusError(false);
+  useEffect(() => {
+    const normalized = confirmedServer
+      ? normalizeServerUrl(confirmedServer)
+      : "";
+    if (!normalized) return;
     const controller = new AbortController();
 
     (async () => {
@@ -241,7 +258,10 @@ export function Login() {
     };
   }, [confirmedServer, desktop]);
 
-  useEffect(() => {
+  // A server with a single sign-in method preselects it.
+  const [statusSeen, setStatusSeen] = useState<Status | null>(null);
+  if (serverStatus !== statusSeen) {
+    setStatusSeen(serverStatus);
     if (serverStatus) {
       if (ssoAvailable && !basicAuthAvailable) {
         setUseSso(true);
@@ -249,7 +269,7 @@ export function Login() {
         setUseSso(false);
       }
     }
-  }, [serverStatus, ssoAvailable, basicAuthAvailable]);
+  }
 
   // Only consume a fragment callback in the tab that initiated the redirect.
   useEffect(() => {

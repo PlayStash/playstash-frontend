@@ -426,7 +426,8 @@ export default function UserProfile() {
   const isAdmin = currentUserRole >= Number(PlaystashUserRoleEnum._3);
   const canEdit = isOwnProfile || isAdmin;
 
-  const recentCutoff = useMemo(() => Date.now() - TWO_WEEKS_MS, []);
+  // Fixed for the page's lifetime; reading the clock during render is impure.
+  const [recentCutoff] = useState(() => Date.now() - TWO_WEEKS_MS);
 
   useEffect(() => {
     if (!serverUrl || !userId || Number.isNaN(userId)) return;
@@ -508,11 +509,14 @@ export default function UserProfile() {
 
   const { url: backdropUrl } = useAuthMediaUrl(getPrimaryBackdropMediaId(user));
 
-  useEffect(() => {
+  // Another profile starts with fresh progress controls (reset during render).
+  const [controlsUserId, setControlsUserId] = useState(userId);
+  if (controlsUserId !== userId) {
+    setControlsUserId(userId);
     setProgressSearch("");
     setProgressFilter("all");
     setProgressSort("last");
-  }, [userId]);
+  }
 
   const handleDeleteProgress = useCallback(
     async (progressId: number, gameId: number, title?: string) => {

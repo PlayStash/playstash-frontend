@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import type { LaunchProfileDto, PackageAssetDto } from "@/api";
 import { useAuth } from "@/context/AuthContext";
 import { useOnlineStatus } from "@/context/OfflineContext";
@@ -48,44 +48,61 @@ export function PackageContents({
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState(archivePassword || "");
   const [status, setStatus] = useState("");
-  const load = async (signal?: AbortSignal) => {
-    setLoading(true);
-    setError("");
-    try {
+  const [reloadCount, setReloadCount] = useState(0);
+  /** The package listing; a missing package (404) is an empty one. */
+  const requestPackage = useEffectEvent(
+    async (signal: AbortSignal): Promise<GamePackage> => {
       const response = await authFetch(
         `${serverUrl}/api/game/${gameId}/package`,
         { signal },
       );
-      if (response.status === 404) {
-        setContents({ extras: [], addons: [] });
-        return;
-      }
+      if (response.status === 404) return { extras: [], addons: [] };
       if (!response.ok)
         throw new Error(
           fillTemplate(t("game.package.loadFailed"), {
             status: response.status,
           }),
         );
-      setContents(await response.json());
-    } catch (cause) {
-      if (!signal?.aborted)
-        setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
+      return response.json();
+    },
+  );
+  const load = () => {
+    setLoading(true);
+    setError("");
+    setReloadCount((count) => count + 1);
   };
-  useEffect(() => {
+
+  // Another game, server or connectivity starts over with a fresh listing.
+  const sourceKey = `${gameId}|${serverUrl}|${isOnline}`;
+  const [loadedSource, setLoadedSource] = useState<string | null>(null);
+  if (sourceKey !== loadedSource) {
+    setLoadedSource(sourceKey);
     setSelected([]);
     setStatus("");
     setPassword(archivePassword || "");
-    if (!isOnline) {
+    if (isOnline) {
+      setLoading(true);
+      setError("");
+    } else {
       setLoading(false);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!isOnline) return;
     const controller = new AbortController();
-    void load(controller.signal);
+    const { signal } = controller;
+    requestPackage(signal)
+      .then((result) => setContents(result))
+      .catch((cause) => {
+        if (!signal.aborted)
+          setError(cause instanceof Error ? cause.message : String(cause));
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
-  }, [gameId, serverUrl, isOnline]);
+  }, [gameId, serverUrl, isOnline, reloadCount]);
   const urlFor = (asset: Asset) =>
     `${serverUrl}/api/game/${gameId}/package/assets/${encodeURIComponent(asset.id)}`;
   const download = async (asset: Asset) => {
@@ -381,7 +398,7 @@ export function PackageContents({
         <div role="alert" className="space-y-2 text-red-400">
           <p>{error}</p>
           {!busy && (
-            <Button outline onClick={() => void load()}>
+            <Button outline onClick={load}>
               {t("game.package.reload")}
             </Button>
           )}
